@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpServer};
 
 mod app;
 
@@ -6,26 +6,10 @@ mod app;
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
-            .service(hello)
-            .service(echo)
-            .route("/home", web::get().to(app::controllers::web::home::index))
-            .route("/hey", web::get().to(manual_hello))
+            .service(app::controllers::web::home::index)
+            .service(app::controllers::web::home::test)
     })
         .bind(("127.0.0.1", 8080))?
         .run()
         .await
-}
-
-#[get("/")]
-async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello world!")
-}
-
-#[post("/echo")]
-async fn echo(req_body: String) -> impl Responder {
-    HttpResponse::Ok().body(req_body)
-}
-
-async fn manual_hello() -> impl Responder {
-    HttpResponse::Ok().body("Hey there!")
 }
