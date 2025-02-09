@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-
 use actix_web::{
     body::BoxBody,
     dev::ServiceResponse,
@@ -12,6 +11,7 @@ use tinytemplate::TinyTemplate;
 use app::controllers::web::home as home_controller;
 
 mod app;
+mod core;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -20,10 +20,7 @@ async fn main() -> std::io::Result<()> {
     log::info!("starting HTTP server at http://localhost:8080");
 
     HttpServer::new(|| {
-        let mut tt = TinyTemplate::new();
-        tt.add_template("index.html", HTML_PAGE_HOME_INDEX).unwrap();
-        tt.add_template("user.html", HTML_PAGE_HOME_USER).unwrap();
-        tt.add_template("error.html", HTML_PAGE_ERROR_DEFAULT).unwrap();
+        let tt = core::template::new();
 
         App::new()
             .app_data(web::Data::new(tt))
@@ -70,7 +67,7 @@ fn get_error_response<B>(res: &ServiceResponse<B>, error: &str) -> HttpResponse 
             let mut context = HashMap::new();
             context.insert("error", error.to_owned());
             context.insert("status_code", res.status().as_str().to_owned());
-            let body = tt.render("error.html", &context);
+            let body = tt.render("pages.error.default", &context);
 
             match body {
                 Ok(body) => HttpResponse::build(res.status())
@@ -82,7 +79,3 @@ fn get_error_response<B>(res: &ServiceResponse<B>, error: &str) -> HttpResponse 
         None => fallback(error),
     }
 }
-
-static HTML_PAGE_ERROR_DEFAULT: &str = include_str!("../resources/view/pages/error/default.html");
-static HTML_PAGE_HOME_INDEX: &str = include_str!("../resources/view/pages/home/index.html");
-static HTML_PAGE_HOME_USER: &str = include_str!("../resources/view/pages/home/user.html");

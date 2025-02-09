@@ -17,10 +17,10 @@ pub async fn index(
           "name" : name.to_owned(),
           "text" : "Welcome!".to_owned()
         });
-        tmpl.render("user.html", &ctx)
+        tmpl.render("pages.home.user", &ctx)
             .map_err(|_| error::ErrorInternalServerError("Template error"))?
     } else {
-        tmpl.render("index.html", &serde_json::Value::Null)
+        tmpl.render("pages.home.index", &serde_json::Value::Null)
             .map_err(|_| error::ErrorInternalServerError("Template error"))?
     };
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
