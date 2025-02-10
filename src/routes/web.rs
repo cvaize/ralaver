@@ -1,6 +1,10 @@
-use actix_web::{web, Resource};
+use actix_web::{web};
+use crate::app::controllers;
 
-pub fn new() -> Resource {
-    web::resource("/")
-        .route(web::get().to(crate::app::controllers::web::home::index))
+pub fn register(cfg: &mut web::ServiceConfig) {
+    cfg.service(web::resource("/").route(web::get().to(controllers::web::home::index)));
+    cfg.service(web::resource("/users").route(web::get().to(controllers::web::users::index)));
+
+    // NotFound route
+    cfg.service(web::scope("").wrap(controllers::web::errors::error_handlers()));
 }

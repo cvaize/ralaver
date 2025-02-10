@@ -1,5 +1,5 @@
-use actix_web::middleware;
 use actix_web::web;
+use actix_web::middleware;
 use actix_web::App;
 use actix_web::HttpServer;
 
@@ -17,11 +17,9 @@ async fn main() -> std::io::Result<()> {
         let tt = core::template::new();
 
         App::new()
-            .app_data(web::Data::new(tt))
             .wrap(middleware::Logger::default())
-            .service(routes::web::new())
-            .service(web::scope("").wrap(app::controllers::web::errors::error_handlers()))
-            // .service(web::scope("").wrap(error_handlers()))
+            .configure(app::providers::routes::register)
+            .app_data(web::Data::new(tt))
     })
     .bind(("127.0.0.1", 8080))?
     .run()
