@@ -1,0 +1,203 @@
+.admin-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 12rem;
+    background: rgb(var(--admin-app-light-background-color));
+    z-index: 200;
+    font-size: 0.8rem;
+    height: 100vh;
+}
+
+.admin-sidebar ~ .admin-content {
+    padding: 0.8rem 0.8rem 0.8rem 13rem;
+}
+
+.admin-sidebar__burger, .admin-sidebar__backdrop {
+    display: none;
+}
+
+.admin-sidebar__brand {
+    padding: .85rem 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    position: relative;
+    height: 4rem;
+}
+
+.admin-sidebar__brand__logo {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    object-position: center;
+    object-fit: contain;
+}
+
+.admin-sidebar__nav {
+    height: calc(100vh - 4rem);
+    overflow-y: auto;
+}
+
+.admin-sidebar__menu {
+    margin-bottom: .5rem;
+    padding: 0 0 0 1rem;
+}
+
+.admin-sidebar__menu__header, .admin-sidebar__menu__item__link {
+    color: rgb(var(--admin-app-color));
+}
+
+.admin-sidebar__menu__header {
+    font-size: .85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 0 0.5rem;
+    text-decoration: none;
+    border-radius: 0.3rem;
+}
+
+.admin-sidebar__menu__checkbox ~ .admin-sidebar__menu__header:hover,
+.admin-sidebar__menu__checkbox ~ .admin-sidebar__menu__header:focus,
+.admin-sidebar__menu__header:hover,
+.admin-sidebar__menu__header:focus {
+    opacity: 0.5;
+}
+
+.admin-sidebar__menu__items {
+    background: 0 0;
+    box-shadow: none;
+    list-style: none;
+    margin: 0;
+    min-width: 11.25rem;
+    padding: 0;
+    transform: translateY(.2rem);
+}
+
+.admin-sidebar__menu__item {
+    margin-top: 0;
+    position: relative;
+    text-decoration: none;
+    padding: 0 0 0 0.75rem;
+}
+
+.admin-sidebar__menu__item__link {
+    display: inline-block;
+    text-decoration: none;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.3rem;
+}
+
+.admin-sidebar__menu__item__link.active {
+    opacity: 0.8;
+}
+
+.admin-sidebar__menu__item__link:focus,
+.admin-sidebar__menu__item__link:active,
+.admin-sidebar__menu__item__link:hover {
+    opacity: 0.5;
+}
+
+@media (max-width: 767px) {
+    .admin-sidebar {
+        width: 100%;
+        height: 2.5rem;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 0 6.4rem 0 0.8rem;
+    }
+
+    .admin-sidebar ~ .admin-content {
+        padding: 2.8rem 0.8rem 0.8rem 0.8rem;
+    }
+
+    .admin-sidebar__brand {
+        height: auto;
+        padding: 0;
+        display: block;
+    }
+
+    .admin-sidebar__nav {
+        position: fixed;
+        z-index: 230;
+        right: -13rem;
+        top: 2.5rem;
+        height: calc(100% - 2.5rem);
+        width: 12rem;
+        padding: 0.8rem 0;
+        background: rgb(var(--admin-app-light-background-color));
+        transition: transform 0.3s;
+    }
+
+    .admin-sidebar__backdrop {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        left: 0;
+        top: 0;
+        background-color: rgba(var(--admin-app-backdrop-color), 0.5);
+        z-index: 190;
+    }
+
+    .admin-sidebar__burger {
+        cursor: pointer;
+        display: block;
+        z-index: 250;
+        position: fixed;
+        border: none;
+        background: transparent;
+        width: 2.5rem;
+        height: 1.625rem;
+        margin: 0 0 0 auto;
+        font-size: 0;
+        top: 0.4rem;
+        right: 0.8rem;
+    }
+
+    .admin-sidebar__burger::before,
+    .admin-sidebar__burger::after {
+        content: '';
+        left: 0;
+        position: absolute;
+        display: block;
+        width: 100%;
+        height: 0.25rem;
+        border-radius: 0.625rem;
+        background: rgb(var(--admin-app-color));
+    }
+
+    .admin-sidebar__burger::before {
+        top: 0;
+        box-shadow: 0 0.6875rem 0 rgb(var(--admin-app-color));
+        transition: box-shadow .3s .15s, top .3s .15s, transform .3s;
+    }
+
+    .admin-sidebar__burger::after {
+        bottom: 0;
+        transition: bottom .3s .15s, transform .3s;
+    }
+
+    .admin-sidebar__nav__checkbox:checked ~ .admin-app .admin-sidebar__burger::before {
+        top: 0.6875rem;
+        transform: rotate(45deg);
+        box-shadow: 0 0.375rem 0 rgba(var(--admin-app-backdrop-color), 0);
+        transition: box-shadow .15s, top .3s, transform .3s .15s;
+    }
+
+    .admin-sidebar__nav__checkbox:checked ~ .admin-app .admin-sidebar__burger::after {
+        bottom: 0.6875rem;
+        transform: rotate(-45deg);
+        transition: bottom .3s, transform .3s .15s;
+    }
+
+    .admin-sidebar__nav__checkbox:checked ~ .admin-app .admin-sidebar__backdrop {
+        display: block;
+    }
+
+    .admin-sidebar__nav__checkbox:checked ~ .admin-app .admin-sidebar .admin-sidebar__nav {
+        transform: translateX(-13rem);
+    }
+}

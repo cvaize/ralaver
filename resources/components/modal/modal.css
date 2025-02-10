@@ -1,0 +1,112 @@
+.admin-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 10000;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    outline: 0;
+}
+
+.admin-modal__backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 10001;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(var(--admin-app-backdrop-color), 0.5);
+}
+
+.admin-modal__dialog {
+    position: relative;
+    z-index: 10002;
+    max-width: 31.25rem;
+    margin: 1.7rem auto;
+    max-height: calc(100% - 3.4rem);
+    display: flex;
+}
+
+.admin-modal__content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    color: rgb(var(--admin-app-color));
+    pointer-events: auto;
+    background-color: rgb(var(--admin-app-background-color));
+    border: 0.0625rem solid rgba(var(--admin-app-color), 0.3);
+    border-radius: 0.3rem;
+    outline: 0;
+}
+
+.admin-modal__header {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    padding: 0.8rem;
+    border-bottom: 0.0625rem solid rgba(var(--admin-app-color), 0.1);
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+}
+
+.admin-modal__title {
+    margin: 0;
+    font-weight: 400;
+    font-size: 1.25rem;
+}
+
+.admin-modal__close-btn {
+    display: block;
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 1.2rem;
+    height: 1.2rem;
+    padding: 0;
+    color: transparent;
+    border: 0;
+    border-radius: .3rem;
+    opacity: 0.8;
+    cursor: pointer;
+}
+
+.admin-modal__close-btn:before, .admin-modal__close-btn:after {
+    position: absolute;
+    left: 0;
+    top: 0;
+    content: '';
+    height: 100%;
+    width: 0.125rem;
+    background-color: rgb(var(--admin-app-color));
+    opacity: 0.9;
+}
+
+.admin-modal__close-btn:before {
+    transform: rotate(45deg) translate(0.375rem, -0.375rem);
+}
+
+.admin-modal__close-btn:after {
+    transform: rotate(-45deg) translate(0.375rem, 0.375rem);
+}
+
+.admin-modal__close-btn:hover {
+    opacity: 0.5;
+}
+
+.admin-modal__body {
+    padding: 0.8rem;
+    overflow-y: auto;
+}
+
+.admin-modal__footer {
+    padding: 0.8rem;
+    border-top: 0.0625rem solid rgba(var(--admin-app-color), 0.1);
+}
+
+.admin-modal__checkbox:checked ~ .admin-modal {
+    display: block;
+}

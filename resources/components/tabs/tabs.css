@@ -1,0 +1,203 @@
+.admin-tabs {
+    --admin-tabs-bg-color: rgb(var(--admin-app-background-color));
+    --admin-tabs-border-color: rgb(var(--admin-app-light-background-color));
+    position: relative;
+}
+
+.admin-tabs__nav {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.admin-tabs__nav:after {
+    content: '';
+    display: block;
+    flex-grow: 1;
+    border-bottom: 0.0625rem solid var(--admin-tabs-border-color);
+    margin-bottom: 0.8rem;
+    margin-left: -0.0625rem;
+}
+
+.admin-tabs__link, .admin-tabs__menu-label {
+    position: relative;
+    display: block;
+    margin-bottom: 0.8rem;
+    padding: 0.5rem;
+    border: 0.0625rem solid var(--admin-tabs-bg-color);
+    border-bottom-color: var(--admin-tabs-border-color);
+    border-radius: 0.4rem 0.4rem 0 0;
+    cursor: pointer;
+    transition: border 0.25s;
+    font-weight: 400;
+    user-select: none;
+    background-color: rgb(var(--admin-app-background-color));
+}
+
+.admin-tabs__menu-label:hover {
+    background-color: var(--admin-tabs-border-color);
+}
+
+.admin-tabs__content {
+}
+
+.admin-tabs__pane {
+    display: none;
+}
+
+.admin-tabs__nav > .admin-tabs__link:nth-child(1) ~ .admin-tabs__link {
+    margin-left: -0.0625rem;
+}
+
+.admin-tabs__checkbox:nth-child(1):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(1),
+.admin-tabs__checkbox:nth-child(2):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(2),
+.admin-tabs__checkbox:nth-child(3):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(3),
+.admin-tabs__checkbox:nth-child(4):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(4),
+.admin-tabs__checkbox:nth-child(5):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(5),
+.admin-tabs__checkbox:nth-child(6):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(6),
+.admin-tabs__checkbox:nth-child(7):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(7),
+.admin-tabs__checkbox:nth-child(8):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(8),
+.admin-tabs__checkbox:nth-child(9):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(9),
+.admin-tabs__checkbox:nth-child(10):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(10),
+.admin-tabs__checkbox:nth-child(11):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(11),
+.admin-tabs__checkbox:nth-child(12):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(12),
+.admin-tabs__checkbox:nth-child(13):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(13),
+.admin-tabs__checkbox:nth-child(14):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(14),
+.admin-tabs__checkbox:nth-child(15):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(15),
+.admin-tabs__checkbox:nth-child(16):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(16),
+.admin-tabs__checkbox:nth-child(17):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(17),
+.admin-tabs__checkbox:nth-child(18):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(18),
+.admin-tabs__checkbox:nth-child(19):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(19),
+.admin-tabs__checkbox:nth-child(20):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(20),
+.admin-tabs__checkbox:nth-child(21):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(21),
+.admin-tabs__checkbox:nth-child(22):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(22),
+.admin-tabs__checkbox:nth-child(23):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(23),
+.admin-tabs__checkbox:nth-child(24):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(24),
+.admin-tabs__checkbox:nth-child(25):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(25),
+.admin-tabs__checkbox:nth-child(26):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(26),
+.admin-tabs__checkbox:nth-child(27):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(27),
+.admin-tabs__checkbox:nth-child(28):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(28),
+.admin-tabs__checkbox:nth-child(29):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(29),
+.admin-tabs__checkbox:nth-child(30):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(30),
+.admin-tabs__checkbox:nth-child(31):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(31),
+.admin-tabs__checkbox:nth-child(32):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(32),
+.admin-tabs__checkbox:nth-child(33):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(33),
+.admin-tabs__checkbox:nth-child(34):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(34),
+.admin-tabs__checkbox:nth-child(35):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(35),
+.admin-tabs__checkbox:nth-child(36):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(36),
+.admin-tabs__checkbox:nth-child(37):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(37),
+.admin-tabs__checkbox:nth-child(38):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(38),
+.admin-tabs__checkbox:nth-child(39):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(39),
+.admin-tabs__checkbox:nth-child(40):checked ~ .admin-tabs__nav > .admin-tabs__link:nth-child(40) {
+    border-color: var(--admin-tabs-border-color);
+    border-bottom-color: transparent;
+    font-weight: 700;
+    display: block;
+    z-index: 1;
+    cursor: auto;
+    order: -1;
+}
+
+.admin-tabs .admin-tabs__link {
+    order: -1;
+}
+
+.admin-tabs__checkbox:nth-child(1):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(1),
+.admin-tabs__checkbox:nth-child(2):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(2),
+.admin-tabs__checkbox:nth-child(3):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(3),
+.admin-tabs__checkbox:nth-child(4):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(4),
+.admin-tabs__checkbox:nth-child(5):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(5),
+.admin-tabs__checkbox:nth-child(6):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(6),
+.admin-tabs__checkbox:nth-child(7):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(7),
+.admin-tabs__checkbox:nth-child(8):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(8),
+.admin-tabs__checkbox:nth-child(9):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(9),
+.admin-tabs__checkbox:nth-child(10):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(10),
+.admin-tabs__checkbox:nth-child(11):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(11),
+.admin-tabs__checkbox:nth-child(12):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(12),
+.admin-tabs__checkbox:nth-child(13):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(13),
+.admin-tabs__checkbox:nth-child(14):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(14),
+.admin-tabs__checkbox:nth-child(15):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(15),
+.admin-tabs__checkbox:nth-child(16):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(16),
+.admin-tabs__checkbox:nth-child(17):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(17),
+.admin-tabs__checkbox:nth-child(18):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(18),
+.admin-tabs__checkbox:nth-child(19):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(19),
+.admin-tabs__checkbox:nth-child(20):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(20),
+.admin-tabs__checkbox:nth-child(21):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(21),
+.admin-tabs__checkbox:nth-child(22):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(22),
+.admin-tabs__checkbox:nth-child(23):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(23),
+.admin-tabs__checkbox:nth-child(24):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(24),
+.admin-tabs__checkbox:nth-child(25):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(25),
+.admin-tabs__checkbox:nth-child(26):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(26),
+.admin-tabs__checkbox:nth-child(27):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(27),
+.admin-tabs__checkbox:nth-child(28):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(28),
+.admin-tabs__checkbox:nth-child(29):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(29),
+.admin-tabs__checkbox:nth-child(30):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(30),
+.admin-tabs__checkbox:nth-child(31):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(31),
+.admin-tabs__checkbox:nth-child(32):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(32),
+.admin-tabs__checkbox:nth-child(33):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(33),
+.admin-tabs__checkbox:nth-child(34):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(34),
+.admin-tabs__checkbox:nth-child(35):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(35),
+.admin-tabs__checkbox:nth-child(36):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(36),
+.admin-tabs__checkbox:nth-child(37):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(37),
+.admin-tabs__checkbox:nth-child(38):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(38),
+.admin-tabs__checkbox:nth-child(39):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(39),
+.admin-tabs__checkbox:nth-child(40):checked ~ .admin-tabs__content > .admin-tabs__pane:nth-child(40) {
+    display: block;
+}
+
+.admin-tabs__menu-label {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: none;
+    border-color: var(--admin-tabs-border-color);
+    border-left-color: var(--admin-tabs-bg-color);
+    border-bottom-color: var(--admin-tabs-bg-color);
+    border-top-left-radius: 0;
+    z-index: 4;
+    margin: 0;
+}
+
+.admin-tabs__burger {
+    position: relative;
+    display: inline-block;
+    width: 1.25rem;
+    height: 0.875rem;
+    margin-bottom: -0.1rem;
+    pointer-events: none;
+}
+
+.admin-tabs__burger::before,
+.admin-tabs__burger::after {
+    content: '';
+    left: 0;
+    position: absolute;
+    display: block;
+    width: 100%;
+    height: 0.125rem;
+    border-radius: 0.625rem;
+    background: rgb(var(--admin-app-color));
+}
+
+.admin-tabs__burger::before {
+    top: 0;
+    box-shadow: 0 0.375rem 0 rgb(var(--admin-app-color));
+    transition: box-shadow .3s .15s, top .3s .15s, transform .3s;
+}
+
+.admin-tabs__burger::after {
+    bottom: 0;
+    transition: bottom .3s .15s, transform .3s;
+}
+
+.admin-tabs__menu-checkbox:checked ~ .admin-tabs__menu-label .admin-tabs__burger::before {
+    top: 0.375rem;
+    transform: rotate(45deg);
+    box-shadow: 0 0.375rem 0 rgba(var(--admin-app-backdrop-color), 0);
+    transition: box-shadow .15s, top .3s, transform .3s .15s;
+}
+
+.admin-tabs__menu-checkbox:checked ~ .admin-tabs__menu-label .admin-tabs__burger::after {
+    bottom: 0.375rem;
+    transform: rotate(-45deg);
+    transition: bottom .3s, transform .3s .15s;
+}

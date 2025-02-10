@@ -1,0 +1,80 @@
+.admin-login {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    justify-content: center;
+    min-height: calc(100vh - 1.6rem);
+}
+
+.admin-login__container {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    justify-content: center;
+    padding-bottom: 3rem;
+}
+
+.admin-login__card {
+    width: 288px;
+    margin: auto;
+    padding: 1rem;
+    border-radius: 1rem;
+    background-color: rgba(var(--admin-app-light-background-color), 0.5);
+}
+
+.admin-login__header {
+
+}
+
+.admin-login__field {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.admin-login__field__input {
+    font-size: 0.9rem;
+}
+
+.admin-login__nav {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.admin-login__back {
+    margin-bottom: 0.5rem;
+}
+
+.admin-login__forgot-link {
+    margin-right: 0.5rem;
+    text-decoration: none;
+    color: inherit;
+    font-weight: 500;
+}
+
+.admin-login__register-link {
+    margin-left: auto;
+    text-decoration: none;
+    color: inherit;
+    font-weight: 700;
+}
+
+.admin-login__back-link {
+    text-decoration: none;
+    color: inherit;
+    font-weight: 500;
+}
+
+.admin-login__forgot-link:hover, .admin-login__register-link:hover, .admin-login__back-link:hover {
+    opacity: 0.8;
+}
+
+.admin-btn.admin-login__submit {
+    display: block;
+    width: 100%;
+    margin-top: 1.5rem;
+    color: rgb(var(--admin-app-background-color));
+    border-color: rgb(var(--admin-app-color));
+    background-color: rgb(var(--admin-app-color));
+}

@@ -1,0 +1,179 @@
+.admin-btn {
+    display: inline-block;
+    padding: 0.3rem 0.7rem;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    text-align: center;
+    text-decoration: none;
+    vertical-align: middle;
+    user-select: none;
+    color: rgb(var(--admin-app-background-color));
+    background-color: rgb(var(--admin-app-color));
+    border: 0.0625rem solid rgb(var(--admin-app-color));
+    border-radius: 0.3rem;
+    cursor: pointer;
+    transition: color .15s ease-in-out,
+    background-color .15s ease-in-out,
+    border-color .15s ease-in-out,
+    box-shadow .15s ease-in-out;
+}
+
+.admin-btn:hover {
+    background-color: rgba(var(--admin-app-color), 0.9);
+    border-color: rgba(var(--admin-app-color), 0.9);
+}
+
+.admin-btn:active {
+    background-color: rgba(var(--admin-app-color), 0.8);
+    border-color: rgba(var(--admin-app-color), 0.8);
+}
+
+.admin-btn:focus {
+    box-shadow: 0 0 0 2px rgba(var(--admin-app-color), 0.5);
+}
+
+.admin-btn.admin-accent {
+    background-color: rgb(var(--admin-app-accent-color));
+    border-color: rgb(var(--admin-app-accent-color));
+}
+
+.admin-btn.admin-accent:hover {
+    background-color: rgba(var(--admin-app-accent-color), 0.9);
+    border-color: rgba(var(--admin-app-accent-color), 0.9);
+}
+
+.admin-btn.admin-accent:active {
+    background-color: rgba(var(--admin-app-accent-color), 0.8);
+    border-color: rgba(var(--admin-app-accent-color), 0.8);
+}
+
+.admin-btn.admin-accent:focus {
+    box-shadow: 0 0 0 2px rgba(var(--admin-app-accent-color), 0.5);
+}
+
+.admin-btn.admin-success {
+    background-color: rgb(var(--admin-app-success-color));
+    border-color: rgb(var(--admin-app-success-color));
+}
+
+.admin-btn.admin-success:hover {
+    background-color: rgba(var(--admin-app-success-color), 0.9);
+    border-color: rgba(var(--admin-app-success-color), 0.9);
+}
+
+.admin-btn.admin-success:active {
+    background-color: rgba(var(--admin-app-success-color), 0.8);
+    border-color: rgba(var(--admin-app-success-color), 0.8);
+}
+
+.admin-btn.admin-success:focus {
+    box-shadow: 0 0 0 2px rgba(var(--admin-app-success-color), 0.5);
+}
+
+.admin-btn.admin-danger {
+    background-color: rgb(var(--admin-app-danger-color));
+    border-color: rgb(var(--admin-app-danger-color));
+}
+
+.admin-btn.admin-danger:hover {
+    background-color: rgba(var(--admin-app-danger-color), 0.9);
+    border-color: rgba(var(--admin-app-danger-color), 0.9);
+}
+
+.admin-btn.admin-danger:active {
+    background-color: rgba(var(--admin-app-danger-color), 0.8);
+    border-color: rgba(var(--admin-app-danger-color), 0.8);
+}
+
+.admin-btn.admin-danger:focus {
+    box-shadow: 0 0 0 2px rgba(var(--admin-app-danger-color), 0.5);
+}
+
+
+.admin-btn.admin-btn--link {
+    color: rgb(var(--admin-app-color));
+    background-color: transparent;
+    padding: 0;
+    border: none;
+}
+
+.admin-btn.admin-btn--link:hover, .admin-btn.admin-btn--link:active {
+    background-color: transparent;
+    opacity: 0.8;
+}
+
+.admin-btn--square {
+    padding-left: 0.42rem;
+    padding-right: 0.42rem;
+}
+
+.admin-btn .admin-icon--svg{
+    margin-top: -1rem;
+    margin-bottom: -1rem;
+}
+
+.admin-btn--outline {
+    background-color: rgb(var(--admin-app-background-color));
+    border-color: rgba(var(--admin-app-color), 0.5);
+}
+
+.admin-btn--outline.admin-active {
+    background-color: rgb(var(--admin-app-light-background-color));
+    border-color: rgb(var(--admin-app-light-background-color));
+}
+
+.admin-btn:disabled {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.admin-btn.admin-loading {
+    pointer-events: none;
+    user-select: none;
+}
+
+.admin-btn.admin-loading * {
+    pointer-events: none;
+    user-select: none;
+    visibility: hidden;
+    opacity: 0;
+}
+
+.admin-btn.admin-loading:not(.admin-btn--square) > .admin-icon--svg:first-child {
+    display: none;
+}
+
+.admin-btn.admin-loading::before {
+    content: "";
+    display: inline-block;
+    position: relative;
+    width: 1rem;
+    height: 1rem;
+    margin: -0.2rem 0.2rem -0.2rem 0;
+    border: 0.25rem solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: admin-button-loading-spinner 1s ease infinite;
+}
+
+.admin-btn.admin-btn--square.admin-loading::before {
+    position: absolute;
+    width: 1rem;
+    height: 1rem;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+}
+
+@keyframes admin-button-loading-spinner {
+    from {
+        transform: rotate(0turn);
+    }
+
+    to {
+        transform: rotate(1turn);
+    }
+}

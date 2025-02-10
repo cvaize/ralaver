@@ -1,0 +1,44 @@
+.admin-table {
+    width: 100%;
+    margin-bottom: 0.8rem;
+    vertical-align: top;
+    border-color: rgba(var(--admin-app-color), 0.2);
+    caption-side: bottom;
+    border-collapse: collapse;
+}
+
+.admin-table__thead {
+    vertical-align: bottom;
+}
+
+.admin-table__th {
+    text-align: inherit;
+}
+
+.admin-table__tbody, .admin-table__td, .admin-table__tfoot,
+.admin-table__th, .admin-table__thead, .admin-table__tr {
+    border-color: inherit;
+    border-style: solid;
+    border-width: 0;
+}
+
+.admin-table__th, .admin-table__td {
+    padding: .5rem .5rem;
+    color: inherit;
+    background-color: transparent;
+    border-bottom-width: 0.0625rem;
+}
+
+.admin-table__responsive {
+    overflow-x: auto;
+}
+
+.admin-table--hover > .admin-table__tbody > .admin-table__tr:hover > * {
+    background-color: rgba(var(--admin-app-accent-color), 0.1);
+}
+
+.admin-table__td.admin-table--active,
+.admin-table__th.admin-table--active,
+.admin-table__tr.admin-table--active > * {
+    background-color: rgba(var(--admin-app-accent-color), 0.2);
+}

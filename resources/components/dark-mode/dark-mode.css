@@ -1,0 +1,29 @@
+.admin-dark-mode__btn {
+    position: fixed;
+    left: 0;
+    top: 0;
+    padding: 0.2rem;
+    display: block;
+    z-index: 250;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.admin-dark-mode__checkbox:checked ~ .admin-app > .admin-dark-mode__btn .admin-dark-mode__icon-dark,
+.admin-dark-mode__checkbox:not(:checked) ~ .admin-app > .admin-dark-mode__btn .admin-dark-mode__icon-light {
+    display: block;
+}
+
+.admin-dark-mode__checkbox:not(:checked) ~ .admin-app > .admin-dark-mode__btn .admin-dark-mode__icon-dark,
+.admin-dark-mode__checkbox:checked ~ .admin-app > .admin-dark-mode__btn .admin-dark-mode__icon-light {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .admin-dark-mode__btn {
+        left: auto;
+        right: 4rem;
+        top: 0.3rem;
+        font-size: 1.5rem;
+    }
+}

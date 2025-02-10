@@ -1,0 +1,37 @@
+.admin-s-collapse {
+    --admin-s-collapse-height: 50rem;
+    max-height: 0;
+    overflow: hidden;
+}
+
+.admin-s-collapse__label {
+    width: 100%;
+    opacity: 0.6;
+    padding-right: 0.7rem;
+    z-index: 1;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.admin-s-collapse__label:hover {
+    opacity: 0.4;
+}
+
+.admin-s-collapse__label:after {
+    content: '';
+    display: inline-block;
+    width: 0.6em;
+    height: 0.6em;
+    transform: translateY(-0.2em) rotate(-45deg);
+    border-left: 1px solid currentColor;
+    border-bottom: 1px solid currentColor;
+    margin-left: 0.1rem;
+}
+
+.admin-s-collapse__checkbox:checked ~ .admin-s-collapse {
+    max-height: var(--admin-s-collapse-height);
+}
+
+.admin-s-collapse__checkbox:checked ~ .admin-s-collapse__label {
+    display: none;
+}
