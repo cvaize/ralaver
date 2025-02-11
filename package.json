@@ -1,0 +1,26 @@
+{
+  "name": "video-hosting-admin-panel",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "bin": {
+    "build": "bin/build_resources.js"
+  },
+  "scripts": {
+    "build": "node bin/build_resources.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cvaize/video-hosting-admin-panel.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cvaize/video-hosting-admin-panel/issues"
+  },
+  "homepage": "https://github.com/cvaize/video-hosting-admin-panel#readme",
+  "dependencies": {
+    "@node-minify/clean-css": "^9.0.1",
+    "@node-minify/core": "^9.0.2"
+  }
+}

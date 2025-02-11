@@ -1,5 +1,11 @@
 use actix_web::{ Error, HttpResponse, Result };
 
+pub async fn app() -> Result<HttpResponse, Error> {
+    Ok(HttpResponse::Ok().content_type("text/css")
+        .insert_header(("content-encoding", "gzip"))
+        .body(RESOURCES_BUILD_APP_CSS_GZ))
+}
+
 pub async fn normalize() -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().content_type("text/css").body(RESOURCES_LIBRARIES_NORMALIZE_CSS))
 }
@@ -112,6 +118,7 @@ pub async fn dark_mode() -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().content_type("text/css").body(RESOURCES_COMPONENTS_DARK_MODE_CSS))
 }
 
+static RESOURCES_BUILD_APP_CSS_GZ: &'static [u8] = include_bytes!("../../../resources/build/app.min.css.gz");
 static RESOURCES_LIBRARIES_NORMALIZE_CSS: &str = include_str!("../../../resources/libraries/normalize/normalize.css");
 static RESOURCES_COMPONENTS_LAYOUT_CSS: &str = include_str!("../../../resources/components/layout/layout.css");
 static RESOURCES_COMPONENTS_SIDEBAR_CSS: &str = include_str!("../../../resources/components/sidebar/sidebar.css");

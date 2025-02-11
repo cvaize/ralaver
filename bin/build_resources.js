@@ -1,0 +1,77 @@
+const fs = require('fs');
+const zlib = require('zlib');
+const minify = require('@node-minify/core');
+const cleanCSS = require('@node-minify/clean-css');
+
+
+const styles = [
+    './resources/libraries/normalize/normalize.css',
+    './resources/libraries/fancybox/fancybox.css',
+    './resources/components/layout/layout.css',
+
+    './resources/components/accordion/accordion.css',
+    './resources/components/alert/alert.css',
+    './resources/components/b-checkbox/b-checkbox.css',
+    './resources/components/b-radio/b-radio.css',
+    './resources/components/b-tabs/b-tabs.css',
+    './resources/components/breadcrumb/breadcrumb.css',
+    './resources/components/btn/btn.css',
+    './resources/components/c-checkbox/c-checkbox.css',
+    './resources/components/c-radio/c-radio.css',
+    './resources/components/checkbox/checkbox.css',
+    './resources/components/collapse/collapse.css',
+    './resources/components/color-checkbox/color-checkbox.css',
+    './resources/components/d-block/d-block.css',
+    './resources/components/d-flex/d-flex.css',
+    './resources/components/d-inline-block/d-inline-block.css',
+    './resources/components/d-none/d-none.css',
+    './resources/components/dark-mode/dark-mode.css',
+    './resources/components/dropdown/dropdown.css',
+    './resources/components/field/field.css',
+    './resources/components/input/input.css',
+    './resources/components/layout/layout.css',
+    './resources/components/list-page/list-page.css',
+    './resources/components/login/login.css',
+    './resources/components/menu/menu.css',
+    './resources/components/modal/modal.css',
+    './resources/components/pagination/pagination.css',
+    './resources/components/radio/radio.css',
+    './resources/components/s-collapse/s-collapse.css',
+    './resources/components/search-group/search-group.css',
+    './resources/components/sidebar/sidebar.css',
+    './resources/components/table/table.css',
+    './resources/components/tabs/tabs.css',
+    './resources/components/tabs/tabs--menu-mod.css',
+    './resources/components/tabs/tabs--menu-mod-lg.css',
+    './resources/components/tabs/tabs--menu-mod-md.css',
+    './resources/components/tabs/tabs--menu-mod-sm.css',
+    './resources/components/tabs/tabs--menu-mod-xl.css',
+    './resources/components/tabs/tabs--menu-mod-xs.css',
+    './resources/components/tabs/tabs--menu-mod-xxl.css',
+    './resources/components/tag/tag.css',
+];
+
+async function run(){
+    let stylesContent = '';
+
+    for (const style of styles) {
+        stylesContent += fs.readFileSync(style);
+    }
+
+    fs.writeFileSync('./resources/build/app.css', stylesContent);
+
+    await minify({
+        compressor: cleanCSS,
+        input: './resources/build/app.css',
+        output: './resources/build/app.min.css'
+    });
+
+    stylesContent = fs.readFileSync('./resources/build/app.min.css');
+
+    stylesContent = zlib.gzipSync(stylesContent, {level: 9});
+
+    fs.writeFileSync('./resources/build/app.min.css.gz', stylesContent);
+
+}
+
+run();

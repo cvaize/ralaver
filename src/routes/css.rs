@@ -2,6 +2,7 @@ use actix_web::{web};
 use crate::app::controllers;
 
 pub fn register(cfg: &mut web::ServiceConfig) {
+    cfg.service(web::resource("/css/app.css").route(web::get().to(controllers::css::app)));
     cfg.service(web::resource("/css/libraries/normalize/normalize.css").route(web::get().to(controllers::css::normalize)));
     cfg.service(web::resource("/css/components/layout/layout.css").route(web::get().to(controllers::css::layout)));
     cfg.service(web::resource("/css/components/sidebar/sidebar.css").route(web::get().to(controllers::css::sidebar)));
