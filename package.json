@@ -1,5 +1,5 @@
 {
-  "name": "video-hosting-admin-panel",
+  "name": "rust-admin-panel",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cvaize/video-hosting-admin-panel.git"
+    "url": "git+https://github.com/cvaize/rust-admin-panel.git"
   },
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/cvaize/video-hosting-admin-panel/issues"
+    "url": "https://github.com/cvaize/rust-admin-panel/issues"
   },
-  "homepage": "https://github.com/cvaize/video-hosting-admin-panel#readme",
+  "homepage": "https://github.com/cvaize/rust-admin-panel#readme",
   "dependencies": {
     "@node-minify/clean-css": "^9.0.1",
     "@node-minify/core": "^9.0.2",

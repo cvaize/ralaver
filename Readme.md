@@ -1,4 +1,4 @@
-# Video hosting admin panel [In process]
+# Rust admin panel [In process]
 
 План разработки:
 1) Исследование общепринятых правил построения сайтов на actix (в случае отсутсвия конкретных исчерпывающих подходов будет принят подход Laravel);
