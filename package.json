@@ -21,6 +21,7 @@
   "homepage": "https://github.com/cvaize/video-hosting-admin-panel#readme",
   "dependencies": {
     "@node-minify/clean-css": "^9.0.1",
-    "@node-minify/core": "^9.0.2"
+    "@node-minify/core": "^9.0.2",
+    "@node-minify/uglify-js": "^9.0.1"
   }
 }

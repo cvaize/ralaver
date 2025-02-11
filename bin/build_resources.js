@@ -2,7 +2,7 @@ const fs = require('fs');
 const zlib = require('zlib');
 const minify = require('@node-minify/core');
 const cleanCSS = require('@node-minify/clean-css');
-
+const uglifyjs = require('@node-minify/uglify-js');
 
 const styles = [
     './resources/libraries/normalize/normalize.css',
@@ -51,14 +51,21 @@ const styles = [
     './resources/components/tag/tag.css',
 ];
 
-async function run(){
-    let stylesContent = '';
+const scripts = [
+    './resources/libraries/embla-carousel/embla-carousel.umd.js',
+    './resources/libraries/embla-carousel/embla-carousel-class-names.umd.js',
+    './resources/libraries/fancybox/fancybox.umd.js',
+    './resources/components/number-validate/number-validate.js',
+];
+
+async function runStyles(){
+    let content = '';
 
     for (const style of styles) {
-        stylesContent += fs.readFileSync(style);
+        content += fs.readFileSync(style);
     }
 
-    fs.writeFileSync('./resources/build/app.css', stylesContent);
+    fs.writeFileSync('./resources/build/app.css', content);
 
     await minify({
         compressor: cleanCSS,
@@ -66,12 +73,39 @@ async function run(){
         output: './resources/build/app.min.css'
     });
 
-    stylesContent = fs.readFileSync('./resources/build/app.min.css');
+    content = fs.readFileSync('./resources/build/app.min.css');
 
-    stylesContent = zlib.gzipSync(stylesContent, {level: 9});
+    content = zlib.gzipSync(content, {level: 9});
 
-    fs.writeFileSync('./resources/build/app.min.css.gz', stylesContent);
+    fs.writeFileSync('./resources/build/app.min.css.gz', content);
 
+}
+
+async function runScripts(){
+    let content = '';
+
+    for (const script of scripts) {
+        content += fs.readFileSync(script);
+    }
+
+    fs.writeFileSync('./resources/build/app.js', content);
+
+    await minify({
+        compressor: uglifyjs,
+        input: './resources/build/app.js',
+        output: './resources/build/app.min.js',
+    });
+
+    content = fs.readFileSync('./resources/build/app.min.js');
+
+    content = zlib.gzipSync(content, {level: 9});
+
+    fs.writeFileSync('./resources/build/app.min.js.gz', content);
+}
+
+async function run(){
+    await runStyles();
+    await runScripts();
 }
 
 run();
