@@ -8,6 +8,11 @@
 3) diesel_cli - is rust package
 
 ### Команды бекенда
+Перед запуском проекта создайте .env файл с переменными окружения из файла .env.example:
+```shell
+cp .env.example .env
+```
+
 Команда запуска среды разработки:
 ```shell
 docker compose -f dev.docker-compose.yaml up -d
