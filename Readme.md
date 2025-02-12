@@ -7,6 +7,7 @@
 2) nodejs:22.13.1
 3) diesel_cli - is rust package
 
+### Команды бекенда
 Команда запуска среды разработки:
 ```shell
 docker compose -f dev.docker-compose.yaml up -d
@@ -28,6 +29,7 @@ docker compose -f dev.docker-compose.yaml exec dev_tools bash
 docker compose -f dev.docker-compose.yaml down && docker compose -f dev.docker-compose.yaml up --build -d
 ```
 
+### Команды фронтенда
 Команда для установки зависимостей фронтенда:
 ```shell
 docker compose -f dev.docker-compose.yaml exec dev_tools npm i
@@ -43,11 +45,11 @@ docker compose -f dev.docker-compose.yaml exec dev_tools npm run build
 sudo chown -R $UID:$UID .
 ```
 
-План разработки:
+## План разработки:
 1) Исследование общепринятых правил построения сайтов на actix (в случае отсутсвия конкретных исчерпывающих подходов будет принят подход Laravel);
 2) Формирование базовой архитектуры и структуры каталогов;
 3) Реализация базового отображения шаблонов;
-4) Реализация базовых миграций и посева данных;
+4) -> Реализация базовых миграций и посева данных;
 5) Реализация базового хранилища;
 6) Реализация базовых логов;
 7) Реализация базовых конфигураций;
