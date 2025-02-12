@@ -1,3 +1,5 @@
+use dotenv::dotenv;
+
 use actix_web::web;
 use actix_web::middleware;
 use actix_web::App;
@@ -9,9 +11,11 @@ mod routes;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    dotenv().ok();
+
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    log::info!("starting HTTP server at http://localhost:8080");
+    log::info!("starting HTTP server at http://0.0.0.0:8080");
 
     HttpServer::new(|| {
         let tt = core::template::new();
@@ -21,7 +25,7 @@ async fn main() -> std::io::Result<()> {
             .configure(app::providers::routes::register)
             .app_data(web::Data::new(tt))
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(("0.0.0.0", 8080))?
     .run()
     .await
 }

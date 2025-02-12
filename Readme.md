@@ -1,5 +1,48 @@
 # Rust admin panel [In process]
 
+## Среда разработки
+
+Среда разработки состоит из:
+1) rust:1.82.0
+2) nodejs:22.13.1
+3) diesel_cli - is rust package
+
+Команда запуска среды разработки:
+```shell
+docker compose -f dev.docker-compose.yaml up -d
+```
+
+Команда остановки среды разработки:
+```shell
+docker compose -f dev.docker-compose.yaml down
+```
+
+Команда входа в среду разработки:
+```shell
+docker compose -f dev.docker-compose.yaml exec dev_tools bash
+```
+Эта команда будет полезна, например: для применения миграций.
+
+Команда перезапуска среды разработки вместе со сборкой исходников:
+```shell
+docker compose -f dev.docker-compose.yaml down && docker compose -f dev.docker-compose.yaml up --build -d
+```
+
+Команда для установки зависимостей фронтенда:
+```shell
+docker compose -f dev.docker-compose.yaml exec dev_tools npm i
+```
+
+Команда для сборки фронтенда (перед сборкой не забудьте установить зависимости):
+```shell
+docker compose -f dev.docker-compose.yaml exec dev_tools npm run build
+```
+
+Команда для перезаписи root владельца файлов собранного фронтенда:
+```shell
+sudo chown -R $UID:$UID .
+```
+
 План разработки:
 1) Исследование общепринятых правил построения сайтов на actix (в случае отсутсвия конкретных исчерпывающих подходов будет принят подход Laravel);
 2) Формирование базовой архитектуры и структуры каталогов;
