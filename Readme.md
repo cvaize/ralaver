@@ -29,6 +29,34 @@ docker compose -f dev.docker-compose.yaml exec dev_tools bash
 docker compose -f dev.docker-compose.yaml down && docker compose -f dev.docker-compose.yaml up --build -d
 ```
 
+#### Миграции базы данных
+Команда запуска миграций:
+```shell
+diesel migration run
+```
+```shell
+docker compose -f dev.docker-compose.yaml exec dev_tools diesel migration run
+```
+
+Команда отката миграций:
+```shell
+diesel migration revert
+```
+```shell
+docker compose -f dev.docker-compose.yaml exec dev_tools diesel migration revert
+```
+
+Команда создания миграций:
+```shell
+diesel migration generate create_users
+```
+```shell
+docker compose -f dev.docker-compose.yaml exec dev_tools diesel migration generate create_users
+```
+
+
+
+
 ### Команды фронтенда
 Команда для установки зависимостей фронтенда:
 ```shell
@@ -40,7 +68,7 @@ docker compose -f dev.docker-compose.yaml exec dev_tools npm i
 docker compose -f dev.docker-compose.yaml exec dev_tools npm run build
 ```
 
-Команда для перезаписи root владельца файлов собранного фронтенда:
+Команда для перезаписи root владельца файлов:
 ```shell
 sudo chown -R $UID:$UID .
 ```
