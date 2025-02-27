@@ -1,3 +1,9 @@
+mod app;
+mod core;
+mod routes;
+mod db_connection;
+mod schema;
+
 use dotenv::dotenv;
 use std::env;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
@@ -6,11 +12,6 @@ use actix_web::web;
 use actix_web::middleware;
 use actix_web::App;
 use actix_web::HttpServer;
-
-mod app;
-mod core;
-mod routes;
-mod db_connection;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations/");
 
