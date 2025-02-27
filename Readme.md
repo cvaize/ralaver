@@ -34,6 +34,11 @@ docker compose -f dev.docker-compose.yaml exec dev_tools bash
 docker compose -f dev.docker-compose.yaml down && docker compose -f dev.docker-compose.yaml up --build -d
 ```
 
+Команда запуска приложения в среде разработки:
+```shell
+docker compose -f dev.docker-compose.yaml exec dev_tools cargo run
+```
+
 #### Миграции базы данных
 Команда запуска миграций:
 ```shell
