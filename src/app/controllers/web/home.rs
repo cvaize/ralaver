@@ -1,11 +1,12 @@
-use crate::app::models::user::User;
+use crate::app::models::user::{PublicUser, User};
 use crate::db_connection::DbPool;
-use crate::schema::users::dsl::users;
 use actix_web::{error, web, Error, HttpResponse, Result};
-use diesel::RunQueryDsl;
-use serde_json::json;
+use serde_json::Value::Null;
+use serde_json::{json, Value};
 use std::collections::HashMap;
+use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use tinytemplate::TinyTemplate;
+use crate::schema::users as users_schema;
 
 pub async fn index(
     db_pool: web::Data<DbPool>,
@@ -14,34 +15,33 @@ pub async fn index(
 ) -> Result<HttpResponse, Error> {
     let mut connection = db_pool.get().unwrap();
 
-    let results: Vec<User> = users
+    let results: Vec<User> = users_schema::dsl::users
+        .select(User::as_select())
+        .limit(1)
         .load::<User>(&mut connection)
         .expect("Users load failed.");
-    let default_user = User {
-        id: 0,
-        username: "Null".to_string(),
-        password: None,
+
+    let result: Option<&User> = results.get(0);
+
+    let user: Option<PublicUser> = match result {
+        Some(user) => Some(user.to_public_user()),
+        _ => None
     };
-    let user = &results.get(0).unwrap_or(&default_user);
+
+    let user: Value = serde_json::to_value(&user).unwrap_or(Null);
 
     let s = if let Some(name) = query.get("name") {
         // submitted form
         let ctx = json!({
           "name" : name.to_owned(),
           "text" : "Welcome!".to_owned(),
-          "user" : {
-                "id": &user.id,
-                "username": &user.username,
-            }
+          "user" : user
         });
         tmpl.render("pages.home.user", &ctx)
             .map_err(|_| error::ErrorInternalServerError("Template error"))?
     } else {
         let ctx = json!({
-          "user" : {
-                "id": &user.id,
-                "username": &user.username,
-            }
+          "user" : user
         });
         // tmpl.render("pages.home.index", &serde_json::Value::Null)
         tmpl.render("pages.home.index", &ctx)

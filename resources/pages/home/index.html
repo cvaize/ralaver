@@ -220,7 +220,11 @@
 
     <h1>Панель управления</h1>
 
+    {{ if user }}
     <h1>Привет, ID:{user.id} {user.username}!</h1>
+    {{ else }}
+    <h1>Привет, незнакомец!</h1>
+    {{ endif }}
   </div>
 </main>
 </body>
