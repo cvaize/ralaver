@@ -12,6 +12,8 @@ use actix_web::web;
 use actix_web::middleware;
 use actix_web::App;
 use actix_web::HttpServer;
+use actix_session::{SessionMiddleware, storage::RedisSessionStore};
+use actix_web::cookie::Key;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations/");
 
@@ -21,28 +23,35 @@ async fn main() -> std::io::Result<()> {
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    let mut app_addr: String = env::var("FORWARD_APP_ADDR").unwrap_or("0.0.0.0".to_string()).to_owned();
-    let app_port: String = env::var("FORWARD_APP_PORT").unwrap_or("8080".to_string());
-
-    app_addr.push_str(":");
-    app_addr.push_str(&app_port);
-
     let db_pool = web::Data::new(db_connection::get_connection_pool());
     let mut connection = db_pool.get().unwrap();
     let _ = connection.run_pending_migrations(MIGRATIONS);
 
-    log::info!("Starting HTTP server at http://{:}", app_addr);
+    let redis_url: String = env::var("REDIS_URL").unwrap_or("redis://redis:6379".to_string());
+    let redis_secret: String = env::var("REDIS_SECRET").unwrap_or("redis_secret".to_string());
+    let redis_secret = Key::from(redis_secret.as_bytes());
+    let redis_store = RedisSessionStore::new(redis_url)
+        .await
+        .unwrap();
+
+    log::info!("Starting HTTP server at http://0.0.0.0:8080");
 
     HttpServer::new(move || {
         let tt = core::template::new();
 
         App::new()
+            .wrap(
+                SessionMiddleware::new(
+                    redis_store.clone(),
+                    redis_secret.clone(),
+                )
+            )
             .wrap(middleware::Logger::default())
             .app_data(db_pool.clone())
             .configure(app::providers::routes::register)
             .app_data(web::Data::new(tt))
     })
-    .bind(app_addr)?
+    .bind("0.0.0.0:8080")?
     .run()
     .await
 }

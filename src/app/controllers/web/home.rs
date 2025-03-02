@@ -4,15 +4,26 @@ use actix_web::{error, web, Error, HttpResponse, Result};
 use serde_json::Value::Null;
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use actix_session::Session;
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use tinytemplate::TinyTemplate;
 use crate::schema::users as users_schema;
 
 pub async fn index(
+    session: Session,
     db_pool: web::Data<DbPool>,
     tmpl: web::Data<TinyTemplate<'_>>,
     query: web::Query<HashMap<String, String>>,
 ) -> Result<HttpResponse, Error> {
+    // TODO: https://github.com/actix/actix-extras/blob/master/actix-session/examples/authentication.rs
+    if let Some(count) = session.get::<i32>("counter")? {
+        println!("SESSION value: {}", count);
+        // modify the session state
+        session.insert("counter", count + 1)?;
+    } else {
+        session.insert("counter", 1)?;
+    }
+
     let mut connection = db_pool.get().unwrap();
 
     let results: Vec<User> = users_schema::dsl::users
