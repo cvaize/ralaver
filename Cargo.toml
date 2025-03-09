@@ -16,3 +16,5 @@ serde_json = "1.0.138"
 tinytemplate = "1.2.1"
 serde = { version = "1.0.217", features = ["derive"] }
 actix-session = { version = "0.10.1", features = ["redis-session"] }
+garde = { version = "0.22.0", features = ["full"] }
+serde_derive = "1.0.218"
