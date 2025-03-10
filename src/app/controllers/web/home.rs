@@ -6,13 +6,13 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use actix_session::Session;
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
-use tinytemplate::TinyTemplate;
+use handlebars::Handlebars;
 use crate::schema::users as users_schema;
 
 pub async fn index(
     session: Session,
     db_pool: web::Data<DbPool>,
-    tmpl: web::Data<TinyTemplate<'_>>,
+    tmpl: web::Data<Handlebars<'_>>,
     query: web::Query<HashMap<String, String>>,
 ) -> Result<HttpResponse, Error> {
     // TODO: https://github.com/actix/actix-extras/blob/master/actix-session/examples/authentication.rs
@@ -48,15 +48,17 @@ pub async fn index(
           "text" : "Welcome!".to_owned(),
           "user" : user
         });
-        tmpl.render("pages.home.user", &ctx)
+        // tmpl.render("pages/home/user.html", &ctx)
+        //     .map_err(|_| error::ErrorInternalServerError("Template error"))?
+        tmpl.render("pages/home/user.hbs", &ctx)
             .map_err(|_| error::ErrorInternalServerError("Template error"))?
     } else {
         let ctx = json!({
           "user" : user
         });
-        // tmpl.render("pages.home.index", &serde_json::Value::Null)
-        tmpl.render("pages.home.index", &ctx)
-            .map_err(|_| error::ErrorInternalServerError("Template error"))?
+        // tmpl.render("pages/home/index.html", &serde_json::Value::Null)
+        tmpl.render("pages/home/index.hbs", &ctx)
+        .map_err(|_| error::ErrorInternalServerError("Template error"))?
     };
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }

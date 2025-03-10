@@ -3,9 +3,9 @@ use std::ops::Deref;
 // use actix_session::Session;
 use actix_web::{error, web, Error, HttpResponse, Result};
 use garde::Validate;
+use handlebars::Handlebars;
 use serde_json::json;
 use serde_json::Value::Null;
-use tinytemplate::TinyTemplate;
 use serde_derive::Deserialize;
 // use crate::db_connection::DbPool;
 
@@ -17,18 +17,18 @@ pub struct SignInData {
     password: Option<String>,
 }
 
-pub async fn show(tmpl: web::Data<TinyTemplate<'_>>) -> Result<HttpResponse, Error> {
+pub async fn show(tmpl: web::Data<Handlebars<'_>>) -> Result<HttpResponse, Error> {
     let ctx = json!({
        "error" : &Null,
     });
     let s = tmpl
-        .render("pages.auth.login", &ctx)
+        .render("pages/auth/login.hbs", &ctx)
         .map_err(|_| error::ErrorInternalServerError("Template error"))?;
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }
 
 pub async fn sign_in(
-    tmpl: web::Data<TinyTemplate<'_>>,
+    tmpl: web::Data<Handlebars<'_>>,
     data: web::Form<SignInData>,
 ) -> Result<HttpResponse, Error> {
 
@@ -38,13 +38,13 @@ pub async fn sign_in(
         let ctx = json!({
           "error" : "Ошибка".to_owned(),
         });
-        tmpl.render("pages.auth.login", &ctx)
+        tmpl.render("pages/auth/login.hbs", &ctx)
             .map_err(|_| error::ErrorInternalServerError("Template error"))?
     } else {
         let ctx = json!({
            "error" : &Null,
         });
-        tmpl.render("pages.auth.login", &ctx)
+        tmpl.render("pages/auth/login.hbs", &ctx)
             .map_err(|_| error::ErrorInternalServerError("Template error"))?
     };
 

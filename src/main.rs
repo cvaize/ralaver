@@ -1,8 +1,8 @@
 mod app;
-mod core;
 mod routes;
 mod db_connection;
 mod schema;
+mod config;
 
 use dotenv::dotenv;
 use std::env;
@@ -33,12 +33,11 @@ async fn main() -> std::io::Result<()> {
     let redis_store = RedisSessionStore::new(redis_url)
         .await
         .unwrap();
+    // let tt = core::template::new();
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 
     HttpServer::new(move || {
-        let tt = core::template::new();
-
         App::new()
             .wrap(
                 SessionMiddleware::new(
@@ -47,9 +46,11 @@ async fn main() -> std::io::Result<()> {
                 )
             )
             .wrap(middleware::Logger::default())
+            .configure(app::providers::config::register)
             .app_data(db_pool.clone())
             .configure(app::providers::routes::register)
-            .app_data(web::Data::new(tt))
+            .configure(app::providers::template::register)
+            // .app_data(web::Data::new(tt))
     })
     .bind("0.0.0.0:8080")?
     .run()

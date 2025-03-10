@@ -5,7 +5,7 @@ use actix_web::http::header::ContentType;
 use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse};
 use actix_web::middleware::{ErrorHandlerResponse, ErrorHandlers};
-use tinytemplate::TinyTemplate;
+use handlebars::Handlebars;
 
 // Custom error handlers, to return HTML responses when an error occurs.
 pub fn error_handlers() -> ErrorHandlers<BoxBody> {
@@ -33,15 +33,15 @@ fn get_error_response<B>(res: &ServiceResponse<B>, error: &str) -> HttpResponse 
             .body(err.to_string())
     };
 
-    let tt = request
-        .app_data::<web::Data<TinyTemplate<'_>>>()
+    let tmpl = request
+        .app_data::<web::Data<Handlebars<'_>>>()
         .map(|t| t.get_ref());
-    match tt {
-        Some(tt) => {
+    match tmpl {
+        Some(tmpl) => {
             let mut context = HashMap::new();
             context.insert("error", error.to_owned());
             context.insert("status_code", res.status().as_str().to_owned());
-            let body = tt.render("pages.error.default", &context);
+            let body = tmpl.render("pages/error/default.hbs", &context);
 
             match body {
                 Ok(body) => HttpResponse::build(res.status())
