@@ -30,20 +30,26 @@
             <div class="admin-container admin-login__container">
                 <form action="/login" method="post" class="admin-login__card">
                     <h1 class="admin-login__header">Вход</h1>
-                    <label class="admin-login__field admin-field">
+                    <label class="admin-login__field admin-field {{#if errors.username}}admin-danger{{/if}}">
                         <span class="admin-field__text">Логин</span>
                         <input class="admin-login__field__input admin-field__input" type="text" name="username">
+                        {{#if errors.username}}
+                            <span class="admin-text--mini admin-text--danger">{{errors.username}}</span>
+                        {{/if}}
                     </label>
-                    <label class="admin-login__field admin-field">
+                    <label class="admin-login__field admin-field {{#if errors.username}}admin-danger{{/if}}">
                         <span class="admin-field__text">Пароль</span>
                         <input class="admin-login__field__input admin-field__input" type="password" name="password">
+                        {{#if errors.password}}
+                            <span class="admin-text--mini admin-text--danger">{{errors.password}}</span>
+                        {{/if}}
                     </label>
                     <div class="admin-login__nav">
                         <a href="/forgot-password" class="admin-login__forgot-link">Сбросить пароль?</a>
                         <a href="/register" class="admin-login__register-link">Зарегистрироваться</a>
                     </div>
                     {{#if error}}
-                    <p>{{error}}</p>
+                        <div class="admin-text--danger" style="margin: 0.5rem 0;">{{error}}</div>
                     {{/if}}
                     <button type="submit" class="admin-btn admin-login__submit">Войти</button>
                 </form>

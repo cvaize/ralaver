@@ -1,14 +1,25 @@
 use actix_web::web;
 use handlebars::Handlebars;
-use std::fs;
+use std::{env, fs};
 use std::io;
 use std::path::{Path, PathBuf};
 
 pub fn register(cfg: &mut web::ServiceConfig) {
+    let tmpl: Handlebars = make();
+
+    cfg.app_data(web::Data::new(tmpl));
+}
+
+pub fn make() -> Handlebars<'static> {
     let mut tmpl: Handlebars = Handlebars::new();
 
+    let mut handlebars_dir = env::current_dir().unwrap();
+    handlebars_dir.push(Path::new("resources/handlebars"));
+    let str_handlebars_dir = handlebars_dir.to_owned();
+    let str_handlebars_dir = str_handlebars_dir.to_str().unwrap();
+
     let collect_paths: Vec<PathBuf> =
-        collect_files_from_dir(Path::new("./resources/handlebars")).unwrap();
+        collect_files_from_dir(handlebars_dir.as_path()).unwrap();
     let paths: Vec<&PathBuf> = collect_paths
         .iter()
         .filter(|&p| {
@@ -20,14 +31,20 @@ pub fn register(cfg: &mut web::ServiceConfig) {
 
     for path in paths {
         let str_path = path.to_str().unwrap();
-        let name = str_path.replace("./resources/handlebars/", "");
-        let content = fs::read_to_string(str_path).unwrap();
+        let replace_str = format!("{}/", str_handlebars_dir);
+        let replace_str = replace_str.as_str();
+        let name = str_path.replace(replace_str, "");
 
-        tmpl.register_template_string(name.as_str(), content)
-            .unwrap();
+        // Register_template_string
+        // let content = fs::read_to_string(str_path).unwrap();
+        // tmpl.register_template_string(name.as_str(), content)
+        //     .unwrap();
+
+        // Register_template_file
+        tmpl.register_template_file(name.as_str(), path).unwrap();
     }
 
-    cfg.app_data(web::Data::new(tmpl));
+    tmpl
 }
 
 fn collect_files_from_dir(dir: &Path) -> io::Result<Vec<PathBuf>> {

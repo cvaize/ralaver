@@ -28,22 +28,34 @@
             <div class="admin-container admin-login__container">
                 <form action="/register" method="post" class="admin-login__card">
                     <h1 class="admin-login__header">Регистрация</h1>
-                    <label class="admin-login__field admin-field">
-                        <span class="admin-field__text">Логин</span>
-                        <input class="admin-login__field__input admin-field__input" type="text" name="username">
+                    <label class="admin-login__field admin-field {{#if errors.email}}admin-danger{{/if}}">
+                        <span class="admin-field__text">E-mail</span>
+                        <input class="admin-login__field__input admin-field__input" type="text" name="email">
+                        {{#if errors.email}}
+                            <span class="admin-text--mini admin-text--danger">{{errors.email}}</span>
+                        {{/if}}
                     </label>
-                    <label class="admin-login__field admin-field">
+                    <label class="admin-login__field admin-field {{#if errors.password}}admin-danger{{/if}}">
                         <span class="admin-field__text">Пароль</span>
                         <input class="admin-login__field__input admin-field__input" type="password" name="password">
+                        {{#if errors.password}}
+                            <span class="admin-text--mini admin-text--danger">{{errors.password}}</span>
+                        {{/if}}
                     </label>
-                    <label class="admin-login__field admin-field">
+                    <label class="admin-login__field admin-field {{#if errors.confirm_password}}admin-danger{{/if}}">
                         <span class="admin-field__text">Повторите пароль</span>
                         <input class="admin-login__field__input admin-field__input" type="password" name="confirm_password">
+                        {{#if errors.confirm_password}}
+                            <span class="admin-text--mini admin-text--danger">{{errors.confirm_password}}</span>
+                        {{/if}}
                     </label>
                     <div class="admin-login__nav">
                         <a href="/forgot-password" class="admin-login__forgot-link">Сбросить пароль?</a>
                         <a href="/login" class="admin-login__register-link">Войти</a>
                     </div>
+                    {{#if error}}
+                        <div class="admin-text--danger" style="margin: 0.5rem 0;">{{error}}</div>
+                    {{/if}}
                     <button type="submit" class="admin-btn admin-login__submit">Зарегистрироваться</button>
                 </form>
             </div>
