@@ -1,7 +1,11 @@
 use crate::adapters::garde::GardeReportAdapter;
+// use crate::app::models::user::{PublicUser, User};
+use crate::app::services::auth::{Auth, Credentials};
+use crate::db_connection::DbPool;
 use actix_session::Session;
 use actix_web::web::Redirect;
 use actix_web::{error, web, Error, HttpResponse, Responder, Result};
+// use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use garde::Validate;
 use handlebars::Handlebars;
 use serde_derive::{Deserialize, Serialize};
@@ -9,27 +13,11 @@ use serde_json::json;
 use std::collections::HashMap;
 use std::ops::Deref;
 
-#[derive(Validate, Deserialize, Debug)]
-pub struct SignInData {
-    #[garde(required, inner(length(min = 1, max = 255)))]
-    username: Option<String>,
-    #[garde(required, inner(length(min = 1, max = 255)))]
-    password: Option<String>,
-}
-
 #[derive(Serialize, Deserialize, Debug)]
 struct FlashData {
+    success: Option<String>,
     error: Option<String>,
     errors: Option<HashMap<String, String>>,
-}
-
-impl FlashData {
-    pub fn empty() -> Self {
-        Self {
-            error: None,
-            errors: None,
-        }
-    }
 }
 
 static FLASH_DATA_KEY: &str = "app.sign_in.flash_data";
@@ -54,30 +42,76 @@ pub async fn show(
 
     let s = tmpl
         .render("pages/auth/login.hbs", &ctx)
-        .map_err(|e| error::ErrorInternalServerError("Template error"))?;
+        .map_err(|_| error::ErrorInternalServerError("Template error"))?;
     session.remove(FLASH_DATA_KEY);
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }
 
 pub async fn sign_in(
     session: Session,
-    data: web::Form<SignInData>,
+    data: web::Form<Credentials>,
+    db_pool: web::Data<DbPool>,
 ) -> Result<impl Responder, Error> {
     let ctx;
+    let mut is_redirect_login = true;
     if let Err(report) = data.deref().validate() {
         let report_adapter = GardeReportAdapter::new(&report);
         let errors = report_adapter.to_hash_map();
 
-        ctx = FlashData {
-            error: Some("Ошибка валидации".to_string()),
-            errors: Some(errors),
-        };
+        ctx = FlashData::errors(Some(errors));
     } else {
-        ctx = FlashData::empty();
-        // TODO: Auth
+        let auth_result = Auth::authenticate(&db_pool, data.deref());
+
+        ctx = match auth_result {
+            Ok(user_id) => match Auth::insert_user_id_into_session(&session, user_id) {
+                Ok(()) => {
+                    is_redirect_login = false;
+                    FlashData::success(Some("Авторизация успешно пройдена.".to_string()))
+                }
+                _ => FlashData::error(Some("Авторизация не пройдена.".to_string())),
+            },
+            _ => FlashData::error(Some("Авторизация не пройдена.".to_string())),
+        };
     };
     let json = serde_json::to_string(&ctx)?;
-    session.insert(FLASH_DATA_KEY, json)?;
+    session
+        .insert(FLASH_DATA_KEY, json)
+        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
-    Ok(Redirect::to("/login").see_other())
+    if is_redirect_login {
+        Ok(Redirect::to("/login").see_other())
+    } else {
+        Ok(Redirect::to("/").see_other())
+    }
+}
+
+impl FlashData {
+    pub fn empty() -> Self {
+        Self {
+            success: None,
+            error: None,
+            errors: None,
+        }
+    }
+    pub fn success(success: Option<String>) -> Self {
+        Self {
+            success,
+            error: None,
+            errors: None,
+        }
+    }
+    pub fn error(error: Option<String>) -> Self {
+        Self {
+            success: None,
+            error,
+            errors: None,
+        }
+    }
+    pub fn errors(errors: Option<HashMap<String, String>>) -> Self {
+        Self {
+            success: None,
+            error: None,
+            errors,
+        }
+    }
 }

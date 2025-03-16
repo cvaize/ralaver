@@ -30,14 +30,14 @@
             <div class="admin-container admin-login__container">
                 <form action="/login" method="post" class="admin-login__card">
                     <h1 class="admin-login__header">Вход</h1>
-                    <label class="admin-login__field admin-field {{#if errors.username}}admin-danger{{/if}}">
+                    <label class="admin-login__field admin-field {{#if errors.email}}admin-danger{{/if}}">
                         <span class="admin-field__text">Логин</span>
-                        <input class="admin-login__field__input admin-field__input" type="text" name="username">
-                        {{#if errors.username}}
-                            <span class="admin-text--mini admin-text--danger">{{errors.username}}</span>
+                        <input class="admin-login__field__input admin-field__input" type="text" name="email">
+                        {{#if errors.email}}
+                            <span class="admin-text--mini admin-text--danger">{{errors.email}}</span>
                         {{/if}}
                     </label>
-                    <label class="admin-login__field admin-field {{#if errors.username}}admin-danger{{/if}}">
+                    <label class="admin-login__field admin-field {{#if errors.email}}admin-danger{{/if}}">
                         <span class="admin-field__text">Пароль</span>
                         <input class="admin-login__field__input admin-field__input" type="password" name="password">
                         {{#if errors.password}}

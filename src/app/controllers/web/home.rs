@@ -7,7 +7,6 @@ use std::collections::HashMap;
 use actix_session::Session;
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use handlebars::Handlebars;
-use crate::schema::users as users_schema;
 
 pub async fn index(
     session: Session,
@@ -24,9 +23,10 @@ pub async fn index(
         session.insert("counter", 1)?;
     }
 
-    let mut connection = db_pool.get().unwrap();
+    let mut connection = db_pool.get()
+        .map_err(|_| error::ErrorInternalServerError("Db error"))?;
 
-    let results: Vec<User> = users_schema::dsl::users
+    let results: Vec<User> = crate::schema::users::dsl::users
         .select(User::as_select())
         .limit(1)
         .load::<User>(&mut connection)

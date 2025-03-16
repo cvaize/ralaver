@@ -15,7 +15,7 @@ use actix_web::middleware;
 use actix_web::web;
 use actix_web::App;
 use actix_web::HttpServer;
-use garde::Report;
+// use garde::Report;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations/");
 

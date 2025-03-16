@@ -99,3 +99,30 @@ sudo chown -R $UID:$UID .
 13) Реализация управления пользователями;
 14) Формирование отдельного репозитория для будущего переиспользования;
 15) Реализация бизнес логики.
+
+## Заметки:
+
+Если возникает ошибка diesel: 
+`No function or associated item "as_select" found in the current scope for struct "User"` и подобные, 
+то нужно подключить методы `use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};`. Например:
+```rust
+use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
+
+fn run(){
+    let mut connection = db_pool.get()
+        .map_err(|_| error::ErrorInternalServerError("Db error"))?;
+
+    let results: Vec<User> = crate::schema::users::dsl::users
+        .select(User::as_select())
+        .limit(1)
+        .load::<User>(&mut connection)
+        .map_err(|_| error::ErrorInternalServerError("Users load failed."))?;
+
+    let result: Option<&User> = results.get(0);
+
+    let user: Option<PublicUser> = match result {
+        Some(user) => Some(user.to_public_user()),
+        _ => None
+    };
+}
+```

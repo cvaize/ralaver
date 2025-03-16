@@ -7,7 +7,7 @@ use serde::Serialize;
 #[derive(Debug, Default, Serialize)]
 pub struct User {
     pub id: u64,
-    pub username: String,
+    pub email: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<String>,
 }
@@ -18,14 +18,14 @@ pub struct User {
 #[derive(Debug, Default, Serialize)]
 pub struct PublicUser {
     pub id: u64,
-    pub username: String,
+    pub email: String,
 }
 
 impl User {
     pub fn to_public_user(&self) -> PublicUser {
         PublicUser {
             id: self.id,
-            username: self.username.clone(),
+            email: self.email.clone(),
         }
     }
 }

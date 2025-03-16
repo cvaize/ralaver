@@ -220,8 +220,8 @@
 
     <h1>Панель управления</h1>
 
-    {{#if user}}
-    <h1>Привет, ID:{{user.id}} {{user.username}}!</h1>
+    {{#if user and user.id and user.email}}
+    <h1>Привет, ID:{{user.id}} {{user.email}}!</h1>
     {{else}}
     <h1>Привет, незнакомец!</h1>
     {{/if}}
