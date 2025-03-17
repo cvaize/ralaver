@@ -1,4 +1,4 @@
-use crate::app::models::user::{PublicUser, User};
+use crate::app::models::user::{User};
 use crate::db_connection::DbPool;
 use actix_web::{error, web, Error, HttpResponse, Result};
 use serde_json::Value::Null;
@@ -32,12 +32,7 @@ pub async fn index(
         .load::<User>(&mut connection)
         .expect("Users load failed.");
 
-    let result: Option<&User> = results.get(0);
-
-    let user: Option<PublicUser> = match result {
-        Some(user) => Some(user.to_public_user()),
-        _ => None
-    };
+    let user: Option<&User> = results.get(0);
 
     let user: Value = serde_json::to_value(&user).unwrap_or(Null);
 

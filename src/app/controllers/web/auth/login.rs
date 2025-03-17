@@ -1,11 +1,9 @@
 use crate::adapters::garde::GardeReportAdapter;
-// use crate::app::models::user::{PublicUser, User};
 use crate::app::services::auth::{Auth, Credentials};
 use crate::db_connection::DbPool;
 use actix_session::Session;
 use actix_web::web::Redirect;
 use actix_web::{error, web, Error, HttpResponse, Responder, Result};
-// use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use garde::Validate;
 use handlebars::Handlebars;
 use serde_derive::{Deserialize, Serialize};
