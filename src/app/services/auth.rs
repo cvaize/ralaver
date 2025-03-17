@@ -52,6 +52,7 @@ impl Auth {
             Some(user) => match &user.password {
                 Some(user_password) => match &data.password {
                     Some(data_password) => {
+                        // TODO: Реализовать проверку пароля
                         if user_password.trim() == data_password.trim() {
                             Some(user)
                         } else {
