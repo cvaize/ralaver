@@ -54,13 +54,14 @@ pub async fn sign_in(
 ) -> Result<impl Responder, Error> {
     let ctx;
     let mut is_redirect_login = true;
-    if let Err(report) = data.deref().validate() {
+    let credentials = data.deref();
+    if let Err(report) = credentials.validate() {
         let report_adapter = GardeReportAdapter::new(&report);
         let errors = report_adapter.to_hash_map();
 
         ctx = FlashData::errors(Some(errors));
     } else {
-        let auth_result = Auth::authenticate(&db_pool, data.deref());
+        let auth_result = Auth::authenticate(&db_pool, credentials);
 
         ctx = match auth_result {
             Ok(user_id) => match Auth::insert_user_id_into_session(&session, user_id) {

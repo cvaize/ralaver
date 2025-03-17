@@ -1,8 +1,9 @@
+use std::ops::Deref;
 use crate::app::models::user::User;
 use crate::db_connection::DbPool;
 use actix_session::{Session, SessionGetError, SessionInsertError};
 use actix_web::{error, Error};
-use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
+use diesel::{QueryDsl, RunQueryDsl, SelectableHelper, ExpressionMethods};
 use garde::Validate;
 use serde_derive::Deserialize;
 
@@ -31,11 +32,14 @@ impl Auth {
 
     /// Search for a user by the provided credentials and return his id.
     pub fn authenticate(db_pool: &DbPool, data: &Credentials) -> Result<u64, Error> {
+        let data_email = data.email.to_owned().unwrap_or("none".to_string());
+
         let mut connection = db_pool
             .get()
             .map_err(|_| error::ErrorInternalServerError("User is not authorized"))?;
 
         let results: Vec<User> = crate::schema::users::dsl::users
+            .filter(crate::schema::users::email.eq(data_email))
             .select(User::as_select())
             .limit(1)
             .load::<User>(&mut connection)
