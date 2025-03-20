@@ -1,3 +1,16 @@
-<div class="admin-alert admin-success" role="alert">
-    A simple success alert—check it out!
+{{#if close}}
+    <input id="admin-alert__{{index}}" class="admin-alert__checkbox" type="checkbox" name="admin-alert__{{id}}" hidden checked>
+{{/if}}
+<div class="admin-alert
+{{#if type}}
+    {{#if (eq type "Info")}} admin-accent {{/if}}
+    {{#if (eq type "Warning")}} admin-warning {{/if}}
+    {{#if (eq type "Success")}} admin-success {{/if}}
+    {{#if (eq type "Error")}} admin-danger {{/if}}
+{{/if}}
+" role="alert" style="margin-bottom: 1rem;">
+    {{content}}
+    {{#if close}}
+        <label for="admin-alert__{{index}}" class="admin-alert__close" aria-label="Close"></label>
+    {{/if}}
 </div>

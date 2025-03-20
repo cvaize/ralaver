@@ -1,8 +1,10 @@
 <!doctype html>
-<html lang="en" class="admin-html">
+<html {{#if lang}}lang="{{lang}}"{{/if}} class="admin-html">
 <head>
     <meta charset="UTF-8">
-    <title>Admin front v1 template</title>
+    {{#if title}}
+        <title>{{title}}</title>
+    {{/if}}
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
@@ -28,30 +30,50 @@
     <div class="admin-content">
         <div class="admin-login">
             <div class="admin-container admin-login__container">
-                <form action="/login" method="post" class="admin-login__card">
-                    <h1 class="admin-login__header">Вход</h1>
-                    <label class="admin-login__field admin-field {{#if errors.email}}admin-danger{{/if}}">
-                        <span class="admin-field__text">Логин</span>
-                        <input class="admin-login__field__input admin-field__input" type="text" name="email">
-                        {{#if errors.email}}
-                            <span class="admin-text--mini admin-text--danger">{{errors.email}}</span>
-                        {{/if}}
-                    </label>
-                    <label class="admin-login__field admin-field {{#if errors.email}}admin-danger{{/if}}">
-                        <span class="admin-field__text">Пароль</span>
-                        <input class="admin-login__field__input admin-field__input" type="password" name="password">
-                        {{#if errors.password}}
-                            <span class="admin-text--mini admin-text--danger">{{errors.password}}</span>
-                        {{/if}}
-                    </label>
-                    <div class="admin-login__nav">
-                        <a href="/forgot-password" class="admin-login__forgot-link">Сбросить пароль?</a>
-                        <a href="/register" class="admin-login__register-link">Зарегистрироваться</a>
-                    </div>
-                    {{#if error}}
-                        <div class="admin-text--danger" style="margin: 0.5rem 0;">{{error}}</div>
+                {{#if alerts}}
+                    {{#each alerts}}
+                        {{> components/alert.hbs index=@index type=type content=content close=true }}
+                    {{/each}}
+                {{/if}}
+
+                <form class="admin-login__card"
+                    {{#if form.action}} action="{{form.action}}" {{/if}}
+                    {{#if form.method}} method="{{form.method}}" {{/if}}
+                >
+                    {{#if form.header}}
+                        <h1 class="admin-login__header">{{form.header}}</h1>
                     {{/if}}
-                    <button type="submit" class="admin-btn admin-login__submit">Войти</button>
+
+                    {{#if form.fields}}
+                        {{#each form.fields}}
+                            {{> components/field.hbs index=@index label=label type=type name=name value=value errors=errors }}
+                        {{/each}}
+                    {{/if}}
+
+                    {{#if form.forgot_password and form.register}}
+                        <div class="admin-login__nav">
+                            {{#if form.forgot_password}}
+                                <a href="{{form.forgot_password.href}}" class="admin-login__forgot-link">
+                                    {{form.forgot_password.label}}
+                                </a>
+                            {{/if}}
+                            {{#if form.register}}
+                                <a href="{{form.register.href}}" class="admin-login__register-link">
+                                    {{form.register.label}}
+                                </a>
+                            {{/if}}
+                        </div>
+                    {{/if}}
+
+                    {{#if form.errors}}
+                        {{#each form.errors}}
+                            <div class="admin-text--danger" style="margin: 0.5rem 0;">{{this}}</div>
+                        {{/each}}
+                    {{/if}}
+
+                    {{#if form.submit}}
+                        <button type="submit" class="admin-btn admin-login__submit">{{form.submit.label}}</button>
+                    {{/if}}
                 </form>
             </div>
         </div>

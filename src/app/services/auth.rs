@@ -1,12 +1,10 @@
 use crate::app::models::user::AuthUser;
 use crate::app::models::user::User;
 use crate::db_connection::DbPool;
-use actix_session::{Session};
+use actix_session::{Session, SessionGetError, SessionInsertError};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
 use garde::Validate;
-use serde::de::StdError;
 use serde_derive::Deserialize;
-use std::fmt;
 
 pub static AUTH_USER_ID_KEY: &str = "app.auth.user.id";
 
@@ -15,22 +13,22 @@ pub struct Auth;
 #[derive(Validate, Deserialize, Debug)]
 pub struct Credentials {
     #[garde(required, inner(length(min = 1, max = 255)))]
-    email: Option<String>,
+    pub email: Option<String>,
     #[garde(required, inner(length(min = 1, max = 255)))]
-    password: Option<String>,
+    pub password: Option<String>,
 }
 
 impl Auth {
     pub fn insert_user_id_into_session(
         session: &Session,
         user_id: u64,
-    ) -> Result<(), impl StdError + fmt::Display> {
+    ) -> Result<(), SessionInsertError> {
         session.insert(AUTH_USER_ID_KEY, user_id)
     }
 
     pub fn get_user_id_from_session(
         session: &Session,
-    ) -> Result<Option<u64>, impl StdError + fmt::Display> {
+    ) -> Result<Option<u64>, SessionGetError> {
         session.get::<u64>(AUTH_USER_ID_KEY)
     }
 

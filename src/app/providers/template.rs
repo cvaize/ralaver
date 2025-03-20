@@ -1,8 +1,9 @@
 use actix_web::web;
-use handlebars::Handlebars;
+use handlebars::{handlebars_helper, Handlebars};
 use std::{env, fs};
 use std::io;
 use std::path::{Path, PathBuf};
+use serde_json::{Value};
 
 pub fn register(cfg: &mut web::ServiceConfig) {
     let tmpl: Handlebars = make();
@@ -44,6 +45,8 @@ pub fn make() -> Handlebars<'static> {
         tmpl.register_template_file(name.as_str(), path).unwrap();
     }
 
+    tmpl.register_helper("eq", Box::new(eq));
+
     tmpl
 }
 
@@ -62,3 +65,5 @@ fn collect_files_from_dir(dir: &Path) -> io::Result<Vec<PathBuf>> {
     }
     Ok(result)
 }
+
+handlebars_helper!(eq: |*args| args[0].eq(args[1]));

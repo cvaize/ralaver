@@ -1,12 +1,13 @@
-use crate::app::models::user::{User};
+use crate::app::models::user::User;
+use crate::app::services::session::{SessionFlashData, SessionFlashService};
 use crate::db_connection::DbPool;
+use actix_session::Session;
 use actix_web::{error, web, Error, HttpResponse, Result};
+use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
+use handlebars::Handlebars;
 use serde_json::Value::Null;
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use actix_session::Session;
-use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
-use handlebars::Handlebars;
 
 pub async fn index(
     session: Session,
@@ -14,6 +15,11 @@ pub async fn index(
     tmpl: web::Data<Handlebars<'_>>,
     query: web::Query<HashMap<String, String>>,
 ) -> Result<HttpResponse, Error> {
+    let flash_data: SessionFlashData =
+        SessionFlashService::new(&session, None)
+            .read_and_forget()
+            .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+
     // TODO: https://github.com/actix/actix-extras/blob/master/actix-session/examples/authentication.rs
     if let Some(count) = session.get::<i32>("counter")? {
         println!("SESSION value: {}", count);
@@ -23,7 +29,8 @@ pub async fn index(
         session.insert("counter", 1)?;
     }
 
-    let mut connection = db_pool.get()
+    let mut connection = db_pool
+        .get()
         .map_err(|_| error::ErrorInternalServerError("Db error"))?;
 
     let results: Vec<User> = crate::schema::users::dsl::users
@@ -39,9 +46,10 @@ pub async fn index(
     let s = if let Some(name) = query.get("name") {
         // submitted form
         let ctx = json!({
-          "name" : name.to_owned(),
-          "text" : "Welcome!".to_owned(),
-          "user" : user
+            "name" : name.to_owned(),
+            "text" : "Welcome!".to_owned(),
+            "user" : user,
+            "alerts": flash_data.alerts
         });
         // tmpl.render("pages/home/user.html", &ctx)
         //     .map_err(|_| error::ErrorInternalServerError("Template error"))?
@@ -49,11 +57,12 @@ pub async fn index(
             .map_err(|_| error::ErrorInternalServerError("Template error"))?
     } else {
         let ctx = json!({
-          "user" : user
+            "user" : user,
+            "alerts": flash_data.alerts
         });
         // tmpl.render("pages/home/index.html", &serde_json::Value::Null)
         tmpl.render("pages/home/index.hbs", &ctx)
-        .map_err(|_| error::ErrorInternalServerError("Template error"))?
+            .map_err(|_| error::ErrorInternalServerError("Template error"))?
     };
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }
