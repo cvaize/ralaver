@@ -1,4 +1,6 @@
-use crate::app::services::auth::{Auth, Credentials};
+use crate::app::services::auth::{
+    Auth, Credentials, AUTHENTICATED_REDIRECT_TO, NOT_AUTHENTICATED_REDIRECT_TO,
+};
 use crate::app::services::session::{
     SessionFlashAlert, SessionFlashData, SessionFlashDataTrait, SessionFlashService,
 };
@@ -18,19 +20,26 @@ pub async fn show(
     session: Session,
     tmpl: web::Data<Handlebars<'_>>,
 ) -> Result<impl Responder, Error> {
-    let flash_data: SessionFlashData = SessionFlashService::new(&session, None)
-        .read_and_forget()
-        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+    let flash_data: SessionFlashData =
+        SessionFlashService::new(&session, None)
+            .read_and_forget()
+            .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
-    let login_flash_data: LoginSessionFlashData = SessionFlashService::new(&session, Some(FLASH_DATA_KEY))
-        .read_and_forget()
-        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+    let login_flash_data: LoginSessionFlashData =
+        SessionFlashService::new(&session, Some(FLASH_DATA_KEY))
+            .read_and_forget()
+            .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
     let login_flash_form = login_flash_data.form.unwrap_or(LoginFlashForm::empty());
-    let login_flash_form_fields = login_flash_form.fields.unwrap_or(LoginFlashFormFields::empty());
-    let login_flash_form_fields_email = login_flash_form_fields.email.unwrap_or(LoginFlashFormField::empty());
-    let login_flash_form_fields_password = login_flash_form_fields.password.unwrap_or(LoginFlashFormField::empty());
-
+    let login_flash_form_fields = login_flash_form
+        .fields
+        .unwrap_or(LoginFlashFormFields::empty());
+    let login_flash_form_fields_email = login_flash_form_fields
+        .email
+        .unwrap_or(LoginFlashFormField::empty());
+    let login_flash_form_fields_password = login_flash_form_fields
+        .password
+        .unwrap_or(LoginFlashFormField::empty());
 
     let ctx = json!({
         "title": "Вход - Admin panel",
@@ -103,11 +112,12 @@ pub async fn sign_in(
             }
         }
     } else {
-        let auth_result = Auth::authenticate(&db_pool, credentials);
+        let auth = Auth::new(&session, &db_pool);
+        let auth_result = auth.authenticate(credentials);
 
         match auth_result {
             Ok(user_id) => {
-                Auth::insert_user_id_into_session(&session, user_id)
+                auth.insert_user_id_into_session(user_id)
                     .map_err(|_| error::ErrorInternalServerError("Session error"))?;
                 is_redirect_login = false;
                 alerts.push(SessionFlashAlert::Success(
@@ -155,9 +165,9 @@ pub async fn sign_in(
         .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
     if is_redirect_login {
-        Ok(Redirect::to("/login").see_other())
+        Ok(Redirect::to(NOT_AUTHENTICATED_REDIRECT_TO).see_other())
     } else {
-        Ok(Redirect::to("/").see_other())
+        Ok(Redirect::to(AUTHENTICATED_REDIRECT_TO).see_other())
     }
 }
 
@@ -192,18 +202,27 @@ impl SessionFlashDataTrait for LoginSessionFlashData {
 
 impl LoginFlashForm {
     fn empty() -> Self {
-        Self { fields: None, errors: None }
+        Self {
+            fields: None,
+            errors: None,
+        }
     }
 }
 
 impl LoginFlashFormFields {
     fn empty() -> Self {
-        Self { email: None, password: None }
+        Self {
+            email: None,
+            password: None,
+        }
     }
 }
 
 impl LoginFlashFormField {
     fn empty() -> Self {
-        Self { value: None, errors: None }
+        Self {
+            value: None,
+            errors: None,
+        }
     }
 }

@@ -2,7 +2,7 @@ use crate::app::models::user::User;
 use crate::app::services::session::{SessionFlashData, SessionFlashService};
 use crate::db_connection::DbPool;
 use actix_session::Session;
-use actix_web::{error, web, Error, HttpResponse, Result};
+use actix_web::{error, web, Error, HttpResponse, Responder, Result};
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use handlebars::Handlebars;
 use serde_json::Value::Null;
@@ -14,7 +14,7 @@ pub async fn index(
     db_pool: web::Data<DbPool>,
     tmpl: web::Data<Handlebars<'_>>,
     query: web::Query<HashMap<String, String>>,
-) -> Result<HttpResponse, Error> {
+) -> Result<impl Responder, Error> {
     let flash_data: SessionFlashData =
         SessionFlashService::new(&session, None)
             .read_and_forget()

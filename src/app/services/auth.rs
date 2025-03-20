@@ -6,9 +6,14 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
 use garde::Validate;
 use serde_derive::Deserialize;
 
-pub static AUTH_USER_ID_KEY: &str = "app.auth.user.id";
+static USER_ID_KEY: &str = "app.auth.user.id";
+pub static AUTHENTICATED_REDIRECT_TO: &str = "/";
+pub static NOT_AUTHENTICATED_REDIRECT_TO: &str = "/login";
 
-pub struct Auth;
+pub struct Auth<'a> {
+    pub session: &'a Session,
+    pub db_pool: &'a DbPool,
+}
 
 #[derive(Validate, Deserialize, Debug)]
 pub struct Credentials {
@@ -18,31 +23,26 @@ pub struct Credentials {
     pub password: Option<String>,
 }
 
-impl Auth {
-    pub fn insert_user_id_into_session(
-        session: &Session,
-        user_id: u64,
-    ) -> Result<(), SessionInsertError> {
-        session.insert(AUTH_USER_ID_KEY, user_id)
+impl<'a> Auth<'a> {
+    pub fn new(session: &'a Session, db_pool: &'a DbPool) -> Self {
+        Self { session, db_pool }
+    }
+    pub fn insert_user_id_into_session(&self, user_id: u64) -> Result<(), SessionInsertError> {
+        self.session.insert(USER_ID_KEY, user_id)
     }
 
-    pub fn get_user_id_from_session(
-        session: &Session,
-    ) -> Result<Option<u64>, SessionGetError> {
-        session.get::<u64>(AUTH_USER_ID_KEY)
+    pub fn get_user_id_from_session(&self) -> Result<Option<u64>, SessionGetError> {
+        self.session.get::<u64>(USER_ID_KEY)
     }
 
-    pub fn authenticate_from_session(
-        db_pool: &DbPool,
-        session: &Session,
-    ) -> Result<User, UserIsNotAuthenticated> {
-        let user_id = Auth::get_user_id_from_session(session)
+    pub fn authenticate_from_session(&self) -> Result<User, UserIsNotAuthenticated> {
+        let user_id = self
+            .get_user_id_from_session()
             .map_err(|_| UserIsNotAuthenticated)?;
 
         match user_id {
             Some(id) => {
-                let mut connection = db_pool.get()
-                    .map_err(|_| UserIsNotAuthenticated)?;
+                let mut connection = self.db_pool.get().map_err(|_| UserIsNotAuthenticated)?;
 
                 let user = crate::schema::users::dsl::users
                     .find(id)
@@ -57,14 +57,10 @@ impl Auth {
     }
 
     /// Search for a user by the provided credentials and return his id.
-    pub fn authenticate(
-        db_pool: &DbPool,
-        data: &Credentials,
-    ) -> Result<u64, UserIsNotAuthenticated> {
+    pub fn authenticate(&self, data: &Credentials) -> Result<u64, UserIsNotAuthenticated> {
         let id: Option<u64> = match data.email.to_owned() {
             Some(data_email) => {
-                let mut connection = db_pool.get()
-                    .map_err(|_| UserIsNotAuthenticated)?;
+                let mut connection = self.db_pool.get().map_err(|_| UserIsNotAuthenticated)?;
 
                 let results: Vec<AuthUser> = crate::schema::users::dsl::users
                     .filter(crate::schema::users::email.eq(data_email))
@@ -103,7 +99,6 @@ impl Auth {
         }
     }
 }
-
 
 #[derive(Debug, Clone, Copy)]
 pub struct UserIsNotAuthenticated;
