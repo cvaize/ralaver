@@ -1,13 +1,9 @@
 use crate::app::services::auth::Auth;
-use crate::db_connection::DbPool;
-use actix_session::Session;
 use actix_utils::future::{ready, Ready};
 use actix_web::dev::Payload;
-use actix_web::web::Data;
 use actix_web::{error, Error, FromRequest, HttpRequest};
 use diesel::prelude::*;
 use serde::Serialize;
-use std::ops::Deref;
 
 #[derive(Queryable, Selectable)]
 #[diesel(check_for_backend(diesel::mysql::Mysql))]

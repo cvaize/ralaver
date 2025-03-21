@@ -12,22 +12,21 @@ use handlebars::Handlebars;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
+use std::string::ToString;
 
 static FLASH_DATA_KEY: &str = "page.login";
 
 pub async fn show(
-    session: Session,
     tmpl: web::Data<Handlebars<'_>>,
+    flash_service: SessionFlashService
 ) -> Result<impl Responder, Error> {
-    let flash_data: SessionFlashData =
-        SessionFlashService::new(&session, None)
-            .read_and_forget()
-            .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+    let flash_data: SessionFlashData = flash_service
+        .read_and_forget(None)
+        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
-    let login_flash_data: LoginSessionFlashData =
-        SessionFlashService::new(&session, Some(FLASH_DATA_KEY))
-            .read_and_forget()
-            .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+    let login_flash_data: LoginSessionFlashData = flash_service
+        .read_and_forget(Some(FLASH_DATA_KEY))
+        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
     let login_flash_form = login_flash_data.form.unwrap_or(LoginFlashForm::empty());
     let login_flash_form_fields = login_flash_form
@@ -87,9 +86,9 @@ pub async fn show(
 }
 
 pub async fn sign_in(
-    session: Session,
     data: web::Form<Credentials>,
-    auth: Auth
+    auth: Auth,
+    flash_service: SessionFlashService
 ) -> Result<impl Responder, Error> {
     let mut is_redirect_login = true;
     let credentials: &Credentials = data.deref();
@@ -152,12 +151,12 @@ pub async fn sign_in(
         alerts: Some(alerts),
     };
 
-    SessionFlashService::new(&session, None)
-        .save(&flash_data)
+    flash_service
+        .save(&flash_data, None)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
-    SessionFlashService::new(&session, Some(FLASH_DATA_KEY))
-        .save(&login_flash_data)
+    flash_service
+        .save(&login_flash_data, Some(FLASH_DATA_KEY))
         .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
     if is_redirect_login {

@@ -1,5 +1,4 @@
 use crate::app::models::user::User;
-use crate::app::services::auth::{Auth};
 use crate::app::services::session::{SessionFlashData, SessionFlashService};
 use crate::db_connection::DbPool;
 use actix_session::Session;
@@ -11,28 +10,26 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 
 pub async fn index(
-    session: Session,
     db_pool: web::Data<DbPool>,
     tmpl: web::Data<Handlebars<'_>>,
     query: web::Query<HashMap<String, String>>,
-    user: User
+    user: User,
+    flash_service: SessionFlashService
 ) -> Result<impl Responder, Error> {
-
     dbg!(user);
 
-    let flash_data: SessionFlashData =
-        SessionFlashService::new(&session, None)
-            .read_and_forget()
-            .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+    let flash_data: SessionFlashData = flash_service
+        .read_and_forget(None)
+        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
     // TODO: https://github.com/actix/actix-extras/blob/master/actix-session/examples/authentication.rs
-    if let Some(count) = session.get::<i32>("counter")? {
-        println!("SESSION value: {}", count);
-        // modify the session state
-        session.insert("counter", count + 1)?;
-    } else {
-        session.insert("counter", 1)?;
-    }
+    // if let Some(count) = session.get::<i32>("counter")? {
+    //     println!("SESSION value: {}", count);
+    //     // modify the session state
+    //     session.insert("counter", count + 1)?;
+    // } else {
+    //     session.insert("counter", 1)?;
+    // }
 
     let mut connection = db_pool
         .get()
