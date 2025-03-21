@@ -15,13 +15,10 @@ pub async fn index(
     db_pool: web::Data<DbPool>,
     tmpl: web::Data<Handlebars<'_>>,
     query: web::Query<HashMap<String, String>>,
-    auth: Auth
+    user: User
 ) -> Result<impl Responder, Error> {
-    let user = auth.authenticate_from_session()
-        .map_err(|_| error::ErrorUnauthorized("Unauthorized"))?;
 
     dbg!(user);
-
 
     let flash_data: SessionFlashData =
         SessionFlashService::new(&session, None)

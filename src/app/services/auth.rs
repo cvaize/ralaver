@@ -5,7 +5,7 @@ use actix_session::{Session, SessionExt, SessionGetError, SessionInsertError};
 use actix_utils::future::{ready, Ready};
 use actix_web::dev::Payload;
 use actix_web::web::Data;
-use actix_web::{error, web, Error, FromRequest, HttpRequest};
+use actix_web::{error, Error, FromRequest, HttpRequest};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
 use garde::Validate;
 use serde_derive::Deserialize;
