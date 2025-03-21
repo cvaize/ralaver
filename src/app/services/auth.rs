@@ -1,18 +1,23 @@
 use crate::app::models::user::AuthUser;
 use crate::app::models::user::User;
 use crate::db_connection::DbPool;
-use actix_session::{Session, SessionGetError, SessionInsertError};
+use actix_session::{Session, SessionExt, SessionGetError, SessionInsertError};
+use actix_utils::future::{ready, Ready};
+use actix_web::dev::Payload;
+use actix_web::web::Data;
+use actix_web::{error, web, Error, FromRequest, HttpRequest};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
 use garde::Validate;
 use serde_derive::Deserialize;
+use std::ops::Deref;
 
 static USER_ID_KEY: &str = "app.auth.user.id";
 pub static AUTHENTICATED_REDIRECT_TO: &str = "/";
 pub static NOT_AUTHENTICATED_REDIRECT_TO: &str = "/login";
 
-pub struct Auth<'a> {
-    pub session: &'a Session,
-    pub db_pool: &'a DbPool,
+pub struct Auth {
+    pub session: Session,
+    pub db_pool: DbPool,
 }
 
 #[derive(Validate, Deserialize, Debug)]
@@ -23,8 +28,11 @@ pub struct Credentials {
     pub password: Option<String>,
 }
 
-impl<'a> Auth<'a> {
-    pub fn new(session: &'a Session, db_pool: &'a DbPool) -> Self {
+#[derive(Debug, Clone, Copy)]
+pub struct UserIsNotAuthenticated;
+
+impl Auth {
+    pub fn new(session: Session, db_pool: DbPool) -> Self {
         Self { session, db_pool }
     }
     pub fn insert_user_id_into_session(&self, user_id: u64) -> Result<(), SessionInsertError> {
@@ -100,5 +108,21 @@ impl<'a> Auth<'a> {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct UserIsNotAuthenticated;
+impl FromRequest for Auth {
+    type Error = Error;
+    type Future = Ready<Result<Auth, Error>>;
+
+    #[inline]
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
+        let session: Session = req.get_session();
+
+        let db_pool: Option<&Data<DbPool>> = req.app_data::<Data<DbPool>>();
+        if db_pool.is_none() {
+            return ready(Err(error::ErrorInternalServerError("Db error")));
+        }
+        let db_pool = db_pool.unwrap().deref().deref().to_owned();
+
+        let auth = Auth::new(session, db_pool);
+        ready(Ok(auth))
+    }
+}

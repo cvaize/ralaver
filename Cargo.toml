@@ -18,3 +18,4 @@ actix-session = { version = "0.10.1", features = ["redis-session"] }
 garde = { version = "0.22.0", features = ["full"] }
 serde_derive = "1.0.218"
 handlebars = "6.3.1"
+actix-utils = "3.0.1"

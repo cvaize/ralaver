@@ -2,7 +2,10 @@ use crate::app::controllers;
 use actix_web::web;
 
 pub fn register(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::resource("/").route(web::get().to(controllers::web::home::index)));
+    cfg.service(
+        web::resource("/")
+            .route(web::get().to(controllers::web::home::index)),
+    );
     cfg.service(web::resource("/users").route(web::get().to(controllers::web::users::index)));
     cfg.service(
         web::resource("/login")

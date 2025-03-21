@@ -4,7 +4,6 @@ use crate::app::services::auth::{
 use crate::app::services::session::{
     SessionFlashAlert, SessionFlashData, SessionFlashDataTrait, SessionFlashService,
 };
-use crate::db_connection::DbPool;
 use actix_session::Session;
 use actix_web::web::Redirect;
 use actix_web::{error, web, Error, HttpResponse, Responder, Result};
@@ -84,15 +83,13 @@ pub async fn show(
         .render("pages/auth/login.hbs", &ctx)
         .map_err(|_| error::ErrorInternalServerError("Template error"))?;
 
-    session.remove(FLASH_DATA_KEY);
-
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }
 
 pub async fn sign_in(
     session: Session,
     data: web::Form<Credentials>,
-    db_pool: web::Data<DbPool>,
+    auth: Auth
 ) -> Result<impl Responder, Error> {
     let mut is_redirect_login = true;
     let credentials: &Credentials = data.deref();
@@ -112,7 +109,6 @@ pub async fn sign_in(
             }
         }
     } else {
-        let auth = Auth::new(&session, &db_pool);
         let auth_result = auth.authenticate(credentials);
 
         match auth_result {

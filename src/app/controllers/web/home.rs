@@ -1,4 +1,5 @@
 use crate::app::models::user::User;
+use crate::app::services::auth::{Auth};
 use crate::app::services::session::{SessionFlashData, SessionFlashService};
 use crate::db_connection::DbPool;
 use actix_session::Session;
@@ -14,7 +15,14 @@ pub async fn index(
     db_pool: web::Data<DbPool>,
     tmpl: web::Data<Handlebars<'_>>,
     query: web::Query<HashMap<String, String>>,
+    auth: Auth
 ) -> Result<impl Responder, Error> {
+    let user = auth.authenticate_from_session()
+        .map_err(|_| error::ErrorUnauthorized("Unauthorized"))?;
+
+    dbg!(user);
+
+
     let flash_data: SessionFlashData =
         SessionFlashService::new(&session, None)
             .read_and_forget()
