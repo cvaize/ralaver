@@ -4,6 +4,7 @@ mod config;
 mod db_connection;
 mod routes;
 mod schema;
+mod helpers;
 
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use dotenv::dotenv;
@@ -11,11 +12,15 @@ use std::env;
 
 use actix_session::{storage::RedisSessionStore, SessionMiddleware};
 use actix_web::cookie::Key;
-use actix_web::middleware;
+use actix_web::{dev, middleware, Error};
 use actix_web::web;
 use actix_web::App;
+use actix_web::body::EitherBody;
+use actix_web::dev::ServiceResponse;
 use actix_web::HttpServer;
-// use garde::Report;
+use actix_web::middleware::{ErrorHandlerResponse, ErrorHandlers};
+use crate::app::services::auth::NOT_AUTHENTICATED_REDIRECT_TO;
+use crate::app::middlewares::error_redirect::ErrorRedirect;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations/");
 
@@ -33,7 +38,6 @@ async fn main() -> std::io::Result<()> {
     let redis_secret: String = env::var("REDIS_SECRET").unwrap_or("redis_secret".to_string());
     let redis_secret = Key::from(redis_secret.as_bytes());
     let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
-    // let tt = core::template::new();
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 
@@ -48,6 +52,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(db_pool.clone())
             .configure(app::providers::routes::register)
             .configure(app::providers::template::register)
+            .wrap(ErrorRedirect)
     })
     .bind("0.0.0.0:8080")?
     .run()

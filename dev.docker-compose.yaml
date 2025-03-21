@@ -11,6 +11,7 @@ services:
       - redis
     volumes:
       - './:/app'
+      - 'volume-cargo:/usr/local/cargo'
     ports:
       - '${FORWARD_APP_PORT:-8080}:8080'
 
@@ -52,8 +53,10 @@ services:
     ports:
       - '${FORWARD_REDIS_PORT:-6379}:6379'
     volumes:
-      - 'volume-redis:/root/redis'
+      - 'volume-redis:/data'
 volumes:
+  volume-cargo:
+    driver: local
   volume-mysql:
     driver: local
   volume-redis:

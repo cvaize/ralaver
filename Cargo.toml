@@ -19,3 +19,5 @@ garde = { version = "0.22.0", features = ["full"] }
 serde_derive = "1.0.218"
 handlebars = "6.3.1"
 actix-utils = "3.0.1"
+futures-util = "0.3.31"
+http = "0.2.12"
