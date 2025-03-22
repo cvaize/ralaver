@@ -13,6 +13,11 @@ pub fn register(cfg: &mut web::ServiceConfig) {
             .route(web::post().to(controllers::web::auth::login::sign_in)),
     );
     cfg.service(
+        web::resource("/logout")
+            .route(web::get().to(controllers::web::auth::login::sign_out))
+            .route(web::post().to(controllers::web::auth::login::sign_out)),
+    );
+    cfg.service(
         web::resource("/register")
             .route(web::get().to(controllers::web::auth::register::show))
             .route(web::post().to(controllers::web::auth::register::store)),

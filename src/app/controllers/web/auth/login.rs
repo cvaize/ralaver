@@ -16,9 +16,21 @@ use std::string::ToString;
 static FLASH_DATA_KEY: &str = "page.login";
 
 pub async fn show(
+    auth: Auth,
     tmpl: web::Data<Handlebars<'_>>,
-    flash_service: SessionFlashService
-) -> Result<impl Responder, Error> {
+    flash_service: SessionFlashService,
+) -> Result<HttpResponse, Error> {
+    let user = auth.authenticate_from_session();
+
+    if user.is_ok() {
+        return Ok(HttpResponse::SeeOther()
+            .insert_header((
+                http::header::LOCATION,
+                http::HeaderValue::from_static(AUTHENTICATED_REDIRECT_TO),
+            ))
+            .finish());
+    }
+
     let flash_data: SessionFlashData = flash_service
         .read_and_forget(None)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?;
@@ -28,12 +40,15 @@ pub async fn show(
         .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
     let login_flash_form = login_flash_data.form.unwrap_or(LoginFlashForm::empty());
+
     let login_flash_form_fields = login_flash_form
         .fields
         .unwrap_or(LoginFlashFormFields::empty());
+
     let login_flash_form_fields_email = login_flash_form_fields
         .email
         .unwrap_or(LoginFlashFormField::empty());
+
     let login_flash_form_fields_password = login_flash_form_fields
         .password
         .unwrap_or(LoginFlashFormField::empty());
@@ -87,7 +102,7 @@ pub async fn show(
 pub async fn sign_in(
     data: web::Form<Credentials>,
     auth: Auth,
-    flash_service: SessionFlashService
+    flash_service: SessionFlashService,
 ) -> Result<impl Responder, Error> {
     let mut is_redirect_login = true;
     let credentials: &Credentials = data.deref();
@@ -163,6 +178,25 @@ pub async fn sign_in(
     } else {
         Ok(Redirect::to(AUTHENTICATED_REDIRECT_TO).see_other())
     }
+}
+
+pub async fn sign_out(
+    auth: Auth,
+    flash_service: SessionFlashService,
+) -> Result<impl Responder, Error> {
+    auth.logout();
+
+    let flash_data = SessionFlashData {
+        alerts: Some(vec![SessionFlashAlert::Success(
+            "Вы успешно вышли из системы.".to_string(),
+        )]),
+    };
+
+    flash_service
+        .save(&flash_data, None)
+        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+
+    Ok(Redirect::to(NOT_AUTHENTICATED_REDIRECT_TO).see_other())
 }
 
 #[derive(Serialize, Deserialize, Debug)]

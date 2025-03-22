@@ -106,6 +106,10 @@ impl Auth {
             _ => Err(UserIsNotAuthenticated),
         }
     }
+
+    pub fn logout(&self) {
+        self.session.remove(USER_ID_KEY);
+    }
 }
 
 impl FromRequest for Auth {

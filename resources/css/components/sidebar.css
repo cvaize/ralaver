@@ -18,7 +18,7 @@
 }
 
 .admin-sidebar__brand {
-    padding: .85rem 1.5rem;
+    padding: .85rem 1rem;
     font-size: 1.5rem;
     font-weight: 700;
     position: relative;
@@ -42,7 +42,7 @@
 
 .admin-sidebar__menu {
     margin-bottom: .5rem;
-    padding: 0 0 0 1rem;
+    padding: 0 0.5rem;
 }
 
 .admin-sidebar__menu__header, .admin-sidebar__menu__item__link {
@@ -57,6 +57,27 @@
     padding: 0 0.5rem;
     text-decoration: none;
     border-radius: 0.3rem;
+    display: flex;
+    align-items: center;
+}
+
+.admin-sidebar__menu__header__content {
+    display: flex;
+    align-items: center;
+    max-width: 9rem;
+}
+
+.admin-sidebar__menu__header__text {
+    flex: 1 0 0;
+    display: block;
+    max-width: 100%;
+    width: auto;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.admin-sidebar__menu__header__icon {
+    margin-right: 0.15rem;
 }
 
 .admin-sidebar__menu__checkbox ~ .admin-sidebar__menu__header:hover,
@@ -72,7 +93,7 @@
     list-style: none;
     margin: 0;
     min-width: 11.25rem;
-    padding: 0;
+    padding: 0 0 0.35rem 0;
     transform: translateY(.2rem);
 }
 
@@ -88,6 +109,9 @@
     text-decoration: none;
     padding: 0.2rem 0.5rem;
     border-radius: 0.3rem;
+    border: none;
+    background: none;
+    cursor: pointer;
 }
 
 .admin-sidebar__menu__item__link.active {

@@ -16,20 +16,9 @@ pub async fn index(
     user: User,
     flash_service: SessionFlashService
 ) -> Result<impl Responder, Error> {
-    dbg!(user);
-
     let flash_data: SessionFlashData = flash_service
         .read_and_forget(None)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?;
-
-    // TODO: https://github.com/actix/actix-extras/blob/master/actix-session/examples/authentication.rs
-    // if let Some(count) = session.get::<i32>("counter")? {
-    //     println!("SESSION value: {}", count);
-    //     // modify the session state
-    //     session.insert("counter", count + 1)?;
-    // } else {
-    //     session.insert("counter", 1)?;
-    // }
 
     let mut connection = db_pool
         .get()
