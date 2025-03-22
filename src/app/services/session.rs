@@ -1,14 +1,18 @@
 use actix_session::Session;
-use actix_utils::future::{ready, Ready};
-use actix_web::{Error, FromRequest, HttpRequest};
-use actix_web::dev::Payload;
-use serde_derive::{Deserialize, Serialize};
 use actix_session::SessionExt;
+use actix_utils::future::{ready, Ready};
+use actix_web::dev::Payload;
+use actix_web::{Error, FromRequest, HttpRequest};
+use serde_derive::{Deserialize, Serialize};
 
 static SESSION_FLASH_DATA_KEY: &str = "app.session.flash_data.";
 static SESSION_FLASH_DATA_COMMON_KEY: &str = "app.session.flash_data.common";
+static SESSION_DARK_MODE_KEY: &str = "app.session.dark_mode";
 
 pub struct SessionFlashService {
+    pub session: Session,
+}
+pub struct SessionService {
     pub session: Session,
 }
 
@@ -29,6 +33,9 @@ pub enum SessionFlashAlert {
 #[derive(Debug, Clone, Copy)]
 pub struct SessionFlashServiceError;
 
+#[derive(Debug, Clone, Copy)]
+pub struct SessionServiceError;
+
 pub trait SessionFlashDataTrait {
     fn empty() -> Self;
 }
@@ -47,7 +54,7 @@ impl SessionFlashService {
     fn make_key(key: Option<&str>) -> String {
         match key {
             Some(k) => format!("{}{}", SESSION_FLASH_DATA_KEY, k),
-            None => SESSION_FLASH_DATA_COMMON_KEY.to_string()
+            None => SESSION_FLASH_DATA_COMMON_KEY.to_string(),
         }
     }
 
@@ -91,6 +98,34 @@ impl SessionFlashService {
     }
 }
 
+impl SessionService {
+    pub fn new(session: Session) -> Self {
+        Self { session }
+    }
+
+    pub fn dark_mode(&self) -> Result<bool, SessionServiceError> {
+        Ok(1 == self
+            .session
+            .get::<u8>(SESSION_DARK_MODE_KEY)
+            .map_err(|_| SessionServiceError)?
+            .unwrap_or(0))
+    }
+
+    pub fn set_dark_mode(&self, dark_mode: bool) -> Result<(), SessionServiceError> {
+        let dark_mode: u8 = if dark_mode { 1 } else { 0 };
+        self.session
+            .insert(SESSION_DARK_MODE_KEY, dark_mode)
+            .map_err(|_| SessionServiceError)?;
+        Ok(())
+    }
+
+    pub fn clear_dark_mode(&self) -> Result<(), SessionServiceError> {
+        self.session
+            .remove(SESSION_DARK_MODE_KEY);
+        Ok(())
+    }
+}
+
 impl FromRequest for SessionFlashService {
     type Error = Error;
     type Future = Ready<Result<SessionFlashService, Error>>;
@@ -101,5 +136,18 @@ impl FromRequest for SessionFlashService {
 
         let flash_service = SessionFlashService::new(session);
         ready(Ok(flash_service))
+    }
+}
+
+impl FromRequest for SessionService {
+    type Error = Error;
+    type Future = Ready<Result<SessionService, Error>>;
+
+    #[inline]
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
+        let session: Session = req.get_session();
+
+        let service = SessionService::new(session);
+        ready(Ok(service))
     }
 }

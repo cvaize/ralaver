@@ -1,8 +1,7 @@
 use crate::app::models::user::User;
-use crate::app::services::session::{SessionFlashData, SessionFlashService};
+use crate::app::services::session::{SessionFlashData, SessionFlashService, SessionService};
 use crate::db_connection::DbPool;
-use actix_session::Session;
-use actix_web::{error, web, Error, HttpResponse, Responder, Result};
+use actix_web::{error, web, Error, HttpResponse, Result};
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use handlebars::Handlebars;
 use serde_json::Value::Null;
@@ -14,8 +13,9 @@ pub async fn index(
     tmpl: web::Data<Handlebars<'_>>,
     query: web::Query<HashMap<String, String>>,
     user: User,
-    flash_service: SessionFlashService
-) -> Result<impl Responder, Error> {
+    flash_service: SessionFlashService,
+    session_service: SessionService
+) -> Result<HttpResponse, Error> {
     let flash_data: SessionFlashData = flash_service
         .read_and_forget(None)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?;
@@ -24,15 +24,17 @@ pub async fn index(
         .get()
         .map_err(|_| error::ErrorInternalServerError("Db error"))?;
 
-    let results: Vec<User> = crate::schema::users::dsl::users
-        .select(User::as_select())
-        .limit(1)
-        .load::<User>(&mut connection)
-        .expect("Users load failed.");
-
-    let user: Option<&User> = results.get(0);
+    // let results: Vec<User> = crate::schema::users::dsl::users
+    //     .select(User::as_select())
+    //     .limit(1)
+    //     .load::<User>(&mut connection)
+    //     .expect("Users load failed.");
+    //
+    // let user: Option<&User> = results.get(0);
 
     let user: Value = serde_json::to_value(&user).unwrap_or(Null);
+    let dark_mode: bool = session_service.dark_mode()
+        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
     let s = if let Some(name) = query.get("name") {
         // submitted form
@@ -40,7 +42,8 @@ pub async fn index(
             "name" : name.to_owned(),
             "text" : "Welcome!".to_owned(),
             "user" : user,
-            "alerts": flash_data.alerts
+            "alerts": flash_data.alerts,
+            "dark_mode": dark_mode
         });
         // tmpl.render("pages/home/user.html", &ctx)
         //     .map_err(|_| error::ErrorInternalServerError("Template error"))?
@@ -49,7 +52,8 @@ pub async fn index(
     } else {
         let ctx = json!({
             "user" : user,
-            "alerts": flash_data.alerts
+            "alerts": flash_data.alerts,
+            "dark_mode": dark_mode
         });
         // tmpl.render("pages/home/index.html", &serde_json::Value::Null)
         tmpl.render("pages/home/index.hbs", &ctx)

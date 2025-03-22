@@ -8,6 +8,32 @@ document.dispatchEvent(new Event("Fancybox:Ready"));
 ;(function () {
     'use strict';
 
+    let darkMode = document.querySelector('#admin-dark-mode__checkbox');
+    let action, method;
+
+    if (darkMode) {
+        action = darkMode.getAttribute("data-action");
+        method = darkMode.getAttribute("data-method");
+        if (action && method) {
+            darkMode.removeEventListener("change", onChange);
+            darkMode.addEventListener("change", onChange);
+        }
+    }
+
+    function onChange() {
+        fetch(action, {
+            method,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({dark_mode: darkMode.checked})
+        })
+    }
+})();'use strict';
+;(function () {
+    'use strict';
+
     let actionsDropdown = document.querySelector('.admin-list-page__actions-dropdown');
     let actionsDropdownCount = document.querySelector('.admin-list-page__actions-dropdown__count');
     let allCheckbox = document.querySelector('.admin-list-page__all-checkbox');

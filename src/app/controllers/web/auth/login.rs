@@ -1,9 +1,7 @@
 use crate::app::services::auth::{
     Auth, Credentials, AUTHENTICATED_REDIRECT_TO, NOT_AUTHENTICATED_REDIRECT_TO,
 };
-use crate::app::services::session::{
-    SessionFlashAlert, SessionFlashData, SessionFlashDataTrait, SessionFlashService,
-};
+use crate::app::services::session::{SessionFlashAlert, SessionFlashData, SessionFlashDataTrait, SessionFlashService, SessionService};
 use actix_web::web::Redirect;
 use actix_web::{error, web, Error, HttpResponse, Responder, Result};
 use garde::Validate;
@@ -19,8 +17,11 @@ pub async fn show(
     auth: Auth,
     tmpl: web::Data<Handlebars<'_>>,
     flash_service: SessionFlashService,
+    session_service: SessionService
 ) -> Result<HttpResponse, Error> {
     let user = auth.authenticate_from_session();
+    let dark_mode: bool = session_service.dark_mode()
+        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
     if user.is_ok() {
         return Ok(HttpResponse::SeeOther()
@@ -89,7 +90,8 @@ pub async fn show(
             },
             "errors": login_flash_form.errors,
         },
-        "alerts": flash_data.alerts
+        "alerts": flash_data.alerts,
+        "dark_mode": dark_mode
     });
 
     let s = tmpl

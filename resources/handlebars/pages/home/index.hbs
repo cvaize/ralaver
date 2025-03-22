@@ -10,7 +10,8 @@
     <script src="/js/app.js" defer></script>
 </head>
 <body class="admin-body">
-<input id="admin-dark-mode__checkbox" class="admin-dark-mode__checkbox" type="checkbox" hidden>
+<input id="admin-dark-mode__checkbox" class="admin-dark-mode__checkbox" type="checkbox" hidden
+       data-action="/dark-mode" data-method="post" {{#if dark_mode}} checked {{/if}}>
 <input id="admin-sidebar__nav__checkbox" class="admin-sidebar__nav__checkbox" type="checkbox" hidden>
 <main class="admin-app">
     <label class="admin-dark-mode__btn" for="admin-dark-mode__checkbox">

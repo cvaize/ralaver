@@ -12,7 +12,8 @@
     <script src="/js/app.js" defer></script>
 </head>
 <body class="admin-body">
-<input id="admin-dark-mode__checkbox" class="admin-dark-mode__checkbox" type="checkbox" hidden>
+<input id="admin-dark-mode__checkbox" class="admin-dark-mode__checkbox" type="checkbox" hidden
+       data-action="/dark-mode" data-method="post" {{#if dark_mode}} checked {{/if}}>
 <main class="admin-app">
     <label class="admin-dark-mode__btn" for="admin-dark-mode__checkbox">
         <svg class="admin-icon--svg admin-dark-mode__icon-dark" xmlns="http://www.w3.org/2000/svg" width="24"
