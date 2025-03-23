@@ -1,0 +1,19 @@
+{{#> components/layout.hbs user=user lang="ru" dark_mode=dark_mode title="Профиль" }}
+    {{#if alerts}}
+        {{#each alerts}}
+            {{> components/alert.hbs index=@index type=type content=content close=true }}
+        {{/each}}
+    {{/if}}
+
+    <nav aria-label="breadcrumb">
+        <ol class="admin-breadcrumb">
+            <li class="admin-breadcrumb__item"><a href="/" class="admin-breadcrumb__link">Панель управления</a></li>
+            <li class="admin-breadcrumb__item admin-breadcrumb__item--active" aria-current="page">
+                Профиль
+            </li>
+        </ol>
+    </nav>
+
+    <h1>Профиль, ID:{{user.id}} {{user.email}}!</h1>
+
+{{/components/layout.hbs}}
