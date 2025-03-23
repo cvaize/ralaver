@@ -3,7 +3,7 @@ use crate::app::services::auth::{
 };
 use crate::app::services::session::{SessionFlashAlert, SessionFlashData, SessionFlashDataTrait, SessionFlashService, SessionService};
 use actix_web::web::Redirect;
-use actix_web::{error, web, Error, HttpResponse, Responder, Result};
+use actix_web::{error, web, Error, HttpRequest, HttpResponse, Responder, Result};
 use garde::Validate;
 use handlebars::Handlebars;
 use serde_derive::{Deserialize, Serialize};
@@ -14,14 +14,12 @@ use std::string::ToString;
 static FLASH_DATA_KEY: &str = "page.login";
 
 pub async fn show(
+    req: HttpRequest,
     auth: Auth,
     tmpl: web::Data<Handlebars<'_>>,
     flash_service: SessionFlashService,
-    session_service: SessionService
 ) -> Result<HttpResponse, Error> {
     let user = auth.authenticate_from_session();
-    let dark_mode: bool = session_service.dark_mode()
-        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
     if user.is_ok() {
         return Ok(HttpResponse::SeeOther()
@@ -91,7 +89,7 @@ pub async fn show(
             "errors": login_flash_form.errors,
         },
         "alerts": flash_data.alerts,
-        "dark_mode": dark_mode
+        "dark_mode": req.cookie("dark_mode").map(|c| c.value().to_owned())
     });
 
     let s = tmpl

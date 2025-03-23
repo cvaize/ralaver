@@ -19,7 +19,7 @@
     margin: auto;
     padding: 1rem;
     border-radius: 1rem;
-    background-color: rgba(var(--admin-app-light-background-color), 0.5);
+    background-color: rgba(var(--admin-app-light-background-color), 1);
 }
 
 .admin-login__header {

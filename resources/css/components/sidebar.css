@@ -114,7 +114,7 @@
     cursor: pointer;
 }
 
-.admin-sidebar__menu__item__link.active {
+.admin-sidebar__menu__item__link.admin-active {
     opacity: 0.8;
 }
 

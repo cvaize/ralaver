@@ -1,27 +1,25 @@
 'use strict';
 ;(function () {
     'use strict';
+    let radioDark = document.getElementById('admin-dark-mode__radio--dark');
+    let radioLight = document.getElementById('admin-dark-mode__radio--light');
+    let radioAuto = document.getElementById('admin-dark-mode__radio--auto');
 
-    let darkMode = document.querySelector('#admin-dark-mode__checkbox');
-    let action, method;
-
-    if (darkMode) {
-        action = darkMode.getAttribute("data-action");
-        method = darkMode.getAttribute("data-method");
-        if (action && method) {
-            darkMode.removeEventListener("change", onChange);
-            darkMode.addEventListener("change", onChange);
-        }
+    if (radioDark && radioLight && radioAuto) {
+        radioDark.addEventListener('change', toggleTheme)
+        radioLight.addEventListener('change', toggleTheme)
+        radioAuto.addEventListener('change', toggleTheme)
+        toggleTheme();
     }
 
-    function onChange() {
-        fetch(action, {
-            method,
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({dark_mode: darkMode.checked})
-        })
+    function toggleTheme() {
+        let mode = null;
+        if (radioDark.checked) mode = 'dark';
+        if (radioLight.checked) mode = 'light';
+        if (radioAuto.checked) mode = 'auto';
+
+        if (mode) {
+            document.cookie = 'dark_mode=' + mode + '; path=/'
+        }
     }
 })();

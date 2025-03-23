@@ -7,7 +7,6 @@ use serde_derive::{Deserialize, Serialize};
 
 static SESSION_FLASH_DATA_KEY: &str = "app.session.flash_data.";
 static SESSION_FLASH_DATA_COMMON_KEY: &str = "app.session.flash_data.common";
-static SESSION_DARK_MODE_KEY: &str = "app.session.dark_mode";
 
 pub struct SessionFlashService {
     pub session: Session,
@@ -101,28 +100,6 @@ impl SessionFlashService {
 impl SessionService {
     pub fn new(session: Session) -> Self {
         Self { session }
-    }
-
-    pub fn dark_mode(&self) -> Result<bool, SessionServiceError> {
-        Ok(1 == self
-            .session
-            .get::<u8>(SESSION_DARK_MODE_KEY)
-            .map_err(|_| SessionServiceError)?
-            .unwrap_or(0))
-    }
-
-    pub fn set_dark_mode(&self, dark_mode: bool) -> Result<(), SessionServiceError> {
-        let dark_mode: u8 = if dark_mode { 1 } else { 0 };
-        self.session
-            .insert(SESSION_DARK_MODE_KEY, dark_mode)
-            .map_err(|_| SessionServiceError)?;
-        Ok(())
-    }
-
-    pub fn clear_dark_mode(&self) -> Result<(), SessionServiceError> {
-        self.session
-            .remove(SESSION_DARK_MODE_KEY);
-        Ok(())
     }
 }
 

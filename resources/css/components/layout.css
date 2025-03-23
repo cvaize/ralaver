@@ -11,19 +11,6 @@
     --admin-app-focus-box-shadow: 0 0 0 2px rgba(var(--admin-app-accent-color), 0.5);
 }
 
-.admin-dark-mode__checkbox:checked ~ * {
-    --admin-app-accent-color: 0, 190, 255;
-    --admin-app-mark-bg-color: 255, 255, 0;
-    --admin-app-color: 196, 187, 173;
-    --admin-app-background-color: 0, 0, 0;
-    --admin-app-backdrop-color: 255, 255, 255;
-    --admin-app-light-background-color: 29, 29, 29;
-    --admin-app-success-color: 0, 255, 136;
-    --admin-app-danger-color: 255, 0, 24;
-    --admin-app-warning-color: 215, 215, 0;
-    --admin-app-focus-box-shadow: 0 0 0 2px rgba(var(--admin-app-accent-color), 0.5);
-}
-
 ::selection {
     background-color: rgba(var(--admin-app-accent-color), 0.2);
 }

@@ -1,29 +1,132 @@
-.admin-dark-mode__btn {
+.admin-dark-mode {
     position: fixed;
     left: 0;
     top: 0;
-    padding: 0.2rem;
     display: block;
     z-index: 250;
-    cursor: pointer;
+}
+.admin-dark-mode, .admin-dark-mode__label {
+    width: 1.4rem;
+    height: 1.4rem;
+}
+
+.admin-dark-mode__label, .admin-dark-mode__icon {
+    position: absolute;
     font-size: 0.8rem;
-}
-
-.admin-dark-mode__checkbox:checked ~ .admin-app > .admin-dark-mode__btn .admin-dark-mode__icon-dark,
-.admin-dark-mode__checkbox:not(:checked) ~ .admin-app > .admin-dark-mode__btn .admin-dark-mode__icon-light {
-    display: block;
-}
-
-.admin-dark-mode__checkbox:not(:checked) ~ .admin-app > .admin-dark-mode__btn .admin-dark-mode__icon-dark,
-.admin-dark-mode__checkbox:checked ~ .admin-app > .admin-dark-mode__btn .admin-dark-mode__icon-light {
     display: none;
 }
 
+.admin-dark-mode__label {
+    left: 0;
+    top: 0;
+    cursor: pointer;
+}
+
+.admin-dark-mode__icon {
+    left: 0.2rem;
+    top: 0.2rem;
+    pointer-events: none;
+}
+
+.admin-dark-mode__icon--auto {
+    font-weight: 700;
+    line-height: 1;
+    top: 0.25rem;
+}
+
+.admin-dark-mode__icon--auto:before {
+    content: "A";
+}
+
+.admin-dark-mode__radio--dark:checked ~ .admin-app > .admin-dark-mode .admin-dark-mode__icon--dark,
+.admin-dark-mode__radio--light:checked ~ .admin-app > .admin-dark-mode .admin-dark-mode__icon--light,
+.admin-dark-mode__radio--auto:checked ~ .admin-app > .admin-dark-mode .admin-dark-mode__icon--auto,
+.admin-dark-mode__radio--dark:checked ~ .admin-app > .admin-dark-mode .admin-dark-mode__label--dark,
+.admin-dark-mode__radio--light:checked ~ .admin-app > .admin-dark-mode .admin-dark-mode__label--light,
+.admin-dark-mode__radio--auto:checked ~ .admin-app > .admin-dark-mode .admin-dark-mode__label--auto{
+    display: block;
+}
+
+.admin-dark-mode__radio--auto:checked ~ .admin-app > .admin-dark-mode .admin-dark-mode__icon--dark {
+    left: 0.65rem;
+    font-size: 0.4rem;
+}
+
+.admin-dark-mode__radio--auto:checked ~ .admin-app > .admin-dark-mode .admin-dark-mode__icon--light {
+    left: 0.65rem;
+    font-size: 0.5rem;
+}
+
+@media (prefers-color-scheme: light) {
+    .admin-dark-mode__radio--auto:checked ~ .admin-app > .admin-dark-mode .admin-dark-mode__icon--light {
+        display: block;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .admin-dark-mode__radio--auto:checked ~ .admin-app > .admin-dark-mode .admin-dark-mode__icon--dark {
+        display: block;
+    }
+
+    .admin-dark-mode__radio--auto:checked ~ * {
+        --admin-app-accent-color: 0, 190, 255;
+        --admin-app-mark-bg-color: 255, 255, 0;
+        --admin-app-color: 196, 187, 173;
+        --admin-app-background-color: 0, 0, 0;
+        --admin-app-backdrop-color: 255, 255, 255;
+        --admin-app-light-background-color: 29, 29, 29;
+        --admin-app-success-color: 0, 255, 136;
+        --admin-app-danger-color: 255, 0, 24;
+        --admin-app-warning-color: 215, 215, 0;
+        --admin-app-focus-box-shadow: 0 0 0 2px rgba(var(--admin-app-accent-color), 0.5);
+    }
+}
+
+.admin-dark-mode__radio--dark:checked ~ * {
+    --admin-app-accent-color: 0, 190, 255;
+    --admin-app-mark-bg-color: 255, 255, 0;
+    --admin-app-color: 196, 187, 173;
+    --admin-app-background-color: 0, 0, 0;
+    --admin-app-backdrop-color: 255, 255, 255;
+    --admin-app-light-background-color: 29, 29, 29;
+    --admin-app-success-color: 0, 255, 136;
+    --admin-app-danger-color: 255, 0, 24;
+    --admin-app-warning-color: 215, 215, 0;
+    --admin-app-focus-box-shadow: 0 0 0 2px rgba(var(--admin-app-accent-color), 0.5);
+}
+
 @media (max-width: 767px) {
-    .admin-dark-mode__btn {
+    .admin-dark-mode, .admin-dark-mode__label {
+        width: 2rem;
+        height: 1.8rem;
+    }
+    .admin-dark-mode {
         left: auto;
-        right: 4rem;
+        right: 3.9rem;
         top: 0.3rem;
+    }
+    .admin-dark-mode__label {
+        left: auto;
+        right: 0;
+        top: 0;
+    }
+    .admin-dark-mode__icon {
+        left: auto;
+        right: 0;
+        top: 0;
+        font-size: 1.5rem;
+    }
+    .admin-dark-mode__radio--auto:checked ~ .admin-app > .admin-dark-mode .admin-dark-mode__icon--dark,
+    .admin-dark-mode__radio--auto:checked ~ .admin-app > .admin-dark-mode .admin-dark-mode__icon--light {
+        font-size: 0.6rem;
+        left: auto;
+        right: 0;
+        top: 0;
+    }
+    .admin-dark-mode__radio--auto:checked ~ .admin-app > .admin-dark-mode .admin-dark-mode__icon--auto {
+        left: auto;
+        right: 0.6rem;
+        top: 0.15rem;
         font-size: 1.5rem;
     }
 }
