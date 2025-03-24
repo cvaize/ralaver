@@ -2228,6 +2228,13 @@ input.admin-input[type="file"], input.admin-input[type="file"]:read-only, input.
     padding-bottom: 3rem;
 }
 
+.admin-login__alerts {
+    margin-top: 1rem;
+    width: 288px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .admin-login__card {
     width: 288px;
     margin: auto;

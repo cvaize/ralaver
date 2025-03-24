@@ -2,11 +2,12 @@
     <div class="admin-login">
         <div class="admin-container admin-login__container">
             {{#if alerts}}
-                {{#each alerts}}
-                    {{> components/alert.hbs index=@index type=type content=content close=true }}
-                {{/each}}
+                <div class="admin-login__alerts">
+                    {{#each alerts}}
+                        {{> components/alert.hbs index=@index type=type content=content close=true }}
+                    {{/each}}
+                </div>
             {{/if}}
-
             <form class="admin-login__card"
                 {{#if form.action}} action="{{form.action}}" {{/if}}
                 {{#if form.method}} method="{{form.method}}" {{/if}}
