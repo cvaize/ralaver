@@ -1,6 +1,6 @@
 use crate::app::models::user::User;
-use crate::app::services::session::{SessionFlashData, SessionFlashService, SessionService};
-use crate::db_connection::DbPool;
+use crate::app::services::session::{SessionFlashData, SessionFlashService};
+// use crate::db_connection::DbPool;
 use actix_web::{error, web, Error, HttpRequest, HttpResponse, Result};
 // use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use handlebars::Handlebars;
@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 pub async fn index(
     req: HttpRequest,
-    db_pool: web::Data<DbPool>,
+    // db_pool: web::Data<DbPool>,
     tmpl: web::Data<Handlebars<'_>>,
     query: web::Query<HashMap<String, String>>,
     user: User,
@@ -20,9 +20,9 @@ pub async fn index(
         .read_and_forget(None)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
-    let mut connection = db_pool
-        .get()
-        .map_err(|_| error::ErrorInternalServerError("Db error"))?;
+    // let mut connection = db_pool
+    //     .get()
+    //     .map_err(|_| error::ErrorInternalServerError("Db error"))?;
 
     // let results: Vec<User> = crate::schema::users::dsl::users
     //     .select(User::as_select())

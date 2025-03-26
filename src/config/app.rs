@@ -1,6 +1,7 @@
 use std::env;
 use dotenv::dotenv;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct App {
     pub locale: String,

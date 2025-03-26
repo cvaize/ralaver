@@ -5,6 +5,7 @@ pub struct GardeReportAdapter<'a> {
     report: &'a Report,
 }
 
+#[allow(dead_code)]
 impl<'a> GardeReportAdapter<'a> {
     pub fn new(report: &'a Report) -> Self {
         Self { report }

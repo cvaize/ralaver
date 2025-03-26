@@ -12,15 +12,11 @@ use std::env;
 
 use actix_session::{storage::RedisSessionStore, SessionMiddleware};
 use actix_web::cookie::Key;
-use actix_web::{dev, middleware, Error};
+use actix_web::middleware;
 use actix_web::web;
 use actix_web::App;
-use actix_web::body::EitherBody;
-use actix_web::dev::ServiceResponse;
 use actix_web::HttpServer;
-use actix_web::middleware::{ErrorHandlerResponse, ErrorHandlers};
-use crate::app::services::auth::NOT_AUTHENTICATED_REDIRECT_TO;
-use crate::app::middlewares::error_redirect::ErrorRedirect;
+use app::middlewares::error_redirect::ErrorRedirect;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations/");
 
@@ -49,6 +45,7 @@ async fn main() -> std::io::Result<()> {
             ))
             .wrap(middleware::Logger::default())
             .configure(app::providers::config::register)
+            .configure(app::providers::translates::register)
             .app_data(db_pool.clone())
             .configure(app::providers::routes::register)
             .configure(app::providers::template::register)

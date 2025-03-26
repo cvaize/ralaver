@@ -1,7 +1,10 @@
 use crate::app::services::auth::{
     Auth, Credentials, AUTHENTICATED_REDIRECT_TO, NOT_AUTHENTICATED_REDIRECT_TO,
 };
-use crate::app::services::session::{SessionFlashAlert, SessionFlashData, SessionFlashDataTrait, SessionFlashService, SessionService};
+use crate::app::services::session::{
+    SessionFlashAlert, SessionFlashData, SessionFlashDataTrait,
+    SessionFlashService
+};
 use actix_web::web::Redirect;
 use actix_web::{error, web, Error, HttpRequest, HttpResponse, Responder, Result};
 use garde::Validate;

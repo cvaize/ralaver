@@ -1,13 +1,23 @@
+use std::{fs, io};
+use std::path::{Path, PathBuf};
+
 #[allow(dead_code)]
 pub fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>());
 }
 
-
-// async fn route_handler(token: Option<TokenServer>) -> HttpRepsonse {
-//     if token.is_none() {
-//         HttpResponse::Found().header("Location", "/login").finish()
-//     } else {
-//         HttpResponse::Ok().finish()
-//     }
-// }
+pub fn collect_files_from_dir(dir: &Path) -> io::Result<Vec<PathBuf>> {
+    let mut result: Vec<PathBuf> = vec![];
+    if dir.is_dir() {
+        for entry in fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                result.extend(collect_files_from_dir(&path)?);
+            } else {
+                result.push(path);
+            }
+        }
+    }
+    Ok(result)
+}

@@ -859,6 +859,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "flatten_json"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73410e7d4bb0a9f55b5b0b9ac331de441d5f58c9a706560253874b3b11990f80"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1872,6 +1881,7 @@ dependencies = [
  "diesel_migrations",
  "dotenv",
  "env_logger",
+ "flatten_json",
  "futures-util",
  "garde",
  "handlebars",

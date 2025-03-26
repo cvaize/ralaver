@@ -8,9 +8,12 @@ use serde_derive::{Deserialize, Serialize};
 static SESSION_FLASH_DATA_KEY: &str = "app.session.flash_data.";
 static SESSION_FLASH_DATA_COMMON_KEY: &str = "app.session.flash_data.common";
 
+#[allow(dead_code)]
 pub struct SessionFlashService {
     pub session: Session,
 }
+
+#[allow(dead_code)]
 pub struct SessionService {
     pub session: Session,
 }
@@ -32,6 +35,7 @@ pub enum SessionFlashAlert {
 #[derive(Debug, Clone, Copy)]
 pub struct SessionFlashServiceError;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 pub struct SessionServiceError;
 
