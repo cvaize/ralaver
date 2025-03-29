@@ -7,5 +7,7 @@ diesel::table! {
         email -> Varchar,
         #[max_length = 255]
         password -> Nullable<Varchar>,
+        #[max_length = 6]
+        locale -> Nullable<Varchar>,
     }
 }

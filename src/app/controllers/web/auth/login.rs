@@ -1,6 +1,4 @@
-use crate::{
-    Alert, AlertService, AuthService, Credentials, SessionService, TemplateService,
-};
+use crate::{Alert, AlertService, AppService, AuthService, Credentials, SessionService, TemplateService, TranslatorService};
 use actix_session::Session;
 use actix_web::web::Data;
 use actix_web::web::Form;
@@ -21,6 +19,8 @@ pub async fn show(
     tmpl: Data<TemplateService>,
     alert_service: Data<AlertService>,
     session_service: Data<SessionService>,
+    app_service: Data<AppService>,
+    translator_service: Data<TranslatorService>,
 ) -> Result<HttpResponse, Error> {
     let user = auth.get_ref().authenticate_by_session(&session);
 
@@ -57,9 +57,14 @@ pub async fn show(
         .password
         .unwrap_or(LoginFormFormField::empty());
 
+    let dark_mode = app_service.get_ref().get_dark_mode(&req);
+    let lang = app_service.get_locale(Some(&req), Some(&session), None);
+
+    let title_str = translator_service.translate(&lang, "auth.page.login.title");
+
     let ctx = json!({
-        "title": "Вход - Admin panel",
-        "lang": "ru",
+        "title": title_str,
+        "lang": lang,
         "form": {
             "action": "/login",
             "method": "post",
@@ -94,7 +99,7 @@ pub async fn show(
             "errors": login_form_form.errors,
         },
         "alerts": alerts,
-        "dark_mode": req.cookie("dark_mode").map(|c| c.value().to_owned())
+        "dark_mode": dark_mode
     });
 
     let s = tmpl.render_throw_http("pages/auth/login.hbs", &ctx)?;

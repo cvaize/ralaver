@@ -24,6 +24,9 @@ pub struct MysqlDbConfig {
 pub struct AppConfig {
     pub locale: String,
     pub fallback_locale: String,
+    pub dark_mode_cookie_key: String,
+    pub locale_cookie_key: String,
+    pub locale_session_key: String,
 }
 
 #[derive(Debug, Clone)]
@@ -57,6 +60,9 @@ impl Config {
             app: AppConfig {
                 locale: env::var("APP_LOCALE").unwrap_or("en".to_string()),
                 fallback_locale: env::var("APP_FALLBACK_LOCALE").unwrap_or("en".to_string()),
+                dark_mode_cookie_key: env::var("APP_DARK_MODE_COOKIE_KEY").unwrap_or("dark_mode".to_string()),
+                locale_cookie_key: env::var("APP_LOCALE_COOKIE_KEY").unwrap_or("locale".to_string()),
+                locale_session_key: env::var("APP_LOCALE_SESSION_KEY").unwrap_or("app.user.locale".to_string()),
             },
             db: DbConfig {
                 mysql: MysqlDbConfig {

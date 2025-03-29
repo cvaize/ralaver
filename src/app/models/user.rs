@@ -14,6 +14,8 @@ use serde::Serialize;
 pub struct User {
     pub id: u64,
     pub email: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub locale: Option<String>,
 }
 
 #[derive(Queryable, Selectable)]

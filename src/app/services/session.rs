@@ -1,8 +1,8 @@
 use crate::Config;
 use actix_session::Session;
 use actix_web::web::Data;
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 #[derive(Debug, Clone)]
 pub struct SessionService {
@@ -41,6 +41,17 @@ impl SessionService {
             Some(str) => Ok(serde_json::from_str(&str).map_err(|_| GetSessionDataError)?),
             _ => Ok(None),
         }
+    }
+
+    pub fn get_string(
+        &self,
+        session: &Session,
+        key: &str,
+    ) -> Result<Option<String>, GetSessionDataError> {
+        let result: Option<String> = session
+            .get::<String>(key)
+            .map_err(|_| GetSessionDataError)?;
+        Ok(result)
     }
 
     pub fn remove(&self, session: &Session, key: &str) {

@@ -45,6 +45,7 @@ async fn main() -> std::io::Result<()> {
     let session = Data::new(SessionService::new(config.clone()));
     let alert = Data::new(AlertService::new(config.clone(), session.clone()));
     let auth = Data::new(AuthService::new(config.clone(), db_pool.clone()));
+    let app = Data::new(AppService::new(config.clone(), session.clone()));
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 
@@ -62,6 +63,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(alert.clone())
             .app_data(session.clone())
             .app_data(auth.clone())
+            .app_data(app.clone())
             .configure(routes::register)
             .wrap(ErrorRedirect)
     })
