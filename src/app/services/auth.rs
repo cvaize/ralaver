@@ -1,56 +1,60 @@
-use crate::app::models::user::AuthUser;
-use crate::app::models::user::User;
-use crate::db_connection::DbPool;
-use actix_session::{Session, SessionExt, SessionGetError, SessionInsertError};
-use actix_utils::future::{ready, Ready};
-use actix_web::dev::Payload;
+use crate::DbPool;
+use crate::{Config, PrivateUserData, User};
+use actix_session::{Session, SessionGetError, SessionInsertError};
 use actix_web::web::Data;
-use actix_web::{error, Error, FromRequest, HttpRequest};
+use diesel::prelude::*;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
 use garde::Validate;
 use serde_derive::Deserialize;
-use std::ops::Deref;
 
-static USER_ID_KEY: &str = "app.auth.user.id";
-pub static AUTHENTICATED_REDIRECT_TO: &str = "/";
-pub static NOT_AUTHENTICATED_REDIRECT_TO: &str = "/login";
-
-pub struct Auth {
-    pub session: Session,
-    pub db_pool: DbPool,
-}
-
-#[derive(Validate, Deserialize, Debug)]
-pub struct Credentials {
-    #[garde(required, inner(length(min = 1, max = 255)))]
-    pub email: Option<String>,
-    #[garde(required, inner(length(min = 1, max = 255)))]
-    pub password: Option<String>,
+#[derive(Debug)]
+pub struct AuthService {
+    config: Data<Config>,
+    db_pool: Data<DbPool>,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct UserIsNotAuthenticated;
 
-impl Auth {
-    pub fn new(session: Session, db_pool: DbPool) -> Self {
-        Self { session, db_pool }
-    }
-    pub fn insert_user_id_into_session(&self, user_id: u64) -> Result<(), SessionInsertError> {
-        self.session.insert(USER_ID_KEY, user_id)
+impl AuthService {
+    pub fn new(config: Data<Config>, db_pool: Data<DbPool>) -> Self {
+        Self { config, db_pool }
     }
 
-    pub fn get_user_id_from_session(&self) -> Result<Option<u64>, SessionGetError> {
-        self.session.get::<u64>(USER_ID_KEY)
+    pub fn insert_user_id_into_session(
+        &self,
+        session: &Session,
+        user_id: u64,
+    ) -> Result<(), SessionInsertError> {
+        session.insert(&self.config.get_ref().auth.user_id_session_key, user_id)
     }
 
-    pub fn authenticate_from_session(&self) -> Result<User, UserIsNotAuthenticated> {
+    pub fn get_user_id_from_session(
+        &self,
+        session: &Session,
+    ) -> Result<Option<u64>, SessionGetError> {
+        session.get::<u64>(&self.config.get_ref().auth.user_id_session_key)
+    }
+
+    pub fn remove_user_id_from_session(&self, session: &Session) {
+        session.remove(&self.config.get_ref().auth.user_id_session_key);
+    }
+
+    pub fn authenticate_by_session(
+        &self,
+        session: &Session,
+    ) -> Result<User, UserIsNotAuthenticated> {
         let user_id = self
-            .get_user_id_from_session()
+            .get_user_id_from_session(session)
             .map_err(|_| UserIsNotAuthenticated)?;
 
         match user_id {
             Some(id) => {
-                let mut connection = self.db_pool.get().map_err(|_| UserIsNotAuthenticated)?;
+                let mut connection = self
+                    .db_pool
+                    .get_ref()
+                    .get()
+                    .map_err(|_| UserIsNotAuthenticated)?;
 
                 let user = crate::schema::users::dsl::users
                     .find(id)
@@ -65,19 +69,26 @@ impl Auth {
     }
 
     /// Search for a user by the provided credentials and return his id.
-    pub fn authenticate(&self, data: &Credentials) -> Result<u64, UserIsNotAuthenticated> {
+    pub fn authenticate_by_credentials(
+        &self,
+        data: &Credentials,
+    ) -> Result<u64, UserIsNotAuthenticated> {
         let id: Option<u64> = match data.email.to_owned() {
             Some(data_email) => {
-                let mut connection = self.db_pool.get().map_err(|_| UserIsNotAuthenticated)?;
-
-                let results: Vec<AuthUser> = crate::schema::users::dsl::users
-                    .filter(crate::schema::users::email.eq(data_email))
-                    .select(AuthUser::as_select())
-                    .limit(1)
-                    .load::<AuthUser>(&mut connection)
+                let mut connection = self
+                    .db_pool
+                    .get_ref()
+                    .get()
                     .map_err(|_| UserIsNotAuthenticated)?;
 
-                let result: Option<&AuthUser> = results.get(0);
+                let results: Vec<PrivateUserData> = crate::schema::users::dsl::users
+                    .filter(crate::schema::users::email.eq(data_email))
+                    .select(PrivateUserData::as_select())
+                    .limit(1)
+                    .load::<PrivateUserData>(&mut connection)
+                    .map_err(|_| UserIsNotAuthenticated)?;
+
+                let result: Option<&PrivateUserData> = results.get(0);
 
                 // Check auth
                 match result {
@@ -107,26 +118,15 @@ impl Auth {
         }
     }
 
-    pub fn logout(&self) {
-        self.session.remove(USER_ID_KEY);
+    pub fn logout_from_session(&self, session: &Session) {
+        self.remove_user_id_from_session(session);
     }
 }
 
-impl FromRequest for Auth {
-    type Error = Error;
-    type Future = Ready<Result<Auth, Error>>;
-
-    #[inline]
-    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-        let session: Session = req.get_session();
-
-        let db_pool: Option<&Data<DbPool>> = req.app_data::<Data<DbPool>>();
-        if db_pool.is_none() {
-            return ready(Err(error::ErrorInternalServerError("Db error")));
-        }
-        let db_pool = db_pool.unwrap().deref().deref().to_owned();
-
-        let auth = Auth::new(session, db_pool);
-        ready(Ok(auth))
-    }
+#[derive(Validate, Deserialize, Debug)]
+pub struct Credentials {
+    #[garde(required, inner(length(min = 1, max = 255)))]
+    pub email: Option<String>,
+    #[garde(required, inner(length(min = 1, max = 255)))]
+    pub password: Option<String>,
 }

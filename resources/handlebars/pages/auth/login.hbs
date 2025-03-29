@@ -4,7 +4,7 @@
             {{#if alerts}}
                 <div class="admin-login__alerts">
                     {{#each alerts}}
-                        {{> components/alert.hbs index=@index type=type content=content close=true }}
+                        {{> components/alert.hbs index=@index type=style content=content close=true }}
                     {{/each}}
                 </div>
             {{/if}}

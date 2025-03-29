@@ -1,6 +1,5 @@
 use std::future::{ready, Ready};
 
-use crate::app::services::auth::NOT_AUTHENTICATED_REDIRECT_TO;
 use actix_web::http::StatusCode;
 use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
@@ -59,7 +58,7 @@ where
 
                         res.response_mut().headers_mut().insert(
                             http::header::LOCATION,
-                            http::HeaderValue::from_static(NOT_AUTHENTICATED_REDIRECT_TO),
+                            http::HeaderValue::from_static("/login"),
                         );
 
                         Ok(res)

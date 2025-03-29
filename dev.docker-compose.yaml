@@ -15,35 +15,16 @@ services:
     ports:
       - '${FORWARD_APP_PORT:-8080}:8080'
 
-#  app:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    volumes:
-#      - './:/app'
-#    ports:
-#      - '${FORWARD_APP_PORT:-8080}:8080'
-#    links:
-#      - mysql
-#    environment:
-#      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
-#      MYSQL_ROOT_HOST: '%'
-#      MYSQL_DATABASE: '${DB_DATABASE}'
-#      MYSQL_USER: '${DB_USERNAME}'
-#      MYSQL_PASSWORD: '${DB_PASSWORD}'
-#    command: 'bash -c "diesel setup && cargo watch -x run"'
-#    command: '/app/target/debug/rust-admin-panel'
-
   mysql:
     image: 'mysql/mysql-server:8.0'
     ports:
       - '${FORWARD_DB_PORT:-3306}:3306'
     environment:
-      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD}'
       MYSQL_ROOT_HOST: '%'
-      MYSQL_DATABASE: '${DB_DATABASE}'
-      MYSQL_USER: '${DB_USERNAME}'
-      MYSQL_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_DATABASE: '${MYSQL_DATABASE}'
+      MYSQL_USER: '${MYSQL_USER}'
+      MYSQL_PASSWORD: '${MYSQL_PASSWORD}'
       MYSQL_ALLOW_EMPTY_PASSWORD: 1
     volumes:
       - 'volume-mysql:/var/lib/mysql'

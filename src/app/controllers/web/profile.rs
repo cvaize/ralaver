@@ -1,29 +1,28 @@
-use crate::app::models::user::User;
-use crate::app::services::session::{SessionFlashData, SessionFlashService};
-use actix_web::{error, web, Error, HttpRequest, HttpResponse, Result};
-use handlebars::Handlebars;
-use serde_json::Value::Null;
-use serde_json::{json, Value};
+use actix_web::web::Data;
+use actix_web::{Error, HttpRequest, HttpResponse, Result};
+use crate::{AlertService, TemplateService, User};
+use actix_session::Session;
+use serde_json::json;
 
 pub async fn index(
     req: HttpRequest,
-    tmpl: web::Data<Handlebars<'_>>,
+    tmpl: Data<TemplateService>,
+    alert_service: Data<AlertService>,
+    session: Session,
     user: User,
-    flash_service: SessionFlashService,
 ) -> Result<HttpResponse, Error> {
-    let flash_data: SessionFlashData = flash_service
-        .read_and_forget(None)
-        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
-
-    let user: Value = serde_json::to_value(&user).unwrap_or(Null);
+    let alerts = alert_service
+        .get_ref()
+        .get_and_remove_from_session(&session)
+        .unwrap_or(Vec::new());
 
     let ctx = json!({
-            "user" : user,
-            "alerts": flash_data.alerts,
-            "dark_mode": req.cookie("dark_mode").map(|c| c.value().to_owned())
-        });
-    let s = tmpl.render("pages/profile/index.hbs", &ctx)
-        .map_err(|_| error::ErrorInternalServerError("Template error"))?;
-
+        "user" : user,
+        "alerts": alerts,
+        "dark_mode": req.cookie("dark_mode").map(|c| c.value().to_owned())
+    });
+    let s = tmpl
+        .get_ref()
+        .render_throw_http("pages/profile/index.hbs", &ctx)?;
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }

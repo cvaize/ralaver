@@ -5,7 +5,7 @@ use actix_web::http::header::ContentType;
 use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse};
 use actix_web::middleware::{ErrorHandlerResponse, ErrorHandlers};
-use handlebars::Handlebars;
+use crate::TemplateService;
 
 // Custom error handlers, to return HTML responses when an error occurs.
 pub fn error_handlers() -> ErrorHandlers<BoxBody> {
@@ -34,7 +34,7 @@ fn get_error_response<B>(res: &ServiceResponse<B>, error: &str) -> HttpResponse 
     };
 
     let tmpl = request
-        .app_data::<web::Data<Handlebars<'_>>>()
+        .app_data::<web::Data<TemplateService>>()
         .map(|t| t.get_ref());
     match tmpl {
         Some(tmpl) => {
