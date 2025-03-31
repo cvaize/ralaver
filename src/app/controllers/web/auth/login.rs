@@ -34,7 +34,7 @@ pub async fn show(
     }
 
     let dark_mode = app_service.get_ref().get_dark_mode(&req);
-    let lang = app_service.get_locale_code(Some(&req), Some(&session), None);
+    let (lang, locale, locales) = app_service.get_locale(Some(&req), Some(&session), None);
 
     let title_str = translator_service.translate(&lang, "auth.page.login.title");
     let form_header_str = translator_service.translate(&lang, "auth.page.login.form.header");
@@ -63,9 +63,6 @@ pub async fn show(
     let form_fields_email = form_fields.email.unwrap_or(Field::empty());
 
     let form_fields_password = form_fields.password.unwrap_or(Field::empty());
-
-    let locale = app_service.get_locale_or_default_ref(&lang);
-    let locales = app_service.get_locales_or_default_without_current_ref(&locale.code);
 
     let ctx = json!({
         "title": title_str,
@@ -149,16 +146,16 @@ pub async fn sign_in(
                     .map_err(|_| error::ErrorInternalServerError("Session error"))?;
                 is_redirect_login = false;
                 let user = auth.get_ref().authenticate_by_session(&session);
-                let lang = match user {
-                    Ok(user) => app_service.get_locale_code(Some(&req), Some(&session), Some(&user)),
-                    _ => app_service.get_locale_code(Some(&req), Some(&session), None),
+                let (lang, _, _) = match user {
+                    Ok(user) => app_service.get_locale(Some(&req), Some(&session), Some(&user)),
+                    _ => app_service.get_locale(Some(&req), Some(&session), None),
                 };
                 let alert_str = translator_service.translate(&lang, "auth.alert.sign_in.success");
 
                 alerts.push(Alert::success(alert_str));
             }
             _ => {
-                let lang = app_service.get_locale_code(Some(&req), Some(&session), None);
+                let (lang, _, _) = app_service.get_locale(Some(&req), Some(&session), None);
                 let alert_str = translator_service.translate(&lang, "auth.alert.sign_in.fail");
                 form_errors.push(alert_str);
             }
@@ -215,9 +212,9 @@ pub async fn sign_out(
     let user = auth.get_ref().authenticate_by_session(&session);
     auth.logout_from_session(&session);
 
-    let lang = match user {
-        Ok(user) => app_service.get_locale_code(Some(&req), Some(&session), Some(&user)),
-        _ => app_service.get_locale_code(Some(&req), Some(&session), None),
+    let (lang, _, _) = match user {
+        Ok(user) => app_service.get_locale(Some(&req), Some(&session), Some(&user)),
+        _ => app_service.get_locale(Some(&req), Some(&session), None),
     };
 
     let alert_str = translator_service.translate(&lang, "auth.alert.sign_out.success");

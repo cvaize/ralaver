@@ -1,112 +1,36 @@
-use crate::{Config, SessionService};
+use crate::{Config, LocaleService};
 use crate::{Locale, User};
 use actix_session::Session;
 use actix_web::web::Data;
 use actix_web::HttpRequest;
-use garde::rules::length::simple::Simple;
-use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct AppService {
     config: Data<Config>,
-    session_service: Data<SessionService>,
-    locales: HashMap<String, Locale>,
-    locales_without_current: HashMap<String, Vec<Locale>>,
-    locales_vec: Vec<Locale>,
+    locale_service: Data<LocaleService>,
 }
 
 impl AppService {
-    pub fn new(config: Data<Config>, session_service: Data<SessionService>) -> Self {
-        let locales_vec = vec![
-            Locale {
-                code: "en".to_string(),
-                short_name: "en".to_string(),
-                full_name: "English".to_string(),
-            },
-            Locale {
-                code: "ru".to_string(),
-                short_name: "ru".to_string(),
-                full_name: "Русский".to_string(),
-            },
-        ];
-        let mut locales: HashMap<String, Locale> = HashMap::new();
-        let mut locales_without_current: HashMap<String, Vec<Locale>> = HashMap::new();
-        for locale in locales_vec.iter() {
-            locales.insert(locale.code.to_string(), locale.clone());
-            let mut vec_without_current: Vec<Locale> = Vec::new();
-            for locale2 in locales_vec.iter() {
-                if locale.code != locale2.code {
-                    vec_without_current.push(locale2.clone());
-                }
-            }
-            locales_without_current.insert(locale.code.to_string(), vec_without_current);
-        }
+    pub fn new(config: Data<Config>, locale_service: Data<LocaleService>) -> Self {
         Self {
             config,
-            session_service,
-            locales,
-            locales_vec,
-            locales_without_current,
+            locale_service,
         }
     }
 
-    pub fn get_locale_ref(&self, code: &str) -> Option<&Locale> {
-        self.locales.get(code)
-    }
-
-    pub fn get_locale_or_default_ref(&self, code: &str) -> &Locale {
-        self.locales
-            .get(code)
-            .unwrap_or(self.locales.get(&self.config.app.locale).unwrap())
-    }
-
-    pub fn get_locales_ref(&self) -> &Vec<Locale> {
-        &self.locales_vec
-    }
-
-    pub fn get_locales_without_current_ref(&self, current_code: &str) -> Option<&Vec<Locale>> {
-        self.locales_without_current.get(current_code)
-    }
-
-    pub fn get_locales_or_default_without_current_ref(&self, current_code: &str) -> &Vec<Locale> {
-        self.locales_without_current.get(current_code)
-            .unwrap_or(self.locales_without_current.get(&self.config.app.locale).unwrap())
-    }
-
-    pub fn get_locale_code(
+    pub fn get_locale(
         &self,
         req: Option<&HttpRequest>,
         session: Option<&Session>,
         user: Option<&User>,
-    ) -> String {
-        if let Some(req) = req {
-            if let Some(locale) = req.cookie(&self.config.app.locale_cookie_key) {
-                let locale = locale.value().to_string();
-                if locale.validate_length(1, 6).is_ok() {
-                    return locale;
-                }
-            }
-        }
-        if let Some(session) = session {
-            let locale = self
-                .session_service
-                .get_ref()
-                .get_string(session, &self.config.app.locale_session_key);
-            if let Ok(Some(locale)) = locale {
-                if locale.validate_length(1, 6).is_ok() {
-                    return locale;
-                }
-            }
-        }
-        if let Some(user) = user {
-            if let Some(locale) = &user.locale {
-                if locale.validate_length(1, 6).is_ok() {
-                    return locale.to_string();
-                }
-            }
-        }
+    ) -> (String, &Locale, &Vec<Locale>) {
+        let locale_service = self.locale_service.get_ref();
+        let lang: String = locale_service.get_locale_code(req, session, user);
+        let locale: &Locale = locale_service.get_locale_or_default_ref(&lang);
+        let locales_without_current: &Vec<Locale> =
+            locale_service.get_locales_or_default_without_current_ref(&lang);
 
-        self.config.app.locale.to_string()
+        (lang, locale, locales_without_current)
     }
 
     // Return "dark" or "light" or None

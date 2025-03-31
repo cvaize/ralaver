@@ -18,7 +18,7 @@ pub async fn show(
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
 ) -> Result<HttpResponse, Error> {
-    let lang = app_service.get_locale_code(Some(&req), Some(&session), None);
+    let (lang, locale, locales) = app_service.get_locale(Some(&req), Some(&session), None);
 
     let alerts = alert_service
         .get_ref()
@@ -50,9 +50,6 @@ pub async fn show(
     let forgot_password_str =
         translator_service.translate(&lang, "auth.page.register.form.forgot_password.label");
     let login_str = translator_service.translate(&lang, "auth.page.register.form.login.label");
-
-    let locale = app_service.get_locale_or_default_ref(&lang);
-    let locales = app_service.get_locales_or_default_without_current_ref(&locale.code);
 
     let ctx = json!({
         "title": title_str,
@@ -135,7 +132,7 @@ pub async fn register(
             }
         }
     } else {
-        let lang = app_service.get_locale_code(Some(&req), Some(&session), None);
+        let (lang, _, _) = app_service.get_locale(Some(&req), Some(&session), None);
         let alert_str = translator_service.translate(&lang, "auth.alert.register.success");
 
         alerts.push(Alert::success(alert_str));
