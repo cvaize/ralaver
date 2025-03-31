@@ -1,4 +1,4 @@
-{{#> components/layout.hbs user=user lang=locale.code dark_mode=dark_mode title=title }}
+{{#> components/layout.hbs user=user locales=locales locale=locale dark_mode=dark_mode title=title }}
     {{#if alerts}}
         {{#each alerts}}
             {{> components/alert.hbs index=@index type=style content=content close=true }}

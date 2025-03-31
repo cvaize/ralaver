@@ -6,6 +6,7 @@ pub fn register(cfg: &mut web::ServiceConfig) {
         web::resource("/")
             .route(web::get().to(controllers::web::home::index)),
     );
+    cfg.service(web::resource("/locale/switch").route(web::post().to(controllers::web::locale::switch)));
     cfg.service(web::resource("/users").route(web::get().to(controllers::web::users::index)));
     cfg.service(
         web::resource("/login")
