@@ -1,25 +1,21 @@
+use crate::{AppService, TemplateService, User};
+use actix_session::Session;
 use actix_web::web::Data;
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
-use crate::{AlertService, AppService, TemplateService, User};
-use actix_session::Session;
 use serde_json::json;
 
 pub async fn index(
     req: HttpRequest,
     tmpl: Data<TemplateService>,
-    alert_service: Data<AlertService>,
     app_service: Data<AppService>,
     session: Session,
     user: User,
 ) -> Result<HttpResponse, Error> {
-    let alerts = alert_service
-        .get_ref()
-        .get_and_remove_from_session(&session)
-        .unwrap_or(Vec::new());
+    let alerts = app_service.get_ref().alerts(&session);
 
-    let dark_mode = app_service.get_ref().get_dark_mode(&req);
+    let dark_mode = app_service.get_ref().dark_mode(&req);
 
-    let (_, locale, locales) = app_service.get_locale(Some(&req), Some(&session), Some(&user));
+    let (_, locale, locales) = app_service.locale(Some(&req), Some(&session), Some(&user));
 
     let ctx = json!({
         "locale": locale,

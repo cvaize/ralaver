@@ -20,7 +20,6 @@ pub async fn show(
     session: Session,
     auth: Data<AuthService>,
     tmpl: Data<TemplateService>,
-    alert_service: Data<AlertService>,
     session_service: Data<SessionService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
@@ -33,8 +32,8 @@ pub async fn show(
             .finish());
     }
 
-    let dark_mode = app_service.get_ref().get_dark_mode(&req);
-    let (lang, locale, locales) = app_service.get_locale(Some(&req), Some(&session), None);
+    let dark_mode = app_service.get_ref().dark_mode(&req);
+    let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
 
     let title_str = translator_service.translate(&lang, "auth.page.login.title");
     let form_header_str = translator_service.translate(&lang, "auth.page.login.form.header");
@@ -46,10 +45,7 @@ pub async fn show(
         translator_service.translate(&lang, "auth.page.login.form.forgot_password.label");
     let register_str = translator_service.translate(&lang, "auth.page.login.form.register.label");
 
-    let alerts = alert_service
-        .get_ref()
-        .get_and_remove_from_session(&session)
-        .unwrap_or(Vec::new());
+    let alerts = app_service.get_ref().alerts(&session);
 
     let form_data: FormData = session_service
         .get_and_remove(&session, FORM_DATA_KEY)
@@ -147,15 +143,15 @@ pub async fn sign_in(
                 is_redirect_login = false;
                 let user = auth.get_ref().authenticate_by_session(&session);
                 let (lang, _, _) = match user {
-                    Ok(user) => app_service.get_locale(Some(&req), Some(&session), Some(&user)),
-                    _ => app_service.get_locale(Some(&req), Some(&session), None),
+                    Ok(user) => app_service.locale(Some(&req), Some(&session), Some(&user)),
+                    _ => app_service.locale(Some(&req), Some(&session), None),
                 };
                 let alert_str = translator_service.translate(&lang, "auth.alert.sign_in.success");
 
                 alerts.push(Alert::success(alert_str));
             }
             _ => {
-                let (lang, _, _) = app_service.get_locale(Some(&req), Some(&session), None);
+                let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
                 let alert_str = translator_service.translate(&lang, "auth.alert.sign_in.fail");
                 form_errors.push(alert_str);
             }
@@ -213,8 +209,8 @@ pub async fn sign_out(
     auth.logout_from_session(&session);
 
     let (lang, _, _) = match user {
-        Ok(user) => app_service.get_locale(Some(&req), Some(&session), Some(&user)),
-        _ => app_service.get_locale(Some(&req), Some(&session), None),
+        Ok(user) => app_service.locale(Some(&req), Some(&session), Some(&user)),
+        _ => app_service.locale(Some(&req), Some(&session), None),
     };
 
     let alert_str = translator_service.translate(&lang, "auth.alert.sign_out.success");

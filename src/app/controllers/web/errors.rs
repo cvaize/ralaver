@@ -1,11 +1,11 @@
-use std::collections::HashMap;
+use crate::TemplateService;
 use actix_web::body::BoxBody;
 use actix_web::dev::ServiceResponse;
 use actix_web::http::header::ContentType;
 use actix_web::http::StatusCode;
-use actix_web::{web, HttpResponse};
 use actix_web::middleware::{ErrorHandlerResponse, ErrorHandlers};
-use crate::TemplateService;
+use actix_web::{web, HttpResponse};
+use std::collections::HashMap;
 
 // Custom error handlers, to return HTML responses when an error occurs.
 pub fn error_handlers() -> ErrorHandlers<BoxBody> {

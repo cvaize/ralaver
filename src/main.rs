@@ -46,7 +46,7 @@ async fn main() -> std::io::Result<()> {
     let alert = Data::new(AlertService::new(config.clone(), session.clone()));
     let auth = Data::new(AuthService::new(config.clone(), db_pool.clone()));
     let locale = Data::new(LocaleService::new(config.clone(), session.clone()));
-    let app = Data::new(AppService::new(config.clone(), locale.clone()));
+    let app = Data::new(AppService::new(config.clone(), locale.clone(), alert.clone()));
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 

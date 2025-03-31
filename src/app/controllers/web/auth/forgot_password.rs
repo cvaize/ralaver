@@ -14,16 +14,12 @@ pub async fn show(
     session: Session,
     tmpl: Data<TemplateService>,
     session_service: Data<SessionService>,
-    alert_service: Data<AlertService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
 ) -> Result<HttpResponse, Error> {
-    let (lang, locale, locales) = app_service.get_locale(Some(&req), Some(&session), None);
+    let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
 
-    let alerts = alert_service
-        .get_ref()
-        .get_and_remove_from_session(&session)
-        .unwrap_or(Vec::new());
+    let alerts = app_service.get_ref().alerts(&session);
 
     let form_data: FormData = session_service
         .get_and_remove(&session, FORM_DATA_KEY)
@@ -36,7 +32,7 @@ pub async fn show(
 
     let email_field = fields.email.unwrap_or(Field::empty());
 
-    let dark_mode = app_service.get_ref().get_dark_mode(&req);
+    let dark_mode = app_service.get_ref().dark_mode(&req);
     let title_str = translator_service.translate(&lang, "auth.page.forgot_password.title");
     let back_str = translator_service.translate(&lang, "auth.page.forgot_password.back.label");
     let header_str = translator_service.translate(&lang, "auth.page.forgot_password.form.header");
@@ -103,7 +99,7 @@ pub async fn send_email(
             }
         }
     } else {
-        let (lang, _, _) = app_service.get_locale(Some(&req), Some(&session), None);
+        let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
         let alert_str = translator_service.translate(&lang, "auth.alert.send_email.success");
 
         alerts.push(Alert::success(alert_str));

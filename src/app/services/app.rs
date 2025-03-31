@@ -1,24 +1,25 @@
-use crate::{Config, LocaleService};
+use crate::{Alert, AlertService, Config, LocaleService};
 use crate::{Locale, User};
 use actix_session::Session;
 use actix_web::web::Data;
 use actix_web::HttpRequest;
 
-#[derive(Debug)]
 pub struct AppService {
     config: Data<Config>,
     locale_service: Data<LocaleService>,
+    alert_service: Data<AlertService>,
 }
 
 impl AppService {
-    pub fn new(config: Data<Config>, locale_service: Data<LocaleService>) -> Self {
+    pub fn new(config: Data<Config>, locale_service: Data<LocaleService>, alert_service: Data<AlertService>) -> Self {
         Self {
             config,
             locale_service,
+            alert_service,
         }
     }
 
-    pub fn get_locale(
+    pub fn locale(
         &self,
         req: Option<&HttpRequest>,
         session: Option<&Session>,
@@ -34,8 +35,12 @@ impl AppService {
     }
 
     // Return "dark" or "light" or None
-    pub fn get_dark_mode(&self, req: &HttpRequest) -> Option<String> {
+    pub fn dark_mode(&self, req: &HttpRequest) -> Option<String> {
         req.cookie(&self.config.app.dark_mode_cookie_key)
             .map(|c| c.value().to_owned())
+    }
+
+    pub fn alerts(&self, session: &Session) -> Vec<Alert> {
+        self.alert_service.get_and_remove_from_session(session).unwrap_or(Vec::new())
     }
 }
