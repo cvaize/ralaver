@@ -2,6 +2,7 @@ use crate::DbPool;
 use crate::{Config, PrivateUserData, User};
 use actix_session::{Session, SessionGetError, SessionInsertError};
 use actix_web::web::Data;
+#[allow(unused_imports)]
 use diesel::prelude::*;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
 use garde::Validate;

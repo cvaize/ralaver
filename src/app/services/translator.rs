@@ -2,10 +2,9 @@ use crate::helpers::collect_files_from_dir;
 use crate::Config;
 use actix_web::web::Data;
 use serde_json::Value;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
-use actix_session::Session;
 
 #[derive(Debug, Clone)]
 pub struct TranslatorService {
@@ -124,11 +123,14 @@ mod tests {
         let config = Data::new(Config::new_from_env());
         let t: TranslatorService = TranslatorService::new(
             config,
-            HashMap::from([("en.test_key".to_string(), "test_value".to_string())]),
+            HashMap::from([
+                ("en.test_key".to_string(), "test_value".to_string()),
+                ("en.test_key2".to_string(), "test_value2".to_string()),
+            ]),
         );
 
         assert_eq!("test_value".to_string(), t.translate("en", "test_key"));
-        assert_eq!("test_key".to_string(), t.translate("ru", "test_key"));
+        assert_eq!("test_key".to_string(), t.translate("fi", "test_key"));
         assert_eq!("test_key123".to_string(), t.translate("en", "test_key123"));
     }
 

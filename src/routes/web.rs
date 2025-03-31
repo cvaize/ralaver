@@ -20,15 +20,17 @@ pub fn register(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/register")
             .route(web::get().to(controllers::web::auth::register::show))
-            .route(web::post().to(controllers::web::auth::register::store)),
+            .route(web::post().to(controllers::web::auth::register::register)),
     );
     cfg.service(
         web::resource("/forgot-password")
-            .route(web::get().to(controllers::web::auth::forgot_password::show)),
+            .route(web::get().to(controllers::web::auth::forgot_password::show))
+            .route(web::post().to(controllers::web::auth::forgot_password::send_email)),
     );
     cfg.service(
         web::resource("/forgot-password-confirm")
-            .route(web::get().to(controllers::web::auth::forgot_password_confirm::show)),
+            .route(web::get().to(controllers::web::auth::forgot_password_confirm::show))
+            .route(web::get().to(controllers::web::auth::forgot_password_confirm::confirm)),
     );
     cfg.service(
         web::resource("/profile")

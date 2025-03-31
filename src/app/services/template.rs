@@ -7,6 +7,7 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::{env, io};
 
+#[allow(dead_code)]
 pub struct TemplateService {
     config: Data<Config>,
     handlebars: Handlebars<'static>,
@@ -19,7 +20,10 @@ impl TemplateService {
     pub fn render<T: Serialize>(&self, name: &str, data: &T) -> Result<String, RenderError>
     {
         match name.ends_with(".hbs") || name.ends_with(".handlebars") || name.ends_with(".html") {
-            true => self.handlebars.render(name, data).map_err(|_| RenderError),
+            true => self.handlebars.render(name, data).map_err(|e| {
+                println!("{:}", &e);
+                return RenderError;
+            }),
             _ => Err(RenderError),
         }
     }

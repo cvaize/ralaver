@@ -1,4 +1,4 @@
-{{#> components/layout.hbs user=user lang="ru" dark_mode=dark_mode title="Профиль" }}
+{{#> components/layout.hbs user=user lang=lang dark_mode=dark_mode title=title }}
     {{#if alerts}}
         {{#each alerts}}
             {{> components/alert.hbs index=@index type=style content=content close=true }}

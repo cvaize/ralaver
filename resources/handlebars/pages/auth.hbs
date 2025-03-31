@@ -12,6 +12,14 @@
                 {{#if form.action}} action="{{form.action}}" {{/if}}
                 {{#if form.method}} method="{{form.method}}" {{/if}}
             >
+                {{#if back}}
+                    <div class="admin-login__back">
+                        <a href="{{back.href}}" class="admin-login__back-link">
+                            <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M16.62 2.99a1.25 1.25 0 0 0-1.77 0L6.54 11.3a.996.996 0 0 0 0 1.41l8.31 8.31c.49.49 1.28.49 1.77 0s.49-1.28 0-1.77L9.38 12l7.25-7.25c.48-.48.48-1.28-.01-1.76z"/></svg>
+                            {{back.label}}
+                        </a>
+                    </div>
+                {{/if}}
                 {{#if form.header}}
                     <h1 class="admin-login__header">{{form.header}}</h1>
                 {{/if}}
@@ -22,7 +30,7 @@
                     {{/each}}
                 {{/if}}
 
-                {{#if form.forgot_password and form.register}}
+                {{#if form.forgot_password or form.register or form.login}}
                     <div class="admin-login__nav">
                         {{#if form.forgot_password}}
                             <a href="{{form.forgot_password.href}}" class="admin-login__forgot-link">
@@ -34,6 +42,11 @@
                                 {{form.register.label}}
                             </a>
                         {{/if}}
+                        {{#if form.login}}
+                            <a href="{{form.login.href}}" class="admin-login__register-link">
+                                {{form.login.label}}
+                            </a>
+                        {{/if}}
                     </div>
                 {{/if}}
 
@@ -43,8 +56,12 @@
                     {{/each}}
                 {{/if}}
 
-                {{#if form.submit}}
+                {{#if form.submit.label}}
                     <button type="submit" class="admin-btn admin-login__submit">{{form.submit.label}}</button>
+                {{/if}}
+
+                {{#if form.submit.text}}
+                    <div class="admin-text">{{form.submit.text}}</div>
                 {{/if}}
             </form>
         </div>

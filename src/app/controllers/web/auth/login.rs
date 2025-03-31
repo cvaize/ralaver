@@ -1,4 +1,7 @@
-use crate::{Alert, AlertService, AppService, AuthService, Credentials, SessionService, TemplateService, TranslatorService};
+use crate::{
+    Alert, AlertService, AppService, AuthService, Credentials, SessionService, TemplateService,
+    TranslatorService,
+};
 use actix_session::Session;
 use actix_web::web::Data;
 use actix_web::web::Form;
@@ -26,41 +29,40 @@ pub async fn show(
 
     if user.is_ok() {
         return Ok(HttpResponse::SeeOther()
-            .insert_header((
-                http::header::LOCATION,
-                http::HeaderValue::from_static("/"),
-            ))
+            .insert_header((http::header::LOCATION, http::HeaderValue::from_static("/")))
             .finish());
     }
+
+    let dark_mode = app_service.get_ref().get_dark_mode(&req);
+    let lang = app_service.get_locale(Some(&req), Some(&session), None);
+
+    let title_str = translator_service.translate(&lang, "auth.page.login.title");
+    let form_header_str = translator_service.translate(&lang, "auth.page.login.form.header");
+    let email_str = translator_service.translate(&lang, "auth.page.login.form.fields.email.label");
+    let password_str =
+        translator_service.translate(&lang, "auth.page.login.form.fields.password.label");
+    let submit_str = translator_service.translate(&lang, "auth.page.login.form.submit.label");
+    let forgot_password_str =
+        translator_service.translate(&lang, "auth.page.login.form.forgot_password.label");
+    let register_str = translator_service.translate(&lang, "auth.page.login.form.register.label");
 
     let alerts = alert_service
         .get_ref()
         .get_and_remove_from_session(&session)
         .unwrap_or(Vec::new());
 
-    let login_form_data: LoginSessionFormData = session_service
+    let form_data: FormData = session_service
         .get_and_remove(&session, FORM_DATA_KEY)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?
-        .unwrap_or(LoginSessionFormData::empty());
+        .unwrap_or(FormData::empty());
 
-    let login_form_form = login_form_data.form.unwrap_or(LoginFormForm::empty());
+    let form = form_data.form.unwrap_or(LoginForm::empty());
 
-    let login_form_form_fields = login_form_form
-        .fields
-        .unwrap_or(LoginFormFormFields::empty());
+    let form_fields = form.fields.unwrap_or(Fields::empty());
 
-    let login_form_form_fields_email = login_form_form_fields
-        .email
-        .unwrap_or(LoginFormFormField::empty());
+    let form_fields_email = form_fields.email.unwrap_or(Field::empty());
 
-    let login_form_form_fields_password = login_form_form_fields
-        .password
-        .unwrap_or(LoginFormFormField::empty());
-
-    let dark_mode = app_service.get_ref().get_dark_mode(&req);
-    let lang = app_service.get_locale(Some(&req), Some(&session), None);
-
-    let title_str = translator_service.translate(&lang, "auth.page.login.title");
+    let form_fields_password = form_fields.password.unwrap_or(Field::empty());
 
     let ctx = json!({
         "title": title_str,
@@ -68,51 +70,54 @@ pub async fn show(
         "form": {
             "action": "/login",
             "method": "post",
-            "header": "Вход",
+            "header": form_header_str,
             "fields": [
                 {
-                    "label": "E-mail",
+                    "label": email_str,
                     "type": "email",
                     "name": "email",
-                    "value": login_form_form_fields_email.value,
-                    "errors": login_form_form_fields_email.errors,
+                    "value": form_fields_email.value,
+                    "errors": form_fields_email.errors,
                 },
                 {
-                    "label": "Пароль",
+                    "label": password_str,
                     "type": "password",
                     "name": "password",
-                    "value": login_form_form_fields_password.value,
-                    "errors": login_form_form_fields_password.errors,
+                    "value": form_fields_password.value,
+                    "errors": form_fields_password.errors,
                 }
             ],
             "submit": {
-                "label": "Войти"
+                "label": submit_str
             },
             "forgot_password": {
-                "label": "Сбросить пароль?",
+                "label": forgot_password_str,
                 "href": "/forgot-password"
             },
             "register": {
-                "label": "Зарегистрироваться",
+                "label": register_str,
                 "href": "/register"
             },
-            "errors": login_form_form.errors,
+            "errors": form.errors,
         },
         "alerts": alerts,
         "dark_mode": dark_mode
     });
 
-    let s = tmpl.render_throw_http("pages/auth/login.hbs", &ctx)?;
+    let s = tmpl.render_throw_http("pages/auth.hbs", &ctx)?;
 
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }
 
 pub async fn sign_in(
+    req: HttpRequest,
     session: Session,
     alert_service: Data<AlertService>,
     session_service: Data<SessionService>,
     data: Form<Credentials>,
     auth: Data<AuthService>,
+    app_service: Data<AppService>,
+    translator_service: Data<TranslatorService>,
 ) -> Result<impl Responder, Error> {
     let mut is_redirect_login = true;
     let credentials: &Credentials = data.deref();
@@ -139,39 +144,48 @@ pub async fn sign_in(
                 auth.insert_user_id_into_session(&session, user_id)
                     .map_err(|_| error::ErrorInternalServerError("Session error"))?;
                 is_redirect_login = false;
-                alerts.push(Alert::success("Авторизация успешно пройдена.".to_string()));
+                let user = auth.get_ref().authenticate_by_session(&session);
+                let lang = match user {
+                    Ok(user) => app_service.get_locale(Some(&req), Some(&session), Some(&user)),
+                    _ => app_service.get_locale(Some(&req), Some(&session), None),
+                };
+                let alert_str = translator_service.translate(&lang, "auth.alert.sign_in.success");
+
+                alerts.push(Alert::success(alert_str));
             }
             _ => {
-                form_errors.push("Вход на сайт не был произведен. Возможно, Вы ввели неверное E-mail или пароль.".to_string());
+                let lang = app_service.get_locale(Some(&req), Some(&session), None);
+                let alert_str = translator_service.translate(&lang, "auth.alert.sign_in.fail");
+                form_errors.push(alert_str);
             }
         };
     };
 
-    let email_field = LoginFormFormField {
+    let email_field = Field {
         value: credentials.email.to_owned(),
         errors: Some(email_errors),
     };
 
-    let password_field = LoginFormFormField {
+    let password_field = Field {
         value: None,
         errors: Some(password_errors),
     };
 
-    let fields = LoginFormFormFields {
+    let fields = Fields {
         email: Some(email_field),
         password: Some(password_field),
     };
 
-    let form = LoginFormForm {
+    let form = LoginForm {
         fields: Some(fields),
         errors: Some(form_errors),
     };
 
-    let login_form_data = LoginSessionFormData { form: Some(form) };
+    let form_data = FormData { form: Some(form) };
 
     session_service
         .get_ref()
-        .insert(&session, FORM_DATA_KEY, &login_form_data)
+        .insert(&session, FORM_DATA_KEY, &form_data)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
     alert_service
@@ -187,13 +201,24 @@ pub async fn sign_in(
 }
 
 pub async fn sign_out(
+    req: HttpRequest,
     session: Session,
     auth: Data<AuthService>,
     alert_service: Data<AlertService>,
+    app_service: Data<AppService>,
+    translator_service: Data<TranslatorService>,
 ) -> Result<impl Responder, Error> {
+    let user = auth.get_ref().authenticate_by_session(&session);
     auth.logout_from_session(&session);
 
-    let alerts = vec![Alert::success("Вы успешно вышли из системы.".to_string())];
+    let lang = match user {
+        Ok(user) => app_service.get_locale(Some(&req), Some(&session), Some(&user)),
+        _ => app_service.get_locale(Some(&req), Some(&session), None),
+    };
+
+    let alert_str = translator_service.translate(&lang, "auth.alert.sign_out.success");
+
+    let alerts = vec![Alert::success(alert_str)];
     alert_service
         .get_ref()
         .insert_into_session(&session, &alerts)
@@ -203,35 +228,35 @@ pub async fn sign_out(
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct LoginSessionFormData {
-    form: Option<LoginFormForm>,
+pub struct FormData {
+    form: Option<LoginForm>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct LoginFormForm {
-    fields: Option<LoginFormFormFields>,
+pub struct LoginForm {
+    fields: Option<Fields>,
     errors: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct LoginFormFormFields {
-    email: Option<LoginFormFormField>,
-    password: Option<LoginFormFormField>,
+pub struct Fields {
+    email: Option<Field>,
+    password: Option<Field>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct LoginFormFormField {
+pub struct Field {
     value: Option<String>,
     errors: Option<Vec<String>>,
 }
 
-impl LoginSessionFormData {
+impl FormData {
     fn empty() -> Self {
         Self { form: None }
     }
 }
 
-impl LoginFormForm {
+impl LoginForm {
     fn empty() -> Self {
         Self {
             fields: None,
@@ -240,7 +265,7 @@ impl LoginFormForm {
     }
 }
 
-impl LoginFormFormFields {
+impl Fields {
     fn empty() -> Self {
         Self {
             email: None,
@@ -249,7 +274,7 @@ impl LoginFormFormFields {
     }
 }
 
-impl LoginFormFormField {
+impl Field {
     fn empty() -> Self {
         Self {
             value: None,
