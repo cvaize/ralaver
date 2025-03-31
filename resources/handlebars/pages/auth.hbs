@@ -12,6 +12,14 @@
                 {{#if form.action}} action="{{form.action}}" {{/if}}
                 {{#if form.method}} method="{{form.method}}" {{/if}}
             >
+                <div class="admin-login__lang admin-dropdown" tabindex="-1">
+                    <button class="admin-btn admin-dropdown__btn" type="button">
+                        RU
+                    </button>
+                    <ul class="admin-dropdown__menu">
+                        <li><a class="admin-dropdown__item" href="#">EN</a></li>
+                    </ul>
+                </div>
                 {{#if back}}
                     <div class="admin-login__back">
                         <a href="{{back.href}}" class="admin-login__back-link">
