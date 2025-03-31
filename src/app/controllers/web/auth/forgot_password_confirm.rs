@@ -18,7 +18,7 @@ pub async fn show(
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
 ) -> Result<HttpResponse, Error> {
-    let lang = app_service.get_locale(Some(&req), Some(&session), None);
+    let lang = app_service.get_locale_code(Some(&req), Some(&session), None);
 
     let alerts = alert_service
         .get_ref()
@@ -60,9 +60,13 @@ pub async fn show(
     let submit_str =
         translator_service.translate(&lang, "auth.page.forgot_password_confirm.form.submit.label");
 
+    let locale = app_service.get_locale_or_default_ref(&lang);
+    let locales = app_service.get_locales_or_default_without_current_ref(&locale.code);
+
     let ctx = json!({
         "title": title_str,
-        "lang": lang,
+        "locale": locale,
+        "locales": locales,
         "alerts": alerts,
         "dark_mode": dark_mode,
         "back": {
@@ -145,7 +149,7 @@ pub async fn confirm(
             }
         }
     } else {
-        let lang = app_service.get_locale(Some(&req), Some(&session), None);
+        let lang = app_service.get_locale_code(Some(&req), Some(&session), None);
         let alert_str = translator_service.translate(&lang, "auth.alert.send_email.success");
 
         alerts.push(Alert::success(alert_str));

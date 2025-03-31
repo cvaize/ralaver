@@ -1,4 +1,4 @@
-{{#> components/login.hbs user=user lang=lang dark_mode=dark_mode title=title }}
+{{#> components/login.hbs user=user lang=locale.code dark_mode=dark_mode title=title }}
     <div class="admin-login">
         <div class="admin-container admin-login__container">
             {{#if alerts}}
@@ -12,18 +12,27 @@
                 {{#if form.action}} action="{{form.action}}" {{/if}}
                 {{#if form.method}} method="{{form.method}}" {{/if}}
             >
-                <div class="admin-login__lang admin-dropdown" tabindex="-1">
-                    <button class="admin-btn admin-dropdown__btn" type="button">
-                        RU
-                    </button>
-                    <ul class="admin-dropdown__menu">
-                        <li><a class="admin-dropdown__item" href="#">EN</a></li>
-                    </ul>
-                </div>
+
+                {{#if locales and locale}}
+                    <div class="admin-login__lang admin-dropdown" tabindex="-1">
+                        <button class="admin-btn admin-dropdown__btn" type="button" style="text-transform: uppercase">
+                            {{ locale.short_name }}
+                        </button>
+                        <ul class="admin-dropdown__menu">
+                            {{#each locales}}
+                                <li><a class="admin-dropdown__item" href="#"
+                                       style="text-transform: uppercase">{{ short_name }}</a></li>
+                            {{/each}}
+                        </ul>
+                    </div>
+                {{/if}}
                 {{#if back}}
                     <div class="admin-login__back">
                         <a href="{{back.href}}" class="admin-login__back-link">
-                            <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M16.62 2.99a1.25 1.25 0 0 0-1.77 0L6.54 11.3a.996.996 0 0 0 0 1.41l8.31 8.31c.49.49 1.28.49 1.77 0s.49-1.28 0-1.77L9.38 12l7.25-7.25c.48-.48.48-1.28-.01-1.76z"/></svg>
+                            <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                 viewBox="0 0 24 24">
+                                <path d="M16.62 2.99a1.25 1.25 0 0 0-1.77 0L6.54 11.3a.996.996 0 0 0 0 1.41l8.31 8.31c.49.49 1.28.49 1.77 0s.49-1.28 0-1.77L9.38 12l7.25-7.25c.48-.48.48-1.28-.01-1.76z"/>
+                            </svg>
                             {{back.label}}
                         </a>
                     </div>

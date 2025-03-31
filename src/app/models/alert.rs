@@ -2,8 +2,8 @@ use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Alert {
-    style: String,
-    content: String,
+    pub style: String,
+    pub content: String,
 }
 
 impl Alert {

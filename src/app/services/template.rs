@@ -70,9 +70,11 @@ impl TemplateService {
         }
 
         handlebars.register_helper("eq", Box::new(eq));
+        handlebars.register_helper("ne", Box::new(ne));
 
         Ok(TemplateService { config, handlebars })
     }
 }
 
 handlebars_helper!(eq: |*args| args[0].eq(args[1]));
+handlebars_helper!(ne: |*args| args[0].ne(args[1]));

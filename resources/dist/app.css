@@ -2226,6 +2226,8 @@ input.admin-input[type="file"], input.admin-input[type="file"]:read-only, input.
     flex-direction: column;
     justify-content: center;
     padding-bottom: 3rem;
+    padding-left: 0;
+    padding-right: 0;
 }
 
 .admin-login__alerts {
@@ -2241,6 +2243,13 @@ input.admin-input[type="file"], input.admin-input[type="file"]:read-only, input.
     padding: 1rem;
     border-radius: 1rem;
     background-color: rgba(var(--admin-app-light-background-color), 1);
+    position: relative;
+}
+
+.admin-login__lang {
+    position: absolute;
+    right: 0.5rem;
+    top: 0.5rem;
 }
 
 .admin-login__header {
