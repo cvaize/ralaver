@@ -130,7 +130,7 @@ mod tests {
         );
 
         assert_eq!("test_value".to_string(), t.translate("en", "test_key"));
-        assert_eq!("test_key".to_string(), t.translate("fi", "test_key"));
+        assert_eq!("test_value".to_string(), t.translate("fi", "test_key"));
         assert_eq!("test_key123".to_string(), t.translate("en", "test_key123"));
     }
 

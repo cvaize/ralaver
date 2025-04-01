@@ -2,10 +2,11 @@ use crate::{Alert, AlertService, AppService, SessionService, TemplateService, Tr
 use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
-use garde::Validate;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
+use crate::app::validator::rules::email::Email;
+use crate::app::validator::rules::length::MinMaxLengthString;
 
 static FORM_DATA_KEY: &str = "page.register.form.data";
 
@@ -112,25 +113,45 @@ pub async fn register(
 ) -> Result<impl Responder, Error> {
     let data: &ForgotPasswordConfirmData = data.deref();
 
-    let mut email_errors: Vec<String> = vec![];
-    let mut password_errors: Vec<String> = vec![];
-    let mut confirm_password_errors: Vec<String> = vec![];
     let mut alerts: Vec<Alert> = vec![];
     let form_errors: Vec<String> = vec![];
 
-    if let Err(report) = data.validate() {
-        for (path, error) in report.iter() {
-            if path.to_string() == "email" {
-                email_errors.push(error.message().to_string());
-            }
-            if path.to_string() == "password" {
-                password_errors.push(error.message().to_string());
-            }
-            if path.to_string() == "confirm_password" {
-                confirm_password_errors.push(error.message().to_string());
-            }
-        }
-    } else {
+    let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
+
+    let email_str =
+        translator_service.translate(&lang, "auth.page.register.form.fields.email.label");
+    let password_str =
+        translator_service.translate(&lang, "auth.page.register.form.fields.password.label");
+    let confirm_password_str = translator_service.translate(
+        &lang,
+        "auth.page.register.form.fields.confirm_password.label",
+    );
+
+    let email_errors: Vec<String> = Email::validate(
+        translator_service.get_ref(),
+        &lang,
+        &data.email,
+        &email_str,
+    );
+    let password_errors: Vec<String> = MinMaxLengthString::validate(
+        translator_service.get_ref(),
+        &lang,
+        &data.password,
+        4,
+        254,
+        &password_str,
+    );
+    let confirm_password_errors: Vec<String> = MinMaxLengthString::validate(
+        translator_service.get_ref(),
+        &lang,
+        &data.confirm_password,
+        4,
+        254,
+        &confirm_password_str,
+    );
+
+
+    if email_errors.len() == 0 && password_errors.len() == 0 && confirm_password_errors.len() == 0 {
         let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
         let alert_str = translator_service.translate(&lang, "auth.alert.register.success");
 
@@ -178,13 +199,10 @@ pub async fn register(
     Ok(Redirect::to("/register").see_other())
 }
 
-#[derive(Validate, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct ForgotPasswordConfirmData {
-    #[garde(required, inner(length(min = 1, max = 255)))]
     pub email: Option<String>,
-    #[garde(required, inner(length(min = 1, max = 255)))]
     pub password: Option<String>,
-    #[garde(required, inner(length(min = 1, max = 255)))]
     pub confirm_password: Option<String>,
 }
 

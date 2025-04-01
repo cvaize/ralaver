@@ -5,6 +5,10 @@ use std::path::{Path, PathBuf};
 pub fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>());
 }
+#[allow(dead_code)]
+pub fn dbg_type_of<T>(_: &T) {
+    dbg!(std::any::type_name::<T>());
+}
 
 pub fn collect_files_from_dir(dir: &Path) -> io::Result<Vec<PathBuf>> {
     let mut result: Vec<PathBuf> = vec![];

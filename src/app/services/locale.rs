@@ -2,9 +2,9 @@ use crate::{Config, Locale, SessionService, User};
 use actix_session::Session;
 use actix_web::web::Data;
 use actix_web::HttpRequest;
-use garde::rules::length::simple::Simple;
 use http::header::ACCEPT_LANGUAGE;
 use std::collections::HashMap;
+use crate::app::validator::rules::length::MinMaxLengthString;
 
 #[derive(Debug)]
 pub struct LocaleService {
@@ -106,7 +106,7 @@ impl LocaleService {
         if let Some(req) = req {
             if let Some(locale) = req.cookie(&self.config.app.locale_cookie_key) {
                 let locale = locale.value().to_string();
-                if locale.validate_length(1, 6).is_ok() {
+                if MinMaxLengthString::apply(&locale, 1, 6) {
                     return self.exists_locale_code_or_default(locale);
                 }
             }
@@ -117,14 +117,14 @@ impl LocaleService {
                 .get_ref()
                 .get_string(session, &self.config.app.locale_session_key);
             if let Ok(Some(locale)) = locale {
-                if locale.validate_length(1, 6).is_ok() {
+                if MinMaxLengthString::apply(&locale, 1, 6) {
                     return self.exists_locale_code_or_default(locale);
                 }
             }
         }
         if let Some(user) = user {
             if let Some(locale) = &user.locale {
-                if locale.validate_length(1, 6).is_ok() {
+                if MinMaxLengthString::apply(&locale, 1, 6) {
                     return self.exists_locale_code_or_default(locale.to_string());
                 }
             }

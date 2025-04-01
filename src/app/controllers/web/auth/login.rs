@@ -1,3 +1,5 @@
+use crate::app::validator::rules::email::Email;
+use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::{
     Alert, AlertService, AppService, AuthService, Credentials, SessionService, TemplateService,
     TranslatorService,
@@ -7,18 +9,16 @@ use actix_web::web::Data;
 use actix_web::web::Form;
 use actix_web::web::Redirect;
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
-use garde::Validate;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
-use std::string::ToString;
 
 static FORM_DATA_KEY: &str = "page.login.form.data";
 
 pub async fn show(
     req: HttpRequest,
     session: Session,
-    auth: Data<AuthService>,
+    auth: Data<AuthService<'_>>,
     tmpl: Data<TemplateService>,
     session_service: Data<SessionService>,
     app_service: Data<AppService>,
@@ -112,28 +112,36 @@ pub async fn sign_in(
     alert_service: Data<AlertService>,
     session_service: Data<SessionService>,
     data: Form<Credentials>,
-    auth: Data<AuthService>,
+    auth: Data<AuthService<'_>>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
 ) -> Result<impl Responder, Error> {
+    let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
     let mut is_redirect_login = true;
     let credentials: &Credentials = data.deref();
 
-    let mut email_errors: Vec<String> = vec![];
-    let mut password_errors: Vec<String> = vec![];
+    let email_str = translator_service.translate(&lang, "auth.page.login.form.fields.email.label");
+    let password_str =
+        translator_service.translate(&lang, "auth.page.login.form.fields.password.label");
+
+    let email_errors: Vec<String> = Email::validate(
+        translator_service.get_ref(),
+        &lang,
+        &credentials.email,
+        &email_str,
+    );
+    let password_errors: Vec<String> = MinMaxLengthString::validate(
+        translator_service.get_ref(),
+        &lang,
+        &credentials.password,
+        4,
+        254,
+        &password_str,
+    );
     let mut alerts: Vec<Alert> = vec![];
     let mut form_errors: Vec<String> = vec![];
 
-    if let Err(report) = credentials.validate() {
-        for (path, error) in report.iter() {
-            if path.to_string() == "email" {
-                email_errors.push(error.message().to_string());
-            }
-            if path.to_string() == "password" {
-                password_errors.push(error.message().to_string());
-            }
-        }
-    } else {
+    if email_errors.len() == 0 && password_errors.len() == 0 {
         let auth_result = auth.authenticate_by_credentials(credentials);
 
         match auth_result {
@@ -200,7 +208,7 @@ pub async fn sign_in(
 pub async fn sign_out(
     req: HttpRequest,
     session: Session,
-    auth: Data<AuthService>,
+    auth: Data<AuthService<'_>>,
     alert_service: Data<AlertService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,

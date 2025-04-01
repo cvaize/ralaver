@@ -1,4 +1,3 @@
-mod adapters;
 mod app;
 mod config;
 mod db_connection;
@@ -16,6 +15,7 @@ use actix_web::middleware;
 use actix_web::web::Data;
 use actix_web::App;
 use actix_web::HttpServer;
+use argon2::Argon2;
 use app::middlewares::error_redirect::ErrorRedirect;
 pub use crate::db_connection::DbPool;
 pub use crate::app::models::{*};
@@ -44,7 +44,8 @@ async fn main() -> std::io::Result<()> {
     let template = Data::new(TemplateService::new_from_files(config.clone())?);
     let session = Data::new(SessionService::new(config.clone()));
     let alert = Data::new(AlertService::new(config.clone(), session.clone()));
-    let auth = Data::new(AuthService::new(config.clone(), db_pool.clone()));
+    let hash = Data::new(HashService::new(Argon2::default()));
+    let auth = Data::new(AuthService::new(config.clone(), db_pool.clone(), hash.clone()));
     let locale = Data::new(LocaleService::new(config.clone(), session.clone()));
     let app = Data::new(AppService::new(config.clone(), locale.clone(), alert.clone()));
 
@@ -66,6 +67,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(auth.clone())
             .app_data(app.clone())
             .app_data(locale.clone())
+            .app_data(hash.clone())
             .configure(routes::register)
             .wrap(ErrorRedirect)
     })

@@ -1,25 +1,32 @@
-use crate::DbPool;
 use crate::{Config, PrivateUserData, User};
+use crate::{DbPool, HashService};
 use actix_session::{Session, SessionGetError, SessionInsertError};
 use actix_web::web::Data;
 #[allow(unused_imports)]
 use diesel::prelude::*;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
-use garde::Validate;
 use serde_derive::Deserialize;
+use crate::app::validator::rules::email::Email;
+use crate::app::validator::rules::length::MinMaxLengthString;
+use crate::app::validator::rules::required::Required;
 
 #[derive(Debug)]
-pub struct AuthService {
+pub struct AuthService<'a> {
     config: Data<Config>,
     db_pool: Data<DbPool>,
+    hash: Data<HashService<'a>>,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct UserIsNotAuthenticated;
 
-impl AuthService {
-    pub fn new(config: Data<Config>, db_pool: Data<DbPool>) -> Self {
-        Self { config, db_pool }
+impl<'a> AuthService<'a> {
+    pub fn new(config: Data<Config>, db_pool: Data<DbPool>, hash: Data<HashService<'a>>) -> Self {
+        Self {
+            config,
+            db_pool,
+            hash,
+        }
     }
 
     pub fn insert_user_id_into_session(
@@ -74,6 +81,10 @@ impl AuthService {
         &self,
         data: &Credentials,
     ) -> Result<u64, UserIsNotAuthenticated> {
+        if data.is_valid() == false {
+            return Err(UserIsNotAuthenticated);
+        }
+
         let id: Option<u64> = match data.email.to_owned() {
             Some(data_email) => {
                 let mut connection = self
@@ -94,10 +105,13 @@ impl AuthService {
                 // Check auth
                 match result {
                     Some(user) => match &user.password {
-                        Some(user_password) => match &data.password {
+                        Some(user_password_hash) => match &data.password {
                             Some(data_password) => {
-                                // TODO: Реализовать проверку пароля
-                                if user_password.trim() == data_password.trim() {
+                                if self
+                                    .hash
+                                    .get_ref()
+                                    .verify_password(data_password, user_password_hash)
+                                {
                                     Some(user.id)
                                 } else {
                                     None
@@ -124,10 +138,23 @@ impl AuthService {
     }
 }
 
-#[derive(Validate, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct Credentials {
-    #[garde(required, inner(length(min = 1, max = 255)))]
     pub email: Option<String>,
-    #[garde(required, inner(length(min = 1, max = 255)))]
     pub password: Option<String>,
+}
+
+impl Credentials {
+    pub fn is_valid(&self) -> bool {
+        let mut result = Required::apply(&self.email) && Required::apply(&self.password);
+
+        if let Some(value) = &self.email {
+            result = result && Email::apply(value);
+        }
+        if let Some(value) = &self.password {
+            result = result && MinMaxLengthString::apply(value, 4, 255);
+        }
+
+        result
+    }
 }

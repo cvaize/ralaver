@@ -2,10 +2,10 @@ use crate::{Alert, AlertService, AppService, SessionService, TemplateService, Tr
 use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
-use garde::Validate;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
+use crate::app::validator::rules::email::Email;
 
 static FORM_DATA_KEY: &str = "page.forgot_password.form.data";
 
@@ -88,17 +88,21 @@ pub async fn send_email(
 ) -> Result<impl Responder, Error> {
     let data: &ForgotPasswordData = data.deref();
 
-    let mut email_errors: Vec<String> = vec![];
     let mut alerts: Vec<Alert> = vec![];
     let form_errors: Vec<String> = vec![];
 
-    if let Err(report) = data.validate() {
-        for (path, error) in report.iter() {
-            if path.to_string() == "email" {
-                email_errors.push(error.message().to_string());
-            }
-        }
-    } else {
+    let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
+    let email_str =
+        translator_service.translate(&lang, "auth.page.forgot_password.form.fields.email.label");
+
+    let email_errors: Vec<String> = Email::validate(
+        translator_service.get_ref(),
+        &lang,
+        &data.email,
+        &email_str,
+    );
+
+    if email_errors.len() == 0 {
         let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
         let alert_str = translator_service.translate(&lang, "auth.alert.send_email.success");
 
@@ -134,9 +138,8 @@ pub async fn send_email(
     Ok(Redirect::to("/forgot-password").see_other())
 }
 
-#[derive(Validate, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct ForgotPasswordData {
-    #[garde(required, inner(length(min = 1, max = 255)))]
     pub email: Option<String>,
 }
 

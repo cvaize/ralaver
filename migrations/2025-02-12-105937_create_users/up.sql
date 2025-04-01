@@ -7,4 +7,5 @@ CREATE TABLE users (
 );
 
 INSERT INTO users (email, password)
-VALUES ('admin@admin.example', 'password');
+# Password: "password";
+VALUES ('admin@admin.example', '$argon2id$v=19$m=19456,t=2,p=1$iLHsKp9nVoAvoKgnCFyQGA$VfmHegV5Pb0tyZIQKqgzWmctmJ1mmFuigr4H4HYZkwY');
