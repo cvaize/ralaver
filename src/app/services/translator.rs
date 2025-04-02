@@ -70,10 +70,14 @@ impl TranslatorService {
         }
     }
 
-    pub fn apply_variables(&self, string: String, variables: HashMap<String, String>) -> String {
+    pub fn apply_variables(&self, string: String, variables: Vec<TranslatorVariable>) -> String {
         let mut string: String = string;
-        for (key, value) in &variables {
-            string = string.replace(&format!(":{}", key), value);
+        for variable in &variables {
+            string = match variable {
+                TranslatorVariable::Usize(key, value) => string.replace(&format!(":{}", key), value.to_string().as_str()),
+                TranslatorVariable::I32(key, value) => string.replace(&format!(":{}", key), value.to_string().as_str()),
+                TranslatorVariable::String(key, value) => string.replace(&format!(":{}", key), value),
+            }
         }
         string
     }
@@ -82,7 +86,7 @@ impl TranslatorService {
         &self,
         lang: &str,
         key: &str,
-        variables: HashMap<String, String>,
+        variables: Vec<TranslatorVariable>,
     ) -> String {
         self.apply_variables(self.translate(lang, key), variables)
     }
@@ -146,10 +150,16 @@ impl<'a> Translator<'a> {
     pub fn simple(&self, key: &str) -> String {
         self.translator_service.translate(self.lang.as_str(), key)
     }
-    pub fn variables(&self, key: &str, variables: HashMap<String, String>) -> String {
+    pub fn variables(&self, key: &str, variables: Vec<TranslatorVariable>) -> String {
         self.translator_service
             .translate_with_variables(self.lang.as_str(), key, variables)
     }
+}
+
+pub enum TranslatorVariable {
+    String(String, String),
+    I32(String, i32),
+    Usize(String, usize),
 }
 
 #[cfg(test)]

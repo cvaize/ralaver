@@ -1,5 +1,4 @@
-use crate::Translator;
-use std::collections::HashMap;
+use crate::{Translator, TranslatorVariable};
 
 pub struct Email;
 
@@ -19,7 +18,10 @@ impl Email {
             if !Self::apply(value) {
                 errors.push(translator.variables(
                     "validation.email",
-                    HashMap::from([("attribute".to_string(), attribute_name.to_string())]),
+                    vec![TranslatorVariable::String(
+                        "attribute".to_string(),
+                        attribute_name.to_string(),
+                    )],
                 ));
             }
         } else {

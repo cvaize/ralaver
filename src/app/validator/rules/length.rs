@@ -1,5 +1,4 @@
-use crate::Translator;
-use std::collections::HashMap;
+use crate::{Translator, TranslatorVariable};
 
 pub struct MinLengthString;
 pub struct MaxLengthString;
@@ -22,10 +21,13 @@ impl MinLengthString {
             if !Self::apply(value, min) {
                 errors.push(translator.variables(
                     "validation.min.string",
-                    HashMap::from([
-                        ("attribute".to_string(), attribute_name.to_string()),
-                        ("min".to_string(), min.to_string()),
-                    ]),
+                    vec![
+                        TranslatorVariable::String(
+                            "attribute".to_string(),
+                            attribute_name.to_string(),
+                        ),
+                        TranslatorVariable::Usize("min".to_string(), min),
+                    ],
                 ));
             }
         } else {
@@ -52,10 +54,13 @@ impl MaxLengthString {
             if !Self::apply(value, max) {
                 errors.push(translator.variables(
                     "validation.max.string",
-                    HashMap::from([
-                        ("attribute".to_string(), attribute_name.to_string()),
-                        ("max".to_string(), max.to_string()),
-                    ]),
+                    vec![
+                        TranslatorVariable::String(
+                            "attribute".to_string(),
+                            attribute_name.to_string(),
+                        ),
+                        TranslatorVariable::Usize("max".to_string(), max),
+                    ],
                 ));
             }
         } else {
@@ -83,19 +88,25 @@ impl MinMaxLengthString {
             if !MinLengthString::apply(value, min) {
                 errors.push(translator.variables(
                     "validation.min.string",
-                    HashMap::from([
-                        ("attribute".to_string(), attribute_name.to_string()),
-                        ("min".to_string(), min.to_string()),
-                    ]),
+                    vec![
+                        TranslatorVariable::String(
+                            "attribute".to_string(),
+                            attribute_name.to_string(),
+                        ),
+                        TranslatorVariable::Usize("min".to_string(), min),
+                    ],
                 ));
             }
             if !MaxLengthString::apply(value, max) {
                 errors.push(translator.variables(
                     "validation.max.string",
-                    HashMap::from([
-                        ("attribute".to_string(), attribute_name.to_string()),
-                        ("max".to_string(), max.to_string()),
-                    ]),
+                    vec![
+                        TranslatorVariable::String(
+                            "attribute".to_string(),
+                            attribute_name.to_string(),
+                        ),
+                        TranslatorVariable::Usize("max".to_string(), max),
+                    ],
                 ));
             }
         } else {
