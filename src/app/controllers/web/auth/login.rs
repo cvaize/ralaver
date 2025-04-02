@@ -12,6 +12,7 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
+use crate::app::validator::rules::required::Required;
 
 static FORM_DATA_KEY: &str = "page.login.form.data";
 
@@ -123,9 +124,16 @@ pub async fn sign_in(
     let email_str = translator.simple("auth.page.login.form.fields.email.label");
     let password_str = translator.simple("auth.page.login.form.fields.password.label");
 
-    let email_errors: Vec<String> = Email::validate(&translator, &credentials.email, &email_str);
-    let password_errors: Vec<String> =
-        MinMaxLengthString::validate(&translator, &credentials.password, 4, 254, &password_str);
+    let email_errors: Vec<String> = match &credentials.email {
+        Some(value) => Email::validate(&translator, value, &email_str),
+        None => Required::validate(&translator, &credentials.email),
+    };
+
+    let password_errors: Vec<String> = match &credentials.password {
+        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 254, &password_str),
+        None => Required::validate(&translator, &credentials.password),
+    };
+
     let mut alerts: Vec<Alert> = vec![];
     let mut form_errors: Vec<String> = vec![];
 

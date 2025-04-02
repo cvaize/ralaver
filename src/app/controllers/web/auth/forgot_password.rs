@@ -8,6 +8,7 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
+use crate::app::validator::rules::required::Required;
 
 static FORM_DATA_KEY: &str = "page.forgot_password.form.data";
 
@@ -95,7 +96,10 @@ pub async fn send_email(
     let translator = Translator::new(&lang, &translator_service);
     let email_str = translator.simple("auth.page.forgot_password.form.fields.email.label");
 
-    let email_errors: Vec<String> = Email::validate(&translator, &data.email, &email_str);
+    let email_errors: Vec<String> = match &data.email {
+        Some(value) => Email::validate(&translator, value, &email_str),
+        None => Required::validate(&translator, &data.email),
+    };
 
     if email_errors.len() == 0 {
         let alert_str = translator.simple("auth.alert.send_email.success");

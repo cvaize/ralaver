@@ -9,6 +9,8 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
+use crate::app::validator::rules::confirmed::Confirmed;
+use crate::app::validator::rules::required::Required;
 
 static FORM_DATA_KEY: &str = "page.register.form.data";
 
@@ -122,16 +124,32 @@ pub async fn register(
     let confirm_password_str =
         translator.simple("auth.page.register.form.fields.confirm_password.label");
 
-    let email_errors: Vec<String> = Email::validate(&translator, &data.email, &email_str);
-    let password_errors: Vec<String> =
-        MinMaxLengthString::validate(&translator, &data.password, 4, 254, &password_str);
-    let confirm_password_errors: Vec<String> = MinMaxLengthString::validate(
-        &translator,
-        &data.confirm_password,
-        4,
-        254,
-        &confirm_password_str,
-    );
+    let email_errors: Vec<String> = match &data.email {
+        Some(value) => Email::validate(&translator, value, &email_str),
+        None => Required::validate(&translator, &data.email),
+    };
+
+    let password_errors: Vec<String> = match &data.password {
+        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 254, &password_str),
+        None => Required::validate(&translator, &data.password),
+    };
+
+    let mut confirm_password_errors: Vec<String> = match &data.confirm_password {
+        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 254, &confirm_password_str),
+        None => Required::validate(&translator, &data.confirm_password),
+    };
+
+    if password_errors.len() == 0 && confirm_password_errors.len() == 0 {
+        let mut password_errors2: Vec<String> = match &data.password {
+            Some(password) => match &data.confirm_password {
+                Some(confirm_password) => Confirmed::validate(&translator, password, confirm_password, &password_str),
+                None => vec![],
+            },
+            None => vec![],
+        };
+
+        confirm_password_errors.append(&mut password_errors2);
+    }
 
     if email_errors.len() == 0 && password_errors.len() == 0 && confirm_password_errors.len() == 0 {
         let alert_str = translator.simple("auth.alert.register.success");
