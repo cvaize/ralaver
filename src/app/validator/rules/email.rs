@@ -1,4 +1,5 @@
-use crate::TranslatorService;
+use crate::Translator;
+use std::collections::HashMap;
 
 pub struct Email;
 
@@ -9,22 +10,20 @@ impl Email {
     }
 
     pub fn validate(
-        service: &TranslatorService,
-        lang: &str,
+        translator: &Translator,
         value: &Option<String>,
         attribute_name: &str,
     ) -> Vec<String> {
         let mut errors: Vec<String> = Vec::new();
         if let Some(value) = &value {
             if !Self::apply(value) {
-                errors.push(
-                    service
-                        .translate(&lang, "validation.email")
-                        .replace(":attribute", &attribute_name),
-                );
+                errors.push(translator.variables(
+                    "validation.email",
+                    HashMap::from([("attribute".to_string(), attribute_name.to_string())]),
+                ));
             }
         } else {
-            errors.push(service.translate(&lang, "validation.required"));
+            errors.push(translator.simple("validation.required"));
         }
         errors
     }

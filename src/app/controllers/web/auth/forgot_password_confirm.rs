@@ -1,12 +1,14 @@
-use crate::{Alert, AlertService, AppService, SessionService, TemplateService, TranslatorService};
+use crate::app::validator::rules::email::Email;
+use crate::app::validator::rules::length::MinMaxLengthString;
+use crate::{
+    Alert, AlertService, AppService, SessionService, TemplateService, Translator, TranslatorService,
+};
 use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
-use crate::app::validator::rules::email::Email;
-use crate::app::validator::rules::length::MinMaxLengthString;
 
 static FORM_DATA_KEY: &str = "page.forgot_password_confirm.form.data";
 
@@ -19,6 +21,7 @@ pub async fn show(
     translator_service: Data<TranslatorService>,
 ) -> Result<HttpResponse, Error> {
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
+    let translator = Translator::new(&lang, &translator_service);
 
     let alerts = app_service.get_ref().alerts(&session);
 
@@ -37,25 +40,15 @@ pub async fn show(
     let confirm_password_field = fields.confirm_password.unwrap_or(Field::empty());
 
     let dark_mode = app_service.get_ref().dark_mode(&req);
-    let title_str = translator_service.translate(&lang, "auth.page.forgot_password_confirm.title");
-    let back_str =
-        translator_service.translate(&lang, "auth.page.forgot_password_confirm.back.label");
-    let header_str =
-        translator_service.translate(&lang, "auth.page.forgot_password_confirm.form.header");
-    let email_str = translator_service.translate(
-        &lang,
-        "auth.page.forgot_password_confirm.form.fields.email.label",
-    );
-    let password_str = translator_service.translate(
-        &lang,
-        "auth.page.forgot_password_confirm.form.fields.password.label",
-    );
-    let confirm_password_str = translator_service.translate(
-        &lang,
-        "auth.page.forgot_password_confirm.form.fields.confirm_password.label",
-    );
-    let submit_str =
-        translator_service.translate(&lang, "auth.page.forgot_password_confirm.form.submit.label");
+    let title_str = translator.simple("auth.page.forgot_password_confirm.title");
+    let back_str = translator.simple("auth.page.forgot_password_confirm.back.label");
+    let header_str = translator.simple("auth.page.forgot_password_confirm.form.header");
+    let email_str = translator.simple("auth.page.forgot_password_confirm.form.fields.email.label");
+    let password_str =
+        translator.simple("auth.page.forgot_password_confirm.form.fields.password.label");
+    let confirm_password_str =
+        translator.simple("auth.page.forgot_password_confirm.form.fields.confirm_password.label");
+    let submit_str = translator.simple("auth.page.forgot_password_confirm.form.submit.label");
 
     let ctx = json!({
         "title": title_str,
@@ -124,53 +117,32 @@ pub async fn confirm(
     let form_errors: Vec<String> = vec![];
 
     let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
-    let email_str = translator_service.translate(
-        &lang,
-        "auth.page.forgot_password_confirm.form.fields.email.label",
-    );
-    let password_str = translator_service.translate(
-        &lang,
-        "auth.page.forgot_password_confirm.form.fields.password.label",
-    );
-    let confirm_password_str = translator_service.translate(
-        &lang,
-        "auth.page.forgot_password_confirm.form.fields.confirm_password.label",
-    );
+    let translator = Translator::new(&lang, &translator_service);
+    let email_str = translator.simple("auth.page.forgot_password_confirm.form.fields.email.label");
+    let password_str =
+        translator.simple("auth.page.forgot_password_confirm.form.fields.password.label");
+    let confirm_password_str =
+        translator.simple("auth.page.forgot_password_confirm.form.fields.confirm_password.label");
 
-    let email_errors: Vec<String> = Email::validate(
-        translator_service.get_ref(),
-        &lang,
-        &data.email,
-        &email_str,
-    );
-    let code_errors: Vec<String> = MinMaxLengthString::validate(
-        translator_service.get_ref(),
-        &lang,
-        &data.code,
-        4,
-        254,
-        "code",
-    );
-    let password_errors: Vec<String> = MinMaxLengthString::validate(
-        translator_service.get_ref(),
-        &lang,
-        &data.password,
-        4,
-        254,
-        &password_str,
-    );
+    let email_errors: Vec<String> = Email::validate(&translator, &data.email, &email_str);
+    let code_errors: Vec<String> =
+        MinMaxLengthString::validate(&translator, &data.code, 4, 254, "code");
+    let password_errors: Vec<String> =
+        MinMaxLengthString::validate(&translator, &data.password, 4, 254, &password_str);
     let confirm_password_errors: Vec<String> = MinMaxLengthString::validate(
-        translator_service.get_ref(),
-        &lang,
+        &translator,
         &data.confirm_password,
         4,
         254,
         &confirm_password_str,
     );
 
-    if email_errors.len() == 0 && code_errors.len() == 0 && password_errors.len() == 0 && confirm_password_errors.len() == 0 {
-        let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
-        let alert_str = translator_service.translate(&lang, "auth.alert.send_email.success");
+    if email_errors.len() == 0
+        && code_errors.len() == 0
+        && password_errors.len() == 0
+        && confirm_password_errors.len() == 0
+    {
+        let alert_str = translator.simple("auth.alert.send_email.success");
 
         alerts.push(Alert::success(alert_str));
     };

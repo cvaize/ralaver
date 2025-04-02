@@ -2,7 +2,7 @@ use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::{
     Alert, AlertService, AppService, AuthService, Credentials, SessionService, TemplateService,
-    TranslatorService,
+    Translator, TranslatorService,
 };
 use actix_session::Session;
 use actix_web::web::Data;
@@ -34,16 +34,15 @@ pub async fn show(
 
     let dark_mode = app_service.get_ref().dark_mode(&req);
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
+    let translator = Translator::new(&lang, &translator_service);
 
-    let title_str = translator_service.translate(&lang, "auth.page.login.title");
-    let form_header_str = translator_service.translate(&lang, "auth.page.login.form.header");
-    let email_str = translator_service.translate(&lang, "auth.page.login.form.fields.email.label");
-    let password_str =
-        translator_service.translate(&lang, "auth.page.login.form.fields.password.label");
-    let submit_str = translator_service.translate(&lang, "auth.page.login.form.submit.label");
-    let forgot_password_str =
-        translator_service.translate(&lang, "auth.page.login.form.forgot_password.label");
-    let register_str = translator_service.translate(&lang, "auth.page.login.form.register.label");
+    let title_str = translator.simple("auth.page.login.title");
+    let form_header_str = translator.simple("auth.page.login.form.header");
+    let email_str = translator.simple("auth.page.login.form.fields.email.label");
+    let password_str = translator.simple("auth.page.login.form.fields.password.label");
+    let submit_str = translator.simple("auth.page.login.form.submit.label");
+    let forgot_password_str = translator.simple("auth.page.login.form.forgot_password.label");
+    let register_str = translator.simple("auth.page.login.form.register.label");
 
     let alerts = app_service.get_ref().alerts(&session);
 
@@ -120,24 +119,13 @@ pub async fn sign_in(
     let mut is_redirect_login = true;
     let credentials: &Credentials = data.deref();
 
-    let email_str = translator_service.translate(&lang, "auth.page.login.form.fields.email.label");
-    let password_str =
-        translator_service.translate(&lang, "auth.page.login.form.fields.password.label");
+    let translator = Translator::new(&lang, &translator_service);
+    let email_str = translator.simple("auth.page.login.form.fields.email.label");
+    let password_str = translator.simple("auth.page.login.form.fields.password.label");
 
-    let email_errors: Vec<String> = Email::validate(
-        translator_service.get_ref(),
-        &lang,
-        &credentials.email,
-        &email_str,
-    );
-    let password_errors: Vec<String> = MinMaxLengthString::validate(
-        translator_service.get_ref(),
-        &lang,
-        &credentials.password,
-        4,
-        254,
-        &password_str,
-    );
+    let email_errors: Vec<String> = Email::validate(&translator, &credentials.email, &email_str);
+    let password_errors: Vec<String> =
+        MinMaxLengthString::validate(&translator, &credentials.password, 4, 254, &password_str);
     let mut alerts: Vec<Alert> = vec![];
     let mut form_errors: Vec<String> = vec![];
 
@@ -154,13 +142,13 @@ pub async fn sign_in(
                     Ok(user) => app_service.locale(Some(&req), Some(&session), Some(&user)),
                     _ => app_service.locale(Some(&req), Some(&session), None),
                 };
-                let alert_str = translator_service.translate(&lang, "auth.alert.sign_in.success");
+                let translator = Translator::new(&lang, &translator_service);
+                let alert_str = translator.simple("auth.alert.sign_in.success");
 
                 alerts.push(Alert::success(alert_str));
             }
             _ => {
-                let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
-                let alert_str = translator_service.translate(&lang, "auth.alert.sign_in.fail");
+                let alert_str = translator.simple("auth.alert.sign_in.fail");
                 form_errors.push(alert_str);
             }
         };
@@ -221,7 +209,8 @@ pub async fn sign_out(
         _ => app_service.locale(Some(&req), Some(&session), None),
     };
 
-    let alert_str = translator_service.translate(&lang, "auth.alert.sign_out.success");
+    let translator = Translator::new(&lang, &translator_service);
+    let alert_str = translator.simple("auth.alert.sign_out.success");
 
     let alerts = vec![Alert::success(alert_str)];
     alert_service

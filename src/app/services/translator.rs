@@ -70,6 +70,23 @@ impl TranslatorService {
         }
     }
 
+    pub fn apply_variables(&self, string: String, variables: HashMap<String, String>) -> String {
+        let mut string: String = string;
+        for (key, value) in &variables {
+            string = string.replace(&format!(":{}", key), value);
+        }
+        string
+    }
+
+    pub fn translate_with_variables(
+        &self,
+        lang: &str,
+        key: &str,
+        variables: HashMap<String, String>,
+    ) -> String {
+        self.apply_variables(self.translate(lang, key), variables)
+    }
+
     // Функция возвращает перевод по переданному языку. Если перевод не найден по переданному языку,
     // то функция возвращает перевод по языку по умолчанию (app.locale). А если нет перевода по умолчанию, то берётся fallback язык (app.fallback_locale).
     // Если нет переводов с fallback языком, то возвращается переданный ключ.
@@ -111,6 +128,27 @@ impl TranslatorService {
 
     pub fn get_translates_ref(&self) -> &HashMap<String, String> {
         &self.translates
+    }
+}
+
+pub struct Translator<'a> {
+    lang: String,
+    translator_service: &'a Data<TranslatorService>,
+}
+
+impl<'a> Translator<'a> {
+    pub fn new(lang: &str, translator_service: &'a Data<TranslatorService>) -> Self {
+        Self {
+            lang: lang.to_string(),
+            translator_service,
+        }
+    }
+    pub fn simple(&self, key: &str) -> String {
+        self.translator_service.translate(self.lang.as_str(), key)
+    }
+    pub fn variables(&self, key: &str, variables: HashMap<String, String>) -> String {
+        self.translator_service
+            .translate_with_variables(self.lang.as_str(), key, variables)
     }
 }
 

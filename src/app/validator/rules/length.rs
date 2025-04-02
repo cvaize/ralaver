@@ -1,4 +1,5 @@
-use crate::TranslatorService;
+use crate::Translator;
+use std::collections::HashMap;
 
 pub struct MinLengthString;
 pub struct MaxLengthString;
@@ -11,8 +12,7 @@ impl MinLengthString {
     }
 
     pub fn validate(
-        service: &TranslatorService,
-        lang: &str,
+        translator: &Translator,
         value: &Option<String>,
         min: usize,
         attribute_name: &str,
@@ -20,15 +20,16 @@ impl MinLengthString {
         let mut errors: Vec<String> = Vec::new();
         if let Some(value) = &value {
             if !Self::apply(value, min) {
-                errors.push(
-                    service
-                        .translate(&lang, "validation.min.string")
-                        .replace(":attribute", attribute_name)
-                        .replace(":min", &min.to_string()),
-                );
+                errors.push(translator.variables(
+                    "validation.min.string",
+                    HashMap::from([
+                        ("attribute".to_string(), attribute_name.to_string()),
+                        ("min".to_string(), min.to_string()),
+                    ]),
+                ));
             }
         } else {
-            errors.push(service.translate(&lang, "validation.required"));
+            errors.push(translator.simple("validation.required"));
         }
         errors
     }
@@ -41,8 +42,7 @@ impl MaxLengthString {
     }
 
     pub fn validate(
-        service: &TranslatorService,
-        lang: &str,
+        translator: &Translator,
         value: &Option<String>,
         max: usize,
         attribute_name: &str,
@@ -50,15 +50,16 @@ impl MaxLengthString {
         let mut errors: Vec<String> = Vec::new();
         if let Some(value) = &value {
             if !Self::apply(value, max) {
-                errors.push(
-                    service
-                        .translate(&lang, "validation.max.string")
-                        .replace(":attribute", attribute_name)
-                        .replace(":max", &max.to_string()),
-                );
+                errors.push(translator.variables(
+                    "validation.max.string",
+                    HashMap::from([
+                        ("attribute".to_string(), attribute_name.to_string()),
+                        ("max".to_string(), max.to_string()),
+                    ]),
+                ));
             }
         } else {
-            errors.push(service.translate(&lang, "validation.required"));
+            errors.push(translator.simple("validation.required"));
         }
         errors
     }
@@ -71,8 +72,7 @@ impl MinMaxLengthString {
     }
 
     pub fn validate(
-        service: &TranslatorService,
-        lang: &str,
+        translator: &Translator,
         value: &Option<String>,
         min: usize,
         max: usize,
@@ -81,23 +81,25 @@ impl MinMaxLengthString {
         let mut errors: Vec<String> = Vec::new();
         if let Some(value) = &value {
             if !MinLengthString::apply(value, min) {
-                errors.push(
-                    service
-                        .translate(&lang, "validation.min.string")
-                        .replace(":attribute", attribute_name)
-                        .replace(":min", &min.to_string()),
-                );
+                errors.push(translator.variables(
+                    "validation.min.string",
+                    HashMap::from([
+                        ("attribute".to_string(), attribute_name.to_string()),
+                        ("min".to_string(), min.to_string()),
+                    ]),
+                ));
             }
             if !MaxLengthString::apply(value, max) {
-                errors.push(
-                    service
-                        .translate(&lang, "validation.max.string")
-                        .replace(":attribute", attribute_name)
-                        .replace(":max", &max.to_string()),
-                );
+                errors.push(translator.variables(
+                    "validation.max.string",
+                    HashMap::from([
+                        ("attribute".to_string(), attribute_name.to_string()),
+                        ("max".to_string(), max.to_string()),
+                    ]),
+                ));
             }
         } else {
-            errors.push(service.translate(&lang, "validation.required"));
+            errors.push(translator.simple("validation.required"));
         }
         errors
     }

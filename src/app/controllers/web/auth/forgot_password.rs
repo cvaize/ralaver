@@ -1,11 +1,13 @@
-use crate::{Alert, AlertService, AppService, SessionService, TemplateService, TranslatorService};
+use crate::app::validator::rules::email::Email;
+use crate::{
+    Alert, AlertService, AppService, SessionService, TemplateService, Translator, TranslatorService,
+};
 use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
-use crate::app::validator::rules::email::Email;
 
 static FORM_DATA_KEY: &str = "page.forgot_password.form.data";
 
@@ -18,6 +20,7 @@ pub async fn show(
     translator_service: Data<TranslatorService>,
 ) -> Result<HttpResponse, Error> {
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
+    let translator = Translator::new(&lang, &translator_service);
 
     let alerts = app_service.get_ref().alerts(&session);
 
@@ -33,15 +36,12 @@ pub async fn show(
     let email_field = fields.email.unwrap_or(Field::empty());
 
     let dark_mode = app_service.get_ref().dark_mode(&req);
-    let title_str = translator_service.translate(&lang, "auth.page.forgot_password.title");
-    let back_str = translator_service.translate(&lang, "auth.page.forgot_password.back.label");
-    let header_str = translator_service.translate(&lang, "auth.page.forgot_password.form.header");
-    let email_str =
-        translator_service.translate(&lang, "auth.page.forgot_password.form.fields.email.label");
-    let submit_str =
-        translator_service.translate(&lang, "auth.page.forgot_password.form.submit.label");
-    let submit_text_str =
-        translator_service.translate(&lang, "auth.page.forgot_password.form.submit.text");
+    let title_str = translator.simple("auth.page.forgot_password.title");
+    let back_str = translator.simple("auth.page.forgot_password.back.label");
+    let header_str = translator.simple("auth.page.forgot_password.form.header");
+    let email_str = translator.simple("auth.page.forgot_password.form.fields.email.label");
+    let submit_str = translator.simple("auth.page.forgot_password.form.submit.label");
+    let submit_text_str = translator.simple("auth.page.forgot_password.form.submit.text");
 
     let ctx = json!({
         "title": title_str,
@@ -92,19 +92,13 @@ pub async fn send_email(
     let form_errors: Vec<String> = vec![];
 
     let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
-    let email_str =
-        translator_service.translate(&lang, "auth.page.forgot_password.form.fields.email.label");
+    let translator = Translator::new(&lang, &translator_service);
+    let email_str = translator.simple("auth.page.forgot_password.form.fields.email.label");
 
-    let email_errors: Vec<String> = Email::validate(
-        translator_service.get_ref(),
-        &lang,
-        &data.email,
-        &email_str,
-    );
+    let email_errors: Vec<String> = Email::validate(&translator, &data.email, &email_str);
 
     if email_errors.len() == 0 {
-        let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
-        let alert_str = translator_service.translate(&lang, "auth.alert.send_email.success");
+        let alert_str = translator.simple("auth.alert.send_email.success");
 
         alerts.push(Alert::success(alert_str));
     };
