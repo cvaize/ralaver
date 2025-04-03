@@ -1,16 +1,14 @@
+use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
-use crate::{
-    Alert, AlertService, AppService, SessionService, TemplateService, Translator, TranslatorService,
-};
+use crate::app::validator::rules::required::Required;
+use crate::{Alert, AlertService, AppService, AuthError, AuthService, Credentials, SessionService, TemplateService, Translator, TranslatorService};
 use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
-use crate::app::validator::rules::confirmed::Confirmed;
-use crate::app::validator::rules::required::Required;
 
 static FORM_DATA_KEY: &str = "page.register.form.data";
 
@@ -107,11 +105,12 @@ pub async fn register(
     session: Session,
     alert_service: Data<AlertService>,
     session_service: Data<SessionService>,
-    data: Form<ForgotPasswordConfirmData>,
+    data: Form<RegisterData>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
+    auth_service: Data<AuthService<'_>>,
 ) -> Result<impl Responder, Error> {
-    let data: &ForgotPasswordConfirmData = data.deref();
+    let data: &RegisterData = data.deref();
 
     let mut alerts: Vec<Alert> = vec![];
     let form_errors: Vec<String> = vec![];
@@ -124,25 +123,29 @@ pub async fn register(
     let confirm_password_str =
         translator.simple("auth.page.register.form.fields.confirm_password.label");
 
-    let email_errors: Vec<String> = match &data.email {
+    let mut email_errors: Vec<String> = match &data.email {
         Some(value) => Email::validate(&translator, value, &email_str),
         None => Required::validate(&translator, &data.email),
     };
 
     let password_errors: Vec<String> = match &data.password {
-        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 254, &password_str),
+        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 255, &password_str),
         None => Required::validate(&translator, &data.password),
     };
 
     let mut confirm_password_errors: Vec<String> = match &data.confirm_password {
-        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 254, &confirm_password_str),
+        Some(value) => {
+            MinMaxLengthString::validate(&translator, value, 4, 255, &confirm_password_str)
+        }
         None => Required::validate(&translator, &data.confirm_password),
     };
 
     if password_errors.len() == 0 && confirm_password_errors.len() == 0 {
         let mut password_errors2: Vec<String> = match &data.password {
             Some(password) => match &data.confirm_password {
-                Some(confirm_password) => Confirmed::validate(&translator, password, confirm_password, &password_str),
+                Some(confirm_password) => {
+                    Confirmed::validate(&translator, password, confirm_password, &password_str)
+                }
                 None => vec![],
             },
             None => vec![],
@@ -151,55 +154,87 @@ pub async fn register(
         confirm_password_errors.append(&mut password_errors2);
     }
 
-    if email_errors.len() == 0 && password_errors.len() == 0 && confirm_password_errors.len() == 0 {
+    let is_valid =
+        email_errors.len() == 0 && password_errors.len() == 0 && confirm_password_errors.len() == 0;
+
+    let is_registered = if is_valid {
+        let credentials = Credentials {
+            email: data.email.to_owned().unwrap(),
+            password: data.password.to_owned().unwrap(),
+        };
+
+        let register_result = auth_service.get_ref().register_by_credentials(&credentials);
+
+        if let Err(error) = register_result {
+            match error {
+                AuthError::DuplicateEmail => {
+                    email_errors.push(translator.simple("auth.alert.register.duplicate"));
+                }
+                _ => {}
+            }
+            false
+        } else {
+            true
+        }
+    } else {
+        false
+    };
+
+    if is_registered {
         let alert_str = translator.simple("auth.alert.register.success");
 
         alerts.push(Alert::success(alert_str));
-    };
 
-    let email_field = Field {
-        value: data.email.to_owned(),
-        errors: Some(email_errors),
-    };
+        session_service.get_ref().remove(&session, FORM_DATA_KEY);
+    } else {
+        let email_field = Field {
+            value: data.email.to_owned(),
+            errors: Some(email_errors),
+        };
 
-    let password_field = Field {
-        value: data.password.to_owned(),
-        errors: Some(password_errors),
-    };
+        let password_field = Field {
+            value: data.password.to_owned(),
+            errors: Some(password_errors),
+        };
 
-    let confirm_password_field = Field {
-        value: data.confirm_password.to_owned(),
-        errors: Some(confirm_password_errors),
-    };
+        let confirm_password_field = Field {
+            value: data.confirm_password.to_owned(),
+            errors: Some(confirm_password_errors),
+        };
 
-    let fields = Fields {
-        email: Some(email_field),
-        password: Some(password_field),
-        confirm_password: Some(confirm_password_field),
-    };
+        let fields = Fields {
+            email: Some(email_field),
+            password: Some(password_field),
+            confirm_password: Some(confirm_password_field),
+        };
 
-    let form = LoginForm {
-        fields: Some(fields),
-        errors: Some(form_errors),
-    };
+        let form = LoginForm {
+            fields: Some(fields),
+            errors: Some(form_errors),
+        };
 
-    let form_data = FormData { form: Some(form) };
+        let form_data = FormData { form: Some(form) };
 
-    session_service
-        .get_ref()
-        .insert(&session, FORM_DATA_KEY, &form_data)
-        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+        session_service
+            .get_ref()
+            .insert(&session, FORM_DATA_KEY, &form_data)
+            .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+    }
 
     alert_service
         .get_ref()
         .insert_into_session(&session, &alerts)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
-    Ok(Redirect::to("/register").see_other())
+    if is_registered {
+        Ok(Redirect::to("/login").see_other())
+    } else {
+        Ok(Redirect::to("/register").see_other())
+    }
 }
 
 #[derive(Deserialize, Debug)]
-pub struct ForgotPasswordConfirmData {
+pub struct RegisterData {
     pub email: Option<String>,
     pub password: Option<String>,
     pub confirm_password: Option<String>,

@@ -1,9 +1,7 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
-use crate::{
-    Alert, AlertService, AppService, AuthService, Credentials, SessionService, TemplateService,
-    Translator, TranslatorService,
-};
+use crate::app::validator::rules::required::Required;
+use crate::{Alert, AlertService, AppService, AuthService, Credentials, SessionService, TemplateService, Translator, TranslatorService};
 use actix_session::Session;
 use actix_web::web::Data;
 use actix_web::web::Form;
@@ -12,7 +10,6 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
-use crate::app::validator::rules::required::Required;
 
 static FORM_DATA_KEY: &str = "page.login.form.data";
 
@@ -111,34 +108,40 @@ pub async fn sign_in(
     session: Session,
     alert_service: Data<AlertService>,
     session_service: Data<SessionService>,
-    data: Form<Credentials>,
+    data: Form<LoginData>,
     auth: Data<AuthService<'_>>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
 ) -> Result<impl Responder, Error> {
     let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
     let mut is_redirect_login = true;
-    let credentials: &Credentials = data.deref();
+    let data: &LoginData = data.deref();
 
     let translator = Translator::new(&lang, &translator_service);
     let email_str = translator.simple("auth.page.login.form.fields.email.label");
     let password_str = translator.simple("auth.page.login.form.fields.password.label");
 
-    let email_errors: Vec<String> = match &credentials.email {
+    let email_errors: Vec<String> = match &data.email {
         Some(value) => Email::validate(&translator, value, &email_str),
-        None => Required::validate(&translator, &credentials.email),
+        None => Required::validate(&translator, &data.email),
     };
 
-    let password_errors: Vec<String> = match &credentials.password {
-        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 254, &password_str),
-        None => Required::validate(&translator, &credentials.password),
+    let password_errors: Vec<String> = match &data.password {
+        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 255, &password_str),
+        None => Required::validate(&translator, &data.password),
     };
 
     let mut alerts: Vec<Alert> = vec![];
     let mut form_errors: Vec<String> = vec![];
 
-    if email_errors.len() == 0 && password_errors.len() == 0 {
-        let auth_result = auth.authenticate_by_credentials(credentials);
+    let is_valid = email_errors.len() == 0 && password_errors.len() == 0;
+
+    if is_valid {
+        let credentials = Credentials {
+            email: data.email.clone().unwrap(),
+            password: data.password.clone().unwrap(),
+        };
+        let auth_result = auth.authenticate_by_credentials(&credentials);
 
         match auth_result {
             Ok(user_id) => {
@@ -163,7 +166,7 @@ pub async fn sign_in(
     };
 
     let email_field = Field {
-        value: credentials.email.to_owned(),
+        value: data.email.to_owned(),
         errors: Some(email_errors),
     };
 
@@ -184,10 +187,14 @@ pub async fn sign_in(
 
     let form_data = FormData { form: Some(form) };
 
-    session_service
-        .get_ref()
-        .insert(&session, FORM_DATA_KEY, &form_data)
-        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+    if is_valid {
+        session_service.get_ref().remove(&session, FORM_DATA_KEY);
+    } else {
+        session_service
+            .get_ref()
+            .insert(&session, FORM_DATA_KEY, &form_data)
+            .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+    }
 
     alert_service
         .get_ref()
@@ -227,6 +234,12 @@ pub async fn sign_out(
         .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
     Ok(Redirect::to("/login").see_other())
+}
+
+#[derive(Deserialize, Debug)]
+pub struct LoginData {
+    pub email: Option<String>,
+    pub password: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

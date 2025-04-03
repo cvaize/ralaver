@@ -5,7 +5,7 @@ pub struct Email;
 #[allow(dead_code)]
 impl Email {
     pub fn apply(value: &String) -> bool {
-        value.len() >= 3 && value.len() <= 254 && value.contains("@")
+        value.len() >= 3 && value.len() <= 255 && value.contains("@")
     }
 
     pub fn validate(

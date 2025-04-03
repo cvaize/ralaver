@@ -1,5 +1,7 @@
+use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
+use crate::app::validator::rules::required::Required;
 use crate::{
     Alert, AlertService, AppService, SessionService, TemplateService, Translator, TranslatorService,
 };
@@ -9,8 +11,6 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
-use crate::app::validator::rules::confirmed::Confirmed;
-use crate::app::validator::rules::required::Required;
 
 static FORM_DATA_KEY: &str = "page.forgot_password_confirm.form.data";
 
@@ -132,24 +132,28 @@ pub async fn confirm(
     };
 
     let code_errors: Vec<String> = match &data.code {
-        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 254, "code"),
+        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 255, "code"),
         None => Required::validate(&translator, &data.code),
     };
 
     let password_errors: Vec<String> = match &data.password {
-        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 254, &password_str),
+        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 255, &password_str),
         None => Required::validate(&translator, &data.password),
     };
 
     let mut confirm_password_errors: Vec<String> = match &data.confirm_password {
-        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 254, &confirm_password_str),
+        Some(value) => {
+            MinMaxLengthString::validate(&translator, value, 4, 255, &confirm_password_str)
+        }
         None => Required::validate(&translator, &data.confirm_password),
     };
 
     if password_errors.len() == 0 && confirm_password_errors.len() == 0 {
         let mut password_errors2: Vec<String> = match &data.password {
             Some(password) => match &data.confirm_password {
-                Some(confirm_password) => Confirmed::validate(&translator, password, confirm_password, &password_str),
+                Some(confirm_password) => {
+                    Confirmed::validate(&translator, password, confirm_password, &password_str)
+                }
                 None => vec![],
             },
             None => vec![],
@@ -158,11 +162,11 @@ pub async fn confirm(
         confirm_password_errors.append(&mut password_errors2);
     }
 
-    if email_errors.len() == 0
+    let is_valid = email_errors.len() == 0
         && code_errors.len() == 0
         && password_errors.len() == 0
-        && confirm_password_errors.len() == 0
-    {
+        && confirm_password_errors.len() == 0;
+    if is_valid {
         let alert_str = translator.simple("auth.alert.send_email.success");
 
         alerts.push(Alert::success(alert_str));
@@ -202,10 +206,14 @@ pub async fn confirm(
 
     let form_data = FormData { form: Some(form) };
 
-    session_service
-        .get_ref()
-        .insert(&session, FORM_DATA_KEY, &form_data)
-        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+    if is_valid {
+        session_service.get_ref().remove(&session, FORM_DATA_KEY);
+    } else {
+        session_service
+            .get_ref()
+            .insert(&session, FORM_DATA_KEY, &form_data)
+            .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+    }
 
     alert_service
         .get_ref()
