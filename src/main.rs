@@ -8,7 +8,7 @@ mod schema;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use dotenv::dotenv;
 use std::env;
-
+use std::sync::Mutex;
 use actix_session::{storage::RedisSessionStore, SessionMiddleware};
 use actix_web::cookie::Key;
 use actix_web::middleware;
@@ -48,6 +48,7 @@ async fn main() -> std::io::Result<()> {
     let auth = Data::new(AuthService::new(config.clone(), db_pool.clone(), hash.clone()));
     let locale = Data::new(LocaleService::new(config.clone(), session.clone()));
     let app = Data::new(AppService::new(config.clone(), locale.clone(), alert.clone()));
+    let mail = Data::new(Mutex::new(MailService::new(config.clone(), None)));
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 
@@ -68,6 +69,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(app.clone())
             .app_data(locale.clone())
             .app_data(hash.clone())
+            .app_data(mail.clone())
             .configure(routes::register)
             .wrap(ErrorRedirect)
     })

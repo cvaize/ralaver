@@ -1,7 +1,8 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
 use crate::{
-    Alert, AlertService, AppService, SessionService, TemplateService, Translator, TranslatorService,
+    Alert, AlertService, AppService, EmailAddress, EmailMessage, MailService, SessionService,
+    TemplateService, Translator, TranslatorService,
 };
 use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
@@ -9,6 +10,7 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
+use std::sync::Mutex;
 
 static FORM_DATA_KEY: &str = "page.forgot_password.form.data";
 
@@ -86,6 +88,7 @@ pub async fn send_email(
     data: Form<ForgotPasswordData>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
+    mail_service: Data<Mutex<MailService>>,
 ) -> Result<impl Responder, Error> {
     let data: &ForgotPasswordData = data.deref();
 
@@ -96,10 +99,34 @@ pub async fn send_email(
     let translator = Translator::new(&lang, &translator_service);
     let email_str = translator.simple("auth.page.forgot_password.form.fields.email.label");
 
-    let email_errors: Vec<String> = match &data.email {
+    let mut email_errors: Vec<String> = match &data.email {
         Some(value) => Email::validate(&translator, value, &email_str),
         None => Required::validate(&translator, &data.email),
     };
+
+    if email_errors.len() == 0 {
+        let email: String = match &data.email {
+            Some(value) => value.to_owned(),
+            None => "".to_string(),
+        };
+        let message = EmailMessage {
+            from: None,
+            reply_to: None,
+            to: EmailAddress { name: None, email },
+            subject: "Test subject".to_string(),
+            html_body: None,
+            text_body: "Test text body".to_string(),
+        };
+        let mut mail_service = mail_service
+            .lock()
+            .map_err(|_| error::ErrorInternalServerError("Mail service error"))?;
+        let send_email_result = mail_service.send_email(&message);
+
+        if send_email_result.is_err() {
+            let email_str = translator.simple("auth.alert.send_email.fail");
+            email_errors.push(email_str);
+        }
+    }
 
     let is_valid = email_errors.len() == 0;
     if is_valid {

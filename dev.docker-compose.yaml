@@ -15,6 +15,18 @@ services:
     ports:
       - '${FORWARD_APP_PORT:-8080}:8080'
 
+  fake_smtp_server:
+    image: gessnerfl/fake-smtp-server:2.2.1
+    hostname: "fake-smtp-server"
+    restart: always
+    environment:
+      - FAKESMTP_AUTHENTICATION_USERNAME=${MAIL_USERNAME:-test}
+      - FAKESMTP_AUTHENTICATION_PASSWORD=${MAIL_PASSWORD:-test}
+    ports:
+      - '${FORWARD_FAKE_SMTP_APP_PORT:-1080}:8080'
+      - '${FORWARD_FAKE_SMTP_API_PORT:-1081}:8081'
+      - '${FORWARD_FAKE_SMTP_PORT:-8025}:8025'
+
   mysql:
     image: 'mysql/mysql-server:8.0'
     ports:
