@@ -54,7 +54,7 @@ impl MailService {
 
             mailer = mailer.tls(Tls::Wrapper(tls_parameters));
         } else {
-            return Err(MailServiceError::ConnectSmtpFail);
+            return Err(MailServiceError::EncryptionNotSupported);
         }
 
         let mailer = mailer.credentials(creds).build();
@@ -90,6 +90,7 @@ pub enum MailServiceError {
     BuildMessageBodyFail,
     BuildMessageFail,
     ConnectSmtpFail,
+    EncryptionNotSupported,
 }
 
 impl EmailMessage {

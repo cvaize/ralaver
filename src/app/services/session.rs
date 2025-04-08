@@ -28,6 +28,16 @@ impl SessionService {
         Ok(())
     }
 
+    pub fn insert_string(
+        &self,
+        session: &Session,
+        key: &str,
+        str: &str,
+    ) -> Result<(), SaveSessionDataError> {
+        session.insert(key, str).map_err(|_| SaveSessionDataError)?;
+        Ok(())
+    }
+
     pub fn get<T: DeserializeOwned>(
         &self,
         session: &Session,

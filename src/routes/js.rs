@@ -1,4 +1,4 @@
-use actix_web::{web};
+use actix_web::web;
 use crate::app::controllers;
 
 pub fn register(cfg: &mut web::ServiceConfig) {

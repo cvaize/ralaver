@@ -3,17 +3,21 @@ use crate::{Locale, User};
 use actix_session::Session;
 use actix_web::web::Data;
 use actix_web::HttpRequest;
+use url::Url;
 
 pub struct AppService {
     config: Data<Config>,
+    url: Url,
     locale_service: Data<LocaleService>,
     alert_service: Data<AlertService>,
 }
 
 impl AppService {
     pub fn new(config: Data<Config>, locale_service: Data<LocaleService>, alert_service: Data<AlertService>) -> Self {
+        let url: Url = Url::parse(&config.get_ref().app.url).unwrap();
         Self {
             config,
+            url,
             locale_service,
             alert_service,
         }
@@ -42,5 +46,9 @@ impl AppService {
 
     pub fn alerts(&self, session: &Session) -> Vec<Alert> {
         self.alert_service.get_and_remove_from_session(session).unwrap_or(Vec::new())
+    }
+
+    pub fn url(&self) -> &Url {
+        &self.url
     }
 }

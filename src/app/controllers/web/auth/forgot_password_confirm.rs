@@ -6,13 +6,19 @@ use crate::{
     Alert, AlertService, AppService, SessionService, TemplateService, Translator, TranslatorService,
 };
 use actix_session::Session;
-use actix_web::web::{Data, Form, Redirect};
+use actix_web::web::{Query, Data, Form, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
 
 static FORM_DATA_KEY: &str = "page.forgot_password_confirm.form.data";
+
+#[derive(Deserialize)]
+pub struct ForgotPasswordConfirmQuery {
+    pub email: Option<String>,
+    pub code: Option<String>
+}
 
 pub async fn show(
     req: HttpRequest,
@@ -21,7 +27,9 @@ pub async fn show(
     session_service: Data<SessionService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
+    query: Query<ForgotPasswordConfirmQuery>
 ) -> Result<HttpResponse, Error> {
+    let query = query.into_inner();
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
     let translator = Translator::new(&lang, &translator_service);
 
@@ -36,10 +44,18 @@ pub async fn show(
 
     let fields = form.fields.unwrap_or(Fields::empty());
 
-    let email_field = fields.email.unwrap_or(Field::empty());
-    let code_field = fields.code.unwrap_or(Field::empty());
+    let mut email_field = fields.email.unwrap_or(Field::empty());
+    let mut code_field = fields.code.unwrap_or(Field::empty());
     let password_field = fields.password.unwrap_or(Field::empty());
     let confirm_password_field = fields.confirm_password.unwrap_or(Field::empty());
+
+    if let Some(email) = query.email {
+        email_field.value = Some(email.to_owned());
+    }
+
+    if let Some(code) = query.code {
+        code_field.value = Some(code.to_owned());
+    }
 
     let dark_mode = app_service.get_ref().dark_mode(&req);
     let title_str = translator.simple("auth.page.forgot_password_confirm.title");
@@ -76,6 +92,7 @@ pub async fn show(
                     "label": email_str,
                     "type": "email",
                     "name": "email",
+                    "readonly": "readonly",
                     "value": email_field.value,
                     "errors": email_field.errors,
                 },
@@ -233,27 +250,27 @@ pub struct ForgotPasswordConfirmData {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FormData {
-    form: Option<LoginForm>,
+    pub form: Option<LoginForm>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LoginForm {
-    fields: Option<Fields>,
-    errors: Option<Vec<String>>,
+    pub fields: Option<Fields>,
+    pub errors: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Fields {
-    code: Option<Field>,
-    email: Option<Field>,
-    password: Option<Field>,
-    confirm_password: Option<Field>,
+    pub code: Option<Field>,
+    pub email: Option<Field>,
+    pub password: Option<Field>,
+    pub confirm_password: Option<Field>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Field {
-    value: Option<String>,
-    errors: Option<Vec<String>>,
+    pub value: Option<String>,
+    pub errors: Option<Vec<String>>,
 }
 
 impl FormData {

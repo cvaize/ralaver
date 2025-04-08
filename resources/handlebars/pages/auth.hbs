@@ -43,7 +43,7 @@
 
                 {{#if form.fields}}
                     {{#each form.fields}}
-                        {{> components/field.hbs index=@index label=label type=type name=name value=value errors=errors }}
+                        {{> components/field.hbs index=@index }}
                     {{/each}}
                 {{/if}}
 

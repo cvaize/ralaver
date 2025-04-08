@@ -1,8 +1,8 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
 use crate::{
-    Alert, AlertService, AppService, EmailAddress, EmailMessage, MailService, SessionService,
-    TemplateService, Translator, TranslatorService,
+    Alert, AlertService, AppService, EmailAddress, EmailMessage, MailService,
+    SessionService, TemplateService, Translator, TranslatorService,
 };
 use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
@@ -11,8 +11,15 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
 use std::sync::Mutex;
+use rand::Rng;
 
 static FORM_DATA_KEY: &str = "page.forgot_password.form.data";
+pub static CODE_KEY: &str = "page.forgot_password.code.key";
+
+static CODE_CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
+                            abcdefghijklmnopqrstuvwxyz\
+                            0123456789";
+static CODE_LEN: usize = 64;
 
 pub async fn show(
     req: HttpRequest,
@@ -89,6 +96,7 @@ pub async fn send_email(
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     mail_service: Data<Mutex<MailService>>,
+    tmpl: Data<TemplateService>,
 ) -> Result<impl Responder, Error> {
     let data: &ForgotPasswordData = data.deref();
 
@@ -109,13 +117,67 @@ pub async fn send_email(
             Some(value) => value.to_owned(),
             None => "".to_string(),
         };
+
+        let subject = translator.simple("auth.page.forgot_password.mail.subject");
+        let title = translator.simple("auth.page.forgot_password.mail.title");
+        let description = translator.simple("auth.page.forgot_password.mail.description");
+        let site_name = translator.simple("auth.page.forgot_password.mail.site_name");
+        let header = translator.simple("auth.page.forgot_password.mail.header");
+        let button_label = translator.simple("auth.page.forgot_password.mail.button");
+        let text_body = subject.to_owned();
+        let lang = lang.to_owned();
+        let site_href = app_service.url().to_string();
+        let site_domain = app_service
+            .url()
+            .domain()
+            .unwrap_or("localhost")
+            .to_string();
+        let logo_src = app_service
+            .url()
+            .join("/svg/logo.svg")
+            .map_err(|_| error::ErrorInternalServerError("App url error"))?
+            .to_string();
+
+        let mut rng = rand::thread_rng();
+
+        let code: String = (0..CODE_LEN)
+            .map(|_| {
+                let idx = rng.gen_range(0..CODE_CHARSET.len());
+                CODE_CHARSET[idx] as char
+            })
+            .collect();
+        session_service.get_ref().insert_string(&session, CODE_KEY, &code)
+            .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+        let params = format!("/forgot-password-confirm?code={}&email={}", code, email);
+        let button_href = app_service
+            .url()
+            .join(&params)
+            .map_err(|_| error::ErrorInternalServerError("App url error"))?
+            .to_string();
+
+        let ctx = json!({
+            "title": title,
+            "description": description,
+            "lang": lang,
+            "site_name": site_name,
+            "site_href": site_href,
+            "site_domain": site_domain,
+            "logo_src": logo_src,
+            "header": header,
+            "button_label": button_label,
+            "button_href": button_href,
+        });
+        let html_body = Some(
+            tmpl.get_ref()
+                .render_throw_http("emails/auth/forgot_password.hbs", &ctx)?,
+        );
         let message = EmailMessage {
             from: None,
             reply_to: None,
             to: EmailAddress { name: None, email },
-            subject: "Test subject".to_string(),
-            html_body: None,
-            text_body: "Test text body".to_string(),
+            subject,
+            html_body,
+            text_body,
         };
         let mut mail_service = mail_service
             .lock()

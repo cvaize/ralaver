@@ -23,6 +23,7 @@ pub struct MysqlDbConfig {
 
 #[derive(Debug, Clone)]
 pub struct AppConfig {
+    pub url: String,
     pub locale: String,
     pub fallback_locale: String,
     pub dark_mode_cookie_key: String,
@@ -75,6 +76,10 @@ impl Config {
     pub fn new_from_env() -> Self {
         Self {
             app: AppConfig {
+                url: env::var("APP_URL")
+                    .unwrap_or("http://localhost".to_string())
+                    .trim()
+                    .to_string(),
                 locale: env::var("APP_LOCALE")
                     .unwrap_or("en".to_string())
                     .trim()

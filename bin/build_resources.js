@@ -26,6 +26,12 @@ const scripts = [
         .map(s => './resources/js/components/' + s),
 ].filter((item, i, ar) => ar.indexOf(item) === i);
 
+const svg = [
+    ...fs.readdirSync('./resources/svg')
+        .filter(s => s.endsWith('.svg'))
+        .map(s => './resources/svg/' + s),
+].filter((item, i, ar) => ar.indexOf(item) === i);
+
 async function runStyles(){
     let content = '';
 
@@ -70,10 +76,23 @@ async function runScripts(){
 
     fs.writeFileSync('./resources/dist/app.min.js.gz', content);
 }
+async function runSvg(){
+    for (const svgElement of svg) {
+        let content = fs.readFileSync(svgElement);
+        let path = svgElement.replace('./resources/svg/', './resources/dist/').trim();
+        fs.writeFileSync(path, content);
+
+        content = zlib.gzipSync(content, {level: 9});
+
+        fs.writeFileSync(`${path}.gz`, content);
+    }
+
+}
 
 async function run(){
     await runStyles();
     await runScripts();
+    await runSvg();
 }
 
 run();
