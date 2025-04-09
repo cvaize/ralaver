@@ -95,7 +95,7 @@ pub async fn send_email(
     data: Form<ForgotPasswordData>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    mail_service: Data<Mutex<MailService>>,
+    mail_service: Data<MailService>,
     tmpl: Data<TemplateService>,
 ) -> Result<impl Responder, Error> {
     let data: &ForgotPasswordData = data.deref();
@@ -179,10 +179,7 @@ pub async fn send_email(
             html_body,
             text_body,
         };
-        let mut mail_service = mail_service
-            .lock()
-            .map_err(|_| error::ErrorInternalServerError("Mail service error"))?;
-        let send_email_result = mail_service.send_email(&message);
+        let send_email_result = mail_service.get_ref().send_email(&message);
 
         if send_email_result.is_err() {
             let email_str = translator.simple("auth.alert.send_email.fail");

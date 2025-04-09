@@ -13,20 +13,20 @@ use lettre::{
 
 pub struct MailService {
     config: Data<Config>,
-    mailer: Option<LettreSmtpTransport>,
+    mailer: LettreSmtpTransport,
 }
 
 impl MailService {
     pub fn new(config: Data<Config>, mailer: Option<LettreSmtpTransport>) -> Self {
+        let mailer = match mailer {
+            Some(mailer) => mailer,
+            _ => Self::connect(config.get_ref()).unwrap()
+        };
         Self { config, mailer }
     }
 
-    pub fn send_email(&mut self, data: &EmailMessage) -> Result<(), MailServiceError> {
-        if self.mailer.is_none() {
-            self.connect()?;
-        }
-
-        let mailer = self.mailer.as_ref().unwrap();
+    pub fn send_email(&self, data: &EmailMessage) -> Result<(), MailServiceError> {
+        let mailer = &self.mailer;
         let message: LettreMessage = data.build(&self.config.mail.smtp)?;
 
         mailer.send(&message).map_err(|_| MailServiceError::SendFail)?;
@@ -34,8 +34,7 @@ impl MailService {
         Ok(())
     }
 
-    pub fn connect(&mut self) -> Result<(), MailServiceError> {
-        let config = self.config.get_ref();
+    pub fn connect(config: &Config) -> Result<LettreSmtpTransport, MailServiceError> {
         let host = config.mail.smtp.host.to_owned();
         let port: u16 = config.mail.smtp.port.to_owned().parse()
             .map_err(|_| MailServiceError::ConnectSmtpFail)?;
@@ -59,9 +58,7 @@ impl MailService {
 
         let mailer = mailer.credentials(creds).build();
 
-        self.mailer = Some(mailer);
-
-        Ok(())
+        Ok(mailer)
     }
 }
 

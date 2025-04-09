@@ -48,7 +48,7 @@ async fn main() -> std::io::Result<()> {
     let auth = Data::new(AuthService::new(config.clone(), db_pool.clone(), hash.clone()));
     let locale = Data::new(LocaleService::new(config.clone(), session.clone()));
     let app = Data::new(AppService::new(config.clone(), locale.clone(), alert.clone()));
-    let mail = Data::new(Mutex::new(MailService::new(config.clone(), None)));
+    let mail = Data::new(MailService::new(config.clone(), None));
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 
