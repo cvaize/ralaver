@@ -139,7 +139,7 @@ dependencies = [
  "anyhow",
  "derive_more 1.0.0",
  "rand 0.8.5",
- "redis",
+ "redis 0.26.1",
  "serde",
  "serde_json",
  "tracing",
@@ -1971,6 +1971,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "redis"
+version = "0.29.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1bc42f3a12fd4408ce64d8efef67048a924e543bd35c6591c0447fda9054695f"
+dependencies = [
+ "arc-swap",
+ "combine",
+ "itoa",
+ "num-bigint",
+ "percent-encoding",
+ "r2d2",
+ "ryu",
+ "sha1_smol",
+ "socket2",
+ "url",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2035,6 +2053,7 @@ dependencies = [
  "log",
  "r2d2",
  "rand 0.9.0",
+ "redis 0.29.5",
  "serde",
  "serde_derive",
  "serde_json",
@@ -2191,6 +2210,12 @@ dependencies = [
  "cpufeatures",
  "digest",
 ]
+
+[[package]]
+name = "sha1_smol"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbfa15b3dddfee50a0fff136974b3e1bde555604ba463834a7eb7deb6417705d"
 
 [[package]]
 name = "sha2"

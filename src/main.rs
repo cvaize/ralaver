@@ -1,6 +1,7 @@
 mod app;
 mod config;
 mod db_connection;
+mod redis_connection;
 mod helpers;
 mod routes;
 mod schema;
@@ -29,23 +30,26 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok();
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-    let config = Data::new(Config::new_from_env());
+    // TODO: Измерить производительность использования config в Arc и без него: Data<Config> или Config.
+    let config = Config::new_from_env();
+    let config_data = Data::new(config.clone());
     // Db
-    let db_pool: Data<DbPool> = Data::new(db_connection::get_connection_pool(config.get_ref()));
+    let db_pool: Data<DbPool> = Data::new(db_connection::get_connection_pool(&config));
     let mut connection = db_pool.get().unwrap();
     let _ = connection.run_pending_migrations(MIGRATIONS);
     // Redis
-    let redis_url: String = env::var("REDIS_URL").unwrap_or("redis://redis:6379".to_string());
-    let redis_secret: String = env::var("REDIS_SECRET").unwrap_or("redis_secret".to_string());
-    let redis_secret = Key::from(redis_secret.as_bytes());
-    let redis_store = RedisSessionStore::new(redis_url).await.unwrap();
+    let redis_secret = Key::from(config.db.redis.secret.to_owned().as_bytes());
+    let redis_store = RedisSessionStore::new(config.db.redis.url.to_owned()).await.unwrap();
+    let redis_pool = redis_connection::get_connection_pool(&config);
     // Services
+    let key_value = Data::new(KeyValueService::new(redis_pool));
+    let log = Data::new(LogService::new(config.clone()));
     let translator = Data::new(TranslatorService::new_from_files(config.clone())?);
     let template = Data::new(TemplateService::new_from_files(config.clone())?);
     let session = Data::new(SessionService::new(config.clone()));
     let alert = Data::new(AlertService::new(config.clone(), session.clone()));
     let hash = Data::new(HashService::new(Argon2::default()));
-    let auth = Data::new(AuthService::new(config.clone(), db_pool.clone(), hash.clone()));
+    let auth = Data::new(AuthService::new(config.clone(), db_pool.clone(), hash.clone(), key_value.clone()));
     let locale = Data::new(LocaleService::new(config.clone(), session.clone()));
     let app = Data::new(AppService::new(config.clone(), locale.clone(), alert.clone()));
     let mail = Data::new(MailService::new(config.clone(), None));
@@ -59,7 +63,8 @@ async fn main() -> std::io::Result<()> {
                 redis_secret.clone(),
             ))
             .wrap(middleware::Logger::default())
-            .app_data(config.clone())
+            .app_data(config_data.clone())
+            .app_data(log.clone())
             .app_data(translator.clone())
             .app_data(db_pool.clone())
             .app_data(template.clone())
@@ -70,6 +75,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(locale.clone())
             .app_data(hash.clone())
             .app_data(mail.clone())
+            .app_data(key_value.clone())
             .configure(routes::register)
             .wrap(ErrorRedirect)
     })

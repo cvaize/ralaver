@@ -12,15 +12,15 @@ use lettre::{
 };
 
 pub struct MailService {
-    config: Data<Config>,
+    config: Config,
     mailer: LettreSmtpTransport,
 }
 
 impl MailService {
-    pub fn new(config: Data<Config>, mailer: Option<LettreSmtpTransport>) -> Self {
+    pub fn new(config: Config, mailer: Option<LettreSmtpTransport>) -> Self {
         let mailer = match mailer {
             Some(mailer) => mailer,
-            _ => Self::connect(config.get_ref()).unwrap()
+            _ => Self::connect(&config).unwrap()
         };
         Self { config, mailer }
     }

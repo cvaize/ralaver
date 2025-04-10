@@ -9,7 +9,7 @@ use std::{env, io};
 
 #[allow(dead_code)]
 pub struct TemplateService {
-    config: Data<Config>,
+    config: Config,
     handlebars: Handlebars<'static>,
 }
 
@@ -34,11 +34,11 @@ impl TemplateService {
             .map_err(|_| error::ErrorInternalServerError("Template error"))
     }
 
-    pub fn new_from_files(config: Data<Config>) -> Result<Self, io::Error> {
+    pub fn new_from_files(config: Config) -> Result<Self, io::Error> {
         let mut handlebars: Handlebars = Handlebars::new();
 
         let mut dir = env::current_dir()?;
-        dir.push(Path::new(&config.get_ref().template.handlebars.folder));
+        dir.push(Path::new(&config.template.handlebars.folder));
         let str_dir = dir.to_owned();
         let str_dir = str_dir.to_str().unwrap();
 

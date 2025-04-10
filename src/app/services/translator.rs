@@ -8,20 +8,20 @@ use std::{env, fs, io};
 
 #[derive(Debug, Clone)]
 pub struct TranslatorService {
-    config: Data<Config>,
+    config: Config,
     translates: HashMap<String, String>,
 }
 
 impl TranslatorService {
-    pub fn new(config: Data<Config>, translates: HashMap<String, String>) -> Self {
+    pub fn new(config: Config, translates: HashMap<String, String>) -> Self {
         Self { config, translates }
     }
 
-    pub fn new_from_files(config: Data<Config>) -> Result<Self, io::Error> {
+    pub fn new_from_files(config: Config) -> Result<Self, io::Error> {
         let mut translates: HashMap<String, String> = HashMap::from([]);
 
         let mut dir = env::current_dir()?;
-        dir.push(Path::new(&config.get_ref().translator.translates_folder));
+        dir.push(Path::new(&config.translator.translates_folder));
         let str_dir = dir.to_owned();
         let str_dir = str_dir.to_str().unwrap();
 
@@ -168,7 +168,7 @@ mod tests {
 
     #[test]
     fn translate() {
-        let config = Data::new(Config::new_from_env());
+        let config = Config::new_from_env();
         let t: TranslatorService = TranslatorService::new(
             config,
             HashMap::from([
@@ -184,7 +184,7 @@ mod tests {
 
     #[test]
     fn new_from_files() {
-        let config = Data::new(Config::new_from_env());
+        let config = Config::new_from_env();
         let t: TranslatorService = TranslatorService::new_from_files(config).unwrap();
         let translates: &HashMap<String, String> = t.get_translates_ref();
         assert_ne!(0, translates.iter().len());

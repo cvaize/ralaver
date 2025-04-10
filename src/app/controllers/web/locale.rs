@@ -1,4 +1,4 @@
-use crate::Config;
+use crate::{AppService, Config};
 use actix_web::cookie::Cookie;
 use actix_web::web::{Data, Form};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};

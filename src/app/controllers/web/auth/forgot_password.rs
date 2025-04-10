@@ -1,25 +1,20 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
-use crate::{
-    Alert, AlertService, AppService, EmailAddress, EmailMessage, MailService,
-    SessionService, TemplateService, Translator, TranslatorService,
-};
+use crate::{Alert, AlertService, AppService, AuthService, EmailAddress, EmailMessage, KeyValueService, MailService, SessionService, TemplateService, Translator, TranslatorService};
 use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
-use std::sync::Mutex;
 use rand::Rng;
 
 static FORM_DATA_KEY: &str = "page.forgot_password.form.data";
-pub static CODE_KEY: &str = "page.forgot_password.code.key";
 
 static CODE_CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                             abcdefghijklmnopqrstuvwxyz\
                             0123456789";
-static CODE_LEN: usize = 64;
+pub static CODE_LEN: usize = 64;
 
 pub async fn show(
     req: HttpRequest,
@@ -97,6 +92,7 @@ pub async fn send_email(
     translator_service: Data<TranslatorService>,
     mail_service: Data<MailService>,
     tmpl: Data<TemplateService>,
+    auth_service: Data<AuthService<'_>>,
 ) -> Result<impl Responder, Error> {
     let data: &ForgotPasswordData = data.deref();
 
@@ -146,8 +142,10 @@ pub async fn send_email(
                 CODE_CHARSET[idx] as char
             })
             .collect();
-        session_service.get_ref().insert_string(&session, CODE_KEY, &code)
-            .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+
+        auth_service.get_ref().save_forgot_password_code(&email, &code)
+            .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
+
         let params = format!("/forgot-password-confirm?code={}&email={}", code, email);
         let button_href = app_service
             .url()

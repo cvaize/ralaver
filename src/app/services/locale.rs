@@ -8,7 +8,7 @@ use crate::app::validator::rules::length::MinMaxLengthString;
 
 #[derive(Debug)]
 pub struct LocaleService {
-    config: Data<Config>,
+    config: Config,
     session_service: Data<SessionService>,
     locales: HashMap<String, Locale>,
     locales_codes: Vec<String>,
@@ -17,7 +17,7 @@ pub struct LocaleService {
 }
 
 impl LocaleService {
-    pub fn new(config: Data<Config>, session_service: Data<SessionService>) -> Self {
+    pub fn new(config: Config, session_service: Data<SessionService>) -> Self {
         let locales_vec = vec![
             Locale {
                 code: "en".to_string(),
@@ -115,7 +115,7 @@ impl LocaleService {
             let locale = self
                 .session_service
                 .get_ref()
-                .get_string(session, &self.config.app.locale_session_key);
+                .get(session, &self.config.app.locale_session_key);
             if let Ok(Some(locale)) = locale {
                 if MinMaxLengthString::apply(&locale, 1, 6) {
                     return self.exists_locale_code_or_default(locale);

@@ -1,12 +1,14 @@
+use crate::app::controllers::web::auth::forgot_password::CODE_LEN;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
 use crate::{
-    Alert, AlertService, AppService, SessionService, TemplateService, Translator, TranslatorService,
+    Alert, AlertService, AppService, AuthService, SessionService, TemplateService, Translator,
+    TranslatorService,
 };
 use actix_session::Session;
-use actix_web::web::{Query, Data, Form, Redirect};
+use actix_web::web::{Data, Form, Query, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
@@ -17,7 +19,7 @@ static FORM_DATA_KEY: &str = "page.forgot_password_confirm.form.data";
 #[derive(Deserialize)]
 pub struct ForgotPasswordConfirmQuery {
     pub email: Option<String>,
-    pub code: Option<String>
+    pub code: Option<String>,
 }
 
 pub async fn show(
@@ -27,7 +29,7 @@ pub async fn show(
     session_service: Data<SessionService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    query: Query<ForgotPasswordConfirmQuery>
+    query: Query<ForgotPasswordConfirmQuery>,
 ) -> Result<HttpResponse, Error> {
     let query = query.into_inner();
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
@@ -48,6 +50,15 @@ pub async fn show(
     let mut code_field = fields.code.unwrap_or(Field::empty());
     let password_field = fields.password.unwrap_or(Field::empty());
     let confirm_password_field = fields.confirm_password.unwrap_or(Field::empty());
+
+    if query.email.is_none() || query.code.is_none() {
+        return Ok(HttpResponse::SeeOther()
+            .insert_header((
+                http::header::LOCATION,
+                http::HeaderValue::from_static("/forgot-password"),
+            ))
+            .finish());
+    }
 
     if let Some(email) = query.email {
         email_field.value = Some(email.to_owned());
@@ -129,6 +140,7 @@ pub async fn confirm(
     data: Form<ForgotPasswordConfirmData>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
+    auth_service: Data<AuthService<'_>>,
 ) -> Result<impl Responder, Error> {
     let data: &ForgotPasswordConfirmData = data.deref();
 
@@ -143,13 +155,13 @@ pub async fn confirm(
     let confirm_password_str =
         translator.simple("auth.page.forgot_password_confirm.form.fields.confirm_password.label");
 
-    let email_errors: Vec<String> = match &data.email {
+    let mut email_errors: Vec<String> = match &data.email {
         Some(value) => Email::validate(&translator, value, &email_str),
         None => Required::validate(&translator, &data.email),
     };
 
-    let code_errors: Vec<String> = match &data.code {
-        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 255, "code"),
+    let mut code_errors: Vec<String> = match &data.code {
+        Some(value) => MinMaxLengthString::validate(&translator, value, CODE_LEN, CODE_LEN, "code"),
         None => Required::validate(&translator, &data.code),
     };
 
@@ -179,15 +191,41 @@ pub async fn confirm(
         confirm_password_errors.append(&mut password_errors2);
     }
 
+    let mut is_redirect_to_forgot_password = false;
+    let mut is_redirect_to_login = false;
+
     let is_valid = email_errors.len() == 0
         && code_errors.len() == 0
         && password_errors.len() == 0
         && confirm_password_errors.len() == 0;
-    if is_valid {
-        let alert_str = translator.simple("auth.alert.send_email.success");
 
-        alerts.push(Alert::success(alert_str));
-    };
+    if is_valid {
+        let d_ = "".to_string();
+        let email = data.email.as_ref().unwrap_or(&d_);
+        let code = data.code.as_ref().unwrap_or(&d_);
+        let password = data.password.as_ref().unwrap_or(&d_);
+
+        let is_code_equal: bool = auth_service
+            .is_equal_forgot_password_code(email, code)
+            .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
+
+        if is_code_equal {
+            let alert_str = translator.simple("auth.alert.confirm.success");
+            alerts.push(Alert::success(alert_str));
+
+            is_redirect_to_login = true;
+
+            auth_service
+                .get_ref()
+                .update_password_by_email(email, password)
+                .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
+        } else {
+            let alert_str = translator.simple("auth.alert.confirm.code_not_equal");
+            alerts.push(Alert::error(alert_str));
+
+            is_redirect_to_forgot_password = true;
+        }
+    }
 
     let email_field = Field {
         value: data.email.to_owned(),
@@ -237,7 +275,13 @@ pub async fn confirm(
         .insert_into_session(&session, &alerts)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
-    Ok(Redirect::to("/forgot-password-confirm").see_other())
+    if is_redirect_to_forgot_password {
+        Ok(Redirect::to("/forgot-password").see_other())
+    } else if is_redirect_to_login {
+        Ok(Redirect::to("/login").see_other())
+    } else {
+        Ok(Redirect::to("/forgot-password-confirm").see_other())
+    }
 }
 
 #[derive(Deserialize, Debug)]

@@ -1,7 +1,10 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{Alert, AlertService, AppService, AuthService, Credentials, SessionService, TemplateService, Translator, TranslatorService};
+use crate::{
+    Alert, AlertService, AppService, AuthService, Credentials, SessionService, TemplateService,
+    Translator, TranslatorService,
+};
 use actix_session::Session;
 use actix_web::web::Data;
 use actix_web::web::Form;

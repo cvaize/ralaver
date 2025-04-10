@@ -6,15 +6,15 @@ use actix_web::HttpRequest;
 use url::Url;
 
 pub struct AppService {
-    config: Data<Config>,
+    config: Config,
     url: Url,
     locale_service: Data<LocaleService>,
     alert_service: Data<AlertService>,
 }
 
 impl AppService {
-    pub fn new(config: Data<Config>, locale_service: Data<LocaleService>, alert_service: Data<AlertService>) -> Self {
-        let url: Url = Url::parse(&config.get_ref().app.url).unwrap();
+    pub fn new(config: Config, locale_service: Data<LocaleService>, alert_service: Data<AlertService>) -> Self {
+        let url: Url = Url::parse(&config.app.url).unwrap();
         Self {
             config,
             url,

@@ -20,7 +20,7 @@ impl<'a> HashService<'a> {
         false
     }
 
-    pub fn hash_password(&self, password: &String) -> Result<String, MakePasswordHashFail>{
+    pub fn hash_password(&self, password: &str) -> Result<String, MakePasswordHashFail>{
         let salt = SaltString::generate(&mut OsRng);
 
         Ok(self.argon2

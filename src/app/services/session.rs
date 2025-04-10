@@ -7,11 +7,11 @@ use serde::Serialize;
 #[derive(Debug, Clone)]
 pub struct SessionService {
     #[allow(dead_code)]
-    config: Data<Config>,
+    config: Config,
 }
 
 impl SessionService {
-    pub fn new(config: Data<Config>) -> Self {
+    pub fn new(config: Config) -> Self {
         Self { config }
     }
 
@@ -21,20 +21,9 @@ impl SessionService {
         key: &str,
         data: &impl Serialize,
     ) -> Result<(), SaveSessionDataError> {
-        let json: String = serde_json::to_string(data).map_err(|_| SaveSessionDataError)?;
         session
-            .insert(key, json)
+            .insert(key, data)
             .map_err(|_| SaveSessionDataError)?;
-        Ok(())
-    }
-
-    pub fn insert_string(
-        &self,
-        session: &Session,
-        key: &str,
-        str: &str,
-    ) -> Result<(), SaveSessionDataError> {
-        session.insert(key, str).map_err(|_| SaveSessionDataError)?;
         Ok(())
     }
 
@@ -43,24 +32,10 @@ impl SessionService {
         session: &Session,
         key: &str,
     ) -> Result<Option<T>, GetSessionDataError> {
-        let result: Option<String> = session
-            .get::<String>(key)
+        let result: Option<T> = session
+            .get::<T>(key)
             .map_err(|_| GetSessionDataError)?;
 
-        match result {
-            Some(str) => Ok(serde_json::from_str(&str).map_err(|_| GetSessionDataError)?),
-            _ => Ok(None),
-        }
-    }
-
-    pub fn get_string(
-        &self,
-        session: &Session,
-        key: &str,
-    ) -> Result<Option<String>, GetSessionDataError> {
-        let result: Option<String> = session
-            .get::<String>(key)
-            .map_err(|_| GetSessionDataError)?;
         Ok(result)
     }
 
