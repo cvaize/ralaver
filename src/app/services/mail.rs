@@ -1,5 +1,5 @@
 use crate::config::MailSmtpConfig;
-use crate::Config;
+use crate::{Config, LogService};
 use actix_web::web::Data;
 use lettre::error::Error as LettreError;
 use lettre::message::header::ContentType;
@@ -10,46 +10,78 @@ use lettre::{
     Address as LettreAddress, Message as LettreMessage, SmtpTransport as LettreSmtpTransport,
     Transport as LettreTransport,
 };
+use strum_macros::{Display, EnumString};
 
 pub struct MailService {
     config: Config,
     mailer: LettreSmtpTransport,
+    log_service: Data<LogService>,
 }
 
 impl MailService {
-    pub fn new(config: Config, mailer: Option<LettreSmtpTransport>) -> Self {
+    pub fn new(
+        config: Config,
+        log_service: Data<LogService>,
+        mailer: Option<LettreSmtpTransport>,
+    ) -> Self {
+        let log_service_ref = log_service.get_ref();
         let mailer = match mailer {
             Some(mailer) => mailer,
-            _ => Self::connect(&config).unwrap()
+            _ => Self::connect(log_service_ref, &config)
+                .map_err(|e| {
+                    log_service.error(format!("MailService::new - {:}", &e).as_str());
+                    e
+                })
+                .unwrap(),
         };
-        Self { config, mailer }
+        Self {
+            config,
+            mailer,
+            log_service,
+        }
     }
 
     pub fn send_email(&self, data: &EmailMessage) -> Result<(), MailServiceError> {
         let mailer = &self.mailer;
-        let message: LettreMessage = data.build(&self.config.mail.smtp)?;
+        let message: LettreMessage = data.build(&self.config.mail.smtp).map_err(|e| {
+            self.log_service
+                .get_ref()
+                .error(format!("MailService::send_email - {:}", &e).as_str());
+            e
+        })?;
 
-        mailer.send(&message).map_err(|_| MailServiceError::SendFail)?;
+        mailer.send(&message).map_err(|e| {
+            self.log_service
+                .get_ref()
+                .error(format!("MailService::send_email - {:}", &e).as_str());
+            MailServiceError::SendFail
+        })?;
 
         Ok(())
     }
 
-    pub fn connect(config: &Config) -> Result<LettreSmtpTransport, MailServiceError> {
+    pub fn connect(
+        log_service: &LogService,
+        config: &Config,
+    ) -> Result<LettreSmtpTransport, MailServiceError> {
         let host = config.mail.smtp.host.to_owned();
-        let port: u16 = config.mail.smtp.port.to_owned().parse()
-            .map_err(|_| MailServiceError::ConnectSmtpFail)?;
+        let port: u16 = config.mail.smtp.port.to_owned().parse().map_err(|e| {
+            log_service.error(format!("MailService::connect - {:}", &e).as_str());
+            MailServiceError::ConnectSmtpFail
+        })?;
         let username = config.mail.smtp.username.to_owned();
         let password = config.mail.smtp.password.to_owned();
 
         let creds = Credentials::new(username, password);
 
-        let mut mailer = LettreSmtpTransport::builder_dangerous(host.to_owned())
-            .port(port);
+        let mut mailer = LettreSmtpTransport::builder_dangerous(host.to_owned()).port(port);
 
         if config.mail.smtp.encryption == "" {
         } else if config.mail.smtp.encryption == "tls" {
-            let tls_parameters = TlsParameters::new(host.into())
-                .map_err(|_| MailServiceError::ConnectSmtpFail)?;
+            let tls_parameters = TlsParameters::new(host.into()).map_err(|e| {
+                log_service.error(format!("MailService::connect - {:}", &e).as_str());
+                MailServiceError::ConnectSmtpFail
+            })?;
 
             mailer = mailer.tls(Tls::Wrapper(tls_parameters));
         } else {
@@ -78,7 +110,7 @@ pub struct EmailAddress {
     pub email: String,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Display, EnumString)]
 pub enum MailServiceError {
     SendFail,
     BuildMessageFromAddressFail,

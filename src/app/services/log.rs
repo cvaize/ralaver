@@ -1,6 +1,6 @@
 use crate::Config;
-use actix_web::web::Data;
 
+#[derive(Debug, Clone)]
 pub struct LogService {
     config: Config,
 }
@@ -10,19 +10,19 @@ impl LogService {
         Self { config }
     }
 
-    pub fn success(&self, message: String) {
+    pub fn success(&self, message: &str) {
         println!("SUCCESS: {}", message);
     }
 
-    pub fn info(&self, message: String) {
+    pub fn info(&self, message: &str) {
         println!("INFO: {}", message);
     }
 
-    pub fn warning(&self, message: String) {
+    pub fn warning(&self, message: &str) {
         println!("WARNING: {}", message);
     }
 
-    pub fn error(&self, message: String) {
+    pub fn error(&self, message: &str) {
         eprintln!("ERROR: {}", message);
     }
 }

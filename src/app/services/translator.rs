@@ -1,5 +1,5 @@
 use crate::helpers::collect_files_from_dir;
-use crate::Config;
+use crate::{Config, LogService};
 use actix_web::web::Data;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -10,22 +10,44 @@ use std::{env, fs, io};
 pub struct TranslatorService {
     config: Config,
     translates: HashMap<String, String>,
+    log_service: Data<LogService>,
 }
 
 impl TranslatorService {
-    pub fn new(config: Config, translates: HashMap<String, String>) -> Self {
-        Self { config, translates }
+    pub fn new(
+        config: Config,
+        translates: HashMap<String, String>,
+        log_service: Data<LogService>,
+    ) -> Self {
+        Self {
+            config,
+            translates,
+            log_service,
+        }
     }
 
-    pub fn new_from_files(config: Config) -> Result<Self, io::Error> {
+    pub fn new_from_files(
+        config: Config,
+        log_service: Data<LogService>,
+    ) -> Result<Self, io::Error> {
         let mut translates: HashMap<String, String> = HashMap::from([]);
 
-        let mut dir = env::current_dir()?;
+        let mut dir = env::current_dir().map_err(|e| {
+            log_service
+                .get_ref()
+                .error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
+            e
+        })?;
         dir.push(Path::new(&config.translator.translates_folder));
         let str_dir = dir.to_owned();
         let str_dir = str_dir.to_str().unwrap();
 
-        let collect_paths: Vec<PathBuf> = collect_files_from_dir(dir.as_path())?;
+        let collect_paths: Vec<PathBuf> = collect_files_from_dir(dir.as_path()).map_err(|e| {
+            log_service
+                .get_ref()
+                .error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
+            e
+        })?;
         let paths: Vec<&PathBuf> = collect_paths
             .iter()
             .filter(|&p| p.extension().unwrap() == "json")
@@ -40,10 +62,25 @@ impl TranslatorService {
                 .replace(".json", "")
                 .replace("/", ".");
 
-            let content = fs::read_to_string(str_path)?;
+            let content = fs::read_to_string(str_path).map_err(|e| {
+                log_service
+                    .get_ref()
+                    .error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
+                e
+            })?;
 
-            let flat_json: String = flatten_json::flatten_from_str(&content)?;
-            let flatten_keys: Value = serde_json::from_str(&flat_json)?;
+            let flat_json: String = flatten_json::flatten_from_str(&content).map_err(|e| {
+                log_service
+                    .get_ref()
+                    .error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
+                e
+            })?;
+            let flatten_keys: Value = serde_json::from_str(&flat_json).map_err(|e| {
+                log_service
+                    .get_ref()
+                    .error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
+                e
+            })?;
 
             for (key, value) in flatten_keys.as_object().unwrap().iter() {
                 let mut full_key: String = name.clone();
@@ -55,7 +92,7 @@ impl TranslatorService {
             }
         }
 
-        Ok(Self::new(config, translates))
+        Ok(Self::new(config, translates, log_service))
     }
 
     pub fn get(&self, key: &str) -> Option<&String> {
@@ -74,9 +111,15 @@ impl TranslatorService {
         let mut string: String = string;
         for variable in &variables {
             string = match variable {
-                TranslatorVariable::Usize(key, value) => string.replace(&format!(":{}", key), value.to_string().as_str()),
-                TranslatorVariable::I32(key, value) => string.replace(&format!(":{}", key), value.to_string().as_str()),
-                TranslatorVariable::String(key, value) => string.replace(&format!(":{}", key), value),
+                TranslatorVariable::Usize(key, value) => {
+                    string.replace(&format!(":{}", key), value.to_string().as_str())
+                }
+                TranslatorVariable::I32(key, value) => {
+                    string.replace(&format!(":{}", key), value.to_string().as_str())
+                }
+                TranslatorVariable::String(key, value) => {
+                    string.replace(&format!(":{}", key), value)
+                }
             }
         }
         string
@@ -169,12 +212,14 @@ mod tests {
     #[test]
     fn translate() {
         let config = Config::new_from_env();
+        let log_service = Data::new(LogService::new(config.clone()));
         let t: TranslatorService = TranslatorService::new(
             config,
             HashMap::from([
                 ("en.test_key".to_string(), "test_value".to_string()),
                 ("en.test_key2".to_string(), "test_value2".to_string()),
             ]),
+            log_service
         );
 
         assert_eq!("test_value".to_string(), t.translate("en", "test_key"));
@@ -185,7 +230,8 @@ mod tests {
     #[test]
     fn new_from_files() {
         let config = Config::new_from_env();
-        let t: TranslatorService = TranslatorService::new_from_files(config).unwrap();
+        let log_service = Data::new(LogService::new(config.clone()));
+        let t: TranslatorService = TranslatorService::new_from_files(config, log_service).unwrap();
         let translates: &HashMap<String, String> = t.get_translates_ref();
         assert_ne!(0, translates.iter().len());
     }

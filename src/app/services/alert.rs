@@ -1,17 +1,23 @@
-use crate::{Alert, Config, SessionService};
+use crate::{Alert, Config, LogService, SessionService};
 use actix_session::Session;
 use actix_web::web::Data;
 
 pub struct AlertService {
     config: Config,
     session_service: Data<SessionService>,
+    log_service: Data<LogService>,
 }
 
 impl AlertService {
-    pub fn new(config: Config, session_service: Data<SessionService>) -> Self {
+    pub fn new(
+        config: Config,
+        session_service: Data<SessionService>,
+        log_service: Data<LogService>,
+    ) -> Self {
         Self {
             config,
             session_service,
+            log_service,
         }
     }
 
@@ -19,30 +25,41 @@ impl AlertService {
         &self,
         session: &Session,
         alerts: &Vec<Alert>,
-    ) -> Result<(), SaveAlertsError> {
+    ) -> Result<(), AlertServiceError> {
         self.session_service
             .insert(session, &self.config.alerts.session_key, alerts)
-            .map_err(|_| SaveAlertsError)?;
+            .map_err(|e| {
+                self.log_service
+                    .get_ref()
+                    .error(format!("AlertService::insert_into_session - {:}", &e).as_str());
+                return AlertServiceError::InsertFail;
+            })?;
         Ok(())
     }
 
-    pub fn get_from_session(&self, session: &Session) -> Result<Vec<Alert>, GetAlertsError> {
+    pub fn get_from_session(&self, session: &Session) -> Result<Vec<Alert>, AlertServiceError> {
         let alerts: Vec<Alert> = self
             .session_service
             .get(session, &self.config.alerts.session_key)
-            .map_err(|_| GetAlertsError)?
+            .map_err(|e| {
+                self.log_service
+                    .get_ref()
+                    .error(format!("AlertService::get_from_session - {:}", &e).as_str());
+                return AlertServiceError::GetFail;
+            })?
             .unwrap_or(Vec::new());
         Ok(alerts)
     }
 
     pub fn remove_from_session(&self, session: &Session) {
-        self.session_service.remove(session, &self.config.alerts.session_key);
+        self.session_service
+            .remove(session, &self.config.alerts.session_key);
     }
 
     pub fn get_and_remove_from_session(
         &self,
         session: &Session,
-    ) -> Result<Vec<Alert>, GetAlertsError> {
+    ) -> Result<Vec<Alert>, AlertServiceError> {
         let alerts: Vec<Alert> = self.get_from_session(session)?;
         self.remove_from_session(session);
         Ok(alerts)
@@ -50,6 +67,7 @@ impl AlertService {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct SaveAlertsError;
-#[derive(Debug, Clone, Copy)]
-pub struct GetAlertsError;
+pub enum AlertServiceError {
+    InsertFail,
+    GetFail,
+}

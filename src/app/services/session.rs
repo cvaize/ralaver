@@ -1,29 +1,38 @@
-use crate::Config;
+use crate::{Config, LogService};
 use actix_session::Session;
 use actix_web::web::Data;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use strum_macros::Display;
+use strum_macros::EnumString;
 
 #[derive(Debug, Clone)]
 pub struct SessionService {
     #[allow(dead_code)]
     config: Config,
+    log_service: Data<LogService>,
 }
 
 impl SessionService {
-    pub fn new(config: Config) -> Self {
-        Self { config }
+    pub fn new(config: Config, log_service: Data<LogService>) -> Self {
+        Self {
+            config,
+            log_service,
+        }
     }
 
     pub fn insert(
         &self,
         session: &Session,
-        key: &str,
+        key: impl Into<String>,
         data: &impl Serialize,
-    ) -> Result<(), SaveSessionDataError> {
-        session
-            .insert(key, data)
-            .map_err(|_| SaveSessionDataError)?;
+    ) -> Result<(), SessionServiceError> {
+        session.insert(key, data).map_err(|e| {
+            self.log_service
+                .get_ref()
+                .error(format!("SessionService::insert - {:}", &e).as_str());
+            return SessionServiceError::InsertFail;
+        })?;
         Ok(())
     }
 
@@ -31,10 +40,13 @@ impl SessionService {
         &self,
         session: &Session,
         key: &str,
-    ) -> Result<Option<T>, GetSessionDataError> {
-        let result: Option<T> = session
-            .get::<T>(key)
-            .map_err(|_| GetSessionDataError)?;
+    ) -> Result<Option<T>, SessionServiceError> {
+        let result: Option<T> = session.get::<T>(key).map_err(|e| {
+            self.log_service
+                .get_ref()
+                .error(format!("SessionService::get - {:}", &e).as_str());
+            return SessionServiceError::GetFail;
+        })?;
 
         Ok(result)
     }
@@ -47,14 +59,15 @@ impl SessionService {
         &self,
         session: &Session,
         key: &str,
-    ) -> Result<Option<T>, GetSessionDataError> {
-        let data: Option<T> = self.get(session, key)?;
-        self.remove(session, key);
+    ) -> Result<Option<T>, SessionServiceError> {
+        let data: Option<T> = self.get(session, &key)?;
+        self.remove(session, &key);
         Ok(data)
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct SaveSessionDataError;
-#[derive(Debug, Clone, Copy)]
-pub struct GetSessionDataError;
+#[derive(Debug, Clone, Copy, Display, EnumString)]
+pub enum SessionServiceError {
+    InsertFail,
+    GetFail,
+}

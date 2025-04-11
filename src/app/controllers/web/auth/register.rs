@@ -2,7 +2,7 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{Alert, AlertService, AppService, AuthError, AuthService, Credentials, SessionService, TemplateService, Translator, TranslatorService};
+use crate::{Alert, AlertService, AppService, AuthServiceError, AuthService, Credentials, SessionService, TemplateService, Translator, TranslatorService};
 use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
@@ -167,7 +167,7 @@ pub async fn register(
 
         if let Err(error) = register_result {
             match error {
-                AuthError::DuplicateEmail => {
+                AuthServiceError::DuplicateEmail => {
                     email_errors.push(translator.simple("auth.alert.register.duplicate"));
                 }
                 _ => {}

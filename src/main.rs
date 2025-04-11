@@ -1,27 +1,27 @@
 mod app;
 mod config;
 mod db_connection;
-mod redis_connection;
 mod helpers;
+mod redis_connection;
 mod routes;
 mod schema;
 
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use dotenv::dotenv;
-use std::env;
-use std::sync::Mutex;
+pub use crate::app::models::*;
+pub use crate::app::services::*;
+pub use crate::config::Config;
+pub use crate::db_connection::DbPool;
 use actix_session::{storage::RedisSessionStore, SessionMiddleware};
 use actix_web::cookie::Key;
 use actix_web::middleware;
 use actix_web::web::Data;
 use actix_web::App;
 use actix_web::HttpServer;
-use argon2::Argon2;
 use app::middlewares::error_redirect::ErrorRedirect;
-pub use crate::db_connection::DbPool;
-pub use crate::app::models::{*};
-pub use crate::app::services::{*};
-pub use crate::config::Config;
+use argon2::Argon2;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+use dotenv::dotenv;
+use std::env;
+use std::sync::Mutex;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations/");
 
@@ -39,20 +39,37 @@ async fn main() -> std::io::Result<()> {
     let _ = connection.run_pending_migrations(MIGRATIONS);
     // Redis
     let redis_secret = Key::from(config.db.redis.secret.to_owned().as_bytes());
-    let redis_store = RedisSessionStore::new(config.db.redis.url.to_owned()).await.unwrap();
+    let redis_store = RedisSessionStore::new(config.db.redis.url.to_owned())
+        .await
+        .unwrap();
     let redis_pool = redis_connection::get_connection_pool(&config);
     // Services
-    let key_value = Data::new(KeyValueService::new(redis_pool));
     let log = Data::new(LogService::new(config.clone()));
-    let translator = Data::new(TranslatorService::new_from_files(config.clone())?);
-    let template = Data::new(TemplateService::new_from_files(config.clone())?);
-    let session = Data::new(SessionService::new(config.clone()));
-    let alert = Data::new(AlertService::new(config.clone(), session.clone()));
-    let hash = Data::new(HashService::new(Argon2::default()));
-    let auth = Data::new(AuthService::new(config.clone(), db_pool.clone(), hash.clone(), key_value.clone()));
+    let key_value = Data::new(KeyValueService::new(redis_pool, log.clone()));
+    let translator = Data::new(TranslatorService::new_from_files(config.clone(), log.clone())?);
+    let template = Data::new(TemplateService::new_from_files(config.clone(), log.clone())?);
+    let session = Data::new(SessionService::new(config.clone(), log.clone()));
+    let alert = Data::new(AlertService::new(
+        config.clone(),
+        session.clone(),
+        log.clone(),
+    ));
+    let hash = Data::new(HashService::new(Argon2::default(), log.clone()));
+    let auth = Data::new(AuthService::new(
+        config.clone(),
+        db_pool.clone(),
+        hash.clone(),
+        key_value.clone(),
+        log.clone(),
+        session.clone()
+    ));
     let locale = Data::new(LocaleService::new(config.clone(), session.clone()));
-    let app = Data::new(AppService::new(config.clone(), locale.clone(), alert.clone()));
-    let mail = Data::new(MailService::new(config.clone(), None));
+    let app = Data::new(AppService::new(
+        config.clone(),
+        locale.clone(),
+        alert.clone(),
+    ));
+    let mail = Data::new(MailService::new(config.clone(), log.clone(), None));
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 

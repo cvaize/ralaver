@@ -1,15 +1,18 @@
-use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
-use crate::{Config, KeyValueService, KeyValueServiceError, NewUser, PrivateUserData, User};
+use crate::{
+    Config, KeyValueService, KeyValueServiceError, LogService, NewUser, PrivateUserData,
+    SessionService, SessionServiceError, User,
+};
 use crate::{DbPool, HashService};
-use actix_session::{Session, SessionGetError, SessionInsertError};
+use actix_session::Session;
 use actix_web::web::Data;
 #[allow(unused_imports)]
 use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
 use serde_derive::Deserialize;
+use strum_macros::{Display, EnumString};
 
 static FORGOT_PASSWORD_CODE_KEY: &str = "forgot_password.code";
 
@@ -18,17 +21,19 @@ pub struct AuthService<'a> {
     db_pool: Data<DbPool>,
     hash: Data<HashService<'a>>,
     key_value_service: Data<KeyValueService>,
+    log_service: Data<LogService>,
+    session_service: Data<SessionService>,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum AuthError {
+#[derive(Debug, Clone, Copy, Display, EnumString)]
+pub enum AuthServiceError {
     AuthenticateFail,
     RegisterFail,
     CredentialsInvalid,
     DbConnectionFail,
     DuplicateEmail,
     InsertNewUserFail,
-    HashingPasswordFail,
+    PasswordHashFail,
     Fail,
 }
 
@@ -38,12 +43,16 @@ impl<'a> AuthService<'a> {
         db_pool: Data<DbPool>,
         hash: Data<HashService<'a>>,
         key_value_service: Data<KeyValueService>,
+        log_service: Data<LogService>,
+        session_service: Data<SessionService>,
     ) -> Self {
         Self {
             config,
             db_pool,
             hash,
             key_value_service,
+            log_service,
+            session_service,
         }
     }
 
@@ -51,64 +60,102 @@ impl<'a> AuthService<'a> {
         &self,
         session: &Session,
         user_id: u64,
-    ) -> Result<(), SessionInsertError> {
-        session.insert(&self.config.auth.user_id_session_key, user_id)
+    ) -> Result<(), SessionServiceError> {
+        self.session_service
+            .get_ref()
+            .insert(session, &self.config.auth.user_id_session_key, &user_id)
+            .map_err(|e| {
+                self.log_service
+                    .get_ref()
+                    .error(format!("AuthService::insert_user_id_into_session - {:}", &e).as_str());
+                return e;
+            })?;
+        Ok(())
     }
 
     pub fn get_user_id_from_session(
         &self,
         session: &Session,
-    ) -> Result<Option<u64>, SessionGetError> {
-        session.get::<u64>(&self.config.auth.user_id_session_key)
+    ) -> Result<Option<u64>, SessionServiceError> {
+        self.session_service
+            .get_ref()
+            .get(session, &self.config.auth.user_id_session_key)
+            .map_err(|e| {
+                self.log_service
+                    .get_ref()
+                    .error(format!("AuthService::get_user_id_from_session - {:}", &e).as_str());
+                return e;
+            })
     }
 
     pub fn remove_user_id_from_session(&self, session: &Session) {
-        session.remove(&self.config.auth.user_id_session_key);
+        self.session_service
+            .get_ref()
+            .remove(session, &self.config.auth.user_id_session_key);
     }
 
-    pub fn authenticate_by_session(&self, session: &Session) -> Result<User, AuthError> {
-        let user_id = self
-            .get_user_id_from_session(session)
-            .map_err(|_| AuthError::AuthenticateFail)?;
+    pub fn authenticate_by_session(&self, session: &Session) -> Result<User, AuthServiceError> {
+        let user_id = self.get_user_id_from_session(session).map_err(|e| {
+            self.log_service
+                .get_ref()
+                .error(format!("AuthService::authenticate_by_session - {:}", &e).as_str());
+            return AuthServiceError::AuthenticateFail;
+        })?;
 
         match user_id {
             Some(id) => {
-                let mut connection = self
-                    .db_pool
-                    .get_ref()
-                    .get()
-                    .map_err(|_| AuthError::AuthenticateFail)?;
+                let mut connection = self.db_pool.get_ref().get().map_err(|e| {
+                    self.log_service
+                        .get_ref()
+                        .error(format!("AuthService::authenticate_by_session - {:}", &e).as_str());
+                    return AuthServiceError::DbConnectionFail;
+                })?;
 
                 let user = crate::schema::users::dsl::users
                     .find(id)
                     .select(User::as_select())
                     .first(&mut connection)
-                    .map_err(|_| AuthError::AuthenticateFail)?;
+                    .map_err(|e| {
+                        self.log_service.get_ref().error(
+                            format!("AuthService::authenticate_by_session - {:}", &e).as_str(),
+                        );
+                        return AuthServiceError::AuthenticateFail;
+                    })?;
 
                 Ok(user)
             }
-            _ => Err(AuthError::AuthenticateFail),
+            _ => Err(AuthServiceError::AuthenticateFail),
         }
     }
 
     /// Search for a user by the provided credentials and return his id.
-    pub fn authenticate_by_credentials(&self, data: &Credentials) -> Result<u64, AuthError> {
+    pub fn authenticate_by_credentials(&self, data: &Credentials) -> Result<u64, AuthServiceError> {
         if data.is_valid() == false {
-            return Err(AuthError::AuthenticateFail);
+            return Err(AuthServiceError::AuthenticateFail);
         }
 
-        let mut connection = self
-            .db_pool
-            .get_ref()
-            .get()
-            .map_err(|_| AuthError::DbConnectionFail)?;
+        let mut connection = self.db_pool.get_ref().get().map_err(|e| {
+            self.log_service
+                .get_ref()
+                .error(format!("AuthService::authenticate_by_credentials - {:}", &e).as_str());
+            return AuthServiceError::DbConnectionFail;
+        })?;
 
         let results: Vec<PrivateUserData> = crate::schema::users::dsl::users
             .filter(crate::schema::users::email.eq(&data.email))
             .select(PrivateUserData::as_select())
             .limit(1)
             .load::<PrivateUserData>(&mut connection)
-            .map_err(|_| AuthError::AuthenticateFail)?;
+            .map_err(|e| {
+                self.log_service.get_ref().error(
+                    format!(
+                        "AuthService::authenticate_by_credentials - {} - {:}",
+                        data.email, e
+                    )
+                    .as_str(),
+                );
+                return AuthServiceError::AuthenticateFail;
+            })?;
 
         let result: Option<&PrivateUserData> = results.get(0);
 
@@ -133,13 +180,13 @@ impl<'a> AuthService<'a> {
 
         match id {
             Some(id) => Ok(id),
-            _ => Err(AuthError::AuthenticateFail),
+            _ => Err(AuthServiceError::AuthenticateFail),
         }
     }
 
-    pub fn register_by_credentials(&self, data: &Credentials) -> Result<(), AuthError> {
+    pub fn register_by_credentials(&self, data: &Credentials) -> Result<(), AuthServiceError> {
         if data.is_valid() == false {
-            return Err(AuthError::CredentialsInvalid);
+            return Err(AuthServiceError::CredentialsInvalid);
         }
         let new_user = NewUser {
             email: data.email.to_owned(),
@@ -147,25 +194,54 @@ impl<'a> AuthService<'a> {
                 self.hash
                     .get_ref()
                     .hash_password(&data.password)
-                    .map_err(|_| AuthError::HashingPasswordFail)?,
+                    .map_err(|e| {
+                        self.log_service.get_ref().error(
+                            format!(
+                                "AuthService::register_by_credentials - {} - {:}",
+                                data.password, e
+                            )
+                            .as_str(),
+                        );
+                        AuthServiceError::PasswordHashFail
+                    })?,
             ),
         };
 
-        let mut connection = self
-            .db_pool
-            .get_ref()
-            .get()
-            .map_err(|_| AuthError::DbConnectionFail)?;
+        let mut connection = self.db_pool.get_ref().get().map_err(|e| {
+            self.log_service
+                .get_ref()
+                .error(format!("AuthService::register_by_credentials - {:}", &e).as_str());
+            AuthServiceError::DbConnectionFail
+        })?;
 
         diesel::insert_into(crate::schema::users::table)
             .values(new_user)
             .execute(&mut connection)
             .map_err(|e: Error| match &e {
                 Error::DatabaseError(kind, _) => match &kind {
-                    DatabaseErrorKind::UniqueViolation => AuthError::DuplicateEmail,
-                    _ => AuthError::InsertNewUserFail,
+                    DatabaseErrorKind::UniqueViolation => {
+                        self.log_service.get_ref().info(
+                            format!(
+                                "AuthService::register_by_credentials - {} - {:}",
+                                &data.email, e
+                            )
+                            .as_str(),
+                        );
+                        AuthServiceError::DuplicateEmail
+                    }
+                    _ => {
+                        self.log_service.get_ref().error(
+                            format!("AuthService::register_by_credentials - {:}", &e).as_str(),
+                        );
+                        AuthServiceError::InsertNewUserFail
+                    }
                 },
-                _ => AuthError::InsertNewUserFail,
+                _ => {
+                    self.log_service
+                        .get_ref()
+                        .error(format!("AuthService::register_by_credentials - {:}", &e).as_str());
+                    AuthServiceError::InsertNewUserFail
+                }
             })?;
         Ok(())
     }
@@ -179,10 +255,17 @@ impl<'a> AuthService<'a> {
         email: &str,
         code: &str,
     ) -> Result<(), KeyValueServiceError> {
-        self.key_value_service.get_ref().set(
-            format!("{}:{}", FORGOT_PASSWORD_CODE_KEY, &email),
-            code.to_owned(),
-        )?;
+        let key = format!("{}:{}", FORGOT_PASSWORD_CODE_KEY, &email);
+
+        self.key_value_service
+            .get_ref()
+            .set(&key, code.to_owned())
+            .map_err(|e| {
+                self.log_service.get_ref().error(
+                    format!("AuthService::save_forgot_password_code - {} - {:}", &key, &e).as_str(),
+                );
+                e
+            })?;
         Ok(())
     }
 
@@ -190,10 +273,14 @@ impl<'a> AuthService<'a> {
         &self,
         email: &str,
     ) -> Result<Option<String>, KeyValueServiceError> {
-        let value: Option<String> = self
-            .key_value_service
-            .get_ref()
-            .get(format!("{}:{}", FORGOT_PASSWORD_CODE_KEY, &email))?;
+        let key = format!("{}:{}", FORGOT_PASSWORD_CODE_KEY, &email);
+
+        let value: Option<String> = self.key_value_service.get_ref().get(&key).map_err(|e| {
+            self.log_service.get_ref().error(
+                format!("AuthService::get_forgot_password_code - {} - {:}", &key, &e).as_str(),
+            );
+            e
+        })?;
         Ok(value)
     }
 
@@ -202,34 +289,54 @@ impl<'a> AuthService<'a> {
         email: &str,
         code: &str,
     ) -> Result<bool, KeyValueServiceError> {
-        let stored_code: Option<String> = self.get_forgot_password_code(email)?;
+        let stored_code: Option<String> = self.get_forgot_password_code(email).map_err(|e| {
+            self.log_service.get_ref().error(
+                format!(
+                    "AuthService::is_equal_forgot_password_code - {} - {:}",
+                    email, e
+                )
+                .as_str(),
+            );
+            e
+        })?;
         match stored_code {
             Some(stored_code) => Ok(stored_code.eq(code)),
             _ => Ok(false),
         }
     }
 
-    pub fn update_password_by_email(&self, email: &str, password: &str) -> Result<(), AuthError> {
+    pub fn update_password_by_email(
+        &self,
+        email: &str,
+        password: &str,
+    ) -> Result<(), AuthServiceError> {
         use crate::schema::users::dsl::email as dsl_email;
         use crate::schema::users::dsl::password as dsl_password;
         use crate::schema::users::dsl::users as dsl_users;
 
-        let hashed_password = self
-            .hash
-            .get_ref()
-            .hash_password(password)
-            .map_err(|_| AuthError::Fail)?;
+        let hashed_password = self.hash.get_ref().hash_password(password).map_err(|e| {
+            self.log_service.get_ref().error(
+                format!("AuthService::update_password_by_email - {} - {:}", &email, &e).as_str(),
+            );
+            AuthServiceError::Fail
+        })?;
 
-        let mut connection = self
-            .db_pool
-            .get_ref()
-            .get()
-            .map_err(|_| AuthError::DbConnectionFail)?;
+        let mut connection = self.db_pool.get_ref().get().map_err(|e| {
+            self.log_service
+                .get_ref()
+                .error(format!("AuthService::update_password_by_email - {:}", &e).as_str());
+            AuthServiceError::DbConnectionFail
+        })?;
 
         diesel::update(dsl_users.filter(dsl_email.eq(email)))
             .set(dsl_password.eq(hashed_password))
             .execute(&mut connection)
-            .map_err(|_| AuthError::Fail)?;
+            .map_err(|e| {
+                self.log_service.get_ref().error(
+                    format!("AuthService::update_password_by_email - {} - {:}", &email, &e).as_str(),
+                );
+                AuthServiceError::Fail
+            })?;
         Ok(())
     }
 }

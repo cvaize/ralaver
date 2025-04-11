@@ -1,10 +1,10 @@
+use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::{Config, Locale, SessionService, User};
 use actix_session::Session;
 use actix_web::web::Data;
 use actix_web::HttpRequest;
 use http::header::ACCEPT_LANGUAGE;
 use std::collections::HashMap;
-use crate::app::validator::rules::length::MinMaxLengthString;
 
 #[derive(Debug)]
 pub struct LocaleService {
