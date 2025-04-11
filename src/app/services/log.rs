@@ -10,19 +10,15 @@ impl LogService {
         Self { config }
     }
 
-    pub fn success(&self, message: &str) {
-        println!("SUCCESS: {}", message);
-    }
-
     pub fn info(&self, message: &str) {
-        println!("INFO: {}", message);
+        log::info!(message);
     }
 
-    pub fn warning(&self, message: &str) {
-        println!("WARNING: {}", message);
+    pub fn warn(&self, message: &str) {
+        log::warn!(message);
     }
 
     pub fn error(&self, message: &str) {
-        eprintln!("ERROR: {}", message);
+        log::error!(message);
     }
 }

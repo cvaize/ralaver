@@ -4,7 +4,7 @@ use crate::{
     Config, KeyValueService, KeyValueServiceError, LogService, NewUser, PrivateUserData,
     SessionService, SessionServiceError, User,
 };
-use crate::{DbPool, HashService};
+use crate::{MysqlPool, HashService};
 use actix_session::Session;
 use actix_web::web::Data;
 #[allow(unused_imports)]
@@ -18,7 +18,7 @@ static FORGOT_PASSWORD_CODE_KEY: &str = "forgot_password.code";
 
 pub struct AuthService<'a> {
     config: Config,
-    db_pool: Data<DbPool>,
+    db_pool: Data<MysqlPool>,
     hash: Data<HashService<'a>>,
     key_value_service: Data<KeyValueService>,
     log_service: Data<LogService>,
@@ -40,7 +40,7 @@ pub enum AuthServiceError {
 impl<'a> AuthService<'a> {
     pub fn new(
         config: Config,
-        db_pool: Data<DbPool>,
+        db_pool: Data<MysqlPool>,
         hash: Data<HashService<'a>>,
         key_value_service: Data<KeyValueService>,
         log_service: Data<LogService>,

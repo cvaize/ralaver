@@ -1,4 +1,4 @@
-use crate::DbPool;
+use crate::MysqlPool;
 use crate::{Config, LogService};
 use actix_web::web::Data;
 #[allow(unused_imports)]
@@ -7,7 +7,7 @@ use strum_macros::{Display, EnumString};
 
 pub struct UserService {
     config: Config,
-    db_pool: Data<DbPool>,
+    db_pool: Data<MysqlPool>,
     log_service: Data<LogService>,
 }
 
@@ -17,7 +17,7 @@ pub enum UserServiceError {
 }
 
 impl UserService {
-    pub fn new(config: Config, db_pool: Data<DbPool>, log_service: Data<LogService>) -> Self {
+    pub fn new(config: Config, db_pool: Data<MysqlPool>, log_service: Data<LogService>) -> Self {
         Self {
             config,
             db_pool,
