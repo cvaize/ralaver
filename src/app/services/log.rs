@@ -12,14 +12,14 @@ impl LogService {
     }
 
     pub fn info(&self, message: &str) {
-        log::info!(message);
+        log::info!("{}", message);
     }
 
     pub fn warn(&self, message: &str) {
-        log::warn!(message);
+        log::warn!("{}", message);
     }
 
     pub fn error(&self, message: &str) {
-        log::error!(message);
+        log::error!("{}", message);
     }
 }
