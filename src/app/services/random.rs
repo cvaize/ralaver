@@ -13,24 +13,11 @@ impl RandomService {
     }
 
     pub fn str(&self, length: usize) -> String {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         let str: String = (0..length)
             .map(|_| {
-                let idx = rng.gen_range(0..CHARSET.len());
-                CHARSET[idx] as char
-            })
-            .collect();
-
-        str
-    }
-
-    pub fn str2(&self, length: usize) -> String {
-        let mut rng = rand::thread_rng();
-
-        let str: String = (0..length)
-            .map(|_| {
-                let idx = rng.gen_range(0..CHARSET.len());
+                let idx = rng.random_range(0..CHARSET.len());
                 CHARSET[idx] as char
             })
             .collect();
@@ -50,10 +37,8 @@ mod tests {
     #[test]
     fn str() {
         let random_service = Data::new(RandomService::new());
-        let str: String = random_service.str2(10);
+        let str: String = random_service.str(64);
 
-        dbg!(&str);
-
-        assert_eq!(10, str.len());
+        assert_eq!(64, str.len());
     }
 }
