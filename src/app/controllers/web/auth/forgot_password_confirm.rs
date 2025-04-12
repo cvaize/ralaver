@@ -155,12 +155,12 @@ pub async fn confirm(
     let confirm_password_str =
         translator.simple("auth.page.forgot_password_confirm.form.fields.confirm_password.label");
 
-    let mut email_errors: Vec<String> = match &data.email {
+    let email_errors: Vec<String> = match &data.email {
         Some(value) => Email::validate(&translator, value, &email_str),
         None => Required::validate(&translator, &data.email),
     };
 
-    let mut code_errors: Vec<String> = match &data.code {
+    let code_errors: Vec<String> = match &data.code {
         Some(value) => MinMaxLengthString::validate(&translator, value, CODE_LEN, CODE_LEN, "code"),
         None => Required::validate(&translator, &data.code),
     };

@@ -10,19 +10,16 @@ use std::{env, fs, io};
 pub struct TranslatorService {
     config: Data<Config>,
     translates: HashMap<String, String>,
-    log_service: Data<LogService>,
 }
 
 impl TranslatorService {
     pub fn new(
         config: Data<Config>,
         translates: HashMap<String, String>,
-        log_service: Data<LogService>,
     ) -> Self {
         Self {
             config,
             translates,
-            log_service,
         }
     }
 
@@ -92,7 +89,7 @@ impl TranslatorService {
             }
         }
 
-        Ok(Self::new(config, translates, log_service))
+        Ok(Self::new(config, translates))
     }
 
     pub fn get(&self, key: &str) -> Option<&String> {
@@ -209,14 +206,12 @@ mod tests {
     #[test]
     fn translate() {
         let config = Data::new(Config::new_from_env());
-        let log_service = Data::new(LogService::new(config.clone()));
         let t: TranslatorService = TranslatorService::new(
             config,
             HashMap::from([
                 ("en.test_key".to_string(), "test_value".to_string()),
                 ("en.test_key2".to_string(), "test_value2".to_string()),
             ]),
-            log_service,
         );
 
         assert_eq!("test_value".to_string(), t.translate("en", "test_key"));
@@ -227,7 +222,7 @@ mod tests {
     #[test]
     fn new_from_files() {
         let config = Data::new(Config::new_from_env());
-        let log_service = Data::new(LogService::new(config.clone()));
+        let log_service = Data::new(LogService::new());
         let t: TranslatorService = TranslatorService::new_from_files(config, log_service).unwrap();
         let translates: &HashMap<String, String> = t.get_translates_ref();
         assert_ne!(0, translates.iter().len());

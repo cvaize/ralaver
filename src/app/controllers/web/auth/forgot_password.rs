@@ -1,13 +1,13 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
-use crate::{Alert, AlertService, AppService, AuthService, EmailAddress, EmailMessage, KeyValueService, MailService, SessionService, TemplateService, Translator, TranslatorService};
+use crate::{Alert, AlertService, AppService, AuthService, EmailAddress, EmailMessage, MailService, SessionService, TemplateService, Translator, TranslatorService};
 use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
+use rand::Rng;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
-use rand::Rng;
 
 static FORM_DATA_KEY: &str = "page.forgot_password.form.data";
 

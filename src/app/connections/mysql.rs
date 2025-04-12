@@ -1,7 +1,6 @@
 use crate::{Config, LogService};
 use diesel::r2d2::ConnectionManager;
 use diesel::MysqlConnection;
-use log;
 use r2d2::Pool;
 use strum_macros::{Display, EnumString};
 

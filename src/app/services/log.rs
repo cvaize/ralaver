@@ -1,14 +1,9 @@
-use actix_web::web::Data;
-use crate::Config;
-
 #[derive(Debug, Clone)]
-pub struct LogService {
-    config: Data<Config>,
-}
+pub struct LogService {}
 
 impl LogService {
-    pub fn new(config: Data<Config>) -> Self {
-        Self { config }
+    pub fn new() -> Self {
+        Self {}
     }
 
     pub fn info(&self, message: &str) {

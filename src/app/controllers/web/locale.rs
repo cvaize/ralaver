@@ -1,11 +1,11 @@
-use crate::{AppService, Config};
+use crate::app::validator::rules::length::MinMaxLengthString;
+use crate::Config;
 use actix_web::cookie::Cookie;
 use actix_web::web::{Data, Form};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::header::{ORIGIN, REFERER};
 use http::HeaderValue;
 use serde_derive::Deserialize;
-use crate::app::validator::rules::length::MinMaxLengthString;
 
 #[derive(Deserialize, Debug)]
 pub struct LocaleData {

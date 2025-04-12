@@ -10,8 +10,7 @@ pub use crate::app::models::*;
 pub use crate::app::services::*;
 pub use crate::config::Config;
 pub use crate::mysql_connection::MysqlPool;
-use actix_session::{storage::RedisSessionStore, SessionMiddleware};
-use actix_web::cookie::Key;
+use actix_session::SessionMiddleware;
 use actix_web::middleware;
 use actix_web::web::Data;
 use actix_web::App;
@@ -20,8 +19,6 @@ use app::middlewares::error_redirect::ErrorRedirect;
 use argon2::Argon2;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use dotenv::dotenv;
-use std::env;
-use std::sync::Mutex;
 use crate::app::connections::smtp::{get_smtp_transport, LettreSmtpTransport};
 use crate::redis_connection::RedisPool;
 
@@ -34,7 +31,7 @@ async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     let config = Data::new(Config::new_from_env());
     // LogService
-    let log = Data::new(LogService::new(config.clone()));
+    let log = Data::new(LogService::new());
 
     // Smtp
     let smtp: LettreSmtpTransport = get_smtp_transport(config.get_ref(), log.get_ref())

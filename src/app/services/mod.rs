@@ -9,8 +9,6 @@ mod log;
 mod session;
 mod template;
 mod translator;
-mod user;
-
 pub use self::alert::{*};
 pub use self::app::{*};
 pub use self::auth::{*};
@@ -22,4 +20,3 @@ pub use self::log::{*};
 pub use self::session::{*};
 pub use self::template::{*};
 pub use self::translator::{*};
-pub use self::user::{*};

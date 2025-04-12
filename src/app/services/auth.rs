@@ -263,7 +263,7 @@ impl<'a> AuthService<'a> {
 
         self.key_value_service
             .get_ref()
-            .set(&key, code.to_owned())
+            .set::<&str, &str, String>(&key, code)
             .map_err(|e| {
                 self.log_service.get_ref().error(
                     format!(
