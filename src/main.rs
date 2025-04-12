@@ -22,6 +22,8 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use dotenv::dotenv;
 use std::env;
 use std::sync::Mutex;
+use crate::app::connections::smtp::{get_smtp_transport, LettreSmtpTransport};
+use crate::redis_connection::RedisPool;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations/");
 
@@ -30,30 +32,32 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok();
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-    // TODO: Измерить производительность использования config в Arc и без него: Data<Config> или Config.
-    let config = Config::new_from_env();
-    let config_data = Data::new(config.clone());
+    let config = Data::new(Config::new_from_env());
     // LogService
-    let log_service = LogService::new(config.clone());
+    let log = Data::new(LogService::new(config.clone()));
 
+    // Smtp
+    let smtp: LettreSmtpTransport = get_smtp_transport(config.get_ref(), log.get_ref())
+        .expect("Failed to create connection MysqlPool.");
+    let smtp_data: Data<LettreSmtpTransport> = Data::new(smtp);
     // Db
-    let mysql_pool: MysqlPool = mysql_connection::get_connection_pool(&config, &log_service)
+    let mysql_pool: MysqlPool = mysql_connection::get_connection_pool(config.get_ref(), log.get_ref())
         .expect("Failed to create connection MysqlPool.");
     let mysql_pool_data: Data<MysqlPool> = Data::new(mysql_pool);
     let mut connection = mysql_pool_data.get().unwrap();
     let _ = connection.run_pending_migrations(MIGRATIONS);
     // Redis
-    let session_redis_secret = redis_connection::get_session_secret(&config);
-    let session_redis_store = redis_connection::get_session_store(&config, &log_service)
+    let session_redis_secret = redis_connection::get_session_secret(config.get_ref());
+    let session_redis_store = redis_connection::get_session_store(config.get_ref(), log.get_ref())
         .await
         .expect("Failed to create session redis store.");
 
-    let redis_pool = redis_connection::get_connection_pool(&config, &log_service)
+    let redis_pool: RedisPool = redis_connection::get_connection_pool(config.get_ref(), log.get_ref())
         .expect("Failed to create redis Pool.");
+    let redis_pool_data: Data<RedisPool> = Data::new(redis_pool);
 
-    // Services
-    let log = Data::new(log_service);
-    let key_value = Data::new(KeyValueService::new(redis_pool, log.clone()));
+    // Services (LogService above)
+    let key_value = Data::new(KeyValueService::new(redis_pool_data.clone(), log.clone()));
     let translator = Data::new(TranslatorService::new_from_files(
         config.clone(),
         log.clone(),
@@ -62,7 +66,7 @@ async fn main() -> std::io::Result<()> {
         config.clone(),
         log.clone(),
     )?);
-    let session = Data::new(SessionService::new(config.clone(), log.clone()));
+    let session = Data::new(SessionService::new(log.clone()));
     let alert = Data::new(AlertService::new(
         config.clone(),
         session.clone(),
@@ -83,7 +87,7 @@ async fn main() -> std::io::Result<()> {
         locale.clone(),
         alert.clone(),
     ));
-    let mail = Data::new(MailService::new(config.clone(), log.clone(), None));
+    let mail = Data::new(MailService::new(config.clone(), log.clone(), smtp_data));
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 
@@ -94,7 +98,7 @@ async fn main() -> std::io::Result<()> {
                 session_redis_secret.clone(),
             ))
             .wrap(middleware::Logger::default())
-            .app_data(config_data.clone())
+            .app_data(config.clone())
             .app_data(log.clone())
             .app_data(translator.clone())
             .app_data(template.clone())
@@ -106,6 +110,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(hash.clone())
             .app_data(mail.clone())
             .app_data(key_value.clone())
+            .app_data(redis_pool_data.clone())
             .app_data(mysql_pool_data.clone())
             .configure(routes::register)
             .wrap(ErrorRedirect)

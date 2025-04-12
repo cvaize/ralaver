@@ -6,7 +6,7 @@ use diesel::prelude::*;
 use strum_macros::{Display, EnumString};
 
 pub struct UserService {
-    config: Config,
+    config: Data<Config>,
     db_pool: Data<MysqlPool>,
     log_service: Data<LogService>,
 }
@@ -17,7 +17,11 @@ pub enum UserServiceError {
 }
 
 impl UserService {
-    pub fn new(config: Config, db_pool: Data<MysqlPool>, log_service: Data<LogService>) -> Self {
+    pub fn new(
+        config: Data<Config>,
+        db_pool: Data<MysqlPool>,
+        log_service: Data<LogService>,
+    ) -> Self {
         Self {
             config,
             db_pool,

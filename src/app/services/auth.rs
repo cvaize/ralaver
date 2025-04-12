@@ -4,7 +4,7 @@ use crate::{
     Config, KeyValueService, KeyValueServiceError, LogService, NewUser, PrivateUserData,
     SessionService, SessionServiceError, User,
 };
-use crate::{MysqlPool, HashService};
+use crate::{HashService, MysqlPool};
 use actix_session::Session;
 use actix_web::web::Data;
 #[allow(unused_imports)]
@@ -17,7 +17,7 @@ use strum_macros::{Display, EnumString};
 static FORGOT_PASSWORD_CODE_KEY: &str = "forgot_password.code";
 
 pub struct AuthService<'a> {
-    config: Config,
+    config: Data<Config>,
     db_pool: Data<MysqlPool>,
     hash: Data<HashService<'a>>,
     key_value_service: Data<KeyValueService>,
@@ -39,7 +39,7 @@ pub enum AuthServiceError {
 
 impl<'a> AuthService<'a> {
     pub fn new(
-        config: Config,
+        config: Data<Config>,
         db_pool: Data<MysqlPool>,
         hash: Data<HashService<'a>>,
         key_value_service: Data<KeyValueService>,
@@ -63,7 +63,11 @@ impl<'a> AuthService<'a> {
     ) -> Result<(), SessionServiceError> {
         self.session_service
             .get_ref()
-            .insert(session, &self.config.auth.user_id_session_key, &user_id)
+            .insert(
+                session,
+                &self.config.get_ref().auth.user_id_session_key,
+                &user_id,
+            )
             .map_err(|e| {
                 self.log_service
                     .get_ref()
@@ -79,7 +83,7 @@ impl<'a> AuthService<'a> {
     ) -> Result<Option<u64>, SessionServiceError> {
         self.session_service
             .get_ref()
-            .get(session, &self.config.auth.user_id_session_key)
+            .get(session, &self.config.get_ref().auth.user_id_session_key)
             .map_err(|e| {
                 self.log_service
                     .get_ref()
@@ -91,7 +95,7 @@ impl<'a> AuthService<'a> {
     pub fn remove_user_id_from_session(&self, session: &Session) {
         self.session_service
             .get_ref()
-            .remove(session, &self.config.auth.user_id_session_key);
+            .remove(session, &self.config.get_ref().auth.user_id_session_key);
     }
 
     pub fn authenticate_by_session(&self, session: &Session) -> Result<User, AuthServiceError> {
@@ -262,7 +266,11 @@ impl<'a> AuthService<'a> {
             .set(&key, code.to_owned())
             .map_err(|e| {
                 self.log_service.get_ref().error(
-                    format!("AuthService::save_forgot_password_code - {} - {:}", &key, &e).as_str(),
+                    format!(
+                        "AuthService::save_forgot_password_code - {} - {:}",
+                        &key, &e
+                    )
+                    .as_str(),
                 );
                 e
             })?;
@@ -316,7 +324,11 @@ impl<'a> AuthService<'a> {
 
         let hashed_password = self.hash.get_ref().hash_password(password).map_err(|e| {
             self.log_service.get_ref().error(
-                format!("AuthService::update_password_by_email - {} - {:}", &email, &e).as_str(),
+                format!(
+                    "AuthService::update_password_by_email - {} - {:}",
+                    &email, &e
+                )
+                .as_str(),
             );
             AuthServiceError::Fail
         })?;
@@ -333,7 +345,11 @@ impl<'a> AuthService<'a> {
             .execute(&mut connection)
             .map_err(|e| {
                 self.log_service.get_ref().error(
-                    format!("AuthService::update_password_by_email - {} - {:}", &email, &e).as_str(),
+                    format!(
+                        "AuthService::update_password_by_email - {} - {:}",
+                        &email, &e
+                    )
+                    .as_str(),
                 );
                 AuthServiceError::Fail
             })?;

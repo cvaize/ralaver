@@ -1,4 +1,4 @@
-use crate::{Config, LogService};
+use crate::LogService;
 use actix_session::Session;
 use actix_web::web::Data;
 use serde::de::DeserializeOwned;
@@ -8,17 +8,12 @@ use strum_macros::EnumString;
 
 #[derive(Debug, Clone)]
 pub struct SessionService {
-    #[allow(dead_code)]
-    config: Config,
     log_service: Data<LogService>,
 }
 
 impl SessionService {
-    pub fn new(config: Config, log_service: Data<LogService>) -> Self {
-        Self {
-            config,
-            log_service,
-        }
+    pub fn new(log_service: Data<LogService>) -> Self {
+        Self { log_service }
     }
 
     pub fn insert(

@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct LocaleService {
-    config: Config,
+    config: Data<Config>,
     session_service: Data<SessionService>,
     locales: HashMap<String, Locale>,
     locales_codes: Vec<String>,
@@ -17,7 +17,7 @@ pub struct LocaleService {
 }
 
 impl LocaleService {
-    pub fn new(config: Config, session_service: Data<SessionService>) -> Self {
+    pub fn new(config: Data<Config>, session_service: Data<SessionService>) -> Self {
         let locales_vec = vec![
             Locale {
                 code: "en".to_string(),
@@ -61,7 +61,7 @@ impl LocaleService {
     pub fn get_locale_or_default_ref(&self, code: &str) -> &Locale {
         self.locales
             .get(code)
-            .unwrap_or(self.locales.get(&self.config.app.locale).unwrap())
+            .unwrap_or(self.locales.get(&self.config.get_ref().app.locale).unwrap())
     }
 
     pub fn get_locales_ref(&self) -> &Vec<Locale> {
@@ -75,7 +75,7 @@ impl LocaleService {
     pub fn get_locales_or_default_without_current_ref(&self, current_code: &str) -> &Vec<Locale> {
         self.locales_without_current.get(current_code).unwrap_or(
             self.locales_without_current
-                .get(&self.config.app.locale)
+                .get(&self.config.get_ref().app.locale)
                 .unwrap(),
         )
     }
@@ -84,7 +84,7 @@ impl LocaleService {
         if self.locales.contains_key(&key) {
             key
         } else {
-            self.config.app.locale.to_string()
+            self.config.get_ref().app.locale.to_string()
         }
     }
 
@@ -104,7 +104,7 @@ impl LocaleService {
         user: Option<&User>,
     ) -> String {
         if let Some(req) = req {
-            if let Some(locale) = req.cookie(&self.config.app.locale_cookie_key) {
+            if let Some(locale) = req.cookie(&self.config.get_ref().app.locale_cookie_key) {
                 let locale = locale.value().to_string();
                 if MinMaxLengthString::apply(&locale, 1, 6) {
                     return self.exists_locale_code_or_default(locale);
@@ -115,7 +115,7 @@ impl LocaleService {
             let locale = self
                 .session_service
                 .get_ref()
-                .get(session, &self.config.app.locale_session_key);
+                .get(session, &self.config.get_ref().app.locale_session_key);
             if let Ok(Some(locale)) = locale {
                 if MinMaxLengthString::apply(&locale, 1, 6) {
                     return self.exists_locale_code_or_default(locale);
@@ -132,7 +132,7 @@ impl LocaleService {
         if let Some(req) = req {
             if let Some(header) = req.headers().get(ACCEPT_LANGUAGE) {
                 let languages = accept_language::intersection(
-                    header.to_str().unwrap_or(&self.config.app.locale),
+                    header.to_str().unwrap_or(&self.config.get_ref().app.locale),
                     &self.get_locales_codes_ref(),
                 );
 
@@ -142,6 +142,6 @@ impl LocaleService {
             }
         }
 
-        self.config.app.locale.to_string()
+        self.config.get_ref().app.locale.to_string()
     }
 }

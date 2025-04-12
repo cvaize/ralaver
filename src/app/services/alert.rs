@@ -3,14 +3,14 @@ use actix_session::Session;
 use actix_web::web::Data;
 
 pub struct AlertService {
-    config: Config,
+    config: Data<Config>,
     session_service: Data<SessionService>,
     log_service: Data<LogService>,
 }
 
 impl AlertService {
     pub fn new(
-        config: Config,
+        config: Data<Config>,
         session_service: Data<SessionService>,
         log_service: Data<LogService>,
     ) -> Self {
@@ -27,7 +27,7 @@ impl AlertService {
         alerts: &Vec<Alert>,
     ) -> Result<(), AlertServiceError> {
         self.session_service
-            .insert(session, &self.config.alerts.session_key, alerts)
+            .insert(session, &self.config.get_ref().alerts.session_key, alerts)
             .map_err(|e| {
                 self.log_service
                     .get_ref()
@@ -40,7 +40,7 @@ impl AlertService {
     pub fn get_from_session(&self, session: &Session) -> Result<Vec<Alert>, AlertServiceError> {
         let alerts: Vec<Alert> = self
             .session_service
-            .get(session, &self.config.alerts.session_key)
+            .get(session, &self.config.get_ref().alerts.session_key)
             .map_err(|e| {
                 self.log_service
                     .get_ref()
@@ -53,7 +53,7 @@ impl AlertService {
 
     pub fn remove_from_session(&self, session: &Session) {
         self.session_service
-            .remove(session, &self.config.alerts.session_key);
+            .remove(session, &self.config.get_ref().alerts.session_key);
     }
 
     pub fn get_and_remove_from_session(

@@ -10,7 +10,7 @@ use strum_macros::{Display, EnumString};
 
 #[allow(dead_code)]
 pub struct TemplateService {
-    config: Config,
+    config: Data<Config>,
     handlebars: Handlebars<'static>,
     log_service: Data<LogService>,
 }
@@ -22,7 +22,7 @@ pub enum TemplateServiceError {
 
 impl TemplateService {
     pub fn new_from_files(
-        config: Config,
+        config: Data<Config>,
         log_service: Data<LogService>,
     ) -> Result<Self, io::Error> {
         let mut handlebars: Handlebars = Handlebars::new();
@@ -33,7 +33,7 @@ impl TemplateService {
                 .error(format!("TemplateService::new_from_files - {:}", &e).as_str());
             e
         })?;
-        dir.push(Path::new(&config.template.handlebars.folder));
+        dir.push(Path::new(&config.get_ref().template.handlebars.folder));
         let str_dir = dir.to_owned();
         let str_dir = str_dir.to_str().unwrap();
 

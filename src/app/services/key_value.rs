@@ -6,12 +6,12 @@ use strum_macros::{Display, EnumString};
 // https://docs.rs/redis/latest/redis/#type-conversions
 
 pub struct KeyValueService {
-    pool: RedisPool,
+    pool: Data<RedisPool>,
     log_service: Data<LogService>,
 }
 
 impl KeyValueService {
-    pub fn new(pool: RedisPool, log_service: Data<LogService>) -> Self {
+    pub fn new(pool: Data<RedisPool>, log_service: Data<LogService>) -> Self {
         Self { pool, log_service }
     }
 
@@ -19,7 +19,7 @@ impl KeyValueService {
         &self,
         key: K,
     ) -> Result<Option<V>, KeyValueServiceError> {
-        let mut conn = self.pool.get().map_err(|e| {
+        let mut conn = self.pool.get_ref().get().map_err(|e| {
             self.log_service
                 .get_ref()
                 .error(format!("KeyValueService::get - {:}", &e).as_str());
@@ -39,7 +39,7 @@ impl KeyValueService {
         key: K,
         value: V,
     ) -> Result<RV, KeyValueServiceError> {
-        let mut conn = self.pool.get().map_err(|e| {
+        let mut conn = self.pool.get_ref().get().map_err(|e| {
             self.log_service
                 .get_ref()
                 .error(format!("KeyValueService::set - {:}", &e).as_str());

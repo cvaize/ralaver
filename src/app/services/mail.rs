@@ -1,49 +1,34 @@
+use crate::app::connections::smtp::{
+    LettreAddress, LettreContentType, LettreError, LettreMailbox, LettreMessage,
+    LettreSmtpTransport, LettreTransport,
+};
 use crate::config::MailSmtpConfig;
 use crate::{Config, LogService};
 use actix_web::web::Data;
-use lettre::error::Error as LettreError;
-use lettre::message::header::ContentType;
-use lettre::message::Mailbox;
-use lettre::transport::smtp::authentication::Credentials;
-use lettre::transport::smtp::client::{Tls, TlsParameters};
-use lettre::{
-    Address as LettreAddress, Message as LettreMessage, SmtpTransport as LettreSmtpTransport,
-    Transport as LettreTransport,
-};
 use strum_macros::{Display, EnumString};
 
 pub struct MailService {
-    config: Config,
-    mailer: LettreSmtpTransport,
+    config: Data<Config>,
     log_service: Data<LogService>,
+    mailer: Data<LettreSmtpTransport>,
 }
 
 impl MailService {
     pub fn new(
-        config: Config,
+        config: Data<Config>,
         log_service: Data<LogService>,
-        mailer: Option<LettreSmtpTransport>,
+        mailer: Data<LettreSmtpTransport>,
     ) -> Self {
-        let log_service_ref = log_service.get_ref();
-        let mailer = match mailer {
-            Some(mailer) => mailer,
-            _ => Self::connect(log_service_ref, &config)
-                .map_err(|e| {
-                    log_service.error(format!("MailService::new - {:}", &e).as_str());
-                    e
-                })
-                .unwrap(),
-        };
         Self {
             config,
-            mailer,
             log_service,
+            mailer,
         }
     }
 
     pub fn send_email(&self, data: &EmailMessage) -> Result<(), MailServiceError> {
         let mailer = &self.mailer;
-        let message: LettreMessage = data.build(&self.config.mail.smtp).map_err(|e| {
+        let message: LettreMessage = data.build(&self.config.get_ref().mail.smtp).map_err(|e| {
             self.log_service
                 .get_ref()
                 .error(format!("MailService::send_email - {:}", &e).as_str());
@@ -58,39 +43,6 @@ impl MailService {
         })?;
 
         Ok(())
-    }
-
-    pub fn connect(
-        log_service: &LogService,
-        config: &Config,
-    ) -> Result<LettreSmtpTransport, MailServiceError> {
-        let host = config.mail.smtp.host.to_owned();
-        let port: u16 = config.mail.smtp.port.to_owned().parse().map_err(|e| {
-            log_service.error(format!("MailService::connect - {:}", &e).as_str());
-            MailServiceError::ConnectSmtpFail
-        })?;
-        let username = config.mail.smtp.username.to_owned();
-        let password = config.mail.smtp.password.to_owned();
-
-        let creds = Credentials::new(username, password);
-
-        let mut mailer = LettreSmtpTransport::builder_dangerous(host.to_owned()).port(port);
-
-        if config.mail.smtp.encryption == "" {
-        } else if config.mail.smtp.encryption == "tls" {
-            let tls_parameters = TlsParameters::new(host.into()).map_err(|e| {
-                log_service.error(format!("MailService::connect - {:}", &e).as_str());
-                MailServiceError::ConnectSmtpFail
-            })?;
-
-            mailer = mailer.tls(Tls::Wrapper(tls_parameters));
-        } else {
-            return Err(MailServiceError::EncryptionNotSupported);
-        }
-
-        let mailer = mailer.credentials(creds).build();
-
-        Ok(mailer)
     }
 }
 
@@ -118,8 +70,6 @@ pub enum MailServiceError {
     BuildMessageToAddressFail,
     BuildMessageBodyFail,
     BuildMessageFail,
-    ConnectSmtpFail,
-    EncryptionNotSupported,
 }
 
 impl EmailMessage {
@@ -127,7 +77,7 @@ impl EmailMessage {
         let mut builder = LettreMessage::builder();
 
         if let Some(from) = &self.from {
-            builder = builder.from(Mailbox::new(
+            builder = builder.from(LettreMailbox::new(
                 from.name.to_owned(),
                 from.email
                     .parse::<LettreAddress>()
@@ -146,7 +96,7 @@ impl EmailMessage {
             }
 
             if let Some(from_address) = from_address {
-                builder = builder.from(Mailbox::new(
+                builder = builder.from(LettreMailbox::new(
                     from_name,
                     from_address
                         .parse::<LettreAddress>()
@@ -156,7 +106,7 @@ impl EmailMessage {
         }
 
         if let Some(reply_to) = &self.reply_to {
-            builder = builder.reply_to(Mailbox::new(
+            builder = builder.reply_to(LettreMailbox::new(
                 reply_to.name.to_owned(),
                 reply_to
                     .email
@@ -165,7 +115,7 @@ impl EmailMessage {
             ));
         }
 
-        builder = builder.to(Mailbox::new(
+        builder = builder.to(LettreMailbox::new(
             self.to.name.to_owned(),
             self.to
                 .email
@@ -177,10 +127,10 @@ impl EmailMessage {
 
         let message: Result<LettreMessage, MailServiceError> = match &self.html_body {
             Some(html_body) => builder
-                .header(ContentType::TEXT_HTML)
+                .header(LettreContentType::TEXT_HTML)
                 .body(html_body.to_string()),
             None => builder
-                .header(ContentType::TEXT_PLAIN)
+                .header(LettreContentType::TEXT_PLAIN)
                 .body(self.text_body.to_string()),
         }
         .map_err(|e| match e {

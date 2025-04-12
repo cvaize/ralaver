@@ -8,14 +8,14 @@ use std::{env, fs, io};
 
 #[derive(Debug, Clone)]
 pub struct TranslatorService {
-    config: Config,
+    config: Data<Config>,
     translates: HashMap<String, String>,
     log_service: Data<LogService>,
 }
 
 impl TranslatorService {
     pub fn new(
-        config: Config,
+        config: Data<Config>,
         translates: HashMap<String, String>,
         log_service: Data<LogService>,
     ) -> Self {
@@ -27,7 +27,7 @@ impl TranslatorService {
     }
 
     pub fn new_from_files(
-        config: Config,
+        config: Data<Config>,
         log_service: Data<LogService>,
     ) -> Result<Self, io::Error> {
         let mut translates: HashMap<String, String> = HashMap::from([]);
@@ -38,7 +38,7 @@ impl TranslatorService {
                 .error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
             e
         })?;
-        dir.push(Path::new(&config.translator.translates_folder));
+        dir.push(Path::new(&config.get_ref().translator.translates_folder));
         let str_dir = dir.to_owned();
         let str_dir = str_dir.to_str().unwrap();
 
@@ -142,18 +142,15 @@ impl TranslatorService {
             return translate.to_string();
         }
 
-        if lang != self.config.app.locale {
-            if let Some(translate) = self.get(&format!("{}.{}", self.config.app.locale, key)) {
+        let app = &self.config.get_ref().app;
+        if lang != app.locale {
+            if let Some(translate) = self.get(&format!("{}.{}", app.locale, key)) {
                 return translate.to_string();
             }
         }
 
-        if lang != self.config.app.fallback_locale
-            && self.config.app.locale != self.config.app.fallback_locale
-        {
-            if let Some(translate) =
-                self.get(&format!("{}.{}", self.config.app.fallback_locale, key))
-            {
+        if lang != app.fallback_locale && app.locale != app.fallback_locale {
+            if let Some(translate) = self.get(&format!("{}.{}", app.fallback_locale, key)) {
                 return translate.to_string();
             }
         }
@@ -211,7 +208,7 @@ mod tests {
 
     #[test]
     fn translate() {
-        let config = Config::new_from_env();
+        let config = Data::new(Config::new_from_env());
         let log_service = Data::new(LogService::new(config.clone()));
         let t: TranslatorService = TranslatorService::new(
             config,
@@ -219,7 +216,7 @@ mod tests {
                 ("en.test_key".to_string(), "test_value".to_string()),
                 ("en.test_key2".to_string(), "test_value2".to_string()),
             ]),
-            log_service
+            log_service,
         );
 
         assert_eq!("test_value".to_string(), t.translate("en", "test_key"));
@@ -229,7 +226,7 @@ mod tests {
 
     #[test]
     fn new_from_files() {
-        let config = Config::new_from_env();
+        let config = Data::new(Config::new_from_env());
         let log_service = Data::new(LogService::new(config.clone()));
         let t: TranslatorService = TranslatorService::new_from_files(config, log_service).unwrap();
         let translates: &HashMap<String, String> = t.get_translates_ref();
