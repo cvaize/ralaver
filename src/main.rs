@@ -85,6 +85,7 @@ async fn main() -> std::io::Result<()> {
         alert.clone(),
     ));
     let mail = Data::new(MailService::new(config.clone(), log.clone(), smtp_data));
+    let rand = Data::new(RandomService::new());
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 
@@ -109,6 +110,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(key_value.clone())
             .app_data(redis_pool_data.clone())
             .app_data(mysql_pool_data.clone())
+            .app_data(rand.clone())
             .configure(routes::register)
             .wrap(ErrorRedirect)
     })

@@ -1,6 +1,7 @@
 use crate::{Alert, Config, LogService, SessionService};
 use actix_session::Session;
 use actix_web::web::Data;
+use strum_macros::{Display, EnumString};
 
 pub struct AlertService {
     config: Data<Config>,
@@ -66,7 +67,7 @@ impl AlertService {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Display, EnumString)]
 pub enum AlertServiceError {
     InsertFail,
     GetFail,

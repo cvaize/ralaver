@@ -25,18 +25,6 @@ pub struct AuthService<'a> {
     session_service: Data<SessionService>,
 }
 
-#[derive(Debug, Clone, Copy, Display, EnumString)]
-pub enum AuthServiceError {
-    AuthenticateFail,
-    RegisterFail,
-    CredentialsInvalid,
-    DbConnectionFail,
-    DuplicateEmail,
-    InsertNewUserFail,
-    PasswordHashFail,
-    Fail,
-}
-
 impl<'a> AuthService<'a> {
     pub fn new(
         config: Data<Config>,
@@ -367,6 +355,18 @@ impl Credentials {
     pub fn is_valid(&self) -> bool {
         Email::apply(&self.email) && MinMaxLengthString::apply(&self.password, 4, 255)
     }
+}
+
+#[derive(Debug, Clone, Copy, Display, EnumString)]
+pub enum AuthServiceError {
+    AuthenticateFail,
+    RegisterFail,
+    CredentialsInvalid,
+    DbConnectionFail,
+    DuplicateEmail,
+    InsertNewUserFail,
+    PasswordHashFail,
+    Fail,
 }
 
 // #[cfg(test)]

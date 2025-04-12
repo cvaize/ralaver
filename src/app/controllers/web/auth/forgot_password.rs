@@ -1,19 +1,14 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
-use crate::{Alert, AlertService, AppService, AuthService, EmailAddress, EmailMessage, MailService, SessionService, TemplateService, Translator, TranslatorService};
+use crate::{Alert, AlertService, AppService, AuthService, EmailAddress, EmailMessage, MailService, RandomService, SessionService, TemplateService, Translator, TranslatorService};
 use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
-use rand::Rng;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
 
 static FORM_DATA_KEY: &str = "page.forgot_password.form.data";
-
-static CODE_CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
-                            abcdefghijklmnopqrstuvwxyz\
-                            0123456789";
 pub static CODE_LEN: usize = 64;
 
 pub async fn show(
@@ -82,6 +77,7 @@ pub async fn show(
     let s = tmpl.get_ref().render_throw_http("pages/auth.hbs", &ctx)?;
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }
+
 pub async fn send_email(
     req: HttpRequest,
     session: Session,
@@ -93,6 +89,7 @@ pub async fn send_email(
     mail_service: Data<MailService>,
     tmpl: Data<TemplateService>,
     auth_service: Data<AuthService<'_>>,
+    random_service: Data<RandomService>,
 ) -> Result<impl Responder, Error> {
     let data: &ForgotPasswordData = data.deref();
 
@@ -134,14 +131,7 @@ pub async fn send_email(
             .map_err(|_| error::ErrorInternalServerError("App url error"))?
             .to_string();
 
-        let mut rng = rand::thread_rng();
-
-        let code: String = (0..CODE_LEN)
-            .map(|_| {
-                let idx = rng.gen_range(0..CODE_CHARSET.len());
-                CODE_CHARSET[idx] as char
-            })
-            .collect();
+        let code: String = random_service.get_ref().str(CODE_LEN);
 
         auth_service.get_ref().save_forgot_password_code(&email, &code)
             .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
