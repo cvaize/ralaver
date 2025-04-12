@@ -34,22 +34,22 @@ async fn main() -> std::io::Result<()> {
     let log = Data::new(LogService::new());
 
     // Smtp
-    let smtp: LettreSmtpTransport = get_smtp_transport(config.get_ref(), log.get_ref())
+    let smtp: LettreSmtpTransport = get_smtp_transport(&config.get_ref().mail.smtp, log.get_ref())
         .expect("Failed to create connection MysqlPool.");
     let smtp_data: Data<LettreSmtpTransport> = Data::new(smtp);
     // Db
-    let mysql_pool: MysqlPool = mysql_connection::get_connection_pool(config.get_ref(), log.get_ref())
+    let mysql_pool: MysqlPool = mysql_connection::get_connection_pool(&config.get_ref().db.mysql, log.get_ref())
         .expect("Failed to create connection MysqlPool.");
     let mysql_pool_data: Data<MysqlPool> = Data::new(mysql_pool);
     let mut connection = mysql_pool_data.get().unwrap();
     let _ = connection.run_pending_migrations(MIGRATIONS);
     // Redis
-    let session_redis_secret = redis_connection::get_session_secret(config.get_ref());
-    let session_redis_store = redis_connection::get_session_store(config.get_ref(), log.get_ref())
+    let session_redis_secret = redis_connection::get_session_secret(&config.get_ref().db.redis);
+    let session_redis_store = redis_connection::get_session_store(&config.get_ref().db.redis, log.get_ref())
         .await
         .expect("Failed to create session redis store.");
 
-    let redis_pool: RedisPool = redis_connection::get_connection_pool(config.get_ref(), log.get_ref())
+    let redis_pool: RedisPool = redis_connection::get_connection_pool(&config.get_ref().db.redis, log.get_ref())
         .expect("Failed to create redis Pool.");
     let redis_pool_data: Data<RedisPool> = Data::new(redis_pool);
 

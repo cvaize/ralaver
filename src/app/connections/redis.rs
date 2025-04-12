@@ -1,4 +1,5 @@
-use crate::{Config, LogService};
+use crate::config::RedisDbConfig;
+use crate::LogService;
 use actix_session::storage::RedisSessionStore;
 use actix_web::cookie::Key;
 use r2d2::Pool;
@@ -15,11 +16,11 @@ pub enum RedisConnectionError {
 }
 
 pub fn get_connection_pool(
-    config: &Config,
+    config: &RedisDbConfig,
     log_service: &LogService,
 ) -> Result<RedisPool, RedisConnectionError> {
     log_service.info("Connecting to Redis database.");
-    let database_url = config.db.redis.url.to_owned();
+    let database_url = config.url.to_owned();
 
     let client = Client::open(database_url).map_err(|e| {
         log_service.error(format!("RedisConnectionError::CreateClientFail - {:}", &e).as_str());
@@ -32,15 +33,15 @@ pub fn get_connection_pool(
     })
 }
 
-pub fn get_session_secret(config: &Config) -> Key {
-    Key::from(config.db.redis.secret.to_owned().as_bytes())
+pub fn get_session_secret(config: &RedisDbConfig) -> Key {
+    Key::from(config.secret.to_owned().as_bytes())
 }
 
 pub async fn get_session_store(
-    config: &Config,
+    config: &RedisDbConfig,
     log_service: &LogService,
 ) -> Result<RedisSessionStore, RedisConnectionError> {
-    RedisSessionStore::new(config.db.redis.url.to_owned())
+    RedisSessionStore::new(config.url.to_owned())
         .await
         .map_err(|e| {
             log_service

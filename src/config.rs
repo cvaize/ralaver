@@ -15,7 +15,8 @@ pub struct Config {
 pub struct DbConfig {
     pub mysql: MysqlDbConfig,
     pub test_mysql: MysqlDbConfig,
-    pub redis: RedisDbConfig
+    pub redis: RedisDbConfig,
+    pub test_redis: RedisDbConfig
 }
 
 #[derive(Debug, Clone)]
@@ -124,11 +125,21 @@ impl Config {
                 },
                 redis: RedisDbConfig {
                     url: env::var("REDIS_URL")
-                        .unwrap_or("redis://redis:6379".to_string())
+                        .unwrap_or("redis://redis:6379/app_db".to_string())
                         .trim()
                         .to_string(),
                     secret: env::var("REDIS_SECRET")
                         .unwrap_or("redis_secret".to_string())
+                        .trim()
+                        .to_string(),
+                },
+                test_redis: RedisDbConfig {
+                    url: env::var("REDIS_URL")
+                        .unwrap_or("redis://redis:6379/test_db".to_string())
+                        .trim()
+                        .to_string(),
+                    secret: env::var("REDIS_SECRET")
+                        .unwrap_or("test_redis_secret".to_string())
                         .trim()
                         .to_string(),
                 },
