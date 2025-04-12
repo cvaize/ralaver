@@ -14,6 +14,7 @@ pub struct Config {
 #[derive(Debug, Clone)]
 pub struct DbConfig {
     pub mysql: MysqlDbConfig,
+    pub test_mysql: MysqlDbConfig,
     pub redis: RedisDbConfig
 }
 
@@ -111,6 +112,12 @@ impl Config {
             db: DbConfig {
                 mysql: MysqlDbConfig {
                     url: env::var("MYSQL_URL")
+                        .unwrap_or("mysql://test_user:test_password@mysql/test_db_name".to_string())
+                        .trim()
+                        .to_string(),
+                },
+                test_mysql: MysqlDbConfig {
+                    url: env::var("TEST_MYSQL_URL")
                         .unwrap_or("mysql://test_user:test_password@mysql/test_db_name".to_string())
                         .trim()
                         .to_string(),
