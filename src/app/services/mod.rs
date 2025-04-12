@@ -10,6 +10,7 @@ mod random;
 mod session;
 mod template;
 mod translator;
+mod user;
 
 pub use self::alert::{*};
 pub use self::app::{*};
@@ -23,3 +24,4 @@ pub use self::random::{*};
 pub use self::session::{*};
 pub use self::template::{*};
 pub use self::translator::{*};
+pub use self::user::{*};
