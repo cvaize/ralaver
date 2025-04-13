@@ -20,7 +20,7 @@ pub async fn show(
     translator_service: Data<TranslatorService>,
 ) -> Result<HttpResponse, Error> {
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
-    let translator = Translator::new(&lang, &translator_service);
+    let translator = Translator::new(&lang, translator_service.get_ref());
 
     let alerts = app_service.get_ref().alerts(&session);
 
@@ -97,7 +97,7 @@ pub async fn send_email(
     let form_errors: Vec<String> = vec![];
 
     let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
-    let translator = Translator::new(&lang, &translator_service);
+    let translator = Translator::new(&lang, translator_service.get_ref());
     let email_str = translator.simple("auth.page.forgot_password.form.fields.email.label");
 
     let mut email_errors: Vec<String> = match &data.email {

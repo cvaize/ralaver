@@ -35,7 +35,7 @@ pub async fn show(
 
     let dark_mode = app_service.get_ref().dark_mode(&req);
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
-    let translator = Translator::new(&lang, &translator_service);
+    let translator = Translator::new(&lang, translator_service.get_ref());
 
     let title_str = translator.simple("auth.page.login.title");
     let form_header_str = translator.simple("auth.page.login.form.header");
@@ -120,7 +120,7 @@ pub async fn sign_in(
     let mut is_redirect_login = true;
     let data: &LoginData = data.deref();
 
-    let translator = Translator::new(&lang, &translator_service);
+    let translator = Translator::new(&lang, translator_service.get_ref());
     let email_str = translator.simple("auth.page.login.form.fields.email.label");
     let password_str = translator.simple("auth.page.login.form.fields.password.label");
 
@@ -156,7 +156,7 @@ pub async fn sign_in(
                     Ok(user) => app_service.locale(Some(&req), Some(&session), Some(&user)),
                     _ => app_service.locale(Some(&req), Some(&session), None),
                 };
-                let translator = Translator::new(&lang, &translator_service);
+                let translator = Translator::new(&lang, translator_service.get_ref());
                 let alert_str = translator.simple("auth.alert.sign_in.success");
 
                 alerts.push(Alert::success(alert_str));
@@ -227,7 +227,7 @@ pub async fn sign_out(
         _ => app_service.locale(Some(&req), Some(&session), None),
     };
 
-    let translator = Translator::new(&lang, &translator_service);
+    let translator = Translator::new(&lang, translator_service.get_ref());
     let alert_str = translator.simple("auth.alert.sign_out.success");
 
     let alerts = vec![Alert::success(alert_str)];

@@ -1,4 +1,3 @@
-use actix_web::web::Data;
 use rand::Rng;
 
 pub static CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
@@ -33,6 +32,7 @@ impl RandomService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use actix_web::web::Data;
 
     #[test]
     fn str() {

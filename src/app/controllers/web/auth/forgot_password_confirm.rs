@@ -33,7 +33,7 @@ pub async fn show(
 ) -> Result<HttpResponse, Error> {
     let query = query.into_inner();
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
-    let translator = Translator::new(&lang, &translator_service);
+    let translator = Translator::new(&lang, translator_service.get_ref());
 
     let alerts = app_service.get_ref().alerts(&session);
 
@@ -148,7 +148,7 @@ pub async fn confirm(
     let form_errors: Vec<String> = vec![];
 
     let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
-    let translator = Translator::new(&lang, &translator_service);
+    let translator = Translator::new(&lang, translator_service.get_ref());
     let email_str = translator.simple("auth.page.forgot_password_confirm.form.fields.email.label");
     let password_str =
         translator.simple("auth.page.forgot_password_confirm.form.fields.password.label");

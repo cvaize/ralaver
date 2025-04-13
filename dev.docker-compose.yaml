@@ -40,6 +40,15 @@ services:
       MYSQL_ALLOW_EMPTY_PASSWORD: 1
     volumes:
       - 'volume-mysql:/var/lib/mysql'
+
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    ports:
+      - '${FORWARD_PHPMYADMIN_PORT:-8090}:80'
+    environment:
+      - PMA_ARBITRARY=1
+
   redis:
     image: redis:latest
     restart: always
@@ -47,6 +56,7 @@ services:
       - '${FORWARD_REDIS_PORT:-6379}:6379'
     volumes:
       - 'volume-redis:/data'
+
 volumes:
   volume-cargo:
     driver: local

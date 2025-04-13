@@ -2,10 +2,11 @@ use crate::config::MysqlDbConfig;
 use crate::LogService;
 use diesel::r2d2::ConnectionManager;
 use diesel::MysqlConnection;
-use r2d2::Pool;
+use r2d2::{Pool, PooledConnection};
 use strum_macros::{Display, EnumString};
 
 pub type MysqlPool = Pool<ConnectionManager<MysqlConnection>>;
+pub type MysqlPooledConnection = PooledConnection<ConnectionManager<MysqlConnection>>;
 
 #[derive(Debug, Clone, Copy, Display, EnumString)]
 pub enum MysqlConnectionError {

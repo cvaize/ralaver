@@ -14,9 +14,7 @@ pub struct Config {
 #[derive(Debug, Clone)]
 pub struct DbConfig {
     pub mysql: MysqlDbConfig,
-    pub test_mysql: MysqlDbConfig,
     pub redis: RedisDbConfig,
-    pub test_redis: RedisDbConfig
 }
 
 #[derive(Debug, Clone)]
@@ -82,7 +80,7 @@ pub struct MailSmtpConfig {
 }
 
 impl Config {
-    pub fn new_from_env() -> Self {
+    pub fn new() -> Self {
         Self {
             app: AppConfig {
                 url: env::var("APP_URL")
@@ -117,12 +115,6 @@ impl Config {
                         .trim()
                         .to_string(),
                 },
-                test_mysql: MysqlDbConfig {
-                    url: env::var("TEST_MYSQL_URL")
-                        .unwrap_or("mysql://test_user:test_password@mysql/test_db_name".to_string())
-                        .trim()
-                        .to_string(),
-                },
                 redis: RedisDbConfig {
                     url: env::var("REDIS_URL")
                         .unwrap_or("redis://redis:6379/app_db".to_string())
@@ -130,16 +122,6 @@ impl Config {
                         .to_string(),
                     secret: env::var("REDIS_SECRET")
                         .unwrap_or("redis_secret".to_string())
-                        .trim()
-                        .to_string(),
-                },
-                test_redis: RedisDbConfig {
-                    url: env::var("REDIS_URL")
-                        .unwrap_or("redis://redis:6379/test_db".to_string())
-                        .trim()
-                        .to_string(),
-                    secret: env::var("REDIS_SECRET")
-                        .unwrap_or("test_redis_secret".to_string())
                         .trim()
                         .to_string(),
                 },
@@ -205,5 +187,14 @@ impl Config {
                 },
             },
         }
+    }
+    pub fn new_for_prod() -> Self {
+        dotenv::dotenv().ok();
+        Self::new()
+    }
+
+    pub fn new_for_tests() -> Self {
+        dotenv::from_filename(".env.test").ok();
+        Self::new()
     }
 }

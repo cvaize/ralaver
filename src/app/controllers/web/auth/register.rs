@@ -38,7 +38,7 @@ pub async fn show(
     let confirm_password_field = fields.confirm_password.unwrap_or(Field::empty());
 
     let dark_mode = app_service.get_ref().dark_mode(&req);
-    let translator = Translator::new(&lang, &translator_service);
+    let translator = Translator::new(&lang, translator_service.get_ref());
     let title_str = translator.simple("auth.page.register.title");
     let header_str = translator.simple("auth.page.register.form.header");
     let email_str = translator.simple("auth.page.register.form.fields.email.label");
@@ -117,7 +117,7 @@ pub async fn register(
 
     let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
 
-    let translator = Translator::new(&lang, &translator_service);
+    let translator = Translator::new(&lang, translator_service.get_ref());
     let email_str = translator.simple("auth.page.register.form.fields.email.label");
     let password_str = translator.simple("auth.page.register.form.fields.password.label");
     let confirm_password_str =

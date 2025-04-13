@@ -2,6 +2,7 @@ use crate::MysqlPool;
 use actix_web::web::Data;
 use strum_macros::{Display, EnumString};
 
+#[allow(dead_code)]
 pub struct UserService {
     db_pool: Data<MysqlPool>,
 }
@@ -21,8 +22,13 @@ pub enum UserServiceError {
 
 #[cfg(test)]
 mod tests {
+    use crate::Config;
+
     #[test]
     fn create() {
+        let config = Config::new_for_tests();
+
+        dbg!(&config.db.mysql.url);
         dbg!("test");
     }
 }

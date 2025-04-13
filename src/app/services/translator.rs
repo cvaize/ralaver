@@ -174,11 +174,11 @@ impl TranslatorService {
 
 pub struct Translator<'a> {
     lang: String,
-    translator_service: &'a Data<TranslatorService>,
+    translator_service: &'a TranslatorService,
 }
 
 impl<'a> Translator<'a> {
-    pub fn new(lang: &str, translator_service: &'a Data<TranslatorService>) -> Self {
+    pub fn new(lang: &str, translator_service: &'a TranslatorService) -> Self {
         Self {
             lang: lang.to_string(),
             translator_service,
@@ -205,7 +205,7 @@ mod tests {
 
     #[test]
     fn translate() {
-        let config = Data::new(Config::new_from_env());
+        let config = Data::new(Config::new_for_tests());
         let t: TranslatorService = TranslatorService::new(
             config,
             HashMap::from([
@@ -221,7 +221,7 @@ mod tests {
 
     #[test]
     fn new_from_files() {
-        let config = Data::new(Config::new_from_env());
+        let config = Data::new(Config::new_for_tests());
         let log_service = Data::new(LogService::new());
         let t: TranslatorService = TranslatorService::new_from_files(config, log_service).unwrap();
         let translates: &HashMap<String, String> = t.get_translates_ref();
