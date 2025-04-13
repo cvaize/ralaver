@@ -33,8 +33,7 @@ async fn main() -> std::io::Result<()> {
 
     let advanced_services = services::advanced(all_connections.get_ref(), &base_services);
 
-    let all_services: Data<Services> =
-        Data::new(services::join_to_all(base_services, advanced_services));
+    let all_services: Services = services::join_to_all(base_services, advanced_services);
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 
