@@ -12,7 +12,7 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
 
-static FORM_DATA_KEY: &str = "page.reset_password.form.data";
+static DATA_KEY: &str = "page.reset_password.form.data";
 pub static CODE_LEN: usize = 64;
 
 pub async fn show(
@@ -29,7 +29,7 @@ pub async fn show(
     let alerts = app_service.get_ref().alerts(&session);
 
     let form_data: FormData<ResetPasswordFields> = session_service
-        .get_and_remove(&session, FORM_DATA_KEY)
+        .get_and_remove(&session, DATA_KEY)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?
         .unwrap_or(FormData::empty());
 
@@ -177,11 +177,11 @@ pub async fn invoke(
     };
 
     if is_valid {
-        session_service.get_ref().remove(&session, FORM_DATA_KEY);
+        session_service.get_ref().remove(&session, DATA_KEY);
     } else {
         session_service
             .get_ref()
-            .insert(&session, FORM_DATA_KEY, &form_data)
+            .insert(&session, DATA_KEY, &form_data)
             .map_err(|_| error::ErrorInternalServerError("Session error"))?;
     }
 

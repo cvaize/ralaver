@@ -14,7 +14,7 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
 
-static FORM_DATA_KEY: &str = "page.register.form.data";
+static DATA_KEY: &str = "page.register.form.data";
 
 pub async fn show(
     req: HttpRequest,
@@ -27,7 +27,7 @@ pub async fn show(
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
 
     let form_data: FormData<RegisterFields> = session_service
-        .get_and_remove(&session, FORM_DATA_KEY)
+        .get_and_remove(&session, DATA_KEY)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?
         .unwrap_or(FormData::empty());
 
@@ -168,7 +168,7 @@ pub async fn invoke(
 
         alerts.push(Alert::success(alert_str));
 
-        session_service.get_ref().remove(&session, FORM_DATA_KEY);
+        session_service.get_ref().remove(&session, DATA_KEY);
     } else {
         let form_data = FormData { form: Some(DefaultForm {
             fields: Some(RegisterFields {
@@ -190,7 +190,7 @@ pub async fn invoke(
 
         session_service
             .get_ref()
-            .insert(&session, FORM_DATA_KEY, &form_data)
+            .insert(&session, DATA_KEY, &form_data)
             .map_err(|_| error::ErrorInternalServerError("Session error"))?;
     }
 

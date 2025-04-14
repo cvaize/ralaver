@@ -15,7 +15,7 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
 
-static FORM_DATA_KEY: &str = "page.reset_password_confirm.form.data";
+static DATA_KEY: &str = "page.reset_password_confirm.form.data";
 
 #[derive(Deserialize)]
 pub struct ResetPasswordConfirmQuery {
@@ -39,7 +39,7 @@ pub async fn show(
     let alerts = app_service.get_ref().alerts(&session);
 
     let form_data: FormData<ResetPasswordConfirmFields> = session_service
-        .get_and_remove(&session, FORM_DATA_KEY)
+        .get_and_remove(&session, DATA_KEY)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?
         .unwrap_or(FormData::empty());
 
@@ -231,11 +231,11 @@ pub async fn invoke(
     };
 
     if is_valid {
-        session_service.get_ref().remove(&session, FORM_DATA_KEY);
+        session_service.get_ref().remove(&session, DATA_KEY);
     } else {
         session_service
             .get_ref()
-            .insert(&session, FORM_DATA_KEY, &form_data)
+            .insert(&session, DATA_KEY, &form_data)
             .map_err(|_| error::ErrorInternalServerError("Session error"))?;
     }
 
