@@ -11,27 +11,26 @@ pub fn register(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/login")
             .route(web::get().to(controllers::web::auth::login::show))
-            .route(web::post().to(controllers::web::auth::login::sign_in)),
+            .route(web::post().to(controllers::web::auth::login::invoke)),
     );
     cfg.service(
         web::resource("/logout")
-            .route(web::get().to(controllers::web::auth::login::sign_out))
-            .route(web::post().to(controllers::web::auth::login::sign_out)),
+            .route(web::post().to(controllers::web::auth::logout::invoke)),
     );
     cfg.service(
         web::resource("/register")
             .route(web::get().to(controllers::web::auth::register::show))
-            .route(web::post().to(controllers::web::auth::register::register)),
+            .route(web::post().to(controllers::web::auth::register::invoke)),
     );
     cfg.service(
-        web::resource("/forgot-password")
-            .route(web::get().to(controllers::web::auth::forgot_password::show))
-            .route(web::post().to(controllers::web::auth::forgot_password::send_email)),
+        web::resource("/reset-password")
+            .route(web::get().to(controllers::web::auth::reset_password::show))
+            .route(web::post().to(controllers::web::auth::reset_password::invoke)),
     );
     cfg.service(
-        web::resource("/forgot-password-confirm")
-            .route(web::get().to(controllers::web::auth::forgot_password_confirm::show))
-            .route(web::get().to(controllers::web::auth::forgot_password_confirm::confirm)),
+        web::resource("/reset-password-confirm")
+            .route(web::get().to(controllers::web::auth::reset_password_confirm::show))
+            .route(web::get().to(controllers::web::auth::reset_password_confirm::invoke)),
     );
     cfg.service(
         web::resource("/profile")

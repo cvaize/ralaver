@@ -1,4 +1,5 @@
 pub mod errors;
+pub mod helpers;
 pub mod auth;
 pub mod home;
 pub mod locale;

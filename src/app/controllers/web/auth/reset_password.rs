@@ -1,6 +1,10 @@
+use crate::app::controllers::web::helpers::{DefaultForm, Field, FormData};
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
-use crate::{Alert, AlertService, AppService, AuthService, EmailAddress, EmailMessage, MailService, RandomService, SessionService, TemplateService, Translator, TranslatorService};
+use crate::{
+    Alert, AlertService, AppService, AuthService, EmailAddress, EmailMessage, MailService,
+    RandomService, SessionService, TemplateService, Translator, TranslatorService,
+};
 use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
@@ -8,7 +12,7 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
 
-static FORM_DATA_KEY: &str = "page.forgot_password.form.data";
+static FORM_DATA_KEY: &str = "page.reset_password.form.data";
 pub static CODE_LEN: usize = 64;
 
 pub async fn show(
@@ -24,42 +28,32 @@ pub async fn show(
 
     let alerts = app_service.get_ref().alerts(&session);
 
-    let form_data: FormData = session_service
+    let form_data: FormData<ResetPasswordFields> = session_service
         .get_and_remove(&session, FORM_DATA_KEY)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?
         .unwrap_or(FormData::empty());
 
-    let form = form_data.form.unwrap_or(LoginForm::empty());
-
-    let fields = form.fields.unwrap_or(Fields::empty());
-
+    let form = form_data.form.unwrap_or(DefaultForm::empty());
+    let fields = form.fields.unwrap_or(ResetPasswordFields::empty());
     let email_field = fields.email.unwrap_or(Field::empty());
 
-    let dark_mode = app_service.get_ref().dark_mode(&req);
-    let title_str = translator.simple("auth.page.forgot_password.title");
-    let back_str = translator.simple("auth.page.forgot_password.back.label");
-    let header_str = translator.simple("auth.page.forgot_password.form.header");
-    let email_str = translator.simple("auth.page.forgot_password.form.fields.email.label");
-    let submit_str = translator.simple("auth.page.forgot_password.form.submit.label");
-    let submit_text_str = translator.simple("auth.page.forgot_password.form.submit.text");
-
     let ctx = json!({
-        "title": title_str,
+        "title": translator.simple("auth.page.reset_password.title"),
         "locale": locale,
         "locales": locales,
         "alerts": alerts,
-        "dark_mode": dark_mode,
+        "dark_mode": app_service.get_ref().dark_mode(&req),
         "back": {
-            "label": back_str,
+            "label": translator.simple("auth.page.reset_password.back.label"),
             "href": "/login",
         },
         "form": {
-            "action": "/forgot-password",
+            "action": "/reset-password",
             "method": "post",
-            "header": header_str,
+            "header": translator.simple("auth.page.reset_password.form.header"),
             "fields": [
                 {
-                    "label": email_str,
+                    "label": translator.simple("auth.page.reset_password.form.fields.email.label"),
                     "type": "email",
                     "name": "email",
                     "value": email_field.value,
@@ -67,8 +61,8 @@ pub async fn show(
                 }
             ],
             "submit": {
-                "label": submit_str,
-                "text": submit_text_str
+                "label": translator.simple("auth.page.reset_password.form.submit.label"),
+                "text": translator.simple("auth.page.reset_password.form.submit.text")
             },
             "errors": form.errors,
         },
@@ -78,12 +72,12 @@ pub async fn show(
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }
 
-pub async fn send_email(
+pub async fn invoke(
     req: HttpRequest,
     session: Session,
     alert_service: Data<AlertService>,
     session_service: Data<SessionService>,
-    data: Form<ForgotPasswordData>,
+    data: Form<ResetPasswordData>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     mail_service: Data<MailService>,
@@ -91,35 +85,22 @@ pub async fn send_email(
     auth_service: Data<AuthService<'_>>,
     random_service: Data<RandomService>,
 ) -> Result<impl Responder, Error> {
-    let data: &ForgotPasswordData = data.deref();
+    let data: &ResetPasswordData = data.deref();
 
     let mut alerts: Vec<Alert> = vec![];
     let form_errors: Vec<String> = vec![];
 
     let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
     let translator = Translator::new(&lang, translator_service.get_ref());
-    let email_str = translator.simple("auth.page.forgot_password.form.fields.email.label");
+    let email_str = translator.simple("auth.page.reset_password.form.fields.email.label");
 
-    let mut email_errors: Vec<String> = match &data.email {
-        Some(value) => Email::validate(&translator, value, &email_str),
-        None => Required::validate(&translator, &data.email),
-    };
+    let mut email_errors: Vec<String> = Required::validated(&translator, &data.email, |value| {
+        Email::validate(&translator, value, &email_str)
+    });
 
     if email_errors.len() == 0 {
-        let email: String = match &data.email {
-            Some(value) => value.to_owned(),
-            None => "".to_string(),
-        };
+        let email: String = data.email.as_ref().unwrap().to_string();
 
-        let subject = translator.simple("auth.page.forgot_password.mail.subject");
-        let title = translator.simple("auth.page.forgot_password.mail.title");
-        let description = translator.simple("auth.page.forgot_password.mail.description");
-        let site_name = translator.simple("auth.page.forgot_password.mail.site_name");
-        let header = translator.simple("auth.page.forgot_password.mail.header");
-        let button_label = translator.simple("auth.page.forgot_password.mail.button");
-        let text_body = subject.to_owned();
-        let lang = lang.to_owned();
-        let site_href = app_service.url().to_string();
         let site_domain = app_service
             .url()
             .domain()
@@ -133,10 +114,12 @@ pub async fn send_email(
 
         let code: String = random_service.get_ref().str(CODE_LEN);
 
-        auth_service.get_ref().save_forgot_password_code(&email, &code)
+        auth_service
+            .get_ref()
+            .save_reset_password_code(&email, &code)
             .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
 
-        let params = format!("/forgot-password-confirm?code={}&email={}", code, email);
+        let params = format!("/reset-password-confirm?code={}&email={}", code, email);
         let button_href = app_service
             .url()
             .join(&params)
@@ -144,28 +127,27 @@ pub async fn send_email(
             .to_string();
 
         let ctx = json!({
-            "title": title,
-            "description": description,
-            "lang": lang,
-            "site_name": site_name,
-            "site_href": site_href,
+            "title": translator.simple("auth.page.reset_password.mail.title"),
+            "description": translator.simple("auth.page.reset_password.mail.description"),
+            "lang": lang.to_owned(),
+            "site_name": translator.simple("auth.page.reset_password.mail.site_name"),
+            "site_href": app_service.url().to_string(),
             "site_domain": site_domain,
             "logo_src": logo_src,
-            "header": header,
-            "button_label": button_label,
-            "button_href": button_href,
+            "header": translator.simple("auth.page.reset_password.mail.header"),
+            "button_label": translator.simple("auth.page.reset_password.mail.button"),
+            "button_href": button_href.to_owned(),
         });
-        let html_body = Some(
-            tmpl.get_ref()
-                .render_throw_http("emails/auth/forgot_password.hbs", &ctx)?,
-        );
         let message = EmailMessage {
             from: None,
             reply_to: None,
             to: EmailAddress { name: None, email },
-            subject,
-            html_body,
-            text_body,
+            subject: translator.simple("auth.page.reset_password.mail.subject"),
+            html_body: Some(
+                tmpl.get_ref()
+                    .render_throw_http("emails/auth/reset_password.hbs", &ctx)?,
+            ),
+            text_body: button_href,
         };
         let send_email_result = mail_service.get_ref().send_email(&message);
 
@@ -182,21 +164,17 @@ pub async fn send_email(
         alerts.push(Alert::success(alert_str));
     };
 
-    let email_field = Field {
-        value: data.email.to_owned(),
-        errors: Some(email_errors),
+    let form_data = FormData {
+        form: Some(DefaultForm {
+            fields: Some(ResetPasswordFields {
+                email: Some(Field {
+                    value: data.email.to_owned(),
+                    errors: Some(email_errors),
+                }),
+            }),
+            errors: Some(form_errors),
+        }),
     };
-
-    let fields = Fields {
-        email: Some(email_field),
-    };
-
-    let form = LoginForm {
-        fields: Some(fields),
-        errors: Some(form_errors),
-    };
-
-    let form_data = FormData { form: Some(form) };
 
     if is_valid {
         session_service.get_ref().remove(&session, FORM_DATA_KEY);
@@ -212,62 +190,21 @@ pub async fn send_email(
         .insert_into_session(&session, &alerts)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
-    Ok(Redirect::to("/forgot-password").see_other())
+    Ok(Redirect::to("/reset-password").see_other())
 }
 
 #[derive(Deserialize, Debug)]
-pub struct ForgotPasswordData {
+pub struct ResetPasswordData {
     pub email: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct FormData {
-    form: Option<LoginForm>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct LoginForm {
-    fields: Option<Fields>,
-    errors: Option<Vec<String>>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Fields {
+pub struct ResetPasswordFields {
     email: Option<Field>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Field {
-    value: Option<String>,
-    errors: Option<Vec<String>>,
-}
-
-impl FormData {
-    fn empty() -> Self {
-        Self { form: None }
-    }
-}
-
-impl LoginForm {
-    fn empty() -> Self {
-        Self {
-            fields: None,
-            errors: None,
-        }
-    }
-}
-
-impl Fields {
+impl ResetPasswordFields {
     fn empty() -> Self {
         Self { email: None }
-    }
-}
-
-impl Field {
-    fn empty() -> Self {
-        Self {
-            value: None,
-            errors: None,
-        }
     }
 }

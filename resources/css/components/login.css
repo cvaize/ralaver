@@ -62,7 +62,7 @@
     margin-bottom: 0.5rem;
 }
 
-.admin-login__forgot-link {
+.admin-login__reset-link {
     margin-right: 0.5rem;
     text-decoration: none;
     color: inherit;
@@ -82,7 +82,7 @@
     font-weight: 500;
 }
 
-.admin-login__forgot-link:hover, .admin-login__register-link:hover, .admin-login__back-link:hover {
+.admin-login__reset-link:hover, .admin-login__register-link:hover, .admin-login__back-link:hover {
     opacity: 0.8;
 }
 

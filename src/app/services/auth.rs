@@ -14,7 +14,7 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
 use serde_derive::Deserialize;
 use strum_macros::{Display, EnumString};
 
-static FORGOT_PASSWORD_CODE_KEY: &str = "forgot_password.code";
+static RESET_PASSWORD_CODE_KEY: &str = "reset_password.code";
 
 pub struct AuthService<'a> {
     config: Data<Config>,
@@ -242,12 +242,12 @@ impl<'a> AuthService<'a> {
         self.remove_user_id_from_session(session);
     }
 
-    pub fn save_forgot_password_code(
+    pub fn save_reset_password_code(
         &self,
         email: &str,
         code: &str,
     ) -> Result<(), KeyValueServiceError> {
-        let key = format!("{}:{}", FORGOT_PASSWORD_CODE_KEY, &email);
+        let key = format!("{}:{}", RESET_PASSWORD_CODE_KEY, &email);
 
         self.key_value_service
             .get_ref()
@@ -255,7 +255,7 @@ impl<'a> AuthService<'a> {
             .map_err(|e| {
                 self.log_service.get_ref().error(
                     format!(
-                        "AuthService::save_forgot_password_code - {} - {:}",
+                        "AuthService::save_reset_password_code - {} - {:}",
                         &key, &e
                     )
                     .as_str(),
@@ -265,30 +265,30 @@ impl<'a> AuthService<'a> {
         Ok(())
     }
 
-    pub fn get_forgot_password_code(
+    pub fn get_reset_password_code(
         &self,
         email: &str,
     ) -> Result<Option<String>, KeyValueServiceError> {
-        let key = format!("{}:{}", FORGOT_PASSWORD_CODE_KEY, &email);
+        let key = format!("{}:{}", RESET_PASSWORD_CODE_KEY, &email);
 
         let value: Option<String> = self.key_value_service.get_ref().get(&key).map_err(|e| {
             self.log_service.get_ref().error(
-                format!("AuthService::get_forgot_password_code - {} - {:}", &key, &e).as_str(),
+                format!("AuthService::get_reset_password_code - {} - {:}", &key, &e).as_str(),
             );
             e
         })?;
         Ok(value)
     }
 
-    pub fn is_equal_forgot_password_code(
+    pub fn is_equal_reset_password_code(
         &self,
         email: &str,
         code: &str,
     ) -> Result<bool, KeyValueServiceError> {
-        let stored_code: Option<String> = self.get_forgot_password_code(email).map_err(|e| {
+        let stored_code: Option<String> = self.get_reset_password_code(email).map_err(|e| {
             self.log_service.get_ref().error(
                 format!(
-                    "AuthService::is_equal_forgot_password_code - {} - {:}",
+                    "AuthService::is_equal_reset_password_code - {} - {:}",
                     email, e
                 )
                 .as_str(),

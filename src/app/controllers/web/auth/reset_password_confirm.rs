@@ -1,4 +1,5 @@
-use crate::app::controllers::web::auth::forgot_password::CODE_LEN;
+use crate::app::controllers::web::auth::reset_password::CODE_LEN;
+use crate::app::controllers::web::helpers::{DefaultForm, Field, FormData};
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
@@ -14,10 +15,10 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
 
-static FORM_DATA_KEY: &str = "page.forgot_password_confirm.form.data";
+static FORM_DATA_KEY: &str = "page.reset_password_confirm.form.data";
 
 #[derive(Deserialize)]
-pub struct ForgotPasswordConfirmQuery {
+pub struct ResetPasswordConfirmQuery {
     pub email: Option<String>,
     pub code: Option<String>,
 }
@@ -29,7 +30,7 @@ pub async fn show(
     session_service: Data<SessionService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    query: Query<ForgotPasswordConfirmQuery>,
+    query: Query<ResetPasswordConfirmQuery>,
 ) -> Result<HttpResponse, Error> {
     let query = query.into_inner();
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
@@ -37,14 +38,14 @@ pub async fn show(
 
     let alerts = app_service.get_ref().alerts(&session);
 
-    let form_data: FormData = session_service
+    let form_data: FormData<ResetPasswordConfirmFields> = session_service
         .get_and_remove(&session, FORM_DATA_KEY)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?
         .unwrap_or(FormData::empty());
 
-    let form = form_data.form.unwrap_or(LoginForm::empty());
+    let form = form_data.form.unwrap_or(DefaultForm::empty());
 
-    let fields = form.fields.unwrap_or(Fields::empty());
+    let fields = form.fields.unwrap_or(ResetPasswordConfirmFields::empty());
 
     let mut email_field = fields.email.unwrap_or(Field::empty());
     let mut code_field = fields.code.unwrap_or(Field::empty());
@@ -55,7 +56,7 @@ pub async fn show(
         return Ok(HttpResponse::SeeOther()
             .insert_header((
                 http::header::LOCATION,
-                http::HeaderValue::from_static("/forgot-password"),
+                http::HeaderValue::from_static("/reset-password"),
             ))
             .finish());
     }
@@ -68,31 +69,20 @@ pub async fn show(
         code_field.value = Some(code.to_owned());
     }
 
-    let dark_mode = app_service.get_ref().dark_mode(&req);
-    let title_str = translator.simple("auth.page.forgot_password_confirm.title");
-    let back_str = translator.simple("auth.page.forgot_password_confirm.back.label");
-    let header_str = translator.simple("auth.page.forgot_password_confirm.form.header");
-    let email_str = translator.simple("auth.page.forgot_password_confirm.form.fields.email.label");
-    let password_str =
-        translator.simple("auth.page.forgot_password_confirm.form.fields.password.label");
-    let confirm_password_str =
-        translator.simple("auth.page.forgot_password_confirm.form.fields.confirm_password.label");
-    let submit_str = translator.simple("auth.page.forgot_password_confirm.form.submit.label");
-
     let ctx = json!({
-        "title": title_str,
+        "title": translator.simple("auth.page.reset_password_confirm.title"),
         "locale": locale,
         "locales": locales,
         "alerts": alerts,
-        "dark_mode": dark_mode,
+        "dark_mode": app_service.get_ref().dark_mode(&req),
         "back": {
-            "label": back_str,
-            "href": "/forgot-password",
+            "label": translator.simple("auth.page.reset_password_confirm.back.label"),
+            "href": "/reset-password",
         },
         "form": {
-            "action": "/forgot-password-confirm",
+            "action": "/reset-password-confirm",
             "method": "post",
-            "header": header_str,
+            "header": translator.simple("auth.page.reset_password_confirm.form.header"),
             "fields": [
                 {
                     "name": "code",
@@ -100,7 +90,7 @@ pub async fn show(
                     "value": code_field.value,
                 },
                 {
-                    "label": email_str,
+                    "label": translator.simple("auth.page.reset_password_confirm.form.fields.email.label"),
                     "type": "email",
                     "name": "email",
                     "readonly": "readonly",
@@ -108,14 +98,14 @@ pub async fn show(
                     "errors": email_field.errors,
                 },
                 {
-                    "label": password_str,
+                    "label": translator.simple("auth.page.reset_password_confirm.form.fields.password.label"),
                     "type": "password",
                     "name": "password",
                     "value": password_field.value,
                     "errors": password_field.errors,
                 },
                 {
-                    "label": confirm_password_str,
+                    "label": translator.simple("auth.page.reset_password_confirm.form.fields.confirm_password.label"),
                     "type": "password",
                     "name": "confirm_password",
                     "value": confirm_password_field.value,
@@ -123,7 +113,7 @@ pub async fn show(
                 }
             ],
             "submit": {
-                "label": submit_str,
+                "label": translator.simple("auth.page.reset_password_confirm.form.submit.label"),
             },
             "errors": form.errors,
         },
@@ -132,66 +122,55 @@ pub async fn show(
     let s = tmpl.get_ref().render_throw_http("pages/auth.hbs", &ctx)?;
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }
-pub async fn confirm(
+
+pub async fn invoke(
     req: HttpRequest,
     session: Session,
     alert_service: Data<AlertService>,
     session_service: Data<SessionService>,
-    data: Form<ForgotPasswordConfirmData>,
+    data: Form<ResetPasswordConfirmData>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     auth_service: Data<AuthService<'_>>,
 ) -> Result<impl Responder, Error> {
-    let data: &ForgotPasswordConfirmData = data.deref();
+    let data: &ResetPasswordConfirmData = data.deref();
 
     let mut alerts: Vec<Alert> = vec![];
     let form_errors: Vec<String> = vec![];
 
     let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
     let translator = Translator::new(&lang, translator_service.get_ref());
-    let email_str = translator.simple("auth.page.forgot_password_confirm.form.fields.email.label");
+    let email_str = translator.simple("auth.page.reset_password_confirm.form.fields.email.label");
     let password_str =
-        translator.simple("auth.page.forgot_password_confirm.form.fields.password.label");
+        translator.simple("auth.page.reset_password_confirm.form.fields.password.label");
     let confirm_password_str =
-        translator.simple("auth.page.forgot_password_confirm.form.fields.confirm_password.label");
+        translator.simple("auth.page.reset_password_confirm.form.fields.confirm_password.label");
 
-    let email_errors: Vec<String> = match &data.email {
-        Some(value) => Email::validate(&translator, value, &email_str),
-        None => Required::validate(&translator, &data.email),
-    };
-
-    let code_errors: Vec<String> = match &data.code {
-        Some(value) => MinMaxLengthString::validate(&translator, value, CODE_LEN, CODE_LEN, "code"),
-        None => Required::validate(&translator, &data.code),
-    };
-
-    let password_errors: Vec<String> = match &data.password {
-        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 255, &password_str),
-        None => Required::validate(&translator, &data.password),
-    };
-
-    let mut confirm_password_errors: Vec<String> = match &data.confirm_password {
-        Some(value) => {
+    let email_errors: Vec<String> = Required::validated(&translator, &data.email, |value| {
+        Email::validate(&translator, value, &email_str)
+    });
+    let password_errors: Vec<String> = Required::validated(&translator, &data.password, |value| {
+        MinMaxLengthString::validate(&translator, value, 4, 255, &password_str)
+    });
+    let mut confirm_password_errors: Vec<String> =
+        Required::validated(&translator, &data.confirm_password, |value| {
             MinMaxLengthString::validate(&translator, value, 4, 255, &confirm_password_str)
-        }
-        None => Required::validate(&translator, &data.confirm_password),
-    };
+        });
+    let code_errors: Vec<String> = Required::validated(&translator, &data.code, |value| {
+        MinMaxLengthString::validate(&translator, value, CODE_LEN, CODE_LEN, "code")
+    });
 
     if password_errors.len() == 0 && confirm_password_errors.len() == 0 {
-        let mut password_errors2: Vec<String> = match &data.password {
-            Some(password) => match &data.confirm_password {
-                Some(confirm_password) => {
-                    Confirmed::validate(&translator, password, confirm_password, &password_str)
-                }
-                None => vec![],
-            },
-            None => vec![],
-        };
-
+        let mut password_errors2: Vec<String> = Confirmed::validate(
+            &translator,
+            data.password.as_ref().unwrap(),
+            data.confirm_password.as_ref().unwrap(),
+            &password_str,
+        );
         confirm_password_errors.append(&mut password_errors2);
     }
 
-    let mut is_redirect_to_forgot_password = false;
+    let mut is_redirect_to_reset_password = false;
     let mut is_redirect_to_login = false;
 
     let is_valid = email_errors.len() == 0
@@ -206,7 +185,7 @@ pub async fn confirm(
         let password = data.password.as_ref().unwrap_or(&d_);
 
         let is_code_equal: bool = auth_service
-            .is_equal_forgot_password_code(email, code)
+            .is_equal_reset_password_code(email, code)
             .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
 
         if is_code_equal {
@@ -223,43 +202,33 @@ pub async fn confirm(
             let alert_str = translator.simple("auth.alert.confirm.code_not_equal");
             alerts.push(Alert::error(alert_str));
 
-            is_redirect_to_forgot_password = true;
+            is_redirect_to_reset_password = true;
         }
     }
 
-    let email_field = Field {
-        value: data.email.to_owned(),
-        errors: Some(email_errors),
+    let form_data = FormData {
+        form: Some(DefaultForm {
+            fields: Some(ResetPasswordConfirmFields {
+                email: Some(Field {
+                    value: data.email.to_owned(),
+                    errors: Some(email_errors),
+                }),
+                code: Some(Field {
+                    value: data.code.to_owned(),
+                    errors: Some(code_errors),
+                }),
+                password: Some(Field {
+                    value: data.password.to_owned(),
+                    errors: Some(password_errors),
+                }),
+                confirm_password: Some(Field {
+                    value: data.confirm_password.to_owned(),
+                    errors: Some(confirm_password_errors),
+                }),
+            }),
+            errors: Some(form_errors),
+        }),
     };
-
-    let code_field = Field {
-        value: data.code.to_owned(),
-        errors: Some(code_errors),
-    };
-
-    let password_field = Field {
-        value: data.password.to_owned(),
-        errors: Some(password_errors),
-    };
-
-    let confirm_password_field = Field {
-        value: data.confirm_password.to_owned(),
-        errors: Some(confirm_password_errors),
-    };
-
-    let fields = Fields {
-        email: Some(email_field),
-        code: Some(code_field),
-        password: Some(password_field),
-        confirm_password: Some(confirm_password_field),
-    };
-
-    let form = LoginForm {
-        fields: Some(fields),
-        errors: Some(form_errors),
-    };
-
-    let form_data = FormData { form: Some(form) };
 
     if is_valid {
         session_service.get_ref().remove(&session, FORM_DATA_KEY);
@@ -275,17 +244,17 @@ pub async fn confirm(
         .insert_into_session(&session, &alerts)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?;
 
-    if is_redirect_to_forgot_password {
-        Ok(Redirect::to("/forgot-password").see_other())
+    if is_redirect_to_reset_password {
+        Ok(Redirect::to("/reset-password").see_other())
     } else if is_redirect_to_login {
         Ok(Redirect::to("/login").see_other())
     } else {
-        Ok(Redirect::to("/forgot-password-confirm").see_other())
+        Ok(Redirect::to("/reset-password-confirm").see_other())
     }
 }
 
 #[derive(Deserialize, Debug)]
-pub struct ForgotPasswordConfirmData {
+pub struct ResetPasswordConfirmData {
     pub code: Option<String>,
     pub email: Option<String>,
     pub password: Option<String>,
@@ -293,61 +262,20 @@ pub struct ForgotPasswordConfirmData {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct FormData {
-    pub form: Option<LoginForm>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct LoginForm {
-    pub fields: Option<Fields>,
-    pub errors: Option<Vec<String>>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Fields {
+pub struct ResetPasswordConfirmFields {
     pub code: Option<Field>,
     pub email: Option<Field>,
     pub password: Option<Field>,
     pub confirm_password: Option<Field>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Field {
-    pub value: Option<String>,
-    pub errors: Option<Vec<String>>,
-}
-
-impl FormData {
-    fn empty() -> Self {
-        Self { form: None }
-    }
-}
-
-impl LoginForm {
-    fn empty() -> Self {
-        Self {
-            fields: None,
-            errors: None,
-        }
-    }
-}
-
-impl Fields {
+impl ResetPasswordConfirmFields {
     fn empty() -> Self {
         Self {
             code: None,
             email: None,
             password: None,
             confirm_password: None,
-        }
-    }
-}
-
-impl Field {
-    fn empty() -> Self {
-        Self {
-            value: None,
-            errors: None,
         }
     }
 }

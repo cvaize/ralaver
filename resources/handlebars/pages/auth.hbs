@@ -47,11 +47,11 @@
                     {{/each}}
                 {{/if}}
 
-                {{#if form.forgot_password or form.register or form.login}}
+                {{#if form.reset_password or form.register or form.login}}
                     <div class="admin-login__nav">
-                        {{#if form.forgot_password}}
-                            <a href="{{form.forgot_password.href}}" class="admin-login__forgot-link">
-                                {{form.forgot_password.label}}
+                        {{#if form.reset_password}}
+                            <a href="{{form.reset_password.href}}" class="admin-login__reset-link">
+                                {{form.reset_password.label}}
                             </a>
                         {{/if}}
                         {{#if form.register}}

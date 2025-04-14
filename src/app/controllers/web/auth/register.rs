@@ -1,8 +1,12 @@
+use crate::app::controllers::web::helpers::{DefaultForm, Field, FormData};
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{Alert, AlertService, AppService, AuthServiceError, AuthService, Credentials, SessionService, TemplateService, Translator, TranslatorService};
+use crate::{
+    Alert, AlertService, AppService, AuthService, AuthServiceError, Credentials, SessionService,
+    TemplateService, Translator, TranslatorService,
+};
 use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
@@ -22,60 +26,48 @@ pub async fn show(
 ) -> Result<HttpResponse, Error> {
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
 
-    let alerts = app_service.get_ref().alerts(&session);
-
-    let form_data: FormData = session_service
+    let form_data: FormData<RegisterFields> = session_service
         .get_and_remove(&session, FORM_DATA_KEY)
         .map_err(|_| error::ErrorInternalServerError("Session error"))?
         .unwrap_or(FormData::empty());
 
-    let form = form_data.form.unwrap_or(LoginForm::empty());
+    let form = form_data.form.unwrap_or(DefaultForm::empty());
 
-    let fields = form.fields.unwrap_or(Fields::empty());
+    let fields = form.fields.unwrap_or(RegisterFields::empty());
 
     let email_field = fields.email.unwrap_or(Field::empty());
     let password_field = fields.password.unwrap_or(Field::empty());
     let confirm_password_field = fields.confirm_password.unwrap_or(Field::empty());
 
-    let dark_mode = app_service.get_ref().dark_mode(&req);
     let translator = Translator::new(&lang, translator_service.get_ref());
-    let title_str = translator.simple("auth.page.register.title");
-    let header_str = translator.simple("auth.page.register.form.header");
-    let email_str = translator.simple("auth.page.register.form.fields.email.label");
-    let password_str = translator.simple("auth.page.register.form.fields.password.label");
-    let confirm_password_str =
-        translator.simple("auth.page.register.form.fields.confirm_password.label");
-    let submit_str = translator.simple("auth.page.register.form.submit.label");
-    let forgot_password_str = translator.simple("auth.page.register.form.forgot_password.label");
-    let login_str = translator.simple("auth.page.register.form.login.label");
 
     let ctx = json!({
-        "title": title_str,
+        "title": translator.simple("auth.page.register.title"),
         "locale": locale,
         "locales": locales,
-        "alerts": alerts,
-        "dark_mode": dark_mode,
+        "alerts": app_service.get_ref().alerts(&session),
+        "dark_mode": app_service.get_ref().dark_mode(&req),
         "form": {
             "action": "/register",
             "method": "post",
-            "header": header_str,
+            "header": translator.simple("auth.page.register.form.header"),
             "fields": [
                 {
-                    "label": email_str,
+                    "label": translator.simple("auth.page.register.form.fields.email.label"),
                     "type": "email",
                     "name": "email",
                     "value": email_field.value,
                     "errors": email_field.errors,
                 },
                 {
-                    "label": password_str,
+                    "label": translator.simple("auth.page.register.form.fields.password.label"),
                     "type": "password",
                     "name": "password",
                     "value": password_field.value,
                     "errors": password_field.errors,
                 },
                 {
-                    "label": confirm_password_str,
+                    "label": translator.simple("auth.page.register.form.fields.confirm_password.label"),
                     "type": "password",
                     "name": "confirm_password",
                     "value": confirm_password_field.value,
@@ -83,14 +75,14 @@ pub async fn show(
                 }
             ],
             "submit": {
-                "label": submit_str,
+                "label": translator.simple("auth.page.register.form.submit.label"),
             },
-            "forgot_password": {
-                "label": forgot_password_str,
-                "href": "/forgot-password",
+            "reset_password": {
+                "label": translator.simple("auth.page.register.form.reset_password.label"),
+                "href": "/reset-password",
             },
             "login": {
-                "label": login_str,
+                "label": translator.simple("auth.page.register.form.login.label"),
                 "href": "/login",
             },
             "errors": form.errors,
@@ -100,7 +92,8 @@ pub async fn show(
     let s = tmpl.get_ref().render_throw_http("pages/auth.hbs", &ctx)?;
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }
-pub async fn register(
+
+pub async fn invoke(
     req: HttpRequest,
     session: Session,
     alert_service: Data<AlertService>,
@@ -123,34 +116,24 @@ pub async fn register(
     let confirm_password_str =
         translator.simple("auth.page.register.form.fields.confirm_password.label");
 
-    let mut email_errors: Vec<String> = match &data.email {
-        Some(value) => Email::validate(&translator, value, &email_str),
-        None => Required::validate(&translator, &data.email),
-    };
-
-    let password_errors: Vec<String> = match &data.password {
-        Some(value) => MinMaxLengthString::validate(&translator, value, 4, 255, &password_str),
-        None => Required::validate(&translator, &data.password),
-    };
-
-    let mut confirm_password_errors: Vec<String> = match &data.confirm_password {
-        Some(value) => {
+    let mut email_errors: Vec<String> = Required::validated(&translator, &data.email, |value| {
+        Email::validate(&translator, value, &email_str)
+    });
+    let password_errors: Vec<String> = Required::validated(&translator, &data.password, |value| {
+        MinMaxLengthString::validate(&translator, value, 4, 255, &password_str)
+    });
+    let mut confirm_password_errors: Vec<String> =
+        Required::validated(&translator, &data.confirm_password, |value| {
             MinMaxLengthString::validate(&translator, value, 4, 255, &confirm_password_str)
-        }
-        None => Required::validate(&translator, &data.confirm_password),
-    };
+        });
 
     if password_errors.len() == 0 && confirm_password_errors.len() == 0 {
-        let mut password_errors2: Vec<String> = match &data.password {
-            Some(password) => match &data.confirm_password {
-                Some(confirm_password) => {
-                    Confirmed::validate(&translator, password, confirm_password, &password_str)
-                }
-                None => vec![],
-            },
-            None => vec![],
-        };
-
+        let mut password_errors2: Vec<String> = Confirmed::validate(
+            &translator,
+            data.password.as_ref().unwrap(),
+            data.confirm_password.as_ref().unwrap(),
+            &password_str,
+        );
         confirm_password_errors.append(&mut password_errors2);
     }
 
@@ -187,33 +170,23 @@ pub async fn register(
 
         session_service.get_ref().remove(&session, FORM_DATA_KEY);
     } else {
-        let email_field = Field {
-            value: data.email.to_owned(),
-            errors: Some(email_errors),
-        };
-
-        let password_field = Field {
-            value: data.password.to_owned(),
-            errors: Some(password_errors),
-        };
-
-        let confirm_password_field = Field {
-            value: data.confirm_password.to_owned(),
-            errors: Some(confirm_password_errors),
-        };
-
-        let fields = Fields {
-            email: Some(email_field),
-            password: Some(password_field),
-            confirm_password: Some(confirm_password_field),
-        };
-
-        let form = LoginForm {
-            fields: Some(fields),
+        let form_data = FormData { form: Some(DefaultForm {
+            fields: Some(RegisterFields {
+                email: Some(Field {
+                    value: data.email.to_owned(),
+                    errors: Some(email_errors),
+                }),
+                password: Some(Field {
+                    value: data.password.to_owned(),
+                    errors: Some(password_errors),
+                }),
+                confirm_password: Some(Field {
+                    value: data.confirm_password.to_owned(),
+                    errors: Some(confirm_password_errors),
+                }),
+            }),
             errors: Some(form_errors),
-        };
-
-        let form_data = FormData { form: Some(form) };
+        }) };
 
         session_service
             .get_ref()
@@ -241,59 +214,18 @@ pub struct RegisterData {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct FormData {
-    form: Option<LoginForm>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct LoginForm {
-    fields: Option<Fields>,
-    errors: Option<Vec<String>>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Fields {
+pub struct RegisterFields {
     email: Option<Field>,
     password: Option<Field>,
     confirm_password: Option<Field>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Field {
-    value: Option<String>,
-    errors: Option<Vec<String>>,
-}
-
-impl FormData {
-    fn empty() -> Self {
-        Self { form: None }
-    }
-}
-
-impl LoginForm {
-    fn empty() -> Self {
-        Self {
-            fields: None,
-            errors: None,
-        }
-    }
-}
-
-impl Fields {
+impl RegisterFields {
     fn empty() -> Self {
         Self {
             email: None,
             password: None,
             confirm_password: None,
-        }
-    }
-}
-
-impl Field {
-    fn empty() -> Self {
-        Self {
-            value: None,
-            errors: None,
         }
     }
 }
