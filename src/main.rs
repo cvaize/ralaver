@@ -17,7 +17,6 @@ pub use crate::mysql_connection::MysqlPool;
 pub use crate::services::Services;
 use actix_session::SessionMiddleware;
 use actix_web::middleware;
-use actix_web::web::Data;
 use actix_web::App;
 use actix_web::HttpServer;
 use app::middlewares::error_redirect::ErrorRedirect;

@@ -386,16 +386,20 @@ pub enum AuthServiceError {
 
 #[cfg(test)]
 mod tests {
+    #[allow(unused_imports)]
     use crate::{preparation, Credentials, PrivateUserData};
+    #[allow(unused_imports)]
     use tokio;
+    #[allow(unused_imports)]
     use diesel::prelude::*;
+    #[allow(unused_imports)]
     use diesel::{ExpressionMethods, RunQueryDsl, QueryDsl, SelectableHelper};
 
     // Used in manual mode
     // #[tokio::test]
     #[allow(dead_code)]
     async fn exists_user_by_email() {
-        let (all_connections, all_services) = preparation().await;
+        let (_, all_services) = preparation().await;
 
         assert_eq!(
             false,
@@ -454,7 +458,7 @@ mod tests {
     // #[tokio::test]
     #[allow(dead_code)]
     async fn reset_password_code() {
-        let (all_connections, all_services) = preparation().await;
+        let (_, all_services) = preparation().await;
 
         let email = "admin@admin.example";
         let code = all_services.rand.get_ref().str(64);
