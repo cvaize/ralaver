@@ -133,11 +133,10 @@ impl<'a> AuthService<'a> {
             return AuthServiceError::DbConnectionFail;
         })?;
 
-        let results: Vec<PrivateUserData> = crate::schema::users::dsl::users
+        let user: PrivateUserData = crate::schema::users::dsl::users
             .filter(crate::schema::users::email.eq(&data.email))
             .select(PrivateUserData::as_select())
-            .limit(1)
-            .load::<PrivateUserData>(&mut connection)
+            .first::<PrivateUserData>(&mut connection)
             .map_err(|e| {
                 self.log_service.get_ref().error(
                     format!(
@@ -149,24 +148,19 @@ impl<'a> AuthService<'a> {
                 return AuthServiceError::AuthenticateFail;
             })?;
 
-        let result: Option<&PrivateUserData> = results.get(0);
-
         // Check auth
-        let id: Option<u64> = match result {
-            Some(user) => match &user.password {
-                Some(user_password_hash) => {
-                    if self
-                        .hash
-                        .get_ref()
-                        .verify_password(&data.password, user_password_hash)
-                    {
-                        Some(user.id)
-                    } else {
-                        None
-                    }
+        let id: Option<u64> = match &user.password {
+            Some(user_password_hash) => {
+                if self
+                    .hash
+                    .get_ref()
+                    .verify_password(&data.password, user_password_hash)
+                {
+                    Some(user.id)
+                } else {
+                    None
                 }
-                _ => None,
-            },
+            }
             _ => None,
         };
 
@@ -392,8 +386,10 @@ pub enum AuthServiceError {
 
 #[cfg(test)]
 mod tests {
-    use crate::preparation;
+    use crate::{preparation, Credentials, PrivateUserData};
     use tokio;
+    use diesel::prelude::*;
+    use diesel::{ExpressionMethods, RunQueryDsl, QueryDsl, SelectableHelper};
 
     // Used in manual mode
     // #[tokio::test]
@@ -415,5 +411,118 @@ mod tests {
                 .exists_user_by_email("admin@admin.example")
                 .unwrap()
         );
+    }
+
+    // Used in manual mode
+    // #[tokio::test]
+    #[allow(dead_code)]
+    async fn update_password_by_email() {
+        use crate::schema::users::dsl::email as dsl_email;
+        use crate::schema::users::dsl::users as dsl_users;
+
+        let (all_connections, all_services) = preparation().await;
+
+        let email = "admin@admin.example";
+
+        let password = all_services.rand.get_ref().str(64);
+        all_services
+            .auth
+            .update_password_by_email(email, &password)
+            .unwrap();
+
+        let mut connection = all_connections.mysql.get_ref().get().unwrap();
+        let user: PrivateUserData = dsl_users
+            .filter(dsl_email.eq(email))
+            .select(PrivateUserData::as_select())
+            .first::<PrivateUserData>(&mut connection).unwrap();
+
+        let user_password_hash = user.password.clone().unwrap();
+
+        assert_eq!(true, all_services
+                        .hash
+                        .get_ref()
+                        .verify_password(&password, &user_password_hash));
+
+        let password = all_services.rand.get_ref().str(64);
+        assert_eq!(false, all_services
+            .hash
+            .get_ref()
+            .verify_password(&password, &user_password_hash));
+    }
+
+    // Used in manual mode
+    // #[tokio::test]
+    #[allow(dead_code)]
+    async fn reset_password_code() {
+        let (all_connections, all_services) = preparation().await;
+
+        let email = "admin@admin.example";
+        let code = all_services.rand.get_ref().str(64);
+        all_services.auth.save_reset_password_code(email, &code).unwrap();
+
+        let saved_code = all_services.auth.get_reset_password_code(email).unwrap().unwrap();
+        assert_eq!(code, saved_code);
+        assert_eq!(true,  all_services.auth.is_equal_reset_password_code(email, &code).unwrap());
+        let code = all_services.rand.get_ref().str(64);
+        assert_eq!(false,  all_services.auth.is_equal_reset_password_code(email, &code).unwrap());
+    }
+
+
+    // Used in manual mode
+    // #[tokio::test]
+    #[allow(dead_code)]
+    async fn authenticate_by_credentials() {
+        use crate::schema::users::dsl::email as dsl_email;
+        use crate::schema::users::dsl::users as dsl_users;
+        let (all_connections, all_services) = preparation().await;
+
+        let email = "admin@admin.example";
+        let password = all_services.rand.get_ref().str(64);
+
+        all_services
+            .auth
+            .update_password_by_email(email, &password)
+            .unwrap();
+
+        let cred = Credentials{
+            email: email.to_owned(),
+            password: password.to_owned()
+        };
+        let user_id = all_services.auth.authenticate_by_credentials(&cred).unwrap();
+
+        let mut connection = all_connections.mysql.get_ref().get().unwrap();
+        let user: PrivateUserData = dsl_users
+            .filter(dsl_email.eq(email))
+            .select(PrivateUserData::as_select())
+            .first::<PrivateUserData>(&mut connection).unwrap();
+
+        assert_eq!(user.id, user_id);
+    }
+
+
+    // Used in manual mode
+    // #[tokio::test]
+    #[allow(dead_code)]
+    async fn register_by_credentials() {
+        use crate::schema::users::dsl::email as dsl_email;
+        use crate::schema::users::dsl::users as dsl_users;
+        let (all_connections, all_services) = preparation().await;
+
+        let password = all_services.rand.get_ref().str(64);
+        let email = format!("admin{}@admin.example", &password);
+
+        let cred = Credentials{
+            email: email.to_owned(),
+            password: password.to_owned()
+        };
+        all_services.auth.register_by_credentials(&cred).unwrap();
+
+        let mut connection = all_connections.mysql.get_ref().get().unwrap();
+        let user: PrivateUserData = dsl_users
+            .filter(dsl_email.eq(email.to_owned()))
+            .select(PrivateUserData::as_select())
+            .first::<PrivateUserData>(&mut connection).unwrap();
+
+        assert_eq!(user.email, email);
     }
 }
