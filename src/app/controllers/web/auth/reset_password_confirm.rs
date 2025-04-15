@@ -1,5 +1,5 @@
 use crate::app::controllers::web::auth::reset_password::CODE_LEN;
-use crate::app::controllers::web::helpers::{DefaultForm, Field, FormData};
+use crate::app::controllers::web::{DefaultForm, Field, FormData};
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
@@ -198,6 +198,7 @@ pub async fn invoke(
                 .get_ref()
                 .update_password_by_email(email, password)
                 .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
+            return Err(error::ErrorInternalServerError("Test"));
         } else {
             let alert_str = translator.simple("auth.alert.confirm.code_not_equal");
             alerts.push(Alert::error(alert_str));

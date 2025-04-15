@@ -254,11 +254,7 @@ impl<'a> AuthService<'a> {
             .set::<&str, &str, String>(&key, code)
             .map_err(|e| {
                 self.log_service.get_ref().error(
-                    format!(
-                        "AuthService::save_reset_password_code - {} - {:}",
-                        &key, &e
-                    )
-                    .as_str(),
+                    format!("AuthService::save_reset_password_code - {} - {:}", &key, &e).as_str(),
                 );
                 e
             })?;
@@ -343,6 +339,31 @@ impl<'a> AuthService<'a> {
             })?;
         Ok(())
     }
+
+    pub fn exists_user_by_email(&self, email: &str) -> Result<bool, AuthServiceError> {
+        use crate::schema::users::dsl::email as dsl_email;
+        use crate::schema::users::dsl::users as dsl_users;
+        use diesel::dsl::exists;
+        use diesel::select;
+
+        let mut connection = self.db_pool.get_ref().get().map_err(|e| {
+            self.log_service
+                .get_ref()
+                .error(format!("AuthService::exists_user_by_email - {:}", &e).as_str());
+            AuthServiceError::DbConnectionFail
+        })?;
+
+        let email_exists: bool = select(exists(dsl_users.filter(dsl_email.eq(email))))
+            .get_result(&mut connection)
+            .map_err(|e| {
+                self.log_service
+                    .get_ref()
+                    .error(format!("AuthService::exists_user_by_email - {:}", &e).as_str());
+                AuthServiceError::Fail
+            })?;
+
+        Ok(email_exists)
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -369,22 +390,30 @@ pub enum AuthServiceError {
     Fail,
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use diesel::debug_query;
-//     use diesel::query_builder::AsQuery;
-//     use super::*;
-//
-//     #[test]
-//     fn update_password_by_email() {
-//         use crate::schema::users::dsl::users as dsl_users;
-//         use crate::schema::users::dsl::email as dsl_email;
-//         use crate::schema::users::dsl::password as dsl_password;
-//
-//         let email = "test@test.test";
-//         let password = "test";
-//
-//
-//         dbg!(&str);
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use crate::preparation;
+    use tokio;
+
+    // Used in manual mode
+    // #[tokio::test]
+    #[allow(dead_code)]
+    async fn exists_user_by_email() {
+        let (all_connections, all_services) = preparation().await;
+
+        assert_eq!(
+            false,
+            all_services
+                .auth
+                .exists_user_by_email("null@null.null")
+                .unwrap()
+        );
+        assert_eq!(
+            true,
+            all_services
+                .auth
+                .exists_user_by_email("admin@admin.example")
+                .unwrap()
+        );
+    }
+}

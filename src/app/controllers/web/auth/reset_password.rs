@@ -1,4 +1,4 @@
-use crate::app::controllers::web::helpers::{DefaultForm, Field, FormData};
+use crate::app::controllers::web::{DefaultForm, Field, FormData};
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
 use crate::{
@@ -85,6 +85,7 @@ pub async fn invoke(
     auth_service: Data<AuthService<'_>>,
     random_service: Data<RandomService>,
 ) -> Result<impl Responder, Error> {
+    let auth_service = auth_service.get_ref();
     let data: &ResetPasswordData = data.deref();
 
     let mut alerts: Vec<Alert> = vec![];
@@ -97,10 +98,18 @@ pub async fn invoke(
     let mut email_errors: Vec<String> = Required::validated(&translator, &data.email, |value| {
         Email::validate(&translator, value, &email_str)
     });
+    let email: String = data.email.clone().unwrap_or("".to_string());
 
     if email_errors.len() == 0 {
-        let email: String = data.email.as_ref().unwrap().to_string();
+        let exists = auth_service
+            .exists_user_by_email(&email)
+            .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
+        if exists == false {
+            email_errors.push(translator.simple("validation.custom.email.exists"));
+        }
+    }
 
+    if email_errors.len() == 0 {
         let site_domain = app_service
             .url()
             .domain()
@@ -115,7 +124,6 @@ pub async fn invoke(
         let code: String = random_service.get_ref().str(CODE_LEN);
 
         auth_service
-            .get_ref()
             .save_reset_password_code(&email, &code)
             .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
 

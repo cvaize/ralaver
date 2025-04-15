@@ -22,18 +22,25 @@ use actix_web::App;
 use actix_web::HttpServer;
 use app::middlewares::error_redirect::ErrorRedirect;
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    let base_services = services::base(Config::new_for_prod());
+async fn preparation() -> (Connections, Services<'static>) {
+    dotenv::dotenv().ok();
+    let base_services = services::base(Config::new());
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    let all_connections: Data<Connections> = Data::new(connections::all(&base_services).await);
+    let all_connections: Connections = connections::all(&base_services).await;
 
     migrations::migrate(&all_connections);
 
-    let advanced_services = services::advanced(all_connections.get_ref(), &base_services);
+    let advanced_services = services::advanced(&all_connections, &base_services);
 
     let all_services: Services = services::join_to_all(base_services, advanced_services);
+
+    (all_connections, all_services)
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let (all_connections, all_services) = preparation().await;
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 

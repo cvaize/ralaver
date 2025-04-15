@@ -1,4 +1,4 @@
-use crate::app::controllers::web::helpers::{DefaultForm, Field, FormData};
+use crate::app::controllers::web::{DefaultForm, Field, FormData};
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;

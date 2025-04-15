@@ -188,13 +188,4 @@ impl Config {
             },
         }
     }
-    pub fn new_for_prod() -> Self {
-        dotenv::dotenv().ok();
-        Self::new()
-    }
-
-    pub fn new_for_tests() -> Self {
-        dotenv::from_filename(".env.test").ok();
-        Self::new()
-    }
 }

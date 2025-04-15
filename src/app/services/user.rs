@@ -20,15 +20,15 @@ pub enum UserServiceError {
     DbConnectionFail,
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::Config;
-
-    #[test]
-    fn create() {
-        let config = Config::new_for_tests();
-
-        dbg!(&config.db.mysql.url);
-        dbg!("test");
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use crate::Config;
+//
+//     #[test]
+//     fn create() {
+//         let config = Config::new();
+//
+//         dbg!(&config.db.mysql.url);
+//         dbg!("test");
+//     }
+// }

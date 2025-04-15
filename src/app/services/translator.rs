@@ -205,7 +205,7 @@ mod tests {
 
     #[test]
     fn translate() {
-        let config = Data::new(Config::new_for_tests());
+        let config = Data::new(Config::new());
         let t: TranslatorService = TranslatorService::new(
             config,
             HashMap::from([
@@ -221,7 +221,7 @@ mod tests {
 
     #[test]
     fn new_from_files() {
-        let config = Data::new(Config::new_for_tests());
+        let config = Data::new(Config::new());
         let log_service = Data::new(LogService::new());
         let t: TranslatorService = TranslatorService::new_from_files(config, log_service).unwrap();
         let translates: &HashMap<String, String> = t.get_translates_ref();
