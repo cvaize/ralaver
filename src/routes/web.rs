@@ -30,7 +30,7 @@ pub fn register(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/reset-password-confirm")
             .route(web::get().to(controllers::web::auth::reset_password_confirm::show))
-            .route(web::get().to(controllers::web::auth::reset_password_confirm::invoke)),
+            .route(web::post().to(controllers::web::auth::reset_password_confirm::invoke)),
     );
     cfg.service(
         web::resource("/profile")

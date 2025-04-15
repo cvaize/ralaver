@@ -178,12 +178,12 @@ pub async fn invoke(
         && password_errors.len() == 0
         && confirm_password_errors.len() == 0;
 
-    if is_valid {
-        let d_ = "".to_string();
-        let email = data.email.as_ref().unwrap_or(&d_);
-        let code = data.code.as_ref().unwrap_or(&d_);
-        let password = data.password.as_ref().unwrap_or(&d_);
+    let d_ = "".to_string();
+    let email = data.email.as_ref().unwrap_or(&d_);
+    let code = data.code.as_ref().unwrap_or(&d_);
+    let password = data.password.as_ref().unwrap_or(&d_);
 
+    if is_valid {
         let is_code_equal: bool = auth_service
             .is_equal_reset_password_code(email, code)
             .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
@@ -249,7 +249,8 @@ pub async fn invoke(
     } else if is_redirect_to_login {
         Ok(Redirect::to("/login").see_other())
     } else {
-        Ok(Redirect::to("/reset-password-confirm").see_other())
+        let to = format!("/reset-password-confirm?code={}&email={}", code, email);
+        Ok(Redirect::to(to).see_other())
     }
 }
 
