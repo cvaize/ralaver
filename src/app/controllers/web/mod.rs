@@ -5,8 +5,8 @@ pub mod locale;
 pub mod profile;
 pub mod users;
 
-use serde_derive::{Deserialize, Serialize};
 use crate::model_redis_impl;
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FormData<Fields> {

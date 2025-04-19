@@ -4,10 +4,9 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{model_redis_impl, Session};
+use crate::{model_redis_impl, FlashService, Session};
 use crate::{
-    Alert, AppService, AuthService, KeyValueService, SessionService, TemplateService,
-    Translator, TranslatorService, ALERTS_KEY,
+    Alert, AppService, AuthService, TemplateService, Translator, TranslatorService, ALERTS_KEY,
 };
 use actix_web::web::{Data, Form, Query, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
@@ -29,32 +28,25 @@ pub async fn show(
     req: HttpRequest,
     session: Session,
     query: Query<ResetPasswordConfirmQuery>,
+    flash_service: Data<FlashService>,
     tmpl_service: Data<TemplateService>,
-    session_service: Data<SessionService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    key_value_service: Data<KeyValueService>,
 ) -> Result<HttpResponse, Error> {
+    let flash_service = flash_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
-    let session_service = session_service.get_ref();
     let app_service = app_service.get_ref();
     let translator_service = translator_service.get_ref();
-    let key_value_service = key_value_service.get_ref();
 
     let query = query.into_inner();
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
     let translator = Translator::new(&lang, translator_service);
 
-    let key = session_service.make_session_data_key(&session, ALERTS_KEY);
-    let alerts: Vec<Alert> = key_value_service
-        .get_del(&key)
-        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
+    let alerts: Vec<Alert> = flash_service
+        .all_throw_http(&session, ALERTS_KEY)?
         .unwrap_or(vec![]);
-
-    let key = session_service.make_session_data_key(&session, DATA_KEY);
-    let form_data: FormData<ResetPasswordConfirmFields>= key_value_service
-        .get_del(&key)
-        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
+    let form_data: FormData<ResetPasswordConfirmFields> = flash_service
+        .all_throw_http(&session, DATA_KEY)?
         .unwrap_or(FormData::empty());
 
     let form = form_data.form.unwrap_or(DefaultForm::empty());
@@ -141,17 +133,15 @@ pub async fn invoke(
     req: HttpRequest,
     session: Session,
     data: Form<ResetPasswordConfirmData>,
-    session_service: Data<SessionService>,
+    flash_service: Data<FlashService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     auth_service: Data<AuthService<'_>>,
-    key_value_service: Data<KeyValueService>,
 ) -> Result<impl Responder, Error> {
-    let session_service = session_service.get_ref();
+    let flash_service = flash_service.get_ref();
     let app_service = app_service.get_ref();
     let translator_service = translator_service.get_ref();
     let auth_service = auth_service.get_ref();
-    let key_value_service = key_value_service.get_ref();
 
     let data: &ResetPasswordConfirmData = data.deref();
 
@@ -249,21 +239,17 @@ pub async fn invoke(
         }),
     };
 
-    let key = session_service.make_session_data_key(&session, DATA_KEY);
     if is_valid {
-        key_value_service
-            .del(key)
-            .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
+        flash_service.delete_throw_http(&session, DATA_KEY)?;
     } else {
-        key_value_service
-            .set_ex(key, &form_data, 600)
-            .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
+        flash_service.save_throw_http(&session, DATA_KEY, &form_data)?;
     }
 
-    let key = session_service.make_session_data_key(&session, ALERTS_KEY);
-    key_value_service
-        .set_ex(key, &alerts, 600)
-        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
+    if alerts.len() == 0 {
+        flash_service.delete_throw_http(&session, ALERTS_KEY)?;
+    } else {
+        flash_service.save_throw_http(&session, ALERTS_KEY, &alerts)?;
+    }
 
     if is_redirect_to_reset_password {
         Ok(Redirect::to("/reset-password").see_other())

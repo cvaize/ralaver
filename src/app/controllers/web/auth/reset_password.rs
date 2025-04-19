@@ -1,17 +1,16 @@
 use crate::app::controllers::web::{DefaultForm, Field, FormData};
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
-use crate::{model_redis_impl, Session};
+use crate::{model_redis_impl, FlashService, Session};
 use crate::{
-    Alert, AppService, AuthService, EmailAddress, EmailMessage, KeyValueService, MailService,
-    RandomService, SessionService, TemplateService, Translator, TranslatorService, ALERTS_KEY,
+    Alert, AppService, AuthService, EmailAddress, EmailMessage, MailService, RandomService,
+    TemplateService, Translator, TranslatorService, ALERTS_KEY,
 };
 use actix_web::web::{Data, Form, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use std::ops::Deref;
-use crate::app::controllers::web::auth::reset_password_confirm::ResetPasswordConfirmFields;
 
 static DATA_KEY: &str = "page.reset_password.form.data";
 pub static CODE_LEN: usize = 64;
@@ -21,31 +20,25 @@ model_redis_impl!(FormData<ResetPasswordFields>);
 pub async fn show(
     req: HttpRequest,
     session: Session,
+    flash_service: Data<FlashService>,
     tmpl_service: Data<TemplateService>,
-    session_service: Data<SessionService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    key_value_service: Data<KeyValueService>,
 ) -> Result<HttpResponse, Error> {
+    let flash_service = flash_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
-    let session_service = session_service.get_ref();
     let app_service = app_service.get_ref();
     let translator_service = translator_service.get_ref();
-    let key_value_service = key_value_service.get_ref();
 
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
     let translator = Translator::new(&lang, translator_service);
 
-    let key = session_service.make_session_data_key(&session, ALERTS_KEY);
-    let alerts: Vec<Alert> = key_value_service
-        .get_del(&key)
-        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
+    let alerts: Vec<Alert> = flash_service
+        .all_throw_http(&session, ALERTS_KEY)?
         .unwrap_or(vec![]);
 
-    let key = session_service.make_session_data_key(&session, DATA_KEY);
-    let form_data: FormData<ResetPasswordFields>= key_value_service
-        .get_del(&key)
-        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
+    let form_data: FormData<ResetPasswordFields> = flash_service
+        .all_throw_http(&session, DATA_KEY)?
         .unwrap_or(FormData::empty());
 
     let form = form_data.form.unwrap_or(DefaultForm::empty());
@@ -91,23 +84,20 @@ pub async fn invoke(
     req: HttpRequest,
     session: Session,
     data: Form<ResetPasswordData>,
-    session_service: Data<SessionService>,
+    flash_service: Data<FlashService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     mail_service: Data<MailService>,
     tmpl_service: Data<TemplateService>,
     auth_service: Data<AuthService<'_>>,
     random_service: Data<RandomService>,
-    key_value_service: Data<KeyValueService>,
 ) -> Result<impl Responder, Error> {
-    let session_service = session_service.get_ref();
     let app_service = app_service.get_ref();
     let translator_service = translator_service.get_ref();
     let mail_service = mail_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let auth_service = auth_service.get_ref();
     let random_service = random_service.get_ref();
-    let key_value_service = key_value_service.get_ref();
 
     let data: &ResetPasswordData = data.deref();
 
@@ -190,7 +180,6 @@ pub async fn invoke(
     let is_valid = email_errors.len() == 0;
     if is_valid {
         let alert_str = translator.simple("auth.alert.send_email.success");
-
         alerts.push(Alert::success(alert_str));
     };
 
@@ -206,21 +195,17 @@ pub async fn invoke(
         }),
     };
 
-    let key = session_service.make_session_data_key(&session, DATA_KEY);
     if is_valid {
-        key_value_service
-            .del(key)
-            .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
+        flash_service.delete_throw_http(&session, DATA_KEY)?;
     } else {
-        key_value_service
-            .set_ex(key, &form_data, 600)
-            .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
+        flash_service.save_throw_http(&session, DATA_KEY, &form_data)?;
     }
 
-    let key = session_service.make_session_data_key(&session, ALERTS_KEY);
-    key_value_service
-        .set_ex(key, &alerts, 600)
-        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
+    if alerts.len() == 0 {
+        flash_service.delete_throw_http(&session, ALERTS_KEY)?;
+    } else {
+        flash_service.save_throw_http(&session, ALERTS_KEY, &alerts)?;
+    }
 
     Ok(Redirect::to("/reset-password").see_other())
 }

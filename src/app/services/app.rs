@@ -1,6 +1,9 @@
-use crate::{Config, LocaleService};
-use crate::{Locale, User};
 use crate::Session;
+use crate::{
+    Config,
+    LocaleService,
+};
+use crate::{Locale, User};
 use actix_web::web::Data;
 use actix_web::HttpRequest;
 use url::Url;
@@ -12,7 +15,10 @@ pub struct AppService {
 }
 
 impl AppService {
-    pub fn new(config: Data<Config>, locale_service: Data<LocaleService>) -> Self {
+    pub fn new(
+        config: Data<Config>,
+        locale_service: Data<LocaleService>,
+    ) -> Self {
         let url: Url = Url::parse(&config.get_ref().app.url).unwrap();
         Self {
             config,

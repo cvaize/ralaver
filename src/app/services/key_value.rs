@@ -1,10 +1,8 @@
-use std::any::TypeId;
 use crate::redis_connection::RedisPool;
 use actix_web::web::Data;
 use redis::{Commands, Expiry, FromRedisValue, RedisError, ToRedisArgs};
 use strum_macros::{Display, EnumString};
-use crate::helpers::print_type_of;
-// https://docs.rs/redis/latest/redis/#type-conversions
+
 
 #[derive(Debug, Clone)]
 pub struct KeyValueService {

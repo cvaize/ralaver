@@ -1,6 +1,7 @@
-use crate::Session;
+use crate::app::controllers::web::auth::login::locale;
+use crate::{log_map_err, FlashService, Session};
 use crate::{
-    Alert, AppService, AuthService, KeyValueService, SessionService, Translator, TranslatorService,
+    Alert, AppService, AuthService, Translator, TranslatorService,
     ALERTS_KEY,
 };
 use actix_web::web::Data;
@@ -10,35 +11,32 @@ use actix_web::{error, Error, HttpRequest, Responder, Result};
 pub async fn invoke(
     req: HttpRequest,
     session: Session,
+    flash_service: Data<FlashService>,
     auth_service: Data<AuthService<'_>>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    session_service: Data<SessionService>,
-    key_value_service: Data<KeyValueService>,
 ) -> Result<impl Responder, Error> {
+    let flash_service = flash_service.get_ref();
     let auth_service = auth_service.get_ref();
     let app_service = app_service.get_ref();
     let translator_service = translator_service.get_ref();
-    let session_service = session_service.get_ref();
-    let key_value_service = key_value_service.get_ref();
 
     let user = auth_service.authenticate_by_session(&session);
-    auth_service.logout_from_session(&session);
+    auth_service
+        .logout_from_session(&session)
+        .map_err(log_map_err!(
+            error::ErrorInternalServerError("AuthService error"),
+            "Logout:invoke"
+        ))?;
 
-    let (lang, _, _) = match user {
-        Ok(user) => app_service.locale(Some(&req), Some(&session), Some(&user)),
-        _ => app_service.locale(Some(&req), Some(&session), None),
-    };
+    let (lang, _, _) = locale(&user, app_service, &req, &session);
 
     let translator = Translator::new(&lang, translator_service);
     let alert_str = translator.simple("auth.alert.logout.success");
 
     let alerts = vec![Alert::success(alert_str)];
 
-    let key = session_service.make_session_data_key(&session, ALERTS_KEY);
-    key_value_service
-        .set_ex(key, &alerts, 600)
-        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
+    flash_service.save_throw_http(&session, ALERTS_KEY, &alerts)?;
 
     Ok(Redirect::to("/login").see_other())
 }

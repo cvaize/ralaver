@@ -25,3 +25,13 @@ pub fn collect_files_from_dir(dir: &Path) -> io::Result<Vec<PathBuf>> {
     }
     Ok(result)
 }
+
+#[macro_export]
+macro_rules! log_map_err {
+    ($error:expr, $message:expr) => {
+|e| {
+    log::error!("{}", format!("{} - {:}", $message, &e).as_str());
+    return $error;
+}
+    };
+}

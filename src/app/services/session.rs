@@ -56,7 +56,7 @@ impl SessionService {
                 session.user_id,
                 config.session.expires,
             )
-            .map_err(|e| SessionServiceError::KeyValueServiceFail)?;
+            .map_err(|_| SessionServiceError::KeyValueServiceFail)?;
 
         Ok(())
     }
@@ -67,7 +67,7 @@ impl SessionService {
         // TODO: Удалить все записи с session.id
         key_value_service
             .del(self.make_session_data_key_(&session.id, SESSION_USER_ID_KEY))
-            .map_err(|e| SessionServiceError::KeyValueServiceFail)?;
+            .map_err(|_| SessionServiceError::KeyValueServiceFail)?;
 
         Ok(())
     }
@@ -83,7 +83,7 @@ impl SessionService {
             Some(key) => match key.len() == config.session.key_length {
                 true => key_value_service
                     .get(self.make_session_key_to_id_key(key))
-                    .map_err(|e| SessionServiceError::KeyValueServiceFail)?,
+                    .map_err(|_| SessionServiceError::KeyValueServiceFail)?,
                 false => None,
             },
             None => None,
@@ -95,7 +95,7 @@ impl SessionService {
                     self.make_session_data_key_(id_, SESSION_USER_ID_KEY),
                     config.session.expires,
                 )
-                .map_err(|e| SessionServiceError::KeyValueServiceFail)?;
+                .map_err(|_| SessionServiceError::KeyValueServiceFail)?;
 
             if let Some(saved_user_id) = saved_user_id {
                 user_id = saved_user_id;
@@ -109,7 +109,7 @@ impl SessionService {
                 let id_ = random_service.str(config.session.id_length);
                 let value: Option<u64> = key_value_service
                     .get(self.make_session_data_key_(&id_, SESSION_USER_ID_KEY))
-                    .map_err(|e| SessionServiceError::KeyValueServiceFail)?;
+                    .map_err(|_| SessionServiceError::KeyValueServiceFail)?;
 
                 if value.is_none() {
                     key_value_service
@@ -118,7 +118,7 @@ impl SessionService {
                             user_id,
                             config.session.expires,
                         )
-                        .map_err(|e| SessionServiceError::KeyValueServiceFail)?;
+                        .map_err(|_| SessionServiceError::KeyValueServiceFail)?;
                     id = Some(id_);
                     break;
                 }
@@ -135,7 +135,7 @@ impl SessionService {
             let key_ = random_service.str(config.session.key_length);
             let value: Option<String> = key_value_service
                 .get(self.make_session_key_to_id_key(&key_))
-                .map_err(|e| SessionServiceError::KeyValueServiceFail)?;
+                .map_err(|_| SessionServiceError::KeyValueServiceFail)?;
 
             if value.is_none() {
                 new_key = Some(key_);
@@ -154,7 +154,7 @@ impl SessionService {
                 &id,
                 config.session.expires,
             )
-            .map_err(|e| SessionServiceError::KeyValueServiceFail)?;
+            .map_err(|_| SessionServiceError::KeyValueServiceFail)?;
 
         if let Some(key) = key {
             key_value_service
@@ -162,7 +162,7 @@ impl SessionService {
                     self.make_session_key_to_id_key(&key),
                     config.session.old_expires as i64,
                 )
-                .map_err(|e| SessionServiceError::KeyValueServiceFail)?;
+                .map_err(|_| SessionServiceError::KeyValueServiceFail)?;
         }
 
         Ok((new_key, Session::new(id, user_id)))

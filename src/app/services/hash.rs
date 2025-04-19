@@ -1,4 +1,3 @@
-use actix_web::web::Data;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,

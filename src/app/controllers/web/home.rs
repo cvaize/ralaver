@@ -1,31 +1,23 @@
-use crate::TemplateService;
-use crate::{Alert, AppService, KeyValueService, Session, SessionService, User, ALERTS_KEY};
+use crate::{Alert, AppService, Session, User, ALERTS_KEY};
+use crate::{FlashService, TemplateService};
 use actix_web::web::Data;
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
+use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use serde_json::json;
 
 pub async fn index(
     req: HttpRequest,
     session: Session,
     user: User,
+    flash_service: Data<FlashService>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
-    session_service: Data<SessionService>,
-    key_value_service: Data<KeyValueService>,
 ) -> Result<HttpResponse, Error> {
+    let flash_service = flash_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
-    let session_service = session_service.get_ref();
-    let key_value_service = key_value_service.get_ref();
 
-    let key = session_service.make_session_data_key(&session, ALERTS_KEY);
-    let alerts: Vec<Alert> = key_value_service
-        .get_del(&key)
-        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
-        .unwrap_or(vec![]);
-
+    let alerts: Vec<Alert> = flash_service.all_throw_http(&session, ALERTS_KEY)?.unwrap_or(vec![]);
     let dark_mode = app_service.dark_mode(&req);
-
     let (_, locale, locales) = app_service.locale(Some(&req), Some(&session), Some(&user));
 
     let ctx = json!({

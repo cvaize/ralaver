@@ -93,7 +93,7 @@ pub fn process_session(req: &mut ServiceRequest) -> Result<(String, String, i64,
 
     let (new_value, session): (String, Session) = session_service
         .renew(cookie_key)
-        .map_err(|e| error::ErrorInternalServerError("SessionService error"))?;
+        .map_err(|_| error::ErrorInternalServerError("SessionService error"))?;
 
     req.extensions_mut().insert(session);
 

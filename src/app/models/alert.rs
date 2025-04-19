@@ -1,5 +1,4 @@
 use crate::model_redis_impl;
-use redis::{FromRedisValue, RedisResult, RedisWrite, ToRedisArgs, Value};
 use serde_bare;
 use serde_derive::{Deserialize, Serialize};
 

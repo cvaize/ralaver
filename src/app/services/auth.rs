@@ -14,6 +14,7 @@ use strum_macros::{Display, EnumString};
 static RESET_PASSWORD_CODE_KEY: &str = "reset_password.code";
 
 pub struct AuthService<'a> {
+    #[allow(dead_code)]
     config: Data<Config>,
     db_pool: Data<MysqlPool>,
     hash: Data<HashService<'a>>,

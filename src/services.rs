@@ -1,8 +1,5 @@
 use crate::connections::Connections;
-use crate::{
-    AppService, AuthService, Config, HashService, KeyValueService, LocaleService,
-    MailService, RandomService, SessionService, TemplateService, TranslatorService,
-};
+use crate::{AppService, AuthService, Config, FlashService, HashService, KeyValueService, LocaleService, MailService, RandomService, SessionService, TemplateService, TranslatorService};
 use actix_web::web::Data;
 use argon2::Argon2;
 
@@ -17,6 +14,7 @@ pub fn base(config: Config) -> BaseServices {
 }
 
 pub struct AdvancedServices<'a> {
+    pub flash: Data<FlashService>,
     pub key_value: Data<KeyValueService>,
     pub translator: Data<TranslatorService>,
     pub template: Data<TemplateService>,
@@ -53,14 +51,17 @@ pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices<'a> {
         session.clone(),
         key_value.clone(),
     ));
-    let locale = Data::new(LocaleService::new(s.config.clone(), session.clone(), key_value.clone()));
-    let app = Data::new(AppService::new(
+    let locale = Data::new(LocaleService::new(
         s.config.clone(),
-        locale.clone(),
+        session.clone(),
+        key_value.clone(),
     ));
+    let app = Data::new(AppService::new(s.config.clone(), locale.clone()));
     let mail = Data::new(MailService::new(s.config.clone(), c.smtp.clone()));
+    let flash = Data::new(FlashService::new(key_value.clone(), session.clone()));
 
     AdvancedServices {
+        flash,
         key_value,
         translator,
         template,
@@ -77,6 +78,7 @@ pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices<'a> {
 #[allow(dead_code)]
 pub struct Services<'a> {
     pub config: Data<Config>,
+    pub flash: Data<FlashService>,
     pub key_value: Data<KeyValueService>,
     pub translator: Data<TranslatorService>,
     pub template: Data<TemplateService>,
@@ -92,6 +94,7 @@ pub struct Services<'a> {
 pub fn join_to_all(base: BaseServices, advanced: AdvancedServices) -> Services {
     Services {
         config: base.config,
+        flash: advanced.flash,
         key_value: advanced.key_value,
         translator: advanced.translator,
         template: advanced.template,

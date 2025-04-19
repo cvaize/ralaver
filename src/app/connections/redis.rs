@@ -3,6 +3,8 @@ use r2d2::Pool;
 use redis::{Client, ErrorKind, RedisError, Value};
 use strum_macros::{Display, EnumString};
 
+// https://docs.rs/redis/latest/redis/#type-conversions
+
 pub type RedisPool = Pool<Client>;
 
 #[derive(Debug, Clone, Copy, Display, EnumString)]
