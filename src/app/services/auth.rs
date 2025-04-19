@@ -11,6 +11,7 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
 use serde_derive::Deserialize;
 use strum_macros::{Display, EnumString};
 
+
 static RESET_PASSWORD_CODE_KEY: &str = "reset_password.code";
 
 pub struct AuthService<'a> {

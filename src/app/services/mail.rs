@@ -7,6 +7,7 @@ use crate::{Config};
 use actix_web::web::Data;
 use strum_macros::{Display, EnumString};
 
+
 pub struct MailService {
     config: Data<Config>,
     mailer: Data<LettreSmtpTransport>,

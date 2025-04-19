@@ -3,6 +3,7 @@ use actix_web::web::Data;
 use strum_macros::Display;
 use strum_macros::EnumString;
 
+
 #[derive(Debug, Clone)]
 pub struct SessionService {
     config: Data<Config>,
@@ -74,6 +75,8 @@ impl SessionService {
 
     pub fn renew(&self, key: Option<String>) -> Result<(String, Session), SessionServiceError> {
         let key_value_service = self.key_value_service.get_ref();
+        let mut key_value_conn = key_value_service.get_connection()
+            .map_err(|_| SessionServiceError::KeyValueServiceFail)?;
         let random_service = self.random_service.get_ref();
         let config = self.config.get_ref();
         let mut user_id: u64 = 0;
@@ -81,7 +84,7 @@ impl SessionService {
         let mut id: Option<String> = match &key {
             // If there are problems with cookies, it is worth checking the comparison of string lengths in this place
             Some(key) => match key.len() == config.session.key_length {
-                true => key_value_service
+                true => key_value_conn
                     .get(self.make_session_key_to_id_key(key))
                     .map_err(|_| SessionServiceError::KeyValueServiceFail)?,
                 false => None,
@@ -90,7 +93,7 @@ impl SessionService {
         };
 
         if let Some(id_) = &id {
-            let saved_user_id: Option<u64> = key_value_service
+            let saved_user_id: Option<u64> = key_value_conn
                 .get_ex(
                     self.make_session_data_key_(id_, SESSION_USER_ID_KEY),
                     config.session.expires,
@@ -107,12 +110,12 @@ impl SessionService {
         if id.is_none() {
             for _ in 0..10 {
                 let id_ = random_service.str(config.session.id_length);
-                let value: Option<u64> = key_value_service
+                let value: Option<u64> = key_value_conn
                     .get(self.make_session_data_key_(&id_, SESSION_USER_ID_KEY))
                     .map_err(|_| SessionServiceError::KeyValueServiceFail)?;
 
                 if value.is_none() {
-                    key_value_service
+                    key_value_conn
                         .set_ex(
                             self.make_session_data_key_(&id_, SESSION_USER_ID_KEY),
                             user_id,
@@ -133,7 +136,7 @@ impl SessionService {
         let mut new_key: Option<String> = None;
         for _ in 0..10 {
             let key_ = random_service.str(config.session.key_length);
-            let value: Option<String> = key_value_service
+            let value: Option<String> = key_value_conn
                 .get(self.make_session_key_to_id_key(&key_))
                 .map_err(|_| SessionServiceError::KeyValueServiceFail)?;
 
@@ -148,7 +151,7 @@ impl SessionService {
         }
         let new_key: String = new_key.unwrap();
 
-        key_value_service
+        key_value_conn
             .set_ex(
                 self.make_session_key_to_id_key(&new_key),
                 &id,
@@ -157,7 +160,7 @@ impl SessionService {
             .map_err(|_| SessionServiceError::KeyValueServiceFail)?;
 
         if let Some(key) = key {
-            key_value_service
+            key_value_conn
                 .expire(
                     self.make_session_key_to_id_key(&key),
                     config.session.old_expires as i64,
