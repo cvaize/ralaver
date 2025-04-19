@@ -49,7 +49,7 @@ pub async fn show(
 
     let key = session_service.make_session_data_key(&session, DATA_KEY);
     let form_data: FormData<DefaultFields> = key_value_service
-        .get_del(key)
+        .get_del(&key)
         .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
         .unwrap_or(FormData::empty());
 
@@ -60,7 +60,7 @@ pub async fn show(
 
     let key = session_service.make_session_data_key(&session, ALERTS_KEY);
     let alerts: Vec<Alert> = key_value_service
-        .get_del(key)
+        .get_del(&key)
         .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
         .unwrap_or(vec![]);
 
@@ -145,7 +145,7 @@ pub async fn invoke(
     let mut alerts: Vec<Alert> = vec![];
     let mut form_errors: Vec<String> = vec![];
 
-    let is_valid = email_errors.len() == 0 && password_errors.len() == 0;
+    let mut is_valid = email_errors.len() == 0 && password_errors.len() == 0;
 
     if is_valid {
         let credentials = Credentials {
@@ -174,6 +174,7 @@ pub async fn invoke(
             _ => {
                 let alert_str = translator.simple("auth.alert.sign_in.fail");
                 form_errors.push(alert_str);
+                is_valid = false;
             }
         };
     };

@@ -3,7 +3,7 @@ use crate::app::connections::smtp::{
     LettreSmtpTransport, LettreTransport,
 };
 use crate::config::MailSmtpConfig;
-use crate::{Config, Log};
+use crate::{Config};
 use actix_web::web::Data;
 use strum_macros::{Display, EnumString};
 
@@ -26,12 +26,12 @@ impl MailService {
     pub fn send_email(&self, data: &EmailMessage) -> Result<(), MailServiceError> {
         let mailer = &self.mailer;
         let message: LettreMessage = data.build(&self.config.get_ref().mail.smtp).map_err(|e| {
-            Log::error(format!("MailService::send_email - {:}", &e).as_str());
+            log::error!("{}",format!("MailService::send_email - {:}", &e).as_str());
             e
         })?;
 
         mailer.send(&message).map_err(|e| {
-            Log::error(format!("MailService::send_email - {:}", &e).as_str());
+            log::error!("{}",format!("MailService::send_email - {:}", &e).as_str());
             MailServiceError::SendFail
         })?;
 

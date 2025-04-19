@@ -47,13 +47,13 @@ pub async fn show(
 
     let key = session_service.make_session_data_key(&session, ALERTS_KEY);
     let alerts: Vec<Alert> = key_value_service
-        .get_del(key)
+        .get_del(&key)
         .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
         .unwrap_or(vec![]);
 
     let key = session_service.make_session_data_key(&session, DATA_KEY);
     let form_data: FormData<ResetPasswordConfirmFields>= key_value_service
-        .get_del(key)
+        .get_del(&key)
         .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
         .unwrap_or(FormData::empty());
 

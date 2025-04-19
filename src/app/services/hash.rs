@@ -4,7 +4,6 @@ use argon2::{
     Argon2,
 };
 use strum_macros::{Display, EnumString};
-use crate::Log;
 
 #[derive(Debug)]
 pub struct HashService<'a> {
@@ -33,7 +32,7 @@ impl<'a> HashService<'a> {
             .argon2
             .hash_password(password.as_bytes(), &salt)
             .map_err(|e| {
-                Log::error(format!("HashService::hash_password - {} - {:}", password, &e).as_str());
+                log::error!("{}",format!("HashService::hash_password - {} - {:}", password, &e).as_str());
                 HashServiceError::HashPasswordFail
             })?
             .to_string())

@@ -1,5 +1,4 @@
 use crate::config::RedisDbConfig;
-use crate::Log;
 use r2d2::Pool;
 use redis::{Client, ErrorKind, RedisError, Value};
 use strum_macros::{Display, EnumString};
@@ -16,16 +15,16 @@ pub enum RedisConnectionError {
 pub fn get_connection_pool(
     config: &RedisDbConfig,
 ) -> Result<RedisPool, RedisConnectionError> {
-    Log::info("Connecting to Redis database.");
+    log::info!("{}","Connecting to Redis database.");
     let database_url = config.url.to_owned();
 
     let client = Client::open(database_url).map_err(|e| {
-        Log::error(format!("RedisConnectionError::CreateClientFail - {:}", &e).as_str());
+        log::error!("{}",format!("RedisConnectionError::CreateClientFail - {:}", &e).as_str());
         RedisConnectionError::CreateClientFail
     })?;
 
     Pool::builder().build(client).map_err(|e| {
-        Log::error(format!("RedisConnectionError::CreatePoolFail - {:}", &e).as_str());
+        log::error!("{}",format!("RedisConnectionError::CreatePoolFail - {:}", &e).as_str());
         RedisConnectionError::CreatePoolFail
     })
 }

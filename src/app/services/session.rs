@@ -34,14 +34,14 @@ impl SessionService {
 
     pub fn make_session_data_key(&self, session: &Session, value_name: &str) -> String {
         format!(
-            "{}.{}.{}, {}",
+            "{}.{}.{}.{}",
             SESSION_KEY, SESSION_DATA_KEY, &session.id, value_name
         )
     }
 
     fn make_session_data_key_(&self, session_id: &str, value_name: &str) -> String {
         format!(
-            "{}.{}.{}, {}",
+            "{}.{}.{}.{}",
             SESSION_KEY, SESSION_DATA_KEY, session_id, value_name
         )
     }

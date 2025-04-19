@@ -41,7 +41,7 @@ async fn preparation() -> (Connections, Services<'static>) {
 async fn main() -> std::io::Result<()> {
     let (_, all_services) = preparation().await;
 
-    Log::info("Starting HTTP server at http://0.0.0.0:8080");
+    log::info!("{}","Starting HTTP server at http://0.0.0.0:8080");
 
     HttpServer::new(move || {
         App::new()
