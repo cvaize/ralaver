@@ -4,11 +4,11 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
+use crate::{model_redis_impl, Session};
 use crate::{
-    Alert, AlertService, AppService, AuthService, SessionService, TemplateService, Translator,
-    TranslatorService,
+    Alert, AppService, AuthService, KeyValueService, SessionService, TemplateService,
+    Translator, TranslatorService, ALERTS_KEY,
 };
-use actix_session::Session;
 use actix_web::web::{Data, Form, Query, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
@@ -16,6 +16,8 @@ use serde_json::json;
 use std::ops::Deref;
 
 static DATA_KEY: &str = "page.reset_password_confirm.form.data";
+
+model_redis_impl!(FormData<ResetPasswordConfirmFields>);
 
 #[derive(Deserialize)]
 pub struct ResetPasswordConfirmQuery {
@@ -26,21 +28,33 @@ pub struct ResetPasswordConfirmQuery {
 pub async fn show(
     req: HttpRequest,
     session: Session,
-    tmpl: Data<TemplateService>,
+    query: Query<ResetPasswordConfirmQuery>,
+    tmpl_service: Data<TemplateService>,
     session_service: Data<SessionService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    query: Query<ResetPasswordConfirmQuery>,
+    key_value_service: Data<KeyValueService>,
 ) -> Result<HttpResponse, Error> {
+    let tmpl_service = tmpl_service.get_ref();
+    let session_service = session_service.get_ref();
+    let app_service = app_service.get_ref();
+    let translator_service = translator_service.get_ref();
+    let key_value_service = key_value_service.get_ref();
+
     let query = query.into_inner();
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
-    let translator = Translator::new(&lang, translator_service.get_ref());
+    let translator = Translator::new(&lang, translator_service);
 
-    let alerts = app_service.get_ref().alerts(&session);
+    let key = session_service.make_session_data_key(&session, ALERTS_KEY);
+    let alerts: Vec<Alert> = key_value_service
+        .get_del(key)
+        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
+        .unwrap_or(vec![]);
 
-    let form_data: FormData<ResetPasswordConfirmFields> = session_service
-        .get_and_remove(&session, DATA_KEY)
-        .map_err(|_| error::ErrorInternalServerError("Session error"))?
+    let key = session_service.make_session_data_key(&session, DATA_KEY);
+    let form_data: FormData<ResetPasswordConfirmFields>= key_value_service
+        .get_del(key)
+        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
         .unwrap_or(FormData::empty());
 
     let form = form_data.form.unwrap_or(DefaultForm::empty());
@@ -74,7 +88,7 @@ pub async fn show(
         "locale": locale,
         "locales": locales,
         "alerts": alerts,
-        "dark_mode": app_service.get_ref().dark_mode(&req),
+        "dark_mode": app_service.dark_mode(&req),
         "back": {
             "label": translator.simple("auth.page.reset_password_confirm.back.label"),
             "href": "/reset-password",
@@ -119,27 +133,33 @@ pub async fn show(
         },
     });
 
-    let s = tmpl.get_ref().render_throw_http("pages/auth.hbs", &ctx)?;
+    let s = tmpl_service.render_throw_http("pages/auth.hbs", &ctx)?;
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }
 
 pub async fn invoke(
     req: HttpRequest,
     session: Session,
-    alert_service: Data<AlertService>,
-    session_service: Data<SessionService>,
     data: Form<ResetPasswordConfirmData>,
+    session_service: Data<SessionService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     auth_service: Data<AuthService<'_>>,
+    key_value_service: Data<KeyValueService>,
 ) -> Result<impl Responder, Error> {
+    let session_service = session_service.get_ref();
+    let app_service = app_service.get_ref();
+    let translator_service = translator_service.get_ref();
+    let auth_service = auth_service.get_ref();
+    let key_value_service = key_value_service.get_ref();
+
     let data: &ResetPasswordConfirmData = data.deref();
 
     let mut alerts: Vec<Alert> = vec![];
     let form_errors: Vec<String> = vec![];
 
     let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
-    let translator = Translator::new(&lang, translator_service.get_ref());
+    let translator = Translator::new(&lang, translator_service);
     let email_str = translator.simple("auth.page.reset_password_confirm.form.fields.email.label");
     let password_str =
         translator.simple("auth.page.reset_password_confirm.form.fields.password.label");
@@ -195,7 +215,6 @@ pub async fn invoke(
             is_redirect_to_login = true;
 
             auth_service
-                .get_ref()
                 .update_password_by_email(email, password)
                 .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
         } else {
@@ -230,19 +249,21 @@ pub async fn invoke(
         }),
     };
 
+    let key = session_service.make_session_data_key(&session, DATA_KEY);
     if is_valid {
-        session_service.get_ref().remove(&session, DATA_KEY);
+        key_value_service
+            .del(key)
+            .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
     } else {
-        session_service
-            .get_ref()
-            .insert(&session, DATA_KEY, &form_data)
-            .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+        key_value_service
+            .set_ex(key, &form_data, 600)
+            .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
     }
 
-    alert_service
-        .get_ref()
-        .insert_into_session(&session, &alerts)
-        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+    let key = session_service.make_session_data_key(&session, ALERTS_KEY);
+    key_value_service
+        .set_ex(key, &alerts, 600)
+        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
 
     if is_redirect_to_reset_password {
         Ok(Redirect::to("/reset-password").see_other())

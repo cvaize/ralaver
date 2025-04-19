@@ -5,6 +5,7 @@ pub static CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                             abcdefghijklmnopqrstuvwxyz\
                             0123456789";
 
+#[derive(Debug, Clone)]
 pub struct RandomService {}
 
 impl RandomService {

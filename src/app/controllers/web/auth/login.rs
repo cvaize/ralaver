@@ -2,31 +2,41 @@ use crate::app::controllers::web::{DefaultFields, DefaultForm, Field, FormData};
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
+use crate::{model_redis_impl, Session};
 use crate::{
-    Alert, AlertService, AppService, AuthService, Credentials, SessionService, TemplateService,
-    Translator, TranslatorService,
+    Alert, AppService, AuthService, Credentials, KeyValueService, SessionService, TemplateService,
+    Translator, TranslatorService, ALERTS_KEY,
 };
-use actix_session::Session;
 use actix_web::web::Data;
 use actix_web::web::Form;
 use actix_web::web::Redirect;
-use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
+use actix_web::{error, Error, HttpMessage, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::Deserialize;
 use serde_json::json;
 use std::ops::Deref;
 
 static DATA_KEY: &str = "page.login.form.data";
 
+model_redis_impl!(FormData<DefaultFields>);
+
 pub async fn show(
     req: HttpRequest,
     session: Session,
-    auth: Data<AuthService<'_>>,
-    tmpl: Data<TemplateService>,
+    auth_service: Data<AuthService<'_>>,
+    tmpl_service: Data<TemplateService>,
     session_service: Data<SessionService>,
+    key_value_service: Data<KeyValueService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
 ) -> Result<HttpResponse, Error> {
-    let user = auth.get_ref().authenticate_by_session(&session);
+    let auth_service = auth_service.get_ref();
+    let tmpl_service = tmpl_service.get_ref();
+    let session_service = session_service.get_ref();
+    let key_value_service = key_value_service.get_ref();
+    let app_service = app_service.get_ref();
+    let translator_service = translator_service.get_ref();
+
+    let user = auth_service.authenticate_by_session(&session);
 
     if user.is_ok() {
         return Ok(HttpResponse::SeeOther()
@@ -35,17 +45,24 @@ pub async fn show(
     }
 
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
-    let translator = Translator::new(&lang, translator_service.get_ref());
+    let translator = Translator::new(&lang, translator_service);
 
-    let form_data: FormData<DefaultFields> = session_service
-        .get_and_remove(&session, DATA_KEY)
-        .map_err(|_| error::ErrorInternalServerError("Session error"))?
+    let key = session_service.make_session_data_key(&session, DATA_KEY);
+    let form_data: FormData<DefaultFields> = key_value_service
+        .get_del(key)
+        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
         .unwrap_or(FormData::empty());
 
     let form = form_data.form.unwrap_or(DefaultForm::empty());
     let fields = form.fields.unwrap_or(DefaultFields::empty());
     let email = fields.email.unwrap_or(Field::empty());
     let password = fields.password.unwrap_or(Field::empty());
+
+    let key = session_service.make_session_data_key(&session, ALERTS_KEY);
+    let alerts: Vec<Alert> = key_value_service
+        .get_del(key)
+        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
+        .unwrap_or(vec![]);
 
     let ctx = json!({
         "title": translator.simple("auth.page.login.title"),
@@ -84,30 +101,36 @@ pub async fn show(
             },
             "errors": form.errors,
         },
-        "alerts": app_service.get_ref().alerts(&session),
-        "dark_mode": app_service.get_ref().dark_mode(&req)
+        "alerts": alerts,
+        "dark_mode": app_service.dark_mode(&req)
     });
 
-    let s = tmpl.render_throw_http("pages/auth.hbs", &ctx)?;
+    let s = tmpl_service.render_throw_http("pages/auth.hbs", &ctx)?;
 
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }
 
 pub async fn invoke(
     req: HttpRequest,
-    session: Session,
-    alert_service: Data<AlertService>,
-    session_service: Data<SessionService>,
+    mut session: Session,
     data: Form<LoginData>,
-    auth: Data<AuthService<'_>>,
+    session_service: Data<SessionService>,
+    auth_service: Data<AuthService<'_>>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
+    key_value_service: Data<KeyValueService>,
 ) -> Result<impl Responder, Error> {
+    let auth_service = auth_service.get_ref();
+    let app_service = app_service.get_ref();
+    let session_service = session_service.get_ref();
+    let translator_service = translator_service.get_ref();
+    let key_value_service = key_value_service.get_ref();
+
     let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
     let mut is_redirect_login = true;
     let data: &LoginData = data.deref();
 
-    let translator = Translator::new(&lang, translator_service.get_ref());
+    let translator = Translator::new(&lang, translator_service);
 
     let email_str = translator.simple("auth.page.login.form.fields.email.label");
     let password_str = translator.simple("auth.page.login.form.fields.password.label");
@@ -129,19 +152,21 @@ pub async fn invoke(
             email: data.email.clone().unwrap(),
             password: data.password.clone().unwrap(),
         };
-        let auth_result = auth.authenticate_by_credentials(&credentials);
+        let auth_result = auth_service.authenticate_by_credentials(&credentials);
 
         match auth_result {
             Ok(user_id) => {
-                auth.insert_user_id_into_session(&session, user_id)
-                    .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+                auth_service.save_user_id_into_session(&mut session, user_id)
+                    .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
+
                 is_redirect_login = false;
-                let user = auth.get_ref().authenticate_by_session(&session);
+                let user = auth_service.authenticate_by_session(&session);
+
                 let (lang, _, _) = match user {
                     Ok(user) => app_service.locale(Some(&req), Some(&session), Some(&user)),
                     _ => app_service.locale(Some(&req), Some(&session), None),
                 };
-                let translator = Translator::new(&lang, translator_service.get_ref());
+                let translator = Translator::new(&lang, translator_service);
                 let alert_str = translator.simple("auth.alert.sign_in.success");
 
                 alerts.push(Alert::success(alert_str));
@@ -169,19 +194,22 @@ pub async fn invoke(
         }),
     };
 
+    let key = session_service.make_session_data_key(&session, DATA_KEY);
     if is_valid {
-        session_service.get_ref().remove(&session, DATA_KEY);
+        key_value_service
+            .del(key)
+            .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
     } else {
-        session_service
-            .get_ref()
-            .insert(&session, DATA_KEY, &form_data)
-            .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+        key_value_service
+            .set_ex(key, &form_data, 600)
+            .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
     }
 
-    alert_service
-        .get_ref()
-        .insert_into_session(&session, &alerts)
-        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+    let key = session_service.make_session_data_key(&session, ALERTS_KEY);
+
+    key_value_service
+        .set_ex(key, &alerts, 600)
+        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
 
     if is_redirect_login {
         Ok(Redirect::to("/login").see_other())

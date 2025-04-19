@@ -1,6 +1,6 @@
-use crate::{Alert, AlertService, Config, LocaleService};
+use crate::{Config, LocaleService};
 use crate::{Locale, User};
-use actix_session::Session;
+use crate::Session;
 use actix_web::web::Data;
 use actix_web::HttpRequest;
 use url::Url;
@@ -9,17 +9,15 @@ pub struct AppService {
     config: Data<Config>,
     url: Url,
     locale_service: Data<LocaleService>,
-    alert_service: Data<AlertService>,
 }
 
 impl AppService {
-    pub fn new(config: Data<Config>, locale_service: Data<LocaleService>, alert_service: Data<AlertService>) -> Self {
+    pub fn new(config: Data<Config>, locale_service: Data<LocaleService>) -> Self {
         let url: Url = Url::parse(&config.get_ref().app.url).unwrap();
         Self {
             config,
             url,
             locale_service,
-            alert_service,
         }
     }
 
@@ -42,10 +40,6 @@ impl AppService {
     pub fn dark_mode(&self, req: &HttpRequest) -> Option<String> {
         req.cookie(&self.config.get_ref().app.dark_mode_cookie_key)
             .map(|c| c.value().to_owned())
-    }
-
-    pub fn alerts(&self, session: &Session) -> Vec<Alert> {
-        self.alert_service.get_and_remove_from_session(session).unwrap_or(Vec::new())
     }
 
     pub fn url(&self) -> &Url {

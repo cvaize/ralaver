@@ -1,32 +1,16 @@
 #[derive(Debug, Clone)]
-pub struct LogService {}
+pub struct Log {}
 
-impl LogService {
-    pub fn new() -> Self {
-        Self {}
-    }
-
-    pub fn info(&self, message: &str) {
-        Self::print_info(message);
-    }
-
-    pub fn warn(&self, message: &str) {
-        Self::print_warn(message);
-    }
-
-    pub fn error(&self, message: &str) {
-        Self::print_error(message);
-    }
-
-    pub fn print_info(message: &str) {
+impl Log {
+    pub fn info(message: &str) {
         log::info!("{}", message);
     }
 
-    pub fn print_warn(message: &str) {
+    pub fn warn(message: &str) {
         log::warn!("{}", message);
     }
 
-    pub fn print_error(message: &str) {
+    pub fn error(message: &str) {
         log::error!("{}", message);
     }
 }

@@ -17,20 +17,21 @@ pub async fn switch(
     data: Form<LocaleData>,
     config: Data<Config>,
 ) -> Result<HttpResponse, Error> {
+    let config = config.get_ref();
     if data.locale.is_none() {
         return Err(error::ErrorBadRequest("Validate error"));
     }
 
     let locale = match &data.locale {
         Some(l) => l.to_string(),
-        _ => config.get_ref().app.locale.to_string(),
+        _ => config.app.locale.to_string(),
     };
 
     if !MinMaxLengthString::apply(&locale, 1, 6) {
         return Err(error::ErrorBadRequest("Validate error"));
     }
 
-    let c = Cookie::build(&config.get_ref().app.locale_cookie_key, locale)
+    let c = Cookie::build(&config.app.locale_cookie_key, locale)
         .path("/")
         .http_only(true)
         .finish();

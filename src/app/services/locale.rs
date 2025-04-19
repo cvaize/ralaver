@@ -1,15 +1,18 @@
 use crate::app::validator::rules::length::MinMaxLengthString;
-use crate::{Config, Locale, SessionService, User};
-use actix_session::Session;
+use crate::{Config, KeyValueService, Locale, SessionService, User};
+use crate::Session;
 use actix_web::web::Data;
 use actix_web::HttpRequest;
 use http::header::ACCEPT_LANGUAGE;
 use std::collections::HashMap;
 
+static SESSION_LOCALE_KEY: &str = "locale";
+
 #[derive(Debug)]
 pub struct LocaleService {
     config: Data<Config>,
     session_service: Data<SessionService>,
+    key_value_service: Data<KeyValueService>,
     locales: HashMap<String, Locale>,
     locales_codes: Vec<String>,
     locales_without_current: HashMap<String, Vec<Locale>>,
@@ -17,7 +20,7 @@ pub struct LocaleService {
 }
 
 impl LocaleService {
-    pub fn new(config: Data<Config>, session_service: Data<SessionService>) -> Self {
+    pub fn new(config: Data<Config>, session_service: Data<SessionService>, key_value_service: Data<KeyValueService>) -> Self {
         let locales_vec = vec![
             Locale {
                 code: "en".to_string(),
@@ -47,6 +50,7 @@ impl LocaleService {
         Self {
             config,
             session_service,
+            key_value_service,
             locales,
             locales_codes,
             locales_vec,
@@ -112,10 +116,8 @@ impl LocaleService {
             }
         }
         if let Some(session) = session {
-            let locale = self
-                .session_service
-                .get_ref()
-                .get(session, &self.config.get_ref().app.locale_session_key);
+            let key = self.session_service.get_ref().make_session_data_key(session, SESSION_LOCALE_KEY);
+            let locale = self.key_value_service.get_ref().get(key);
             if let Ok(Some(locale)) = locale {
                 if MinMaxLengthString::apply(&locale, 1, 6) {
                     return self.exists_locale_code_or_default(locale);

@@ -1,5 +1,5 @@
+use crate::Session;
 use crate::AuthService;
-use actix_session::{Session, SessionExt};
 use actix_utils::future::{ready, Ready};
 use actix_web::dev::Payload;
 use actix_web::web::Data;
@@ -41,12 +41,16 @@ impl FromRequest for User {
     type Future = Ready<Result<User, Error>>;
 
     #[inline]
-    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-        let session: Session = req.get_session();
+    fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
+        let session: Result<Session, Error> = Session::from_request(req, payload).into_inner();
+        if session.is_err() {
+            return ready(Err(error::ErrorInternalServerError("Session error in User::from_request")));
+        }
+        let session = session.unwrap();
 
         let auth: Option<&Data<AuthService>> = req.app_data::<Data<AuthService>>();
         if auth.is_none() {
-            return ready(Err(error::ErrorInternalServerError("AuthService error")));
+            return ready(Err(error::ErrorInternalServerError("AuthService error in User::from_request")));
         }
         let auth_service = auth.unwrap();
 

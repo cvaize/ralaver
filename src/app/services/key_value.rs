@@ -1,18 +1,20 @@
+use std::any::TypeId;
 use crate::redis_connection::RedisPool;
-use crate::LogService;
+use crate::Log;
 use actix_web::web::Data;
-use redis::{Commands, FromRedisValue, ToRedisArgs};
+use redis::{Commands, Expiry, FromRedisValue, RedisError, ToRedisArgs};
 use strum_macros::{Display, EnumString};
+use crate::helpers::print_type_of;
 // https://docs.rs/redis/latest/redis/#type-conversions
 
+#[derive(Debug, Clone)]
 pub struct KeyValueService {
     pool: Data<RedisPool>,
-    log_service: Data<LogService>,
 }
 
 impl KeyValueService {
-    pub fn new(pool: Data<RedisPool>, log_service: Data<LogService>) -> Self {
-        Self { pool, log_service }
+    pub fn new(pool: Data<RedisPool>) -> Self {
+        Self { pool }
     }
 
     pub fn get<K: ToRedisArgs, V: FromRedisValue>(
@@ -20,37 +22,121 @@ impl KeyValueService {
         key: K,
     ) -> Result<Option<V>, KeyValueServiceError> {
         let mut conn = self.pool.get_ref().get().map_err(|e| {
-            self.log_service
-                .get_ref()
-                .error(format!("KeyValueService::get - {:}", &e).as_str());
+            Log::error(format!("KeyValueService::ConnectFail - {:}", &e).as_str());
             KeyValueServiceError::ConnectFail
         })?;
         let value = conn.get(key).map_err(|e| {
-            self.log_service
-                .get_ref()
-                .error(format!("KeyValueService::get - {:}", &e).as_str());
+            Log::error(format!("KeyValueService::get - {:}", &e).as_str());
             KeyValueServiceError::GetFail
         })?;
         Ok(value)
     }
 
-    pub fn set<K: ToRedisArgs, V: ToRedisArgs, RV: FromRedisValue>(
+    pub fn get_ex<K: ToRedisArgs, V: FromRedisValue>(
+        &self,
+        key: K,
+        seconds: u64,
+    ) -> Result<Option<V>, KeyValueServiceError> {
+        let mut conn = self.pool.get_ref().get().map_err(|e| {
+            Log::error(format!("KeyValueService::ConnectFail - {:}", &e).as_str());
+            KeyValueServiceError::ConnectFail
+        })?;
+        let value = conn.get_ex(key, Expiry::EX(seconds)).map_err(|e| {
+            Log::error(format!("KeyValueService::get_ex - {:}", &e).as_str());
+            KeyValueServiceError::GetExFail
+        })?;
+        Ok(value)
+    }
+
+    pub fn get_del<K: ToRedisArgs, V: FromRedisValue>(
+        &self,
+        key: K,
+    ) -> Result<Option<V>, KeyValueServiceError> {
+        let mut conn = self.pool.get_ref().get().map_err(|e| {
+            Log::error(format!("KeyValueService::ConnectFail - {:}", &e).as_str());
+            KeyValueServiceError::ConnectFail
+        })?;
+        let value = conn.get_del(key).map_err(|e| {
+            Log::error(format!("KeyValueService::get_del - {:}", &e).as_str());
+            KeyValueServiceError::GetDelFail
+        })?;
+        Ok(value)
+    }
+
+    pub fn set<K: ToRedisArgs, V: ToRedisArgs>(
         &self,
         key: K,
         value: V,
-    ) -> Result<RV, KeyValueServiceError> {
+    ) -> Result<(), KeyValueServiceError> {
         let mut conn = self.pool.get_ref().get().map_err(|e| {
-            self.log_service
-                .get_ref()
-                .error(format!("KeyValueService::set - {:}", &e).as_str());
+            Log::error(format!("KeyValueService::ConnectFail - {:}", &e).as_str());
             KeyValueServiceError::ConnectFail
         })?;
-        Ok(conn.set(key, value).map_err(|e| {
-            self.log_service
-                .get_ref()
-                .error(format!("KeyValueService::set - {:}", &e).as_str());
-            KeyValueServiceError::SetFail
-        })?)
+        // conn.set(&key, value).map_err(|e| {
+        //     Log::error(format!("KeyValueService::set - {:}", &e).as_str());
+        //     KeyValueServiceError::SetFail
+        // })?;
+
+        let result: Result<String, RedisError> = conn.set(&key, value);
+        if let Err(e) = result {
+            Log::error(format!("KeyValueService::set - {:}", &e).as_str());
+            if e.to_string() == "An error was signalled by the server - ResponseError: wrong number of arguments for 'set' command" {
+                self.del(&key)?;
+            } else {
+                return Err(KeyValueServiceError::SetFail);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn set_ex<K: ToRedisArgs, V: ToRedisArgs>(
+        &self,
+        key: K,
+        value: V,
+        seconds: u64,
+    ) -> Result<(), KeyValueServiceError> {
+        let mut conn = self.pool.get_ref().get().map_err(|e| {
+            Log::error(format!("KeyValueService::ConnectFail - {:}", &e).as_str());
+            KeyValueServiceError::ConnectFail
+        })?;
+        let result: Result<String, RedisError> = conn.set_ex(&key, value, seconds);
+        if let Err(e) = result {
+            Log::error(format!("KeyValueService::set_ex - {:}", &e).as_str());
+            if e.to_string() == "An error was signalled by the server - ResponseError: wrong number of arguments for 'setex' command" {
+                self.del(&key)?;
+            } else {
+                return Err(KeyValueServiceError::SetExFail);
+            }
+        }
+        // conn.set_ex(key, value, seconds).map_err(|e| {
+        //     Log::error(format!("KeyValueService::set_ex - {:}", &e).as_str());
+        //     KeyValueServiceError::SetExFail
+        // })?;
+        Ok(())
+    }
+
+    pub fn expire<K: ToRedisArgs>(&self, key: K, seconds: i64) -> Result<(), KeyValueServiceError> {
+        let mut conn = self.pool.get_ref().get().map_err(|e| {
+            Log::error(format!("KeyValueService::ConnectFail - {:}", &e).as_str());
+            KeyValueServiceError::ConnectFail
+        })?;
+        conn.expire(key, seconds).map_err(|e| {
+            Log::error(format!("KeyValueService::expire - {:}", &e).as_str());
+            KeyValueServiceError::ExpireFail
+        })?;
+        Ok(())
+    }
+
+    pub fn del<K: ToRedisArgs>(&self, key: K) -> Result<(), KeyValueServiceError> {
+        let mut conn = self.pool.get_ref().get().map_err(|e| {
+            Log::error(format!("KeyValueService::ConnectFail - {:}", &e).as_str());
+            KeyValueServiceError::ConnectFail
+        })?;
+        conn.del(key).map_err(|e| {
+            Log::error(format!("KeyValueService::del - {:}", &e).as_str());
+            KeyValueServiceError::DelFail
+        })?;
+        Ok(())
     }
 }
 
@@ -58,5 +144,10 @@ impl KeyValueService {
 pub enum KeyValueServiceError {
     ConnectFail,
     SetFail,
+    SetExFail,
     GetFail,
+    GetExFail,
+    GetDelFail,
+    DelFail,
+    ExpireFail,
 }

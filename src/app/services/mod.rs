@@ -1,4 +1,3 @@
-mod alert;
 mod app;
 mod auth;
 mod mail;
@@ -12,7 +11,6 @@ mod template;
 mod translator;
 mod user;
 
-pub use self::alert::{*};
 pub use self::app::{*};
 pub use self::auth::{*};
 pub use self::mail::{*};

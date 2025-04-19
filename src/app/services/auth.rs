@@ -1,11 +1,8 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
-use crate::{
-    Config, KeyValueService, KeyValueServiceError, LogService, NewUser, PrivateUserData,
-    SessionService, SessionServiceError, User,
-};
+use crate::{Config, KeyValueService, KeyValueServiceError, Log, NewUser, PrivateUserData, User};
 use crate::{HashService, MysqlPool};
-use actix_session::Session;
+use crate::{Session, SessionService};
 use actix_web::web::Data;
 #[allow(unused_imports)]
 use diesel::prelude::*;
@@ -20,9 +17,8 @@ pub struct AuthService<'a> {
     config: Data<Config>,
     db_pool: Data<MysqlPool>,
     hash: Data<HashService<'a>>,
-    key_value_service: Data<KeyValueService>,
-    log_service: Data<LogService>,
     session_service: Data<SessionService>,
+    key_value_service: Data<KeyValueService>,
 }
 
 impl<'a> AuthService<'a> {
@@ -30,76 +26,45 @@ impl<'a> AuthService<'a> {
         config: Data<Config>,
         db_pool: Data<MysqlPool>,
         hash: Data<HashService<'a>>,
-        key_value_service: Data<KeyValueService>,
-        log_service: Data<LogService>,
         session_service: Data<SessionService>,
+        key_value_service: Data<KeyValueService>,
     ) -> Self {
         Self {
             config,
             db_pool,
             hash,
-            key_value_service,
-            log_service,
             session_service,
+            key_value_service,
         }
     }
 
-    pub fn insert_user_id_into_session(
+    pub fn save_user_id_into_session(
         &self,
-        session: &Session,
+        session: &mut Session,
         user_id: u64,
-    ) -> Result<(), SessionServiceError> {
-        self.session_service
-            .get_ref()
-            .insert(
-                session,
-                &self.config.get_ref().auth.user_id_session_key,
-                &user_id,
-            )
-            .map_err(|e| {
-                self.log_service
-                    .get_ref()
-                    .error(format!("AuthService::insert_user_id_into_session - {:}", &e).as_str());
-                return e;
-            })?;
+    ) -> Result<(), AuthServiceError> {
+        let session_service = self.session_service.get_ref();
+
+        session.user_id = user_id;
+        session_service.save_session(session).map_err(|e| {
+            Log::error(format!("AuthService::set_user_id_into_session - {:}", &e).as_str());
+            return AuthServiceError::SessionError;
+        })?;
+
         Ok(())
     }
 
-    pub fn get_user_id_from_session(
-        &self,
-        session: &Session,
-    ) -> Result<Option<u64>, SessionServiceError> {
-        self.session_service
-            .get_ref()
-            .get(session, &self.config.get_ref().auth.user_id_session_key)
-            .map_err(|e| {
-                self.log_service
-                    .get_ref()
-                    .error(format!("AuthService::get_user_id_from_session - {:}", &e).as_str());
-                return e;
-            })
-    }
-
-    pub fn remove_user_id_from_session(&self, session: &Session) {
-        self.session_service
-            .get_ref()
-            .remove(session, &self.config.get_ref().auth.user_id_session_key);
-    }
-
     pub fn authenticate_by_session(&self, session: &Session) -> Result<User, AuthServiceError> {
-        let user_id = self.get_user_id_from_session(session).map_err(|e| {
-            self.log_service
-                .get_ref()
-                .error(format!("AuthService::authenticate_by_session - {:}", &e).as_str());
-            return AuthServiceError::AuthenticateFail;
-        })?;
+        let user_id: Option<u64> = if session.user_id == 0 {
+            None
+        } else {
+            Some(session.user_id)
+        };
 
         match user_id {
             Some(id) => {
                 let mut connection = self.db_pool.get_ref().get().map_err(|e| {
-                    self.log_service
-                        .get_ref()
-                        .error(format!("AuthService::authenticate_by_session - {:}", &e).as_str());
+                    Log::error(format!("AuthService::authenticate_by_session - {:}", &e).as_str());
                     return AuthServiceError::DbConnectionFail;
                 })?;
 
@@ -108,7 +73,7 @@ impl<'a> AuthService<'a> {
                     .select(User::as_select())
                     .first(&mut connection)
                     .map_err(|e| {
-                        self.log_service.get_ref().error(
+                        Log::error(
                             format!("AuthService::authenticate_by_session - {:}", &e).as_str(),
                         );
                         return AuthServiceError::AuthenticateFail;
@@ -127,9 +92,7 @@ impl<'a> AuthService<'a> {
         }
 
         let mut connection = self.db_pool.get_ref().get().map_err(|e| {
-            self.log_service
-                .get_ref()
-                .error(format!("AuthService::authenticate_by_credentials - {:}", &e).as_str());
+            Log::error(format!("AuthService::authenticate_by_credentials - {:}", &e).as_str());
             return AuthServiceError::DbConnectionFail;
         })?;
 
@@ -138,7 +101,7 @@ impl<'a> AuthService<'a> {
             .select(PrivateUserData::as_select())
             .first::<PrivateUserData>(&mut connection)
             .map_err(|e| {
-                self.log_service.get_ref().error(
+                Log::error(
                     format!(
                         "AuthService::authenticate_by_credentials - {} - {:}",
                         data.email, e
@@ -181,7 +144,7 @@ impl<'a> AuthService<'a> {
                     .get_ref()
                     .hash_password(&data.password)
                     .map_err(|e| {
-                        self.log_service.get_ref().error(
+                        Log::error(
                             format!(
                                 "AuthService::register_by_credentials - {} - {:}",
                                 data.password, e
@@ -194,9 +157,7 @@ impl<'a> AuthService<'a> {
         };
 
         let mut connection = self.db_pool.get_ref().get().map_err(|e| {
-            self.log_service
-                .get_ref()
-                .error(format!("AuthService::register_by_credentials - {:}", &e).as_str());
+            Log::error(format!("AuthService::register_by_credentials - {:}", &e).as_str());
             AuthServiceError::DbConnectionFail
         })?;
 
@@ -206,7 +167,7 @@ impl<'a> AuthService<'a> {
             .map_err(|e: Error| match &e {
                 Error::DatabaseError(kind, _) => match &kind {
                     DatabaseErrorKind::UniqueViolation => {
-                        self.log_service.get_ref().info(
+                        Log::info(
                             format!(
                                 "AuthService::register_by_credentials - {} - {:}",
                                 &data.email, e
@@ -216,24 +177,27 @@ impl<'a> AuthService<'a> {
                         AuthServiceError::DuplicateEmail
                     }
                     _ => {
-                        self.log_service.get_ref().error(
+                        Log::error(
                             format!("AuthService::register_by_credentials - {:}", &e).as_str(),
                         );
                         AuthServiceError::InsertNewUserFail
                     }
                 },
                 _ => {
-                    self.log_service
-                        .get_ref()
-                        .error(format!("AuthService::register_by_credentials - {:}", &e).as_str());
+                    Log::error(format!("AuthService::register_by_credentials - {:}", &e).as_str());
                     AuthServiceError::InsertNewUserFail
                 }
             })?;
         Ok(())
     }
 
-    pub fn logout_from_session(&self, session: &Session) {
-        self.remove_user_id_from_session(session);
+    pub fn logout_from_session(&self, session: &Session) -> Result<(), AuthServiceError> {
+        let session_service = self.session_service.get_ref();
+        session_service.delete_session(session).map_err(|e| {
+            Log::error(format!("AuthService::logout_from_session - {:}", &e).as_str());
+            return AuthServiceError::LogoutFail;
+        })?;
+        Ok(())
     }
 
     pub fn save_reset_password_code(
@@ -245,9 +209,9 @@ impl<'a> AuthService<'a> {
 
         self.key_value_service
             .get_ref()
-            .set::<&str, &str, String>(&key, code)
+            .set(&key, code)
             .map_err(|e| {
-                self.log_service.get_ref().error(
+                Log::error(
                     format!("AuthService::save_reset_password_code - {} - {:}", &key, &e).as_str(),
                 );
                 e
@@ -262,7 +226,7 @@ impl<'a> AuthService<'a> {
         let key = format!("{}:{}", RESET_PASSWORD_CODE_KEY, &email);
 
         let value: Option<String> = self.key_value_service.get_ref().get(&key).map_err(|e| {
-            self.log_service.get_ref().error(
+            Log::error(
                 format!("AuthService::get_reset_password_code - {} - {:}", &key, &e).as_str(),
             );
             e
@@ -276,7 +240,7 @@ impl<'a> AuthService<'a> {
         code: &str,
     ) -> Result<bool, KeyValueServiceError> {
         let stored_code: Option<String> = self.get_reset_password_code(email).map_err(|e| {
-            self.log_service.get_ref().error(
+            Log::error(
                 format!(
                     "AuthService::is_equal_reset_password_code - {} - {:}",
                     email, e
@@ -301,7 +265,7 @@ impl<'a> AuthService<'a> {
         use crate::schema::users::dsl::users as dsl_users;
 
         let hashed_password = self.hash.get_ref().hash_password(password).map_err(|e| {
-            self.log_service.get_ref().error(
+            Log::error(
                 format!(
                     "AuthService::update_password_by_email - {} - {:}",
                     &email, &e
@@ -312,9 +276,7 @@ impl<'a> AuthService<'a> {
         })?;
 
         let mut connection = self.db_pool.get_ref().get().map_err(|e| {
-            self.log_service
-                .get_ref()
-                .error(format!("AuthService::update_password_by_email - {:}", &e).as_str());
+            Log::error(format!("AuthService::update_password_by_email - {:}", &e).as_str());
             AuthServiceError::DbConnectionFail
         })?;
 
@@ -322,7 +284,7 @@ impl<'a> AuthService<'a> {
             .set(dsl_password.eq(hashed_password))
             .execute(&mut connection)
             .map_err(|e| {
-                self.log_service.get_ref().error(
+                Log::error(
                     format!(
                         "AuthService::update_password_by_email - {} - {:}",
                         &email, &e
@@ -341,18 +303,14 @@ impl<'a> AuthService<'a> {
         use diesel::select;
 
         let mut connection = self.db_pool.get_ref().get().map_err(|e| {
-            self.log_service
-                .get_ref()
-                .error(format!("AuthService::exists_user_by_email - {:}", &e).as_str());
+            Log::error(format!("AuthService::exists_user_by_email - {:}", &e).as_str());
             AuthServiceError::DbConnectionFail
         })?;
 
         let email_exists: bool = select(exists(dsl_users.filter(dsl_email.eq(email))))
             .get_result(&mut connection)
             .map_err(|e| {
-                self.log_service
-                    .get_ref()
-                    .error(format!("AuthService::exists_user_by_email - {:}", &e).as_str());
+                Log::error(format!("AuthService::exists_user_by_email - {:}", &e).as_str());
                 AuthServiceError::Fail
             })?;
 
@@ -374,6 +332,7 @@ impl Credentials {
 
 #[derive(Debug, Clone, Copy, Display, EnumString)]
 pub enum AuthServiceError {
+    SessionError,
     AuthenticateFail,
     RegisterFail,
     CredentialsInvalid,
@@ -381,6 +340,7 @@ pub enum AuthServiceError {
     DuplicateEmail,
     InsertNewUserFail,
     PasswordHashFail,
+    LogoutFail,
     Fail,
 }
 
@@ -389,11 +349,11 @@ mod tests {
     #[allow(unused_imports)]
     use crate::{preparation, Credentials, PrivateUserData};
     #[allow(unused_imports)]
-    use tokio;
-    #[allow(unused_imports)]
     use diesel::prelude::*;
     #[allow(unused_imports)]
-    use diesel::{ExpressionMethods, RunQueryDsl, QueryDsl, SelectableHelper};
+    use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
+    #[allow(unused_imports)]
+    use tokio;
 
     // Used in manual mode
     // #[tokio::test]
@@ -438,20 +398,27 @@ mod tests {
         let user: PrivateUserData = dsl_users
             .filter(dsl_email.eq(email))
             .select(PrivateUserData::as_select())
-            .first::<PrivateUserData>(&mut connection).unwrap();
+            .first::<PrivateUserData>(&mut connection)
+            .unwrap();
 
         let user_password_hash = user.password.clone().unwrap();
 
-        assert_eq!(true, all_services
-                        .hash
-                        .get_ref()
-                        .verify_password(&password, &user_password_hash));
+        assert_eq!(
+            true,
+            all_services
+                .hash
+                .get_ref()
+                .verify_password(&password, &user_password_hash)
+        );
 
         let password = all_services.rand.get_ref().str(64);
-        assert_eq!(false, all_services
-            .hash
-            .get_ref()
-            .verify_password(&password, &user_password_hash));
+        assert_eq!(
+            false,
+            all_services
+                .hash
+                .get_ref()
+                .verify_password(&password, &user_password_hash)
+        );
     }
 
     // Used in manual mode
@@ -462,15 +429,33 @@ mod tests {
 
         let email = "admin@admin.example";
         let code = all_services.rand.get_ref().str(64);
-        all_services.auth.save_reset_password_code(email, &code).unwrap();
+        all_services
+            .auth
+            .save_reset_password_code(email, &code)
+            .unwrap();
 
-        let saved_code = all_services.auth.get_reset_password_code(email).unwrap().unwrap();
+        let saved_code = all_services
+            .auth
+            .get_reset_password_code(email)
+            .unwrap()
+            .unwrap();
         assert_eq!(code, saved_code);
-        assert_eq!(true,  all_services.auth.is_equal_reset_password_code(email, &code).unwrap());
+        assert_eq!(
+            true,
+            all_services
+                .auth
+                .is_equal_reset_password_code(email, &code)
+                .unwrap()
+        );
         let code = all_services.rand.get_ref().str(64);
-        assert_eq!(false,  all_services.auth.is_equal_reset_password_code(email, &code).unwrap());
+        assert_eq!(
+            false,
+            all_services
+                .auth
+                .is_equal_reset_password_code(email, &code)
+                .unwrap()
+        );
     }
-
 
     // Used in manual mode
     // #[tokio::test]
@@ -488,21 +473,24 @@ mod tests {
             .update_password_by_email(email, &password)
             .unwrap();
 
-        let cred = Credentials{
+        let cred = Credentials {
             email: email.to_owned(),
-            password: password.to_owned()
+            password: password.to_owned(),
         };
-        let user_id = all_services.auth.authenticate_by_credentials(&cred).unwrap();
+        let user_id = all_services
+            .auth
+            .authenticate_by_credentials(&cred)
+            .unwrap();
 
         let mut connection = all_connections.mysql.get_ref().get().unwrap();
         let user: PrivateUserData = dsl_users
             .filter(dsl_email.eq(email))
             .select(PrivateUserData::as_select())
-            .first::<PrivateUserData>(&mut connection).unwrap();
+            .first::<PrivateUserData>(&mut connection)
+            .unwrap();
 
         assert_eq!(user.id, user_id);
     }
-
 
     // Used in manual mode
     // #[tokio::test]
@@ -515,9 +503,9 @@ mod tests {
         let password = all_services.rand.get_ref().str(64);
         let email = format!("admin{}@admin.example", &password);
 
-        let cred = Credentials{
+        let cred = Credentials {
             email: email.to_owned(),
-            password: password.to_owned()
+            password: password.to_owned(),
         };
         all_services.auth.register_by_credentials(&cred).unwrap();
 
@@ -525,7 +513,8 @@ mod tests {
         let user: PrivateUserData = dsl_users
             .filter(dsl_email.eq(email.to_owned()))
             .select(PrivateUserData::as_select())
-            .first::<PrivateUserData>(&mut connection).unwrap();
+            .first::<PrivateUserData>(&mut connection)
+            .unwrap();
 
         assert_eq!(user.email, email);
     }

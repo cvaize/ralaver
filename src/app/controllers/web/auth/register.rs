@@ -3,11 +3,11 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
+use crate::{model_redis_impl, Session};
 use crate::{
-    Alert, AlertService, AppService, AuthService, AuthServiceError, Credentials, SessionService,
-    TemplateService, Translator, TranslatorService,
+    Alert, AppService, AuthService, AuthServiceError, Credentials, KeyValueService, SessionService,
+    TemplateService, Translator, TranslatorService, ALERTS_KEY,
 };
-use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 use serde_derive::{Deserialize, Serialize};
@@ -16,19 +16,28 @@ use std::ops::Deref;
 
 static DATA_KEY: &str = "page.register.form.data";
 
+model_redis_impl!(FormData<RegisterFields>);
+
 pub async fn show(
     req: HttpRequest,
     session: Session,
-    tmpl: Data<TemplateService>,
-    session_service: Data<SessionService>,
+    tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
+    session_service: Data<SessionService>,
+    key_value_service: Data<KeyValueService>,
 ) -> Result<HttpResponse, Error> {
+    let tmpl_service = tmpl_service.get_ref();
+    let app_service = app_service.get_ref();
+    let session_service = session_service.get_ref();
+    let key_value_service = key_value_service.get_ref();
+    let translator_service = translator_service.get_ref();
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
 
-    let form_data: FormData<RegisterFields> = session_service
-        .get_and_remove(&session, DATA_KEY)
-        .map_err(|_| error::ErrorInternalServerError("Session error"))?
+    let key = session_service.make_session_data_key(&session, DATA_KEY);
+    let form_data: FormData<RegisterFields> = key_value_service
+        .get_del(key)
+        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
         .unwrap_or(FormData::empty());
 
     let form = form_data.form.unwrap_or(DefaultForm::empty());
@@ -39,14 +48,20 @@ pub async fn show(
     let password_field = fields.password.unwrap_or(Field::empty());
     let confirm_password_field = fields.confirm_password.unwrap_or(Field::empty());
 
-    let translator = Translator::new(&lang, translator_service.get_ref());
+    let translator = Translator::new(&lang, translator_service);
+
+    let key = session_service.make_session_data_key(&session, ALERTS_KEY);
+    let alerts: Vec<Alert> = key_value_service
+        .get_del(key)
+        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?
+        .unwrap_or(vec![]);
 
     let ctx = json!({
         "title": translator.simple("auth.page.register.title"),
         "locale": locale,
         "locales": locales,
-        "alerts": app_service.get_ref().alerts(&session),
-        "dark_mode": app_service.get_ref().dark_mode(&req),
+        "alerts": alerts,
+        "dark_mode": app_service.dark_mode(&req),
         "form": {
             "action": "/register",
             "method": "post",
@@ -89,20 +104,25 @@ pub async fn show(
         },
     });
 
-    let s = tmpl.get_ref().render_throw_http("pages/auth.hbs", &ctx)?;
+    let s = tmpl_service.render_throw_http("pages/auth.hbs", &ctx)?;
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }
 
 pub async fn invoke(
     req: HttpRequest,
     session: Session,
-    alert_service: Data<AlertService>,
-    session_service: Data<SessionService>,
     data: Form<RegisterData>,
+    session_service: Data<SessionService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
+    key_value_service: Data<KeyValueService>,
     auth_service: Data<AuthService<'_>>,
 ) -> Result<impl Responder, Error> {
+    let app_service = app_service.get_ref();
+    let auth_service = auth_service.get_ref();
+    let session_service = session_service.get_ref();
+    let key_value_service = key_value_service.get_ref();
+    let translator_service = translator_service.get_ref();
     let data: &RegisterData = data.deref();
 
     let mut alerts: Vec<Alert> = vec![];
@@ -110,7 +130,7 @@ pub async fn invoke(
 
     let (lang, _, _) = app_service.locale(Some(&req), Some(&session), None);
 
-    let translator = Translator::new(&lang, translator_service.get_ref());
+    let translator = Translator::new(&lang, translator_service);
     let email_str = translator.simple("auth.page.register.form.fields.email.label");
     let password_str = translator.simple("auth.page.register.form.fields.password.label");
     let confirm_password_str =
@@ -146,7 +166,7 @@ pub async fn invoke(
             password: data.password.to_owned().unwrap(),
         };
 
-        let register_result = auth_service.get_ref().register_by_credentials(&credentials);
+        let register_result = auth_service.register_by_credentials(&credentials);
 
         if let Err(error) = register_result {
             match error {
@@ -163,41 +183,45 @@ pub async fn invoke(
         false
     };
 
+    let key = session_service.make_session_data_key(&session, DATA_KEY);
     if is_registered {
         let alert_str = translator.simple("auth.alert.register.success");
 
         alerts.push(Alert::success(alert_str));
 
-        session_service.get_ref().remove(&session, DATA_KEY);
+        key_value_service
+            .del(key)
+            .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
     } else {
-        let form_data = FormData { form: Some(DefaultForm {
-            fields: Some(RegisterFields {
-                email: Some(Field {
-                    value: data.email.to_owned(),
-                    errors: Some(email_errors),
+        let form_data = FormData {
+            form: Some(DefaultForm {
+                fields: Some(RegisterFields {
+                    email: Some(Field {
+                        value: data.email.to_owned(),
+                        errors: Some(email_errors),
+                    }),
+                    password: Some(Field {
+                        value: data.password.to_owned(),
+                        errors: Some(password_errors),
+                    }),
+                    confirm_password: Some(Field {
+                        value: data.confirm_password.to_owned(),
+                        errors: Some(confirm_password_errors),
+                    }),
                 }),
-                password: Some(Field {
-                    value: data.password.to_owned(),
-                    errors: Some(password_errors),
-                }),
-                confirm_password: Some(Field {
-                    value: data.confirm_password.to_owned(),
-                    errors: Some(confirm_password_errors),
-                }),
+                errors: Some(form_errors),
             }),
-            errors: Some(form_errors),
-        }) };
+        };
 
-        session_service
-            .get_ref()
-            .insert(&session, DATA_KEY, &form_data)
-            .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+        key_value_service
+            .set_ex(key, &form_data, 600)
+            .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
     }
 
-    alert_service
-        .get_ref()
-        .insert_into_session(&session, &alerts)
-        .map_err(|_| error::ErrorInternalServerError("Session error"))?;
+    let key = session_service.make_session_data_key(&session, ALERTS_KEY);
+    key_value_service
+        .set_ex(key, &alerts, 600)
+        .map_err(|_| error::ErrorInternalServerError("KeyValueService error"))?;
 
     if is_registered {
         Ok(Redirect::to("/login").see_other())

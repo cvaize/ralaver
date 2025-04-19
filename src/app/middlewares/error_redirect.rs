@@ -7,9 +7,9 @@ use actix_web::{
 };
 use futures_util::future::LocalBoxFuture;
 
-pub struct ErrorRedirect;
+pub struct ErrorRedirectWrap;
 
-impl<S, B> Transform<S, ServiceRequest> for ErrorRedirect
+impl<S, B> Transform<S, ServiceRequest> for ErrorRedirectWrap
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,

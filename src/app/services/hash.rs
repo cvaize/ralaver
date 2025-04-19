@@ -4,17 +4,16 @@ use argon2::{
     Argon2,
 };
 use strum_macros::{Display, EnumString};
-use crate::LogService;
+use crate::Log;
 
 #[derive(Debug)]
 pub struct HashService<'a> {
     argon2: Argon2<'a>,
-    log_service: Data<LogService>
 }
 
 impl<'a> HashService<'a> {
-    pub fn new(argon2: Argon2<'a>, log_service: Data<LogService>) -> Self {
-        Self { argon2, log_service }
+    pub fn new(argon2: Argon2<'a>) -> Self {
+        Self { argon2 }
     }
 
     pub fn verify_password(&self, password: &String, hash: &String) -> bool {
@@ -34,9 +33,7 @@ impl<'a> HashService<'a> {
             .argon2
             .hash_password(password.as_bytes(), &salt)
             .map_err(|e| {
-                self.log_service.get_ref().error(
-                    format!("HashService::hash_password - {} - {:}", password, &e).as_str(),
-                );
+                Log::error(format!("HashService::hash_password - {} - {:}", password, &e).as_str());
                 HashServiceError::HashPasswordFail
             })?
             .to_string())

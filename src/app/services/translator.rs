@@ -1,5 +1,5 @@
 use crate::helpers::collect_files_from_dir;
-use crate::{Config, LogService};
+use crate::{Config, Log};
 use actix_web::web::Data;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -25,14 +25,11 @@ impl TranslatorService {
 
     pub fn new_from_files(
         config: Data<Config>,
-        log_service: Data<LogService>,
     ) -> Result<Self, io::Error> {
         let mut translates: HashMap<String, String> = HashMap::from([]);
 
         let mut dir = env::current_dir().map_err(|e| {
-            log_service
-                .get_ref()
-                .error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
+            Log::error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
             e
         })?;
         dir.push(Path::new(&config.get_ref().translator.translates_folder));
@@ -40,9 +37,7 @@ impl TranslatorService {
         let str_dir = str_dir.to_str().unwrap();
 
         let collect_paths: Vec<PathBuf> = collect_files_from_dir(dir.as_path()).map_err(|e| {
-            log_service
-                .get_ref()
-                .error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
+            Log::error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
             e
         })?;
         let paths: Vec<&PathBuf> = collect_paths
@@ -60,22 +55,16 @@ impl TranslatorService {
                 .replace("/", ".");
 
             let content = fs::read_to_string(str_path).map_err(|e| {
-                log_service
-                    .get_ref()
-                    .error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
+                Log::error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
                 e
             })?;
 
             let flat_json: String = flatten_json::flatten_from_str(&content).map_err(|e| {
-                log_service
-                    .get_ref()
-                    .error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
+                Log::error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
                 e
             })?;
             let flatten_keys: Value = serde_json::from_str(&flat_json).map_err(|e| {
-                log_service
-                    .get_ref()
-                    .error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
+                Log::error(format!("TranslatorService::new_from_files - {:}", &e).as_str());
                 e
             })?;
 
@@ -222,8 +211,7 @@ mod tests {
     #[test]
     fn new_from_files() {
         let config = Data::new(Config::new());
-        let log_service = Data::new(LogService::new());
-        let t: TranslatorService = TranslatorService::new_from_files(config, log_service).unwrap();
+        let t: TranslatorService = TranslatorService::new_from_files(config).unwrap();
         let translates: &HashMap<String, String> = t.get_translates_ref();
         assert_ne!(0, translates.iter().len());
     }

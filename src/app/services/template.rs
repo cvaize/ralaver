@@ -1,5 +1,5 @@
 use crate::helpers::collect_files_from_dir;
-use crate::{Config, LogService};
+use crate::{Config, Log};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use handlebars::{handlebars_helper, Handlebars};
@@ -12,7 +12,6 @@ use strum_macros::{Display, EnumString};
 pub struct TemplateService {
     config: Data<Config>,
     handlebars: Handlebars<'static>,
-    log_service: Data<LogService>,
 }
 
 #[derive(Debug, Clone, Copy, Display, EnumString)]
@@ -23,14 +22,11 @@ pub enum TemplateServiceError {
 impl TemplateService {
     pub fn new_from_files(
         config: Data<Config>,
-        log_service: Data<LogService>,
     ) -> Result<Self, io::Error> {
         let mut handlebars: Handlebars = Handlebars::new();
 
         let mut dir = env::current_dir().map_err(|e| {
-            log_service
-                .get_ref()
-                .error(format!("TemplateService::new_from_files - {:}", &e).as_str());
+            Log::error(format!("TemplateService::new_from_files - {:}", &e).as_str());
             e
         })?;
         dir.push(Path::new(&config.get_ref().template.handlebars.folder));
@@ -38,9 +34,7 @@ impl TemplateService {
         let str_dir = str_dir.to_str().unwrap();
 
         let collect_paths: Vec<PathBuf> = collect_files_from_dir(dir.as_path()).map_err(|e| {
-            log_service
-                .get_ref()
-                .error(format!("TemplateService::new_from_files - {:}", &e).as_str());
+            Log::error(format!("TemplateService::new_from_files - {:}", &e).as_str());
             e
         })?;
         let paths: Vec<&PathBuf> = collect_paths
@@ -75,7 +69,6 @@ impl TemplateService {
         Ok(TemplateService {
             config,
             handlebars,
-            log_service,
         })
     }
 
@@ -86,17 +79,12 @@ impl TemplateService {
     ) -> Result<String, TemplateServiceError> {
         match name.ends_with(".hbs") || name.ends_with(".handlebars") || name.ends_with(".html") {
             true => self.handlebars.render(name, data).map_err(|e| {
-                self.log_service
-                    .get_ref()
-                    .error(format!("TemplateService::render - {:}", &e).as_str());
+                Log::error(format!("TemplateService::render - {:}", &e).as_str());
                 TemplateServiceError::RenderFail
             }),
             _ => {
                 let e = TemplateServiceError::RenderFail;
-                self.log_service
-                    .get_ref()
-                    .error(format!("TemplateService::render - {:}", &e).as_str());
-
+                Log::error(format!("TemplateService::render - {:}", &e).as_str());
                 Err(e)
             }
         }
@@ -104,9 +92,7 @@ impl TemplateService {
 
     pub fn render_throw_http<T: Serialize>(&self, name: &str, data: &T) -> Result<String, Error> {
         self.render(name, data).map_err(|e| {
-            self.log_service
-                .get_ref()
-                .error(format!("TemplateService::render_throw_http - {:}", &e).as_str());
+            Log::error(format!("TemplateService::render_throw_http - {:}", &e).as_str());
             error::ErrorInternalServerError("Template error")
         })
     }

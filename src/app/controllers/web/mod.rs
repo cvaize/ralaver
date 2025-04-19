@@ -6,6 +6,7 @@ pub mod profile;
 pub mod users;
 
 use serde_derive::{Deserialize, Serialize};
+use crate::model_redis_impl;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FormData<Fields> {
@@ -24,11 +25,15 @@ pub struct DefaultFields {
     pub password: Option<Field>,
 }
 
+model_redis_impl!(DefaultFields);
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Field {
     pub value: Option<String>,
     pub errors: Option<Vec<String>>,
 }
+
+model_redis_impl!(Field);
 
 impl<Fields> FormData<Fields> {
     pub fn empty() -> Self {
