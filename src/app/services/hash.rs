@@ -31,7 +31,10 @@ impl<'a> HashService<'a> {
             .argon2
             .hash_password(password.as_bytes(), &salt)
             .map_err(|e| {
-                log::error!("{}",format!("HashService::hash_password - {} - {:}", password, &e).as_str());
+                log::error!(
+                    "{}",
+                    format!("HashService::hash_password - {} - {:}", password, &e).as_str()
+                );
                 HashServiceError::HashPasswordFail
             })?
             .to_string())
@@ -41,4 +44,37 @@ impl<'a> HashService<'a> {
 #[derive(Debug, Clone, Copy, Display, EnumString)]
 pub enum HashServiceError {
     HashPasswordFail,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test::Bencher;
+
+    #[test]
+    fn verify_password() {
+        let hash = HashService::new(Argon2::default());
+
+        let password = "password123".to_string();
+        let password2 = "password".to_string();
+        let password_hash = hash.hash_password(&password).unwrap();
+
+        assert!(hash.verify_password(&password, &password_hash));
+        assert!(!hash.verify_password(&password2, &password_hash));
+    }
+
+    #[bench]
+    fn bench_verify_password(b: &mut Bencher) {
+        let hash = HashService::new(Argon2::default());
+        let password = "password123".to_string();
+        let password_hash = hash.hash_password(&password).unwrap();
+        b.iter(|| hash.verify_password(&password, &password_hash));
+    }
+
+    #[bench]
+    fn bench_hash_password(b: &mut Bencher) {
+        let hash = HashService::new(Argon2::default());
+        let password = "password123".to_string();
+        b.iter(|| hash.hash_password(&password).unwrap());
+    }
 }

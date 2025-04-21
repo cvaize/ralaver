@@ -69,7 +69,6 @@ mod tests {
     #[test]
     fn str() {
         let str: String = RandomService::new().str(64);
-        println!("{}", &str);
         assert_eq!(64, str.len());
     }
 
