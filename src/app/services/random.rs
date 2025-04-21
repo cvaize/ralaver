@@ -1,10 +1,7 @@
 use rand::distr::uniform::{SampleRange, SampleUniform};
+use rand::distr::{Alphanumeric, SampleString};
 use rand::Rng;
 use crate::helpers::get_sys_gettime_nsec;
-
-pub static CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
-                            abcdefghijklmnopqrstuvwxyz\
-                            0123456789";
 
 #[derive(Debug, Clone)]
 pub struct RandomService {}
@@ -16,15 +13,7 @@ impl RandomService {
 
     pub fn str(&self, length: usize) -> String {
         let mut rng = rand::rng();
-
-        let str: String = (0..length)
-            .map(|_| {
-                let idx = rng.random_range(0..CHARSET.len());
-                CHARSET[idx] as char
-            })
-            .collect();
-
-        str
+        Alphanumeric.sample_string(&mut rng, length)
     }
 
     pub fn range<T: SampleUniform, R: SampleRange<T>>(&self, range: R) -> T {
@@ -45,6 +34,23 @@ impl RandomService {
         str.push_str(&str_);
         str
     }
+
+    pub fn str_sys_gettime2(&self, length: usize) -> (String, String) {
+        let nsec = get_sys_gettime_nsec().to_string();
+        let nsec_len = nsec.len();
+        if length <= nsec_len {
+            return (nsec.to_owned(), nsec);
+        }
+        let length = length - nsec_len;
+
+        let mut str1 = nsec.to_owned();
+        let mut str2 = nsec;
+        let str1_ = self.str(length);
+        let str2_ = self.str(length);
+        str1.push_str(&str1_);
+        str2.push_str(&str2_);
+        (str1, str2)
+    }
 }
 
 // #[derive(Debug, Clone, Copy)]
@@ -55,16 +61,46 @@ impl RandomService {
 mod tests {
     use super::*;
     use test::Bencher;
+    use actix_web::web::Data;
 
+    static CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
+                            abcdefghijklmnopqrstuvwxyz\
+                            0123456789";
     #[test]
     fn str() {
         let str: String = RandomService::new().str(64);
+        println!("{}", &str);
         assert_eq!(64, str.len());
     }
 
     #[bench]
     fn bench_str(b: &mut Bencher) {
-        b.iter(|| RandomService::new().str(64));
+        let random_service = Data::new(RandomService::new());
+        b.iter(|| random_service.get_ref().str(64));
+    }
+
+    #[bench]
+    fn bench_lib_str(b: &mut Bencher) {
+        let length = 64;
+        b.iter(|| {
+            let mut rng = rand::rng();
+            let _ = Alphanumeric.sample_string(&mut rng, length);
+        });
+    }
+
+    #[bench]
+    fn bench_custom_str(b: &mut Bencher) {
+        let length = 64;
+        b.iter(|| {
+            let mut rng = rand::rng();
+
+            let _: String = (0..length)
+                .map(|_| {
+                    let idx = rng.random_range(0..CHARSET.len());
+                    CHARSET[idx] as char
+                })
+                .collect();
+        });
     }
 
     #[test]
@@ -80,7 +116,8 @@ mod tests {
 
     #[bench]
     fn bench_range(b: &mut Bencher) {
-        b.iter(|| RandomService::new().range(1..=100));
+        let random_service = Data::new(RandomService::new());
+        b.iter(|| random_service.get_ref().range(1..=100));
     }
 
     #[test]
@@ -92,6 +129,24 @@ mod tests {
 
     #[bench]
     fn bench_str_sys_gettime(b: &mut Bencher) {
-        b.iter(|| RandomService::new().str_sys_gettime(64));
+        let random_service = Data::new(RandomService::new());
+        b.iter(|| random_service.get_ref().str_sys_gettime(64));
+    }
+
+    #[bench]
+    fn bench_str_sys_gettime_double(b: &mut Bencher) {
+        let random_service = Data::new(RandomService::new());
+        b.iter(|| {
+            random_service.get_ref().str_sys_gettime(64);
+            random_service.get_ref().str_sys_gettime(64);
+        });
+    }
+
+    #[bench]
+    fn bench_str_sys_gettime2(b: &mut Bencher) {
+        let random_service = Data::new(RandomService::new());
+        b.iter(|| {
+            random_service.get_ref().str_sys_gettime2(64);
+        });
     }
 }
