@@ -148,6 +148,56 @@ impl<'a> AuthService<'a> {
         }
     }
 
+    /// Search for a user by the provided credentials and return his id.
+    pub fn authenticate_by_password(&self, email: &String, password: &String) -> Result<u64, AuthServiceError> {
+        let mut connection = self.db_pool.get_ref().get().map_err(|e| {
+            log::error!(
+                "{}",
+                format!("AuthService::authenticate_by_credentials - {:}", &e).as_str()
+            );
+            return AuthServiceError::DbConnectionFail;
+        })?;
+
+        let user: PrivateUserData = crate::schema::users::dsl::users
+            .filter(crate::schema::users::email.eq(email))
+            .select(PrivateUserData::as_select())
+            .first::<PrivateUserData>(&mut connection)
+            .map_err(|e| {
+                if e.to_string() != "Record not found" {
+                    log::error!(
+                        "{}",
+                        format!(
+                            "AuthService::authenticate_by_credentials - {} - {:}",
+                            email, e
+                        )
+                        .as_str(),
+                    );
+                }
+                return AuthServiceError::AuthenticateFail;
+            })?;
+
+        // Check auth
+        let id: Option<u64> = match &user.password {
+            Some(user_password_hash) => {
+                if self
+                    .hash
+                    .get_ref()
+                    .verify_password(password, user_password_hash)
+                {
+                    Some(user.id)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        };
+
+        match id {
+            Some(id) => Ok(id),
+            _ => Err(AuthServiceError::AuthenticateFail),
+        }
+    }
+
     pub fn register_by_credentials(&self, data: &Credentials) -> Result<(), AuthServiceError> {
         if data.is_valid() == false {
             return Err(AuthServiceError::CredentialsInvalid);

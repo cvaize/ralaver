@@ -1,9 +1,5 @@
-use crate::app::controllers::web::auth::login::locale;
 use crate::{log_map_err, FlashService, Session};
-use crate::{
-    Alert, AppService, AuthService, Translator, TranslatorService,
-    ALERTS_KEY,
-};
+use crate::{Alert, AppService, AuthService, Translator, TranslatorService, ALERTS_KEY};
 use actix_web::web::Data;
 use actix_web::web::Redirect;
 use actix_web::{error, Error, HttpRequest, Responder, Result};
@@ -29,7 +25,10 @@ pub async fn invoke(
             "Logout:invoke"
         ))?;
 
-    let (lang, _, _) = locale(&user, app_service, &req, &session);
+    let (lang, _, _) = match user {
+        Ok(user) => app_service.locale(Some(&req), Some(&session), Some(&user)),
+        _ => app_service.locale(Some(&req), Some(&session), None),
+    };
 
     let translator = Translator::new(&lang, translator_service);
     let alert_str = translator.simple("auth.alert.logout.success");

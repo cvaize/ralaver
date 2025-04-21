@@ -50,14 +50,14 @@ impl<Fields> DefaultForm<Fields> {
     }
 }
 
-impl DefaultFields {
-    pub fn empty() -> Self {
-        Self {
-            email: None,
-            password: None,
-        }
-    }
-}
+// impl DefaultFields {
+//     pub fn empty() -> Self {
+//         Self {
+//             email: None,
+//             password: None,
+//         }
+//     }
+// }
 
 impl Field {
     pub fn empty() -> Self {

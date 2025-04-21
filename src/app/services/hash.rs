@@ -77,4 +77,37 @@ mod tests {
         let password = "password123".to_string();
         b.iter(|| hash.hash_password(&password).unwrap());
     }
+
+    // #[test]
+    // fn test_sodoken() {
+    //     use sodoken::*;
+    //
+    //     let mut pub_key = [0; sign::PUBLICKEYBYTES];
+    //     let mut sec_key = SizedLockedArray::new().unwrap();
+    //
+    //     sign::keypair(&mut pub_key, &mut sec_key.lock()).unwrap();
+    //
+    //     let mut sig = [0; sign::SIGNATUREBYTES];
+    //
+    //     sign::sign_detached(&mut sig, b"hello", &sec_key.lock()).unwrap();
+    //     assert!(sign::verify_detached(&sig, b"hello", &pub_key));
+    //     assert!(!sign::verify_detached(&sig, b"world", &pub_key));
+    // }
+    //
+    // #[bench]
+    // fn bench_sodoken(b: &mut Bencher) {
+    //     use sodoken::*;
+    //
+    //     let mut pub_key = [0; sign::PUBLICKEYBYTES];
+    //     let mut sec_key = SizedLockedArray::new().unwrap();
+    //
+    //     sign::keypair(&mut pub_key, &mut sec_key.lock()).unwrap();
+    //
+    //     let mut sig = [0; sign::SIGNATUREBYTES];
+    //     let password = b"password123";
+    //
+    //     sign::sign_detached(&mut sig, password, &sec_key.lock()).unwrap();
+    //
+    //     b.iter(|| sign::verify_detached(&sig, password, &pub_key));
+    // }
 }
