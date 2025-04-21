@@ -1,3 +1,6 @@
+#![feature(test)]
+extern crate test;
+
 mod app;
 mod config;
 mod connections;

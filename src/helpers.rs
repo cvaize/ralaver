@@ -26,6 +26,15 @@ pub fn collect_files_from_dir(dir: &Path) -> io::Result<Vec<PathBuf>> {
     Ok(result)
 }
 
+pub fn get_sys_gettime_nsec() -> i64 {
+    let mut time = libc::timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
+    unsafe { libc::clock_gettime(libc::CLOCK_MONOTONIC_COARSE, &mut time) };
+    time.tv_nsec
+}
+
 #[macro_export]
 macro_rules! log_map_err {
     ($error:expr, $message:expr) => {
@@ -34,4 +43,26 @@ macro_rules! log_map_err {
     return $error;
 }
     };
+}
+
+
+#[cfg(test)]
+mod tests {
+    use test::Bencher;
+
+    #[bench]
+    fn bench_str_sys_gettime_unsafe(b: &mut Bencher) {
+        b.iter(|| {
+            let mut time = libc::timespec {
+                tv_sec: 0,
+                tv_nsec: 0,
+            };
+            unsafe { libc::clock_gettime(libc::CLOCK_MONOTONIC_COARSE, &mut time) };
+        });
+    }
+
+    #[bench]
+    fn bench_str_sys_gettime_by_standard(b: &mut Bencher) {
+        b.iter(|| std::time::SystemTime::now());
+    }
 }

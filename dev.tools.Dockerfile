@@ -1,4 +1,4 @@
-FROM rust:1.82.0 as build
+FROM rustlang/rust:nightly as build
 
 RUN mkdir -p /app
 WORKDIR /app
