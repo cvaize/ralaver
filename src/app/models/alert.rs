@@ -38,6 +38,7 @@ impl Alert {
 pub enum AlertVariant {
     LoginSuccess,
     LogoutSuccess,
+    RegisterSuccess,
 }
 
 impl AlertVariant {
@@ -45,6 +46,7 @@ impl AlertVariant {
         match self {
             Self::LoginSuccess => "auth.alert.login.success",
             Self::LogoutSuccess => "auth.alert.logout.success",
+            Self::RegisterSuccess => "auth.alert.register.success",
         }
     }
 }
