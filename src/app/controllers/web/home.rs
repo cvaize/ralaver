@@ -1,5 +1,5 @@
-use crate::{Alert, AppService, Session, User, ALERTS_KEY};
-use crate::{FlashService, TemplateService};
+use crate::{Alert, AppService, Session, Translator, TranslatorService, User, WebHttpRequest, WebHttpResponse};
+use crate::TemplateService;
 use actix_web::web::Data;
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use serde_json::json;
@@ -8,17 +8,18 @@ pub async fn index(
     req: HttpRequest,
     session: Session,
     user: User,
-    flash_service: Data<FlashService>,
+    translator_service: Data<TranslatorService>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
 ) -> Result<HttpResponse, Error> {
-    let flash_service = flash_service.get_ref();
+    let translator_service = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
 
-    let alerts: Vec<Alert> = flash_service.all_throw_http(&session, ALERTS_KEY)?.unwrap_or(vec![]);
     let dark_mode = app_service.dark_mode(&req);
-    let (_, locale, locales) = app_service.locale(Some(&req), Some(&session), Some(&user));
+    let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), Some(&user));
+    let translator = Translator::new(&lang, translator_service);
+    let alerts: Vec<Alert> = req.get_alerts(&translator);
 
     let ctx = json!({
         "locale": locale,
@@ -28,5 +29,5 @@ pub async fn index(
         "dark_mode": dark_mode
     });
     let s = tmpl_service.render_throw_http("pages/home/index.hbs", &ctx)?;
-    Ok(HttpResponse::Ok().content_type("text/html").body(s))
+    Ok(HttpResponse::Ok().clear_alerts().content_type("text/html").body(s))
 }

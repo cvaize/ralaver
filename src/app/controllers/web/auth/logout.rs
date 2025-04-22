@@ -1,8 +1,7 @@
-use crate::AuthService;
-use crate::{log_map_err, FlashService, Session};
+use crate::{log_map_err, Session};
+use crate::{AlertVariant, AuthService, WebHttpResponse};
 use actix_web::web::Data;
-use actix_web::web::Redirect;
-use actix_web::{error, Error, HttpRequest, Responder, Result};
+use actix_web::{error, Error, HttpResponse, Responder, Result};
 
 pub async fn invoke(
     session: Session,
@@ -17,5 +16,11 @@ pub async fn invoke(
             "Logout:invoke"
         ))?;
 
-    Ok(Redirect::to("/login").see_other())
+    Ok(HttpResponse::SeeOther()
+        .set_alerts(vec![AlertVariant::LogoutSuccess])
+        .insert_header((
+            http::header::LOCATION,
+            http::HeaderValue::from_static("/login"),
+        ))
+        .finish())
 }

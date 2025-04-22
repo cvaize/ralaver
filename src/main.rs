@@ -23,6 +23,8 @@ use actix_web::App;
 use actix_web::HttpServer;
 use app::middlewares::error_redirect::ErrorRedirectWrap;
 use app::middlewares::session::SessionMiddleware;
+pub use app::controllers::web::WebHttpRequest;
+pub use app::controllers::web::WebHttpResponse;
 
 async fn preparation() -> (Connections, Services<'static>) {
     dotenv::dotenv().ok();

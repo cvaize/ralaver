@@ -1,8 +1,8 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::Session;
-use crate::{Alert, AppService, AuthService, TemplateService, Translator, TranslatorService};
+use crate::{AlertVariant, Session, WebHttpRequest, WebHttpResponse};
+use crate::{AppService, AuthService, TemplateService, Translator, TranslatorService};
 use actix_web::web::Data;
 use actix_web::web::Form;
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -35,7 +35,8 @@ pub async fn show(
         tmpl_service,
         app_service,
         translator_service,
-    ).await
+    )
+    .await
 }
 
 pub async fn invoke(
@@ -56,6 +57,7 @@ pub async fn invoke(
 
     if user.is_ok() {
         return Ok(HttpResponse::SeeOther()
+            .clear_alerts()
             .insert_header((http::header::LOCATION, http::HeaderValue::from_static("/")))
             .finish());
     }
@@ -67,7 +69,7 @@ pub async fn invoke(
     let password_str = translator.simple("auth.page.login.form.fields.password.label");
 
     let is_post = req.method().eq(&Method::POST);
-    let (is_done, alerts, email_errors, password_errors, form_errors) = post(
+    let (is_done, email_errors, password_errors, form_errors) = post(
         is_post,
         &mut data,
         &email_str,
@@ -80,6 +82,7 @@ pub async fn invoke(
 
     if is_done {
         return Ok(HttpResponse::SeeOther()
+            .set_alerts(vec![AlertVariant::LoginSuccess])
             .insert_header((http::header::LOCATION, http::HeaderValue::from_static("/")))
             .finish());
     }
@@ -88,7 +91,7 @@ pub async fn invoke(
         "title": translator.simple("auth.page.login.title"),
         "locale": locale,
         "locales": locales,
-        "alerts": alerts,
+        "alerts": req.get_alerts(&translator),
         "dark_mode": app_service.dark_mode(&req),
         "form": {
             "action": "/login",
@@ -127,7 +130,10 @@ pub async fn invoke(
 
     let s = tmpl_service.render_throw_http("pages/auth.hbs", &ctx)?;
 
-    Ok(HttpResponse::Ok().content_type("text/html").body(s))
+    Ok(HttpResponse::Ok()
+        .clear_alerts()
+        .content_type("text/html")
+        .body(s))
 }
 
 async fn post(
@@ -138,18 +144,8 @@ async fn post(
     session: &mut Session,
     translator: &Translator<'_>,
     auth_service: &AuthService<'_>,
-) -> Result<
-    (
-        bool,
-        Vec<Alert>,
-        Vec<String>,
-        Vec<String>,
-        Vec<String>,
-    ),
-    Error,
-> {
+) -> Result<(bool, Vec<String>, Vec<String>, Vec<String>), Error> {
     let mut is_done = false;
-    let alerts: Vec<Alert> = vec![];
     let mut form_errors: Vec<String> = vec![];
     let mut email_errors: Vec<String> = vec![];
     let mut password_errors: Vec<String> = vec![];
@@ -175,7 +171,7 @@ async fn post(
                     is_done = true;
                 }
                 _ => {
-                    form_errors.push(translator.simple("auth.alert.sign_in.fail"));
+                    form_errors.push(translator.simple("auth.alert.login.fail"));
                 }
             };
         };
@@ -191,11 +187,5 @@ async fn post(
         }
     }
 
-    Ok((
-        is_done,
-        alerts,
-        email_errors,
-        password_errors,
-        form_errors,
-    ))
+    Ok((is_done, email_errors, password_errors, form_errors))
 }

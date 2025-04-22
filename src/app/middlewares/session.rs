@@ -15,12 +15,12 @@ pub struct SessionMiddleware;
 
 impl<S, B> Transform<S, ServiceRequest> for SessionMiddleware
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
     B: MessageBody + 'static,
 {
     type Response = ServiceResponse<B>;
-    type Error = actix_web::Error;
+    type Error = Error;
     type Transform = InnerSessionMiddleware<S>;
     type InitError = ();
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
@@ -38,11 +38,11 @@ pub struct InnerSessionMiddleware<S> {
 
 impl<S, B> Service<ServiceRequest> for InnerSessionMiddleware<S>
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
 {
     type Response = ServiceResponse<B>;
-    type Error = actix_web::Error;
+    type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
     forward_ready!(service);
