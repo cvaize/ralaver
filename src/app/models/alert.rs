@@ -29,6 +29,9 @@ impl Alert {
     }
     pub fn from_variant(translator: &Translator, variant: &AlertVariant) -> Self {
         match variant {
+            AlertVariant::ResetPasswordConfirmCodeNotEqual => {
+                Self::error(translator.simple(variant.get_message_key()))
+            }
             _ => Self::success(translator.simple(variant.get_message_key())),
         }
     }
@@ -39,6 +42,8 @@ pub enum AlertVariant {
     LoginSuccess,
     LogoutSuccess,
     RegisterSuccess,
+    ResetPasswordConfirmSuccess,
+    ResetPasswordConfirmCodeNotEqual,
 }
 
 impl AlertVariant {
@@ -47,6 +52,10 @@ impl AlertVariant {
             Self::LoginSuccess => "auth.alert.login.success",
             Self::LogoutSuccess => "auth.alert.logout.success",
             Self::RegisterSuccess => "auth.alert.register.success",
+            Self::ResetPasswordConfirmSuccess => "auth.alert.reset_password_confirm.success",
+            Self::ResetPasswordConfirmCodeNotEqual => {
+                "auth.alert.reset_password_confirm.code_not_equal"
+            }
         }
     }
 }
