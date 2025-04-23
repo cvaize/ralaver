@@ -5,11 +5,9 @@ pub struct Config {
     pub app: AppConfig,
     pub db: DbConfig,
     pub auth: AuthConfig,
-    pub alerts: AlertsConfig,
     pub translator: TranslatorConfig,
     pub template: TemplateConfig,
     pub mail: MailConfig,
-    pub session: SessionConfig,
 }
 
 #[derive(Debug, Clone)]
@@ -40,11 +38,16 @@ pub struct AppConfig {
 
 #[derive(Debug, Clone)]
 pub struct AuthConfig {
-}
-
-#[derive(Debug, Clone)]
-pub struct AlertsConfig {
-    pub session_key: String,
+    // in seconds
+    pub token_expires: u64,
+    // in seconds
+    pub old_token_expires: u64,
+    pub token_length: usize,
+    pub token_cookie_key: String,
+    pub token_cookie_secure: bool,
+    pub token_cookie_http_only: bool,
+    pub token_cookie_path: String,
+    pub token_cookie_domain: String,
 }
 
 #[derive(Debug, Clone)]
@@ -76,18 +79,6 @@ pub struct MailSmtpConfig {
     pub from_address: String,
     pub username: String,
     pub password: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct SessionConfig {
-    pub secure: bool,
-    pub key: String,
-    pub key_length: usize,
-    pub id_length: usize,
-    // in seconds
-    pub expires: u64,
-    // in seconds
-    pub old_expires: u64,
 }
 
 impl Config {
@@ -133,10 +124,39 @@ impl Config {
                         .to_string(),
                 },
             },
-            auth: AuthConfig {},
-            alerts: AlertsConfig {
-                session_key: env::var("ALERTS_SESSION_KEY")
-                    .unwrap_or("app.alerts".to_string())
+            auth: AuthConfig {
+                token_expires: env::var("AUTH_EXPIRES")
+                    // Default: 30 days equal 2592000 seconds
+                    .unwrap_or("2592000".to_string())
+                    .trim()
+                    .parse::<u64>().unwrap_or(2592000),
+                old_token_expires: env::var("AUTH_OLD_EXPIRES")
+                    // Default: 10 minutes equal 600 seconds
+                    .unwrap_or("600".to_string())
+                    .trim()
+                    .parse::<u64>().unwrap_or(600),
+                token_length: env::var("AUTH_TOKEN_LENGTH")
+                    .unwrap_or("64".to_string())
+                    .trim()
+                    .parse::<usize>().unwrap_or(64),
+                token_cookie_key: env::var("AUTH_TOKEN_COOKIE_KEY")
+                    .unwrap_or("access_token".to_string())
+                    .trim()
+                    .to_string(),
+                token_cookie_http_only: env::var("AUTH_TOKEN_COOKIE_HTTP_ONLY")
+                    .unwrap_or("1".to_string())
+                    .trim()
+                    .parse::<bool>().unwrap_or(true),
+                token_cookie_path: env::var("AUTH_TOKEN_COOKIE_PATH")
+                    .unwrap_or("/".to_string())
+                    .trim()
+                    .to_string(),
+                token_cookie_secure: env::var("AUTH_TOKEN_COOKIE_SECURE")
+                    .unwrap_or("0".to_string())
+                    .trim()
+                    .parse::<bool>().unwrap_or(false),
+                token_cookie_domain: env::var("AUTH_TOKEN_COOKIE_DOMAIN")
+                    .unwrap_or("".to_string())
                     .trim()
                     .to_string(),
             },
@@ -188,34 +208,6 @@ impl Config {
                         .to_string(),
                 },
             },
-            session: SessionConfig {
-                secure: env::var("SESSION_SECURE")
-                    .unwrap_or("false".to_string())
-                    .trim()
-                    .parse::<bool>().unwrap_or(false),
-                key: env::var("SESSION_KEY")
-                    .unwrap_or("session_key".to_string())
-                    .trim()
-                    .to_string(),
-                key_length: env::var("SESSION_KEY_LENGTH")
-                    .unwrap_or("64".to_string())
-                    .trim()
-                    .parse::<usize>().unwrap_or(64),
-                id_length: env::var("SESSION_ID_LENGTH")
-                    .unwrap_or("32".to_string())
-                    .trim()
-                    .parse::<usize>().unwrap_or(32),
-                expires: env::var("SESSION_EXPIRES")
-                    // Default: 30 days equal 2592000 seconds
-                    .unwrap_or("2592000".to_string())
-                    .trim()
-                    .parse::<u64>().unwrap_or(2592000),
-                old_expires: env::var("SESSION_OLD_EXPIRES")
-                    // Default: 10 minutes equal 600 seconds
-                    .unwrap_or("600".to_string())
-                    .trim()
-                    .parse::<u64>().unwrap_or(600)
-            }
         }
     }
 }

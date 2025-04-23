@@ -11,7 +11,6 @@ use actix_web::cookie::Cookie;
 use actix_web::{HttpRequest, HttpResponseBuilder};
 use std::str::FromStr;
 
-
 pub trait WebHttpRequest {
     fn get_alerts(&self, translator: &Translator) -> Vec<Alert>;
 }

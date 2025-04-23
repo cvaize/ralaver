@@ -11,7 +11,6 @@ pub type RedisPool = Pool<Client>;
 pub enum RedisConnectionError {
     CreateClientFail,
     CreatePoolFail,
-    GetSessionStoreFail,
 }
 
 pub fn get_connection_pool(

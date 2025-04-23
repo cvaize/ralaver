@@ -1,4 +1,4 @@
-use crate::{Config, Session, SessionService};
+use crate::{Config, Debug, DebugService};
 use actix_utils::future::{ready, Ready};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
@@ -11,9 +11,9 @@ use actix_web::{
 use std::{future::Future, pin::Pin, rc::Rc};
 
 #[derive(Clone)]
-pub struct SessionMiddleware;
+pub struct DebugMiddleware;
 
-impl<S, B> Transform<S, ServiceRequest> for SessionMiddleware
+impl<S, B> Transform<S, ServiceRequest> for DebugMiddleware
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
@@ -21,22 +21,22 @@ where
 {
     type Response = ServiceResponse<B>;
     type Error = Error;
-    type Transform = InnerSessionMiddleware<S>;
+    type Transform = InnerDebugMiddleware<S>;
     type InitError = ();
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ready(Ok(InnerSessionMiddleware {
+        ready(Ok(InnerDebugMiddleware {
             service: Rc::new(service),
         }))
     }
 }
 
-pub struct InnerSessionMiddleware<S> {
+pub struct InnerDebugMiddleware<S> {
     service: Rc<S>,
 }
 
-impl<S, B> Service<ServiceRequest> for InnerSessionMiddleware<S>
+impl<S, B> Service<ServiceRequest> for InnerDebugMiddleware<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
@@ -49,7 +49,7 @@ where
 
     fn call(&self, mut req: ServiceRequest) -> Self::Future {
         // A more complex middleware, could return an error or an early response here.
-        let cookie_data = process_session(&mut req);
+        let cookie_data = process_debug(&mut req);
         if let Err(e) = cookie_data {
             return Box::pin(async move { Err(e) });
         }
@@ -73,35 +73,35 @@ where
     }
 }
 
-pub fn process_session(req: &mut ServiceRequest) -> Result<(String, String, i64, bool), Error> {
+pub fn process_debug(req: &mut ServiceRequest) -> Result<(String, String, i64, bool), Error> {
     let config: Option<&Data<Config>> = req.app_data::<Data<Config>>();
     if config.is_none() {
         return Err(error::ErrorInternalServerError("Config error"));
     }
     let config = config.unwrap().get_ref();
 
-    let session_service: Option<&Data<SessionService>> = req.app_data::<Data<SessionService>>();
-    if session_service.is_none() {
-        return Err(error::ErrorInternalServerError("SessionService error"));
+    let debug_service: Option<&Data<DebugService>> = req.app_data::<Data<DebugService>>();
+    if debug_service.is_none() {
+        return Err(error::ErrorInternalServerError("DebugService error"));
     }
-    let session_service = session_service.unwrap().get_ref();
+    let debug_service = debug_service.unwrap().get_ref();
 
-    let cookie_key = match req.cookie(&config.session.key) {
+    let cookie_key = match req.cookie(&config.debug.key) {
         Some(cookie_key) => Some(cookie_key.value().to_string()),
         _ => None,
     };
 
-    let (new_value, session): (String, Session) = session_service
+    let (new_value, debug): (String, Debug) = debug_service
         .renew(cookie_key)
-        .map_err(|_| error::ErrorInternalServerError("SessionService error"))?;
+        .map_err(|_| error::ErrorInternalServerError("DebugService error"))?;
 
-    req.extensions_mut().insert(session);
+    req.extensions_mut().insert(debug);
 
-    let secure = config.session.secure;
+    let secure = config.debug.secure;
     Ok((
-        config.session.key.to_owned(),
+        config.debug.key.to_owned(),
         new_value,
-        config.session.expires as i64,
+        config.debug.expires as i64,
         secure
     ))
 }

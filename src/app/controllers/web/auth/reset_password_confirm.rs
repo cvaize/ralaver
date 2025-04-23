@@ -3,7 +3,7 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{AlertVariant, Session, WebHttpRequest, WebHttpResponse};
+use crate::{AlertVariant, WebHttpRequest, WebHttpResponse};
 use crate::{AppService, AuthService, TemplateService, Translator, TranslatorService};
 use actix_web::web::{Data, Form, Query};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -27,7 +27,6 @@ pub struct ResetPasswordConfirmData {
 
 pub async fn show(
     req: HttpRequest,
-    session: Session,
     query: Query<ResetPasswordConfirmQuery>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
@@ -36,7 +35,6 @@ pub async fn show(
 ) -> Result<HttpResponse, Error> {
     invoke(
         req,
-        session,
         query,
         Form(ResetPasswordConfirmData {
             code: None,
@@ -54,7 +52,6 @@ pub async fn show(
 
 pub async fn invoke(
     req: HttpRequest,
-    session: Session,
     query: Query<ResetPasswordConfirmQuery>,
     mut data: Form<ResetPasswordConfirmData>,
     tmpl_service: Data<TemplateService>,
@@ -68,7 +65,7 @@ pub async fn invoke(
     let auth_service = auth_service.get_ref();
 
     let query = query.into_inner();
-    let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
+    let (lang, locale, locales) = app_service.locale(Some(&req), None);
     let translator = Translator::new(&lang, translator_service);
 
     let email_str = translator.simple("auth.page.reset_password_confirm.form.fields.email.label");

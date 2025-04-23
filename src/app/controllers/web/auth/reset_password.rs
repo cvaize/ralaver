@@ -1,10 +1,10 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
+use crate::WebHttpRequest;
 use crate::{
     Alert, AppService, AuthService, EmailAddress, EmailMessage, MailService, RandomService,
     TemplateService, Translator, TranslatorService, WebHttpResponse,
 };
-use crate::{Session, WebHttpRequest};
 use actix_web::web::{Data, Form};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
@@ -20,7 +20,6 @@ pub struct ResetPasswordData {
 
 pub async fn show(
     req: HttpRequest,
-    session: Session,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
@@ -30,7 +29,6 @@ pub async fn show(
 ) -> Result<HttpResponse, Error> {
     invoke(
         req,
-        session,
         Form(ResetPasswordData { email: None }),
         tmpl_service,
         app_service,
@@ -44,7 +42,6 @@ pub async fn show(
 
 pub async fn invoke(
     req: HttpRequest,
-    session: Session,
     mut data: Form<ResetPasswordData>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
@@ -60,7 +57,7 @@ pub async fn invoke(
     let auth_service = auth_service.get_ref();
     let random_service = random_service.get_ref();
 
-    let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
+    let (lang, locale, locales) = app_service.locale(Some(&req), None);
     let translator = Translator::new(&lang, translator_service);
     let email_str = translator.simple("auth.page.reset_password.form.fields.email.label");
 

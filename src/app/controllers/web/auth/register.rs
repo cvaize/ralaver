@@ -2,7 +2,7 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{AlertVariant, Session, WebHttpRequest, WebHttpResponse};
+use crate::{AlertVariant, WebHttpRequest, WebHttpResponse};
 use crate::{
     AppService, AuthService, AuthServiceError, Credentials, TemplateService, Translator,
     TranslatorService,
@@ -22,7 +22,6 @@ pub struct RegisterData {
 
 pub async fn show(
     req: HttpRequest,
-    session: Session,
     auth_service: Data<AuthService<'_>>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
@@ -30,7 +29,6 @@ pub async fn show(
 ) -> Result<HttpResponse, Error> {
     invoke(
         req,
-        session,
         Form(RegisterData {
             email: None,
             password: None,
@@ -46,7 +44,6 @@ pub async fn show(
 
 pub async fn invoke(
     req: HttpRequest,
-    session: Session,
     mut data: Form<RegisterData>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
@@ -58,7 +55,7 @@ pub async fn invoke(
     let translator_service = translator_service.get_ref();
     let auth_service = auth_service.get_ref();
 
-    let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), None);
+    let (lang, locale, locales) = app_service.locale(Some(&req), None);
 
     let translator = Translator::new(&lang, translator_service);
     let email_str = translator.simple("auth.page.register.form.fields.email.label");

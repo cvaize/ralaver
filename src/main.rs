@@ -22,14 +22,13 @@ use actix_web::middleware;
 use actix_web::App;
 use actix_web::HttpServer;
 use app::middlewares::error_redirect::ErrorRedirectWrap;
-use app::middlewares::session::SessionMiddleware;
 pub use app::controllers::web::WebHttpRequest;
 pub use app::controllers::web::WebHttpResponse;
 
 async fn preparation() -> (Connections, Services<'static>) {
     dotenv::dotenv().ok();
     let base_services = services::base(Config::new());
-    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+    let _ = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let all_connections: Connections = connections::all(&base_services);
 
@@ -54,17 +53,16 @@ async fn main() -> std::io::Result<()> {
             .app_data(all_services.key_value.clone())
             .app_data(all_services.translator.clone())
             .app_data(all_services.template.clone())
-            .app_data(all_services.session.clone())
             .app_data(all_services.hash.clone())
             .app_data(all_services.auth.clone())
             .app_data(all_services.locale.clone())
             .app_data(all_services.app.clone())
             .app_data(all_services.mail.clone())
             .app_data(all_services.rand.clone())
+            .app_data(all_services.user.clone())
             .configure(routes::register)
             .wrap(middleware::Logger::default())
             .wrap(ErrorRedirectWrap)
-            .wrap(SessionMiddleware)
     })
     .bind("0.0.0.0:8080")?
     .run()
