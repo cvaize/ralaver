@@ -11,7 +11,7 @@ use actix_web::web::Data;
 use actix_web::HttpRequest;
 #[allow(unused_imports)]
 use diesel::prelude::*;
-use diesel::result::{DatabaseErrorKind, Error};
+use diesel::result::DatabaseErrorKind;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
 use serde_derive::Deserialize;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -330,7 +330,6 @@ impl<'a> AuthService<'a> {
         Ok(())
     }
 
-
     /// Search for a user by the provided credentials and return his id.
     pub fn login_by_credentials(&self, data: &Credentials) -> Result<u64, AuthServiceError> {
         if data.is_valid() == false {
@@ -454,8 +453,8 @@ impl<'a> AuthService<'a> {
         diesel::insert_into(crate::schema::users::table)
             .values(new_user)
             .execute(&mut connection)
-            .map_err(|e: Error| match &e {
-                Error::DatabaseError(kind, _) => match &kind {
+            .map_err(|e: diesel::result::Error| match &e {
+                diesel::result::Error::DatabaseError(kind, _) => match &kind {
                     DatabaseErrorKind::UniqueViolation => {
                         log::info!(
                             "{}",

@@ -1,24 +1,21 @@
-use crate::AuthService;
+use crate::User;
 use crate::{AppService, TemplateService, Translator, TranslatorService, WebHttpRequest};
-use actix_web::web::Data;
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
+use actix_web::web::{Data, ReqData};
+use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use serde_json::json;
+use std::rc::Rc;
 
 pub async fn index(
     req: HttpRequest,
+    user: ReqData<Rc<User>>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    auth_service: Data<AuthService<'_>>,
 ) -> Result<HttpResponse, Error> {
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
     let translator_service = translator_service.get_ref();
-    let auth_service = auth_service.get_ref();
-
-    let (user, auth_token) = auth_service
-        .login_by_req(&req)
-        .map_err(|_| error::ErrorUnauthorized("Unauthorized"))?;
+    let user = user.as_ref();
 
     let dark_mode = app_service.dark_mode(&req);
 
@@ -28,13 +25,10 @@ pub async fn index(
     let ctx = json!({
         "locale": locale,
         "locales": locales,
-        "user" : user,
+        "user" : &user,
         "alerts": req.get_alerts(&translator),
         "dark_mode": dark_mode
     });
     let s = tmpl_service.render_throw_http("pages/profile/index.hbs", &ctx)?;
-    Ok(HttpResponse::Ok()
-        .cookie(auth_service.make_auth_token_cookie(&auth_token))
-        .content_type("text/html")
-        .body(s))
+    Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }

@@ -1,13 +1,14 @@
 use crate::app::controllers;
 use actix_web::web;
+use crate::app::middlewares::web_auth::WebAuthMiddleware;
 
 pub fn register(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/")
+            .wrap(WebAuthMiddleware)
             .route(web::get().to(controllers::web::home::index)),
     );
     cfg.service(web::resource("/locale/switch").route(web::post().to(controllers::web::locale::switch)));
-    cfg.service(web::resource("/users").route(web::get().to(controllers::web::users::index)));
     cfg.service(
         web::resource("/login")
             .route(web::get().to(controllers::web::auth::login::show))
@@ -34,6 +35,7 @@ pub fn register(cfg: &mut web::ServiceConfig) {
     );
     cfg.service(
         web::resource("/profile")
+            .wrap(WebAuthMiddleware)
             .route(web::get().to(controllers::web::profile::index)),
     );
     cfg.service(
