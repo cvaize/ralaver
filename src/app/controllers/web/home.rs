@@ -1,5 +1,7 @@
-use crate::{Alert, AppService, Session, Translator, TranslatorService, User, WebHttpRequest, WebHttpResponse};
 use crate::TemplateService;
+use crate::{
+    AppService, Session, Translator, TranslatorService, User, WebHttpRequest, WebHttpResponse,
+};
 use actix_web::web::Data;
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use serde_json::json;
@@ -19,15 +21,17 @@ pub async fn index(
     let dark_mode = app_service.dark_mode(&req);
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(&session), Some(&user));
     let translator = Translator::new(&lang, translator_service);
-    let alerts: Vec<Alert> = req.get_alerts(&translator);
 
     let ctx = json!({
         "locale": locale,
         "locales": locales,
         "user" : user,
-        "alerts": alerts,
+        "alerts": req.get_alerts(&translator),
         "dark_mode": dark_mode
     });
     let s = tmpl_service.render_throw_http("pages/home/index.hbs", &ctx)?;
-    Ok(HttpResponse::Ok().clear_alerts().content_type("text/html").body(s))
+    Ok(HttpResponse::Ok()
+        .clear_alerts()
+        .content_type("text/html")
+        .body(s))
 }

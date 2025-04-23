@@ -61,7 +61,6 @@ async fn main() -> std::io::Result<()> {
             .app_data(all_services.app.clone())
             .app_data(all_services.mail.clone())
             .app_data(all_services.rand.clone())
-            .app_data(all_services.flash.clone())
             .configure(routes::register)
             .wrap(middleware::Logger::default())
             .wrap(ErrorRedirectWrap)
