@@ -1,5 +1,6 @@
 mod app;
 mod auth;
+mod crypt;
 mod mail;
 mod hash;
 mod key_value;
@@ -11,6 +12,7 @@ mod user;
 
 pub use self::app::{*};
 pub use self::auth::{*};
+pub use self::crypt::{*};
 pub use self::mail::{*};
 pub use self::hash::{*};
 pub use self::key_value::{*};

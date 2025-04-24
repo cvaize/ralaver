@@ -4,7 +4,7 @@ RUN mkdir -p /app
 WORKDIR /app
 #COPY . /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends libsodium-dev libsodium23
+RUN apt-get update && apt-get install -y --no-install-recommends pkg-config libssl-dev
 
 #RUN cargo install --debug --path .
 RUN cargo install diesel_cli

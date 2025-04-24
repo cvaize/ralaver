@@ -806,7 +806,7 @@ mod tests {
 
     #[tokio::test]
     async fn encrypt_auth_token() {
-        let (all_connections, all_services) = preparation().await;
+        let (_, all_services) = preparation().await;
         let auth = all_services.auth.get_ref();
 
         let auth_token = AuthToken(5, 6, "test".to_string());
@@ -817,7 +817,7 @@ mod tests {
 
     #[tokio::test]
     async fn decrypt_auth_token() {
-        let (all_connections, all_services) = preparation().await;
+        let (_, all_services) = preparation().await;
         let auth = all_services.auth.get_ref();
 
         let s: String = "5-6-test".to_string();
