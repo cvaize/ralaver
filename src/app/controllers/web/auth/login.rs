@@ -54,7 +54,7 @@ pub async fn invoke(
 
     if let Ok((_, token)) = auth_result {
         return Ok(HttpResponse::SeeOther()
-            .cookie(auth_service.make_auth_token_cookie(&token))
+            .cookie(auth_service.make_auth_token_cookie_throw_http(&token)?)
             .clear_alerts()
             .insert_header((http::header::LOCATION, http::HeaderValue::from_static("/")))
             .finish());
@@ -80,7 +80,7 @@ pub async fn invoke(
     if is_done {
         let auth_token = auth_token.unwrap();
         return Ok(HttpResponse::SeeOther()
-            .cookie(auth_service.make_auth_token_cookie(&auth_token))
+            .cookie(auth_service.make_auth_token_cookie_throw_http(&auth_token)?)
             .set_alerts(vec![AlertVariant::LoginSuccess])
             .insert_header((http::header::LOCATION, http::HeaderValue::from_static("/")))
             .finish());

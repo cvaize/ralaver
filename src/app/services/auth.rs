@@ -1,14 +1,14 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::{
-    log_map_err, Config, KeyValueService, KeyValueServiceError, NewUser, PrivateUserData,
-    RandomService, User, UserService,
+    log_map_err, Config, CryptService, KeyValueService, KeyValueServiceError,
+    NewUser, PrivateUserData, RandomService, User, UserService,
 };
 use crate::{HashService, MysqlPool};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
 use actix_web::web::Data;
-use actix_web::HttpRequest;
+use actix_web::{error, Error, HttpRequest};
 #[allow(unused_imports)]
 use diesel::prelude::*;
 use diesel::result::DatabaseErrorKind;
@@ -27,6 +27,7 @@ pub struct AuthService<'a> {
     key_value_service: Data<KeyValueService>,
     user_service: Data<UserService>,
     random_service: Data<RandomService>,
+    crypt_service: Data<CryptService>,
 }
 
 #[derive(Debug, Clone)]
@@ -55,6 +56,7 @@ impl<'a> AuthService<'a> {
         key_value_service: Data<KeyValueService>,
         user_service: Data<UserService>,
         random_service: Data<RandomService>,
+        crypt_service: Data<CryptService>,
     ) -> Self {
         Self {
             config,
@@ -63,22 +65,47 @@ impl<'a> AuthService<'a> {
             key_value_service,
             user_service,
             random_service,
+            crypt_service,
         }
     }
 
-    pub fn encrypt_auth_token(&self, token: &AuthToken) -> String {
-        // TODO: Реализовать
-        format!("{}-{}-{}", token.0, token.1, &token.2)
+    pub fn encrypt_auth_token(&self, auth_token: &AuthToken) -> Result<String, AuthServiceError> {
+        let mut token: String = "".to_string();
+        token.push_str(auth_token.0.to_string().as_str());
+        token.push_str("-");
+        token.push_str(auth_token.1.to_string().as_str());
+        token.push_str("-");
+        token.push_str(auth_token.2.as_str());
+        self.crypt_service
+            .get_ref()
+            .encrypt_string(&token)
+            .map_err(log_map_err!(
+                AuthServiceError::Fail,
+                "AuthService::encrypt_auth_token"
+            ))
     }
 
-    pub fn decrypt_auth_token(&self, token: &str) -> Result<AuthToken, AuthServiceError> {
-        // TODO: Реализовать
+    pub fn decrypt_auth_token(&self, encrypted_token: &str) -> Result<AuthToken, AuthServiceError> {
+        let token = self
+            .crypt_service
+            .get_ref()
+            .decrypt_string(encrypted_token)
+            .map_err(log_map_err!(
+                AuthServiceError::Fail,
+                "AuthService::decrypt_auth_token"
+            ))?;
         let s: Vec<&str> = token.split("-").collect();
         if s.len() != 3 {
             return Err(AuthServiceError::Fail);
         }
-        let s1: u64 = s.get(0).unwrap().parse().unwrap();
-        let s2: u64 = s.get(1).unwrap().parse().unwrap();
+        let s1: u64 = s.get(0).unwrap().parse().map_err(log_map_err!(
+            AuthServiceError::Fail,
+            "AuthService::decrypt_auth_token"
+        ))?;
+        let s2: u64 = s.get(1).unwrap().parse().map_err(log_map_err!(
+            AuthServiceError::Fail,
+            "AuthService::decrypt_auth_token"
+        ))?;
         let s3: String = s.get(2).unwrap().to_string();
         Ok(AuthToken::new(s1, s2, s3))
     }
@@ -111,10 +138,20 @@ impl<'a> AuthService<'a> {
         cookie.finish()
     }
 
-    pub fn make_auth_token_cookie(&self, token: &AuthToken) -> Cookie {
+    pub fn make_auth_token_cookie(&self, token: &AuthToken) -> Result<Cookie, AuthServiceError> {
         let config = self.config.get_ref();
-        let token = self.encrypt_auth_token(&token);
-        self.make_auth_token_cookie_(token, config.auth.token_expires)
+        let token = self.encrypt_auth_token(&token).map_err(log_map_err!(
+            AuthServiceError::Fail,
+            "AuthService::make_auth_token_cookie"
+        ))?;
+        Ok(self.make_auth_token_cookie_(token, config.auth.token_expires))
+    }
+
+    pub fn make_auth_token_cookie_throw_http(&self, token: &AuthToken) -> Result<Cookie, Error> {
+        self.make_auth_token_cookie(token).map_err(log_map_err!(
+            error::ErrorInternalServerError("AuthService error"),
+            "AuthService::make_auth_token_cookie_throw_http"
+        ))
     }
 
     pub fn make_auth_token_clear_cookie(&self) -> Cookie {
@@ -811,8 +848,8 @@ mod tests {
 
         let auth_token = AuthToken(5, 6, "test".to_string());
 
-        let s: String = auth.encrypt_auth_token(&auth_token);
-        assert_eq!(s, "5-6-test".to_string());
+        let s: String = auth.encrypt_auth_token(&auth_token).unwrap();
+        assert_eq!(s, "apKEYkTL4LpKqDU4C6dkXw==".to_string());
     }
 
     #[tokio::test]
@@ -820,7 +857,7 @@ mod tests {
         let (_, all_services) = preparation().await;
         let auth = all_services.auth.get_ref();
 
-        let s: String = "5-6-test".to_string();
+        let s: String = "apKEYkTL4LpKqDU4C6dkXw==".to_string();
         let auth_token = auth.decrypt_auth_token(&s).unwrap();
 
         assert_eq!(auth_token.0, 5);

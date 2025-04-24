@@ -40,6 +40,7 @@ pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices<'a> {
     );
     let rand = Data::new(RandomService::new());
     let hash = Data::new(HashService::new(Argon2::default()));
+    let crypt = Data::new(CryptService::new());
     let auth = Data::new(AuthService::new(
         s.config.clone(),
         c.mysql.clone(),
@@ -47,11 +48,11 @@ pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices<'a> {
         key_value.clone(),
         user.clone(),
         rand.clone(),
+        crypt.clone(),
     ));
     let locale = Data::new(LocaleService::new(s.config.clone()));
     let app = Data::new(AppService::new(s.config.clone(), locale.clone()));
     let mail = Data::new(MailService::new(s.config.clone(), c.smtp.clone()));
-    let crypt = Data::new(CryptService::new());
 
     AdvancedServices {
         key_value,

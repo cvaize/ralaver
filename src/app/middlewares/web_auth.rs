@@ -96,7 +96,7 @@ where
                     }
                 }
                 _ => {
-                    let cookie = auth_service.make_auth_token_cookie(&auth_token);
+                    let cookie = auth_service.make_auth_token_cookie_throw_http(&auth_token)?;
                     res.response_mut().add_cookie(&cookie).unwrap();
 
                     Ok(res)
