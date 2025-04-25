@@ -13,7 +13,7 @@ use actix_web::{error, Error, HttpRequest};
 use diesel::prelude::*;
 use diesel::result::DatabaseErrorKind;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 use strum_macros::{Display, EnumString};
 
@@ -184,6 +184,31 @@ impl<'a> AuthService<'a> {
         key
     }
 
+    fn make_store_data(&self, token_value: &str, expires: u64) -> String {
+        let mut value = "".to_string();
+        value.push_str(token_value);
+        value.push('-');
+        value.push_str(expires.to_string().as_str());
+        value
+    }
+
+    fn extract_store_data(&self, value: &str) -> Result<(String, u64), AuthServiceError> {
+        let v: Vec<&str> = value.split("-").collect();
+        let v0 = v.get(0);
+        let v1 = v.get(1);
+        if v0.is_none() || v1.is_none() {
+            log::error!("AuthService::extract_store_data - {}", value);
+            return Err(AuthServiceError::Fail);
+        }
+        Ok((
+            v0.unwrap().to_string(),
+            v1.unwrap().parse::<u64>().map_err(log_map_err!(
+                AuthServiceError::Fail,
+                "AuthService::extract_store_data"
+            ))?,
+        ))
+    }
+
     pub fn save_auth_token(&self, token: &AuthToken) -> Result<(), AuthServiceError> {
         let config = self.config.get_ref();
         let key_value_service = self.key_value_service.get_ref();
@@ -197,30 +222,16 @@ impl<'a> AuthService<'a> {
             .as_secs()
             + config.auth.old_token_expires;
 
-        let mut con = key_value_service.get_connection().map_err(log_map_err!(
-            AuthServiceError::Fail,
-            "AuthService::save_auth_token"
-        ))?;
-
-        con.set_ex(
-            self.get_token_value_key(&token),
-            token.get_token_value(),
-            config.auth.token_expires,
-        )
-        .map_err(log_map_err!(
-            AuthServiceError::Fail,
-            "AuthService::save_auth_token"
-        ))?;
-
-        con.set_ex(
-            self.get_token_expires_key(&token),
-            expires,
-            config.auth.token_expires,
-        )
-        .map_err(log_map_err!(
-            AuthServiceError::Fail,
-            "AuthService::save_auth_token"
-        ))?;
+        key_value_service
+            .set_ex(
+                self.get_token_value_key(&token),
+                self.make_store_data(token.get_token_value(), expires),
+                config.auth.token_expires,
+            )
+            .map_err(log_map_err!(
+                AuthServiceError::Fail,
+                "AuthService::save_auth_token"
+            ))?;
 
         Ok(())
     }
@@ -229,28 +240,15 @@ impl<'a> AuthService<'a> {
         let config = self.config.get_ref();
         let key_value_service = self.key_value_service.get_ref();
 
-        let mut con = key_value_service.get_connection().map_err(log_map_err!(
-            AuthServiceError::Fail,
-            "AuthService::expire_auth_token"
-        ))?;
-
-        con.expire(
-            self.get_token_value_key(&token),
-            config.auth.old_token_expires as i64,
-        )
-        .map_err(log_map_err!(
-            AuthServiceError::Fail,
-            "AuthService::expire_auth_token"
-        ))?;
-
-        con.expire(
-            self.get_token_value_key(&token),
-            config.auth.old_token_expires as i64,
-        )
-        .map_err(log_map_err!(
-            AuthServiceError::Fail,
-            "AuthService::expire_auth_token"
-        ))?;
+        key_value_service
+            .expire(
+                self.get_token_value_key(&token),
+                config.auth.old_token_expires as i64,
+            )
+            .map_err(log_map_err!(
+                AuthServiceError::Fail,
+                "AuthService::expire_auth_token"
+            ))?;
 
         Ok(())
     }
@@ -261,38 +259,25 @@ impl<'a> AuthService<'a> {
     ) -> Result<(User, AuthToken), AuthServiceError> {
         let key_value_service = self.key_value_service.get_ref();
 
-        let mut con = key_value_service.get_connection().map_err(log_map_err!(
+        let value: Option<String> =
+            key_value_service.get(self.get_token_value_key(&token))
+                .map_err(log_map_err!(
+                    AuthServiceError::Fail,
+                    "AuthService::login_by_auth_token"
+                ))?;
+
+        if value.is_none() {
+            return Err(AuthServiceError::Fail);
+        }
+        let value = value.unwrap();
+        let (token_value, token_expires) = self.extract_store_data(&value).map_err(log_map_err!(
             AuthServiceError::Fail,
             "AuthService::login_by_auth_token"
         ))?;
 
-        let token_value: Option<String> =
-            con.get(self.get_token_value_key(&token))
-                .map_err(log_map_err!(
-                    AuthServiceError::Fail,
-                    "AuthService::login_by_auth_token"
-                ))?;
-
-        if token_value.is_none() {
-            return Err(AuthServiceError::Fail);
-        }
-
-        let token_expires: Option<u64> =
-            con.get(self.get_token_expires_key(&token))
-                .map_err(log_map_err!(
-                    AuthServiceError::Fail,
-                    "AuthService::login_by_auth_token"
-                ))?;
-
-        if token_expires.is_none() {
-            return Err(AuthServiceError::Fail);
-        }
-        let token_value = token_value.unwrap();
-
         if token_value != token.get_token_value() {
             return Err(AuthServiceError::Fail);
         }
-        let token_expires = token_expires.unwrap();
 
         // Тут токен уже подтверждён и можно получить пользователя
         let user_service = self.user_service.get_ref();
@@ -365,57 +350,6 @@ impl<'a> AuthService<'a> {
 
         self.logout_by_auth_token(&auth_token)?;
         Ok(())
-    }
-
-    /// Search for a user by the provided credentials and return his id.
-    pub fn login_by_credentials(&self, data: &Credentials) -> Result<u64, AuthServiceError> {
-        if data.is_valid() == false {
-            return Err(AuthServiceError::Fail);
-        }
-
-        let mut connection = self.db_pool.get_ref().get().map_err(log_map_err!(
-            AuthServiceError::DbConnectionFail,
-            "AuthService::login_by_credentials"
-        ))?;
-
-        let user: PrivateUserData = crate::schema::users::dsl::users
-            .filter(crate::schema::users::email.eq(&data.email))
-            .select(PrivateUserData::as_select())
-            .first::<PrivateUserData>(&mut connection)
-            .map_err(|e| {
-                if e.to_string() != "Record not found" {
-                    log::error!(
-                        "{}",
-                        format!(
-                            "AuthService::login_by_credentials - {} - {:}",
-                            data.email, e
-                        )
-                        .as_str(),
-                    );
-                }
-                return AuthServiceError::Fail;
-            })?;
-
-        // Check auth
-        let id: Option<u64> = match &user.password {
-            Some(user_password_hash) => {
-                if self
-                    .hash
-                    .get_ref()
-                    .verify_password(&data.password, user_password_hash)
-                {
-                    Some(user.id)
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        };
-
-        match id {
-            Some(id) => Ok(id),
-            _ => Err(AuthServiceError::Fail),
-        }
     }
 
     /// Search for a user by the provided credentials and return his id.
@@ -654,7 +588,7 @@ impl<'a> AuthService<'a> {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Credentials {
     pub email: String,
     pub password: String,
@@ -681,17 +615,14 @@ pub enum AuthServiceError {
 #[cfg(test)]
 mod tests {
     use crate::app::services::auth::AuthToken;
-    #[allow(unused_imports)]
     use crate::{preparation, Credentials, PrivateUserData};
     #[allow(unused_imports)]
     use diesel::prelude::*;
-    #[allow(unused_imports)]
     use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
-    #[allow(unused_imports)]
-    use tokio;
+    use test::Bencher;
 
-    #[tokio::test]
-    async fn exists_user_by_email() {
+    #[test]
+    fn exists_user_by_email() {
         let (_, all_services) = preparation();
 
         assert_eq!(
@@ -710,8 +641,8 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn update_password_by_email() {
+    #[test]
+    fn update_password_by_email() {
         use crate::schema::users::dsl::email as dsl_email;
         use crate::schema::users::dsl::users as dsl_users;
 
@@ -752,8 +683,8 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn reset_password_code() {
+    #[test]
+    fn reset_password_code() {
         let (_, all_services) = preparation();
 
         let email = "admin@admin.example";
@@ -786,38 +717,8 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn login_by_credentials() {
-        use crate::schema::users::dsl::email as dsl_email;
-        use crate::schema::users::dsl::users as dsl_users;
-        let (all_connections, all_services) = preparation();
-
-        let email = "admin@admin.example";
-        let password = all_services.rand.get_ref().str(64);
-
-        all_services
-            .auth
-            .update_password_by_email(email, &password)
-            .unwrap();
-
-        let cred = Credentials {
-            email: email.to_owned(),
-            password: password.to_owned(),
-        };
-        let user_id = all_services.auth.login_by_credentials(&cred).unwrap();
-
-        let mut connection = all_connections.mysql.get_ref().get().unwrap();
-        let user: PrivateUserData = dsl_users
-            .filter(dsl_email.eq(email))
-            .select(PrivateUserData::as_select())
-            .first::<PrivateUserData>(&mut connection)
-            .unwrap();
-
-        assert_eq!(user.id, user_id);
-    }
-
-    #[tokio::test]
-    async fn register_by_credentials() {
+    #[test]
+    fn register_by_credentials() {
         use crate::schema::users::dsl::email as dsl_email;
         use crate::schema::users::dsl::users as dsl_users;
         let (all_connections, all_services) = preparation();
@@ -841,8 +742,8 @@ mod tests {
         assert_eq!(user.email, email);
     }
 
-    #[tokio::test]
-    async fn encrypt_auth_token() {
+    #[test]
+    fn encrypt_auth_token() {
         let (_, all_services) = preparation();
         let auth = all_services.auth.get_ref();
 
@@ -850,8 +751,8 @@ mod tests {
         auth.encrypt_auth_token(&auth_token).unwrap();
     }
 
-    #[tokio::test]
-    async fn decrypt_auth_token() {
+    #[test]
+    fn decrypt_auth_token() {
         let (_, all_services) = preparation();
         let auth = all_services.auth.get_ref();
 
@@ -861,5 +762,49 @@ mod tests {
         assert_eq!(auth_token.get_token_id(), result.get_token_id());
         assert_eq!(auth_token.get_user_id(), result.get_user_id());
         assert_eq!(auth_token.get_token_value(), result.get_token_value());
+    }
+
+    #[test]
+    fn save_auth_token() {
+        let (_, all_services) = preparation();
+        let auth = all_services.auth.get_ref();
+
+        let auth_token = auth.generate_auth_token(1);
+        auth.save_auth_token(&auth_token).unwrap();
+    }
+
+    #[bench]
+    fn bench_save_auth_token(b: &mut Bencher) {
+        let (_, all_services) = preparation();
+        let auth = all_services.auth.get_ref();
+        let auth_token = auth.generate_auth_token(1);
+
+        b.iter(|| {
+            auth.save_auth_token(&auth_token).unwrap();
+        });
+    }
+
+    #[bench]
+    fn bench_expire_auth_token(b: &mut Bencher) {
+        let (_, all_services) = preparation();
+        let auth = all_services.auth.get_ref();
+        let auth_token = auth.generate_auth_token(1);
+        auth.save_auth_token(&auth_token).unwrap();
+
+        b.iter(|| {
+            auth.expire_auth_token(&auth_token).unwrap();
+        });
+    }
+
+    #[bench]
+    fn bench_login_by_auth_token(b: &mut Bencher) {
+        let (_, all_services) = preparation();
+        let auth = all_services.auth.get_ref();
+        let auth_token = auth.generate_auth_token(1);
+        auth.save_auth_token(&auth_token).unwrap();
+
+        b.iter(|| {
+            auth.login_by_auth_token(&auth_token).unwrap();
+        });
     }
 }

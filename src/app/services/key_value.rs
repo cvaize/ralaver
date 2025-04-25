@@ -151,6 +151,24 @@ impl KeyValueConnection {
         Ok(())
     }
 
+    pub fn set_ex2<K: ToRedisArgs, V: ToRedisArgs>(
+        &mut self,
+        key: K,
+        value: V,
+        seconds: u64,
+    ) -> Result<(), KeyValueServiceError> {
+        let result: Result<String, RedisError> = self.conn.set_ex(&key, value, seconds);
+        if let Err(e) = result {
+            log::error!("{}", format!("KeyValueService::set_ex - {:}", &e).as_str());
+            if e.to_string() == "An error was signalled by the server - ResponseError: wrong number of arguments for 'setex' command" {
+                self.del(&key)?;
+            } else {
+                return Err(KeyValueServiceError::SetExFail);
+            }
+        }
+        Ok(())
+    }
+
     pub fn expire<K: ToRedisArgs>(&mut self, key: K, seconds: i64) -> Result<(), KeyValueServiceError> {
         self.conn.expire(key, seconds).map_err(|e| {
             log::error!("{}", format!("KeyValueService::expire - {:}", &e).as_str());
