@@ -14,19 +14,19 @@ pub struct EncryptedData {
     pub mac: String,
 }
 
-pub struct CryptService {
+pub struct CryptService <'a>{
     random_service: Data<RandomService>,
-    hash_service: Data<HashService>,
+    hash_service: Data<HashService<'a>>,
     cipher: openssl::symm::Cipher,
     cipher_key_string: String,
     cipher_key: [u8; 32],
 }
 
-impl CryptService {
+impl<'a> CryptService <'a>{
     pub fn new(
         config: Data<Config>,
         random_service: Data<RandomService>,
-        hash_service: Data<HashService>,
+        hash_service: Data<HashService<'a>>,
     ) -> Self {
         if config.get_ref().app.key.len() == 0 {
             panic!("APP_KEY is missing!");

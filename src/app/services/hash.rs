@@ -1,22 +1,26 @@
+use crate::ARGON2_SECRET_KEY;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
-    Argon2,
+    Algorithm, Argon2, Params, Version,
 };
 use sha2::{Digest, Sha256};
 use strum_macros::{Display, EnumString};
 
 #[derive(Debug)]
-pub struct HashService {
-    // TODO: Remove 'static
-    argon2: Argon2<'static>,
+pub struct HashService<'a> {
+    argon2: Argon2<'a>,
 }
 
-impl HashService {
+impl<'a> HashService<'a> {
     pub fn new() -> Self {
-        // TODO: Добавить конфиг сюда и взять из него APP_KEY в качестве ключа для argon2
-        Self {
-            argon2: Argon2::default(),
-        }
+        let argon2 = Argon2::new_with_secret(
+            ARGON2_SECRET_KEY,
+            Algorithm::default(),
+            Version::default(),
+            Params::default(),
+        )
+        .unwrap();
+        Self { argon2 }
     }
 
     pub fn verify_password(&self, password: &String, hash: &String) -> bool {
@@ -60,7 +64,7 @@ pub enum HashServiceError {
 
 #[cfg(test)]
 mod tests {
-    use crate::{preparation};
+    use crate::preparation;
     use test::Bencher;
 
     #[test]

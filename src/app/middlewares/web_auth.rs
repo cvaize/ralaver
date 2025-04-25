@@ -46,7 +46,7 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        let auth_service: &Data<AuthService> = req.app_data::<Data<AuthService>>().unwrap();
+        let auth_service: &Data<AuthService<'_>> = req.app_data::<Data<AuthService<'_>>>().unwrap();
         let auth_service = Arc::clone(auth_service);
 
         let auth_data = auth_service.login_by_req(req.request());

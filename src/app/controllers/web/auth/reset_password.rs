@@ -24,7 +24,7 @@ pub async fn show(
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     mail_service: Data<MailService>,
-    auth_service: Data<AuthService>,
+    auth_service: Data<AuthService<'_>>,
     random_service: Data<RandomService>,
 ) -> Result<HttpResponse, Error> {
     invoke(
@@ -47,7 +47,7 @@ pub async fn invoke(
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     mail_service: Data<MailService>,
-    auth_service: Data<AuthService>,
+    auth_service: Data<AuthService<'_>>,
     random_service: Data<RandomService>,
 ) -> Result<HttpResponse, Error> {
     let tmpl_service = tmpl_service.get_ref();
@@ -121,13 +121,13 @@ pub async fn invoke(
         .body(s))
 }
 
-async fn post(
+async fn post<'a>(
     is_post: bool,
     lang: &String,
     data: &mut Form<ResetPasswordData>,
     email_str: &String,
-    translator: &Translator<'_>,
-    auth_service: &AuthService,
+    translator: &Translator<'a>,
+    auth_service: &AuthService<'a>,
     mail_service: &MailService,
     tmpl_service: &TemplateService,
     app_service: &AppService,

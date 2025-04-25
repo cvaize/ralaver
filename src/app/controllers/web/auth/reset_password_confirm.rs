@@ -31,7 +31,7 @@ pub async fn show(
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    auth_service: Data<AuthService>,
+    auth_service: Data<AuthService<'_>>,
 ) -> Result<HttpResponse, Error> {
     invoke(
         req,
@@ -57,7 +57,7 @@ pub async fn invoke(
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    auth_service: Data<AuthService>,
+    auth_service: Data<AuthService<'_>>,
 ) -> Result<HttpResponse, Error> {
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
@@ -178,14 +178,14 @@ pub async fn invoke(
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }
 
-async fn post(
+async fn post<'a>(
     is_post: bool,
     data: &mut Form<ResetPasswordConfirmData>,
     email_str: &String,
     password_str: &String,
     confirm_password_str: &String,
-    translator: &Translator<'_>,
-    auth_service: &AuthService,
+    translator: &Translator<'a>,
+    auth_service: &AuthService<'a>,
 ) -> Result<(bool, Vec<String>, Vec<String>, Vec<String>, Vec<String>), Error> {
     let mut is_done = false;
     let mut email_errors: Vec<String> = vec![];

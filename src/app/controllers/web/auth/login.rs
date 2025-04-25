@@ -18,7 +18,7 @@ pub struct LoginData {
 
 pub async fn show(
     req: HttpRequest,
-    auth_service: Data<AuthService>,
+    auth_service: Data<AuthService<'_>>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
@@ -40,7 +40,7 @@ pub async fn show(
 pub async fn invoke(
     req: HttpRequest,
     mut data: Form<LoginData>,
-    auth_service: Data<AuthService>,
+    auth_service: Data<AuthService<'_>>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
@@ -135,13 +135,13 @@ pub async fn invoke(
         .body(s))
 }
 
-async fn post(
+async fn post<'a>(
     is_post: bool,
     data: &mut Form<LoginData>,
     email_str: &String,
     password_str: &String,
-    translator: &Translator<'_>,
-    auth_service: &AuthService,
+    translator: &Translator<'a>,
+    auth_service: &AuthService<'a>,
 ) -> Result<
     (
         bool,

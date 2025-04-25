@@ -19,15 +19,15 @@ use strum_macros::{Display, EnumString};
 
 static RESET_PASSWORD_CODE_KEY: &str = "reset_password.code";
 
-pub struct AuthService {
+pub struct AuthService<'a> {
     #[allow(dead_code)]
     config: Data<Config>,
     db_pool: Data<MysqlPool>,
-    hash: Data<HashService>,
+    hash: Data<HashService<'a>>,
     key_value_service: Data<KeyValueService>,
     user_service: Data<UserService>,
     random_service: Data<RandomService>,
-    crypt_service: Data<CryptService>,
+    crypt_service: Data<CryptService<'a>>,
 }
 
 #[derive(Debug, Clone)]
@@ -48,15 +48,15 @@ impl AuthToken {
     }
 }
 
-impl AuthService {
+impl<'a> AuthService<'a> {
     pub fn new(
         config: Data<Config>,
         db_pool: Data<MysqlPool>,
-        hash: Data<HashService>,
+        hash: Data<HashService<'a>>,
         key_value_service: Data<KeyValueService>,
         user_service: Data<UserService>,
         random_service: Data<RandomService>,
-        crypt_service: Data<CryptService>,
+        crypt_service: Data<CryptService<'a>>,
     ) -> Self {
         Self {
             config,

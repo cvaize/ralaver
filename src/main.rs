@@ -24,9 +24,12 @@ use actix_web::HttpServer;
 use app::middlewares::error_redirect::ErrorRedirectWrap;
 pub use app::controllers::web::WebHttpRequest;
 pub use app::controllers::web::WebHttpResponse;
+use crate::services::BaseServices;
 
-fn preparation() -> (Connections, Services) {
-    let base_services = services::base(Config::new());
+pub static ARGON2_SECRET_KEY: &[u8; 64] = b"\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07";
+
+fn preparation<'a>() -> (Connections, Services<'a>) {
+    let base_services: BaseServices = services::base(Config::new());
     let _ = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let all_connections: Connections = connections::all(&base_services);
