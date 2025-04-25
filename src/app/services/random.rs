@@ -4,7 +4,8 @@ use rand::Rng;
 use crate::helpers::get_sys_gettime_nsec;
 
 #[derive(Debug, Clone)]
-pub struct RandomService {}
+pub struct RandomService {
+}
 
 impl RandomService {
     pub fn new() -> Self {
@@ -22,25 +23,21 @@ impl RandomService {
     }
 
     pub fn bytes_16(&self) -> [u8; 16] {
-        // TODO: Оптимизировать. Скорее всего стоит инициализировать rand::rng() и использовать повторно
         let mut rng = rand::rng();
         rng.random()
     }
 
     pub fn bytes_32(&self) -> [u8; 32] {
-        // TODO: Оптимизировать. Скорее всего стоит инициализировать rand::rng() и использовать повторно
         let mut rng = rand::rng();
         rng.random()
     }
 
     pub fn bytes_64(&self) -> [u8; 64] {
-        // TODO: Оптимизировать. Скорее всего стоит инициализировать rand::rng() и использовать повторно
         let mut rng = rand::rng();
         rng.random()
     }
 
     pub fn bytes_128(&self) -> [u8; 128] {
-        // TODO: Оптимизировать. Скорее всего стоит инициализировать rand::rng() и использовать повторно
         let mut rng = rand::rng();
         rng.random()
     }

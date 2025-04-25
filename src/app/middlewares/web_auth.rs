@@ -2,7 +2,10 @@ use crate::{AuthService, User};
 use actix_utils::future::{ready, Ready};
 use actix_web::body::BoxBody;
 use actix_web::web::Data;
-use actix_web::{dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform}, Error, HttpMessage, HttpResponse};
+use actix_web::{
+    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
+    Error, HttpMessage, HttpResponse,
+};
 use http::{HeaderValue, StatusCode};
 use std::sync::Arc;
 use std::{future::Future, pin::Pin, rc::Rc};
@@ -55,7 +58,10 @@ where
             return Box::pin(async move {
                 let res = HttpResponse::SeeOther()
                     .cookie(auth_service.make_auth_token_clear_cookie())
-                    .insert_header((http::header::LOCATION, HeaderValue::from_static(REDIRECT_TO)))
+                    .insert_header((
+                        http::header::LOCATION,
+                        HeaderValue::from_static(REDIRECT_TO),
+                    ))
                     .finish();
                 Ok(req.into_response(res))
             });
@@ -86,8 +92,8 @@ where
                             HeaderValue::from_static(REDIRECT_TO),
                         );
 
-                        // TODO: Удалять не только из куков, но и только, что созданный токен
                         let cookie = auth_service.make_auth_token_clear_cookie();
+                        let _ = auth_service.expire_auth_token(&auth_token);
                         let _ = res_mut.add_cookie(&cookie);
 
                         Ok(res)
@@ -100,7 +106,7 @@ where
                     res.response_mut().add_cookie(&cookie).unwrap();
 
                     Ok(res)
-                },
+                }
             }
         })
     }
