@@ -29,6 +29,7 @@ pub struct RedisDbConfig {
 
 #[derive(Debug, Clone)]
 pub struct AppConfig {
+    pub key: String,
     pub url: String,
     pub locale: String,
     pub fallback_locale: String,
@@ -85,6 +86,10 @@ impl Config {
     pub fn new() -> Self {
         Self {
             app: AppConfig {
+                key: env::var("APP_KEY")
+                    .unwrap()
+                    .trim()
+                    .to_string(),
                 url: env::var("APP_URL")
                     .unwrap_or("http://localhost".to_string())
                     .trim()

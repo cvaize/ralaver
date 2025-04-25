@@ -21,6 +21,21 @@ impl RandomService {
         rng.random_range(range)
     }
 
+    pub fn bytes_16(&self) -> [u8; 16] {
+        let mut rng = rand::rng();
+        rng.random()
+    }
+
+    pub fn bytes_32(&self) -> [u8; 32] {
+        let mut rng = rand::rng();
+        rng.random()
+    }
+
+    pub fn bytes_64(&self) -> [u8; 64] {
+        let mut rng = rand::rng();
+        rng.random()
+    }
+
     pub fn str_sys_gettime(&self, length: usize) -> String {
         let nsec = get_sys_gettime_nsec().to_string();
         let nsec_len = nsec.len();
@@ -66,6 +81,22 @@ mod tests {
     static CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                             abcdefghijklmnopqrstuvwxyz\
                             0123456789";
+    #[test]
+    fn bytes_16() {
+        let bytes = RandomService::new().bytes_16();
+        assert_eq!(16, bytes.len());
+    }
+    #[test]
+    fn bytes_32() {
+        let bytes = RandomService::new().bytes_32();
+        assert_eq!(32, bytes.len());
+    }
+    #[test]
+    fn bytes_64() {
+        let bytes = RandomService::new().bytes_64();
+        assert_eq!(64, bytes.len());
+    }
+
     #[test]
     fn str() {
         let str: String = RandomService::new().str(64);

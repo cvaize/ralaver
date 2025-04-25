@@ -78,7 +78,7 @@ impl<'a> AuthService<'a> {
         token.push_str(auth_token.2.as_str());
         self.crypt_service
             .get_ref()
-            .encrypt_string(&token)
+            .encrypt_string(&token, None)
             .map_err(log_map_err!(
                 AuthServiceError::Fail,
                 "AuthService::encrypt_auth_token"
@@ -89,7 +89,7 @@ impl<'a> AuthService<'a> {
         let token = self
             .crypt_service
             .get_ref()
-            .decrypt_string(encrypted_token)
+            .decrypt_string(encrypted_token, None)
             .map_err(log_map_err!(
                 AuthServiceError::Fail,
                 "AuthService::decrypt_auth_token"
@@ -692,7 +692,7 @@ mod tests {
 
     #[tokio::test]
     async fn exists_user_by_email() {
-        let (_, all_services) = preparation().await;
+        let (_, all_services) = preparation();
 
         assert_eq!(
             false,
@@ -715,7 +715,7 @@ mod tests {
         use crate::schema::users::dsl::email as dsl_email;
         use crate::schema::users::dsl::users as dsl_users;
 
-        let (all_connections, all_services) = preparation().await;
+        let (all_connections, all_services) = preparation();
 
         let email = "admin@admin.example";
 
@@ -754,7 +754,7 @@ mod tests {
 
     #[tokio::test]
     async fn reset_password_code() {
-        let (_, all_services) = preparation().await;
+        let (_, all_services) = preparation();
 
         let email = "admin@admin.example";
         let code = all_services.rand.get_ref().str(64);
@@ -790,7 +790,7 @@ mod tests {
     async fn login_by_credentials() {
         use crate::schema::users::dsl::email as dsl_email;
         use crate::schema::users::dsl::users as dsl_users;
-        let (all_connections, all_services) = preparation().await;
+        let (all_connections, all_services) = preparation();
 
         let email = "admin@admin.example";
         let password = all_services.rand.get_ref().str(64);
@@ -820,7 +820,7 @@ mod tests {
     async fn register_by_credentials() {
         use crate::schema::users::dsl::email as dsl_email;
         use crate::schema::users::dsl::users as dsl_users;
-        let (all_connections, all_services) = preparation().await;
+        let (all_connections, all_services) = preparation();
 
         let password = all_services.rand.get_ref().str(64);
         let email = format!("admin{}@admin.example", &password);
@@ -843,21 +843,21 @@ mod tests {
 
     #[tokio::test]
     async fn encrypt_auth_token() {
-        let (_, all_services) = preparation().await;
+        let (_, all_services) = preparation();
         let auth = all_services.auth.get_ref();
 
         let auth_token = AuthToken(5, 6, "test".to_string());
 
         let s: String = auth.encrypt_auth_token(&auth_token).unwrap();
-        assert_eq!(s, "apKEYkTL4LpKqDU4C6dkXw==".to_string());
+        assert_eq!(s, "fe6fkprU82Tkl1eOJQSUQQ==".to_string());
     }
 
     #[tokio::test]
     async fn decrypt_auth_token() {
-        let (_, all_services) = preparation().await;
+        let (_, all_services) = preparation();
         let auth = all_services.auth.get_ref();
 
-        let s: String = "apKEYkTL4LpKqDU4C6dkXw==".to_string();
+        let s: String = "fe6fkprU82Tkl1eOJQSUQQ==".to_string();
         let auth_token = auth.decrypt_auth_token(&s).unwrap();
 
         assert_eq!(auth_token.0, 5);

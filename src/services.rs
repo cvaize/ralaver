@@ -40,7 +40,7 @@ pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices<'a> {
     );
     let rand = Data::new(RandomService::new());
     let hash = Data::new(HashService::new(Argon2::default()));
-    let crypt = Data::new(CryptService::new());
+    let crypt = Data::new(CryptService::new(s.config.clone()));
     let auth = Data::new(AuthService::new(
         s.config.clone(),
         c.mysql.clone(),

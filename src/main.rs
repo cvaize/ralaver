@@ -25,7 +25,7 @@ use app::middlewares::error_redirect::ErrorRedirectWrap;
 pub use app::controllers::web::WebHttpRequest;
 pub use app::controllers::web::WebHttpResponse;
 
-async fn preparation() -> (Connections, Services<'static>) {
+fn preparation() -> (Connections, Services<'static>) {
     dotenv::dotenv().ok();
     let base_services = services::base(Config::new());
     let _ = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -43,7 +43,7 @@ async fn preparation() -> (Connections, Services<'static>) {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let (_, all_services) = preparation().await;
+    let (_, all_services) = preparation();
 
     log::info!("{}","Starting HTTP server at http://0.0.0.0:8080");
 
