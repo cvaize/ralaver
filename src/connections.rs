@@ -5,7 +5,6 @@ use crate::{mysql_connection, redis_connection, MysqlPool};
 use actix_web::web::Data;
 
 pub fn smtp(s: &BaseServices) -> Data<LettreSmtpTransport> {
-    // Smtp
     let smtp: LettreSmtpTransport =
         get_smtp_transport(&s.config.get_ref().mail.smtp)
             .expect("Failed to create connection MysqlPool.");

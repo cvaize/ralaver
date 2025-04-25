@@ -6,7 +6,7 @@ license = "MIT"
 
 [dependencies]
 actix-web = "4"
-diesel = { version = "2.2.7", features = ["mysql", "r2d2"] }
+diesel = { version = "2.2.7", features = ["mysql", "r2d2", "sqlite"] }
 diesel_migrations = "2.2.0"
 dotenv = "0.15.0"
 r2d2 = "0.8.10"

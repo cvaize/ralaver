@@ -1,8 +1,8 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::{
-    log_map_err, Config, CryptService, KeyValueService, KeyValueServiceError,
-    NewUser, PrivateUserData, RandomService, User, UserService,
+    log_map_err, Config, CryptService, KeyValueService, KeyValueServiceError, NewUser,
+    PrivateUserData, RandomService, User, UserService,
 };
 use crate::{HashService, MysqlPool};
 use actix_web::cookie::time::Duration;

@@ -84,6 +84,7 @@ pub struct MailSmtpConfig {
 
 impl Config {
     pub fn new() -> Self {
+        dotenv::dotenv().ok();
         Self {
             app: AppConfig {
                 key: env::var("APP_KEY")

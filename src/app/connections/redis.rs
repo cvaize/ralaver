@@ -1,32 +1,25 @@
 use crate::config::RedisDbConfig;
 use r2d2::Pool;
 use redis::{Client, ErrorKind, RedisError, Value};
-use strum_macros::{Display, EnumString};
-
+use crate::app::connections::ConnectionError;
 // https://docs.rs/redis/latest/redis/#type-conversions
 
 pub type RedisPool = Pool<Client>;
 
-#[derive(Debug, Clone, Copy, Display, EnumString)]
-pub enum RedisConnectionError {
-    CreateClientFail,
-    CreatePoolFail,
-}
-
 pub fn get_connection_pool(
     config: &RedisDbConfig,
-) -> Result<RedisPool, RedisConnectionError> {
+) -> Result<RedisPool, ConnectionError> {
     log::info!("{}","Connecting to Redis database.");
     let database_url = config.url.to_owned();
 
     let client = Client::open(database_url).map_err(|e| {
-        log::error!("{}",format!("RedisConnectionError::CreateClientFail - {:}", &e).as_str());
-        RedisConnectionError::CreateClientFail
+        log::error!("{}",format!("ConnectionError::CreateClientFail - {:}", &e).as_str());
+        ConnectionError::CreateClientFail
     })?;
 
     Pool::builder().build(client).map_err(|e| {
-        log::error!("{}",format!("RedisConnectionError::CreatePoolFail - {:}", &e).as_str());
-        RedisConnectionError::CreatePoolFail
+        log::error!("{}",format!("ConnectionError::CreatePoolFail - {:}", &e).as_str());
+        ConnectionError::CreatePoolFail
     })
 }
 

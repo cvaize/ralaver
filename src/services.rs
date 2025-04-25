@@ -26,7 +26,7 @@ pub struct AdvancedServices {
     pub user: Data<UserService>,
 }
 
-pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices {
+pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
     let user = Data::new(UserService::new(c.mysql.clone()));
     let key_value = Data::new(KeyValueService::new(c.redis.clone()));
     let translator = Data::new(

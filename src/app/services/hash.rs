@@ -2,18 +2,21 @@ use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
 };
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use strum_macros::{Display, EnumString};
 
 #[derive(Debug)]
 pub struct HashService {
+    // TODO: Remove 'static
     argon2: Argon2<'static>,
 }
 
 impl HashService {
     pub fn new() -> Self {
         // TODO: Добавить конфиг сюда и взять из него APP_KEY в качестве ключа для argon2
-        Self { argon2: Argon2::default() }
+        Self {
+            argon2: Argon2::default(),
+        }
     }
 
     pub fn verify_password(&self, password: &String, hash: &String) -> bool {
@@ -57,8 +60,8 @@ pub enum HashServiceError {
 
 #[cfg(test)]
 mod tests {
+    use crate::{preparation};
     use test::Bencher;
-    use crate::preparation;
 
     #[test]
     fn hash() {
@@ -70,7 +73,6 @@ mod tests {
         let password_hash1 = hash.hash(&password1);
         let password_hash2 = hash.hash(&password2);
         assert_eq!(password_hash1, password_hash2);
-
     }
 
     #[test]
@@ -90,6 +92,7 @@ mod tests {
     fn bench_verify_password(b: &mut Bencher) {
         let (_, all_services) = preparation();
         let hash = all_services.hash.get_ref();
+
         let password = "password123".to_string();
         let password_hash = hash.hash_password(&password).unwrap();
         b.iter(|| hash.verify_password(&password, &password_hash));
@@ -99,40 +102,8 @@ mod tests {
     fn bench_hash_password(b: &mut Bencher) {
         let (_, all_services) = preparation();
         let hash = all_services.hash.get_ref();
+
         let password = "password123".to_string();
         b.iter(|| hash.hash_password(&password).unwrap());
     }
-
-    // #[test]
-    // fn test_sodoken() {
-    //     use sodoken::*;
-    //
-    //     let mut pub_key = [0; sign::PUBLICKEYBYTES];
-    //     let mut sec_key = SizedLockedArray::new().unwrap();
-    //
-    //     sign::keypair(&mut pub_key, &mut sec_key.lock()).unwrap();
-    //
-    //     let mut sig = [0; sign::SIGNATUREBYTES];
-    //
-    //     sign::sign_detached(&mut sig, b"hello", &sec_key.lock()).unwrap();
-    //     assert!(sign::verify_detached(&sig, b"hello", &pub_key));
-    //     assert!(!sign::verify_detached(&sig, b"world", &pub_key));
-    // }
-    //
-    // #[bench]
-    // fn bench_sodoken(b: &mut Bencher) {
-    //     use sodoken::*;
-    //
-    //     let mut pub_key = [0; sign::PUBLICKEYBYTES];
-    //     let mut sec_key = SizedLockedArray::new().unwrap();
-    //
-    //     sign::keypair(&mut pub_key, &mut sec_key.lock()).unwrap();
-    //
-    //     let mut sig = [0; sign::SIGNATUREBYTES];
-    //     let password = b"password123";
-    //
-    //     sign::sign_detached(&mut sig, password, &sec_key.lock()).unwrap();
-    //
-    //     b.iter(|| sign::verify_detached(&sig, password, &pub_key));
-    // }
 }
