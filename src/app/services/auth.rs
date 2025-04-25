@@ -19,11 +19,11 @@ use strum_macros::{Display, EnumString};
 
 static RESET_PASSWORD_CODE_KEY: &str = "reset_password.code";
 
-pub struct AuthService<'a> {
+pub struct AuthService {
     #[allow(dead_code)]
     config: Data<Config>,
     db_pool: Data<MysqlPool>,
-    hash: Data<HashService<'a>>,
+    hash: Data<HashService>,
     key_value_service: Data<KeyValueService>,
     user_service: Data<UserService>,
     random_service: Data<RandomService>,
@@ -48,11 +48,11 @@ impl AuthToken {
     }
 }
 
-impl<'a> AuthService<'a> {
+impl AuthService {
     pub fn new(
         config: Data<Config>,
         db_pool: Data<MysqlPool>,
-        hash: Data<HashService<'a>>,
+        hash: Data<HashService>,
         key_value_service: Data<KeyValueService>,
         user_service: Data<UserService>,
         random_service: Data<RandomService>,
@@ -78,7 +78,7 @@ impl<'a> AuthService<'a> {
         token.push_str(auth_token.2.as_str());
         self.crypt_service
             .get_ref()
-            .encrypt_string(&token, None)
+            .encrypt_string(&token)
             .map_err(log_map_err!(
                 AuthServiceError::Fail,
                 "AuthService::encrypt_auth_token"
@@ -89,7 +89,7 @@ impl<'a> AuthService<'a> {
         let token = self
             .crypt_service
             .get_ref()
-            .decrypt_string(encrypted_token, None)
+            .decrypt_string(encrypted_token)
             .map_err(log_map_err!(
                 AuthServiceError::Fail,
                 "AuthService::decrypt_auth_token"
@@ -847,9 +847,7 @@ mod tests {
         let auth = all_services.auth.get_ref();
 
         let auth_token = AuthToken(5, 6, "test".to_string());
-
-        let s: String = auth.encrypt_auth_token(&auth_token).unwrap();
-        assert_eq!(s, "fe6fkprU82Tkl1eOJQSUQQ==".to_string());
+        auth.encrypt_auth_token(&auth_token).unwrap();
     }
 
     #[tokio::test]
@@ -857,11 +855,11 @@ mod tests {
         let (_, all_services) = preparation();
         let auth = all_services.auth.get_ref();
 
-        let s: String = "fe6fkprU82Tkl1eOJQSUQQ==".to_string();
-        let auth_token = auth.decrypt_auth_token(&s).unwrap();
-
-        assert_eq!(auth_token.0, 5);
-        assert_eq!(auth_token.1, 6);
-        assert_eq!(auth_token.2, "test".to_string());
+        let auth_token = AuthToken(5, 6, "test".to_string());
+        let s: String = auth.encrypt_auth_token(&auth_token).unwrap();
+        let result: AuthToken = auth.decrypt_auth_token(&s).unwrap();
+        assert_eq!(auth_token.get_token_id(), result.get_token_id());
+        assert_eq!(auth_token.get_user_id(), result.get_user_id());
+        assert_eq!(auth_token.get_token_value(), result.get_token_value());
     }
 }

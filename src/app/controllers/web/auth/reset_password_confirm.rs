@@ -31,7 +31,7 @@ pub async fn show(
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    auth_service: Data<AuthService<'_>>,
+    auth_service: Data<AuthService>,
 ) -> Result<HttpResponse, Error> {
     invoke(
         req,
@@ -57,7 +57,7 @@ pub async fn invoke(
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    auth_service: Data<AuthService<'_>>,
+    auth_service: Data<AuthService>,
 ) -> Result<HttpResponse, Error> {
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
@@ -185,7 +185,7 @@ async fn post(
     password_str: &String,
     confirm_password_str: &String,
     translator: &Translator<'_>,
-    auth_service: &AuthService<'_>,
+    auth_service: &AuthService,
 ) -> Result<(bool, Vec<String>, Vec<String>, Vec<String>, Vec<String>), Error> {
     let mut is_done = false;
     let mut email_errors: Vec<String> = vec![];

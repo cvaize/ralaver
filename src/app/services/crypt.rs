@@ -1,36 +1,49 @@
 use crate::helpers::vec_into_array;
-use crate::{log_map_err, Config, RandomService};
+use crate::{log_map_err, Config, HashService, RandomService};
 use actix_web::web::Data;
 use base64_stream::FromBase64Reader;
 use base64_stream::ToBase64Reader;
-use openssl::symm::{decrypt, encrypt, Cipher};
+use serde_derive::{Deserialize, Serialize};
 use std::io::{Cursor, Read};
 use strum_macros::{Display, EnumString};
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct EncryptedData {
+    pub iv: String,
+    pub value: String,
+    pub mac: String,
+}
+
 pub struct CryptService {
-    cipher: Cipher,
+    random_service: Data<RandomService>,
+    hash_service: Data<HashService>,
+    cipher: openssl::symm::Cipher,
+    cipher_key_string: String,
     cipher_key: [u8; 32],
 }
 
 impl CryptService {
-    pub fn new(config: Data<Config>) -> Self {
+    pub fn new(
+        config: Data<Config>,
+        random_service: Data<RandomService>,
+        hash_service: Data<HashService>,
+    ) -> Self {
         if config.get_ref().app.key.len() == 0 {
             panic!("APP_KEY is missing!");
         }
-        let cipher_key = Self::parse_key(&config.get_ref().app.key);
+        let cipher_key_string: String = config.get_ref().app.key.to_owned();
+        let cipher_key: [u8; 32] = Self::parse_key(&cipher_key_string);
         Self {
-            cipher: Cipher::aes_256_cbc(),
+            random_service,
+            hash_service,
+            cipher: openssl::symm::Cipher::aes_256_cbc(),
+            cipher_key_string,
             cipher_key,
         }
     }
 
-    pub fn random_key() -> [u8; 32] {
-        let rand = RandomService::new();
-        rand.bytes_32()
-    }
-
-    pub fn random_key_string() -> String {
-        let key = Self::random_key();
+    pub fn random_key() -> String {
+        let key: [u8; 32] = RandomService::new().bytes_32();
 
         let mut reader = ToBase64Reader::new(Cursor::new(key));
         let mut base64 = String::new();
@@ -48,59 +61,131 @@ impl CryptService {
         vec_into_array(key)
     }
 
-    pub fn encrypt_string(&self, string: &str, password: Option<&str>) -> Result<String, CryptServiceError> {
-        let password_ = if let Some(p) = password { Some(p.as_bytes()) } else { None };
-        let encrypted: Vec<u8> = encrypt(
-            self.cipher,
-            &self.cipher_key,
-            password_,
-            string.as_bytes(),
-        )
-        .map_err(log_map_err!(
+    pub fn to_base64<T: AsRef<[u8]>>(&self, value: T) -> Result<String, CryptServiceError> {
+        let mut reader = ToBase64Reader::new(Cursor::new(value));
+
+        let mut base64 = String::new();
+        reader.read_to_string(&mut base64).map_err(log_map_err!(
             CryptServiceError::Fail,
-            "CryptServiceError::encrypt_string"
+            "CryptService::to_base64"
         ))?;
-
-        let mut reader = ToBase64Reader::new(Cursor::new(encrypted));
-
-        let mut encrypted_base64 = String::new();
-        reader
-            .read_to_string(&mut encrypted_base64)
-            .map_err(log_map_err!(
-                CryptServiceError::Fail,
-                "CryptServiceError::encrypt_string"
-            ))?;
-
-        Ok(encrypted_base64)
+        Ok(base64)
     }
 
-    pub fn decrypt_string(&self, string: &str, password: Option<&str>) -> Result<String, CryptServiceError> {
-        let password_ = if let Some(p) = password { Some(p.as_bytes()) } else { None };
-        let mut reader = FromBase64Reader::new(Cursor::new(string));
+    pub fn base64_to_end(&self, base64: &str) -> Result<Vec<u8>, CryptServiceError> {
+        let mut reader = FromBase64Reader::new(Cursor::new(base64));
 
-        let mut encrypted_after_base64: Vec<u8> = vec![];
+        let mut result: Vec<u8> = vec![];
 
-        reader
-            .read_to_end(&mut encrypted_after_base64)
+        reader.read_to_end(&mut result).map_err(log_map_err!(
+            CryptServiceError::Fail,
+            "CryptService::decrypt_string"
+        ))?;
+
+        Ok(result)
+    }
+
+    pub fn base64_to_string(&self, base64: &str) -> Result<String, CryptServiceError> {
+        let mut reader = FromBase64Reader::new(Cursor::new(base64));
+
+        let mut result: String = "".to_string();
+
+        reader.read_to_string(&mut result).map_err(log_map_err!(
+            CryptServiceError::Fail,
+            "CryptService::base64_to_string"
+        ))?;
+
+        Ok(result)
+    }
+
+    fn hash(&self, iv: &str, value: &str, key: &str) -> Result<String, CryptServiceError> {
+        let mut s = iv.to_owned();
+        s.push_str(value);
+        s.push_str(key);
+        let hash = self.hash_service.get_ref().hash(s);
+        self.to_base64(hash)
+            .map_err(log_map_err!(CryptServiceError::Fail, "CryptService::hash"))
+    }
+
+    pub fn encrypt_string(&self, string: &str) -> Result<String, CryptServiceError> {
+        let iv: [u8; 128] = self.random_service.get_ref().bytes_128();
+        let value: Vec<u8> =
+            openssl::symm::encrypt(self.cipher, &self.cipher_key, Some(&iv), string.as_bytes())
+                .map_err(log_map_err!(
+                    CryptServiceError::Fail,
+                    "CryptService::encrypt_string"
+                ))?;
+
+        let iv_base64: String = self.to_base64(iv).map_err(log_map_err!(
+            CryptServiceError::Fail,
+            "CryptService::encrypt_string"
+        ))?;
+        let value_base64: String = self.to_base64(value).map_err(log_map_err!(
+            CryptServiceError::Fail,
+            "CryptService::encrypt_string"
+        ))?;
+        let mac: String = self
+            .hash(&iv_base64, &value_base64, &self.cipher_key_string)
             .map_err(log_map_err!(
                 CryptServiceError::Fail,
-                "CryptServiceError::decrypt_string"
+                "CryptService::encrypt_string"
             ))?;
 
-        let decrypted = decrypt(
-            self.cipher,
-            &self.cipher_key,
-            password_,
-            &encrypted_after_base64,
-        )
-        .map_err(log_map_err!(
+        let data = EncryptedData {
+            iv: iv_base64,
+            value: value_base64,
+            mac,
+        };
+
+        let data_string: String = serde_json::to_string(&data).map_err(log_map_err!(
             CryptServiceError::Fail,
-            "CryptServiceError::decrypt_string"
+            "CryptService::encrypt_string"
         ))?;
+        let data_base64: String = self.to_base64(data_string).map_err(log_map_err!(
+            CryptServiceError::Fail,
+            "CryptService::encrypt_string"
+        ))?;
+
+        Ok(data_base64)
+    }
+
+    pub fn decrypt_string(&self, data_base64: &str) -> Result<String, CryptServiceError> {
+        let data_string: String = self.base64_to_string(data_base64).map_err(log_map_err!(
+            CryptServiceError::Fail,
+            "CryptService::decrypt_string"
+        ))?;
+        let data: EncryptedData = serde_json::from_str(&data_string).map_err(log_map_err!(
+            CryptServiceError::Fail,
+            "CryptService::decrypt_string"
+        ))?;
+        let mac: String = self
+            .hash(&data.iv, &data.value, &self.cipher_key_string)
+            .map_err(log_map_err!(
+                CryptServiceError::Fail,
+                "CryptService::decrypt_string"
+            ))?;
+
+        if mac.ne(&data.mac) {
+            return Err(CryptServiceError::Fail);
+        }
+
+        let iv: Vec<u8> = self.base64_to_end(&data.iv).map_err(log_map_err!(
+            CryptServiceError::Fail,
+            "CryptService::decrypt_string"
+        ))?;
+        let value: Vec<u8> = self.base64_to_end(&data.value).map_err(log_map_err!(
+            CryptServiceError::Fail,
+            "CryptService::decrypt_string"
+        ))?;
+
+        let decrypted =
+            openssl::symm::decrypt(self.cipher, &self.cipher_key, Some(&iv), &value).map_err(
+                log_map_err!(CryptServiceError::Fail, "CryptService::decrypt_string"),
+            )?;
 
         String::from_utf8(decrypted).map_err(log_map_err!(
             CryptServiceError::Fail,
-            "CryptServiceError::decrypt_string"
+            "CryptService::decrypt_string"
         ))
     }
 }
@@ -121,16 +206,8 @@ mod tests {
 
     static DATA: &str =
         "1-10459396685910126978-DLum2QqN6bjg8L7kfMrORdazvv4dlrOT0Z9XcEDZMJ5DAnISYZx18wTHvNI5mlH2";
-    static ENCODED_DATA: &str = "ipCyMRF/ya6s++CijbRF8gRYtZ7ZWFOgZ87xwDRpr3XAJJpBr5H0ZN/WWH1TPuuFzwKpfONsc0SSy1Vk/AZKiFHizodDtc112M0tQgcYxAGK4FayiRl5fnZBQzt8Cssk";
-    static ENCODED_PASSWORD_DATA: &str = "/TTqk91ZFpl7zvxNEoD81MRTTizGCeeTXyol9ZijAVNKZwY2QjQ3XLptBy9H/2LFzNoVcjmTqfzW2JyMrdQZONig3QjohwEW2kyVXWFkhoTqLNC6Mq2kTjQftSV3oH0x";
     static AES_256_CBC_KEY: &[u8; 32] = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F";
     static AES_256_CBC_IV: &[u8; 64] = b"\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07";
-    static PASSWORD: &str = "passwordpasswordpassword";
-    static PASSWORD2: &str = "pawordpassworsswordpassd";
-    // TODO: https://security.stackexchange.com/questions/35210/encrypting-using-aes-256-do-i-need-iv
-    // Если вы используете каждый ключ только один раз, то не используйте IV. Если вы используете ключ несколько раз, вам следует использовать каждый раз другой IV, чтобы пара (ключ, IV) не использовалась повторно.
-    //
-    // Точные требования к IV зависят от выбранного режима цепочки, но обычно достаточно случайного 128-битного значения. Оно должно быть разным для каждого сообщения, которое вы шифруете. Сохраните его вместе с зашифрованным текстом, обычно в качестве префикса.
 
     #[test]
     fn parse_key() {
@@ -144,12 +221,7 @@ mod tests {
 
     #[test]
     fn random_key() {
-        assert_eq!(CryptService::random_key().len(), 32);
-    }
-
-    #[test]
-    fn random_key_string() {
-        assert!(CryptService::random_key_string().len() > 32);
+        assert!(CryptService::random_key().len() > 0);
     }
 
     #[test]
@@ -157,10 +229,8 @@ mod tests {
         let (_, all_services) = preparation();
         let crypt = all_services.crypt.get_ref();
 
-        let encoded = crypt.encrypt_string(DATA, None).unwrap();
-        assert_eq!(ENCODED_DATA.to_string(), encoded);
-        let encoded = crypt.encrypt_string(DATA, Some(PASSWORD)).unwrap();
-        assert_eq!(ENCODED_PASSWORD_DATA.to_string(), encoded);
+        let encoded = crypt.encrypt_string(DATA).unwrap();
+        assert!(encoded.len() > 1);
     }
 
     #[bench]
@@ -169,7 +239,7 @@ mod tests {
         let crypt = all_services.crypt.get_ref();
 
         b.iter(|| {
-            let _ = crypt.encrypt_string(DATA, Some(PASSWORD)).unwrap();
+            let _ = crypt.encrypt_string(DATA).unwrap();
         })
     }
 
@@ -178,23 +248,20 @@ mod tests {
         let (_, all_services) = preparation();
         let crypt = all_services.crypt.get_ref();
 
-        let encoded = crypt.encrypt_string(DATA, Some(PASSWORD)).unwrap();
-        assert_eq!(ENCODED_PASSWORD_DATA.to_string(), encoded);
+        let encoded: String = crypt.encrypt_string(DATA).unwrap();
 
-        let decoded = crypt.decrypt_string(&encoded, Some(PASSWORD)).unwrap();
+        let decoded: String = crypt.decrypt_string(&encoded).unwrap();
         assert_eq!(DATA.to_string(), decoded);
-        assert_ne!(DATA.to_string(), crypt.decrypt_string(&encoded, None).unwrap());
-        assert_ne!(DATA.to_string(), crypt.decrypt_string(&encoded, Some(PASSWORD2)).unwrap());
     }
 
     #[bench]
     fn bench_decrypt_string(b: &mut Bencher) {
         let (_, all_services) = preparation();
         let crypt = all_services.crypt.get_ref();
-        let encoded = crypt.encrypt_string(DATA, Some(PASSWORD)).unwrap();
+        let encoded = crypt.encrypt_string(DATA).unwrap();
 
         b.iter(|| {
-            let _ = crypt.decrypt_string(&encoded, Some(PASSWORD)).unwrap();
+            let _ = crypt.decrypt_string(&encoded).unwrap();
         })
     }
 
@@ -204,8 +271,8 @@ mod tests {
         let crypt = all_services.crypt.get_ref();
 
         b.iter(|| {
-            let encoded = crypt.encrypt_string(DATA, Some(PASSWORD)).unwrap();
-            let _ = crypt.decrypt_string(&encoded, Some(PASSWORD)).unwrap();
+            let encoded = crypt.encrypt_string(DATA).unwrap();
+            let _ = crypt.decrypt_string(&encoded).unwrap();
         })
     }
 

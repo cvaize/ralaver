@@ -22,16 +22,25 @@ impl RandomService {
     }
 
     pub fn bytes_16(&self) -> [u8; 16] {
+        // TODO: Оптимизировать. Скорее всего стоит инициализировать rand::rng() и использовать повторно
         let mut rng = rand::rng();
         rng.random()
     }
 
     pub fn bytes_32(&self) -> [u8; 32] {
+        // TODO: Оптимизировать. Скорее всего стоит инициализировать rand::rng() и использовать повторно
         let mut rng = rand::rng();
         rng.random()
     }
 
     pub fn bytes_64(&self) -> [u8; 64] {
+        // TODO: Оптимизировать. Скорее всего стоит инициализировать rand::rng() и использовать повторно
+        let mut rng = rand::rng();
+        rng.random()
+    }
+
+    pub fn bytes_128(&self) -> [u8; 128] {
+        // TODO: Оптимизировать. Скорее всего стоит инициализировать rand::rng() и использовать повторно
         let mut rng = rand::rng();
         rng.random()
     }
@@ -82,19 +91,9 @@ mod tests {
                             abcdefghijklmnopqrstuvwxyz\
                             0123456789";
     #[test]
-    fn bytes_16() {
-        let bytes = RandomService::new().bytes_16();
-        assert_eq!(16, bytes.len());
-    }
-    #[test]
-    fn bytes_32() {
-        let bytes = RandomService::new().bytes_32();
-        assert_eq!(32, bytes.len());
-    }
-    #[test]
-    fn bytes_64() {
-        let bytes = RandomService::new().bytes_64();
-        assert_eq!(64, bytes.len());
+    fn random() {
+        let bytes: [u8; 128] = RandomService::new().bytes_128();
+        assert_eq!(128, bytes.len());
     }
 
     #[test]

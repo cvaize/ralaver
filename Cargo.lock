@@ -1888,6 +1888,7 @@ dependencies = [
  "serde_bare",
  "serde_derive",
  "serde_json",
+ "sha2",
  "strum",
  "strum_macros",
  "tokio",

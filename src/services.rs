@@ -1,7 +1,6 @@
 use crate::connections::Connections;
 use crate::{AppService, AuthService, Config, CryptService, HashService, KeyValueService, LocaleService, MailService, RandomService, TemplateService, TranslatorService, UserService};
 use actix_web::web::Data;
-use argon2::Argon2;
 
 pub struct BaseServices {
     pub config: Data<Config>,
@@ -13,13 +12,13 @@ pub fn base(config: Config) -> BaseServices {
     }
 }
 
-pub struct AdvancedServices<'a> {
+pub struct AdvancedServices {
     pub key_value: Data<KeyValueService>,
     pub translator: Data<TranslatorService>,
     pub template: Data<TemplateService>,
     pub crypt: Data<CryptService>,
-    pub hash: Data<HashService<'a>>,
-    pub auth: Data<AuthService<'a>>,
+    pub hash: Data<HashService>,
+    pub auth: Data<AuthService>,
     pub locale: Data<LocaleService>,
     pub app: Data<AppService>,
     pub mail: Data<MailService>,
@@ -27,7 +26,7 @@ pub struct AdvancedServices<'a> {
     pub user: Data<UserService>,
 }
 
-pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices<'a> {
+pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices {
     let user = Data::new(UserService::new(c.mysql.clone()));
     let key_value = Data::new(KeyValueService::new(c.redis.clone()));
     let translator = Data::new(
@@ -39,8 +38,8 @@ pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices<'a> {
             .expect("Fail init TemplateService::new_from_files"),
     );
     let rand = Data::new(RandomService::new());
-    let hash = Data::new(HashService::new(Argon2::default()));
-    let crypt = Data::new(CryptService::new(s.config.clone()));
+    let hash = Data::new(HashService::new());
+    let crypt = Data::new(CryptService::new(s.config.clone(), rand.clone(), hash.clone()));
     let auth = Data::new(AuthService::new(
         s.config.clone(),
         c.mysql.clone(),
@@ -70,13 +69,13 @@ pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices<'a> {
 }
 
 #[allow(dead_code)]
-pub struct Services<'a> {
+pub struct Services {
     pub config: Data<Config>,
     pub key_value: Data<KeyValueService>,
     pub translator: Data<TranslatorService>,
     pub template: Data<TemplateService>,
-    pub hash: Data<HashService<'a>>,
-    pub auth: Data<AuthService<'a>>,
+    pub hash: Data<HashService>,
+    pub auth: Data<AuthService>,
     pub crypt: Data<CryptService>,
     pub locale: Data<LocaleService>,
     pub app: Data<AppService>,

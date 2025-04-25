@@ -5,7 +5,7 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 
 pub async fn invoke(
     req: HttpRequest,
-    auth_service: Data<AuthService<'_>>,
+    auth_service: Data<AuthService>,
 ) -> Result<impl Responder, Error> {
     let auth_service = auth_service.get_ref();
 
