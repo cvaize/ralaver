@@ -63,6 +63,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(all_services.rand.clone())
             .app_data(all_services.user.clone())
             .app_data(all_services.crypt.clone())
+            .app_data(all_services.rate_limit.clone())
             .configure(routes::register)
             .wrap(middleware::Logger::default())
             .wrap(ErrorRedirectWrap)

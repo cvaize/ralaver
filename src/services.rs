@@ -1,5 +1,5 @@
 use crate::connections::Connections;
-use crate::{AppService, AuthService, Config, CryptService, HashService, KeyValueService, LocaleService, MailService, RandomService, TemplateService, TranslatorService, UserService};
+use crate::{AppService, AuthService, Config, CryptService, HashService, KeyValueService, LocaleService, MailService, RandomService, RateLimitService, TemplateService, TranslatorService, UserService};
 use actix_web::web::Data;
 
 pub struct BaseServices {
@@ -23,6 +23,7 @@ pub struct AdvancedServices <'a>{
     pub app: Data<AppService>,
     pub mail: Data<MailService>,
     pub rand: Data<RandomService>,
+    pub rate_limit: Data<RateLimitService>,
     pub user: Data<UserService>,
 }
 
@@ -53,6 +54,7 @@ pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices <'a>{
     let locale = Data::new(LocaleService::new(s.config.clone()));
     let app = Data::new(AppService::new(s.config.clone(), locale.clone()));
     let mail = Data::new(MailService::new(s.config.clone(), c.smtp.clone()));
+    let rate_limit = Data::new(RateLimitService::new(key_value.clone()));
 
     AdvancedServices {
         key_value,
@@ -65,6 +67,7 @@ pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices <'a>{
         app,
         mail,
         rand,
+        rate_limit,
         user,
     }
 }
@@ -82,6 +85,7 @@ pub struct Services <'a>{
     pub app: Data<AppService>,
     pub mail: Data<MailService>,
     pub rand: Data<RandomService>,
+    pub rate_limit: Data<RateLimitService>,
     pub user: Data<UserService>,
 }
 
@@ -98,6 +102,7 @@ pub fn join_to_all<'a>(base: BaseServices, advanced: AdvancedServices<'a>) -> Se
         app: advanced.app,
         mail: advanced.mail,
         rand: advanced.rand,
+        rate_limit: advanced.rate_limit,
         user: advanced.user,
     }
 }
