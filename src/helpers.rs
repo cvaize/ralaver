@@ -41,17 +41,6 @@ pub fn get_sys_gettime_nsec() -> i64 {
     time.tv_nsec
 }
 
-#[macro_export]
-macro_rules! log_map_err {
-    ($error:expr, $message:expr) => {
-|e| {
-    log::error!("{}", format!("{} - {:}", $message, &e).as_str());
-    return $error;
-}
-    };
-}
-
-
 #[cfg(test)]
 mod tests {
     use test::Bencher;

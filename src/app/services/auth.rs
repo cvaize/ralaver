@@ -1,8 +1,8 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::{
-    log_map_err, Config, CryptService, KeyValueService, KeyValueServiceError, NewUser,
-    PrivateUserData, RandomService, User, UserService,
+    Config, CryptService, KeyValueService, KeyValueServiceError, NewUser, PrivateUserData,
+    RandomService, User, UserService,
 };
 use crate::{HashService, MysqlPool};
 use actix_web::cookie::time::Duration;
@@ -79,10 +79,10 @@ impl<'a> AuthService<'a> {
         self.crypt_service
             .get_ref()
             .encrypt_string(&token)
-            .map_err(log_map_err!(
-                AuthServiceError::Fail,
-                "AuthService::encrypt_auth_token"
-            ))
+            .map_err(|e| {
+                log::error!("AuthService::encrypt_auth_token - {e}");
+                return AuthServiceError::Fail;
+            })
     }
 
     pub fn decrypt_auth_token(&self, encrypted_token: &str) -> Result<AuthToken, AuthServiceError> {
@@ -90,22 +90,22 @@ impl<'a> AuthService<'a> {
             .crypt_service
             .get_ref()
             .decrypt_string(encrypted_token)
-            .map_err(log_map_err!(
-                AuthServiceError::Fail,
-                "AuthService::decrypt_auth_token"
-            ))?;
+            .map_err(|e| {
+                log::error!("AuthService::decrypt_auth_token - {e}");
+                return AuthServiceError::Fail;
+            })?;
         let s: Vec<&str> = token.split("-").collect();
         if s.len() != 3 {
             return Err(AuthServiceError::Fail);
         }
-        let s1: u64 = s.get(0).unwrap().parse().map_err(log_map_err!(
-            AuthServiceError::Fail,
-            "AuthService::decrypt_auth_token"
-        ))?;
-        let s2: u64 = s.get(1).unwrap().parse().map_err(log_map_err!(
-            AuthServiceError::Fail,
-            "AuthService::decrypt_auth_token"
-        ))?;
+        let s1: u64 = s.get(0).unwrap().parse().map_err(|e| {
+            log::error!("AuthService::decrypt_auth_token - {e}");
+            return AuthServiceError::Fail;
+        })?;
+        let s2: u64 = s.get(1).unwrap().parse().map_err(|e| {
+            log::error!("AuthService::decrypt_auth_token - {e}");
+            return AuthServiceError::Fail;
+        })?;
         let s3: String = s.get(2).unwrap().to_string();
         Ok(AuthToken::new(s1, s2, s3))
     }
@@ -140,18 +140,18 @@ impl<'a> AuthService<'a> {
 
     pub fn make_auth_token_cookie(&self, token: &AuthToken) -> Result<Cookie, AuthServiceError> {
         let config = self.config.get_ref();
-        let token = self.encrypt_auth_token(&token).map_err(log_map_err!(
-            AuthServiceError::Fail,
-            "AuthService::make_auth_token_cookie"
-        ))?;
+        let token = self.encrypt_auth_token(&token).map_err(|e| {
+            log::error!("AuthService::make_auth_token_cookie - {e}");
+            return AuthServiceError::Fail;
+        })?;
         Ok(self.make_auth_token_cookie_(token, config.auth.token_expires))
     }
 
     pub fn make_auth_token_cookie_throw_http(&self, token: &AuthToken) -> Result<Cookie, Error> {
-        self.make_auth_token_cookie(token).map_err(log_map_err!(
-            error::ErrorInternalServerError("AuthService error"),
-            "AuthService::make_auth_token_cookie_throw_http"
-        ))
+        self.make_auth_token_cookie(token).map_err(|e| {
+            log::error!("AuthService::make_auth_token_cookie_throw_http - {e}");
+            return error::ErrorInternalServerError("AuthService error");
+        })
     }
 
     pub fn make_auth_token_clear_cookie(&self) -> Cookie {
@@ -202,10 +202,10 @@ impl<'a> AuthService<'a> {
         }
         Ok((
             v0.unwrap().to_string(),
-            v1.unwrap().parse::<u64>().map_err(log_map_err!(
-                AuthServiceError::Fail,
-                "AuthService::extract_store_data"
-            ))?,
+            v1.unwrap().parse::<u64>().map_err(|e| {
+                log::error!("AuthService::extract_store_data - {e}");
+                return AuthServiceError::Fail;
+            })?,
         ))
     }
 
@@ -215,10 +215,10 @@ impl<'a> AuthService<'a> {
 
         let expires = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map_err(log_map_err!(
-                AuthServiceError::Fail,
-                "AuthService::save_auth_token"
-            ))?
+            .map_err(|e| {
+                log::error!("AuthService::save_auth_token - {e}");
+                return AuthServiceError::Fail;
+            })?
             .as_secs()
             + config.auth.old_token_expires;
 
@@ -228,10 +228,10 @@ impl<'a> AuthService<'a> {
                 self.make_store_data(token.get_token_value(), expires),
                 config.auth.token_expires,
             )
-            .map_err(log_map_err!(
-                AuthServiceError::Fail,
-                "AuthService::save_auth_token"
-            ))?;
+            .map_err(|e| {
+                log::error!("AuthService::save_auth_token - {e}");
+                return AuthServiceError::Fail;
+            })?;
 
         Ok(())
     }
@@ -245,10 +245,10 @@ impl<'a> AuthService<'a> {
                 self.get_token_value_key(&token),
                 config.auth.old_token_expires as i64,
             )
-            .map_err(log_map_err!(
-                AuthServiceError::Fail,
-                "AuthService::expire_auth_token"
-            ))?;
+            .map_err(|e| {
+                log::error!("AuthService::expire_auth_token - {e}");
+                return AuthServiceError::Fail;
+            })?;
 
         Ok(())
     }
@@ -259,21 +259,21 @@ impl<'a> AuthService<'a> {
     ) -> Result<(User, AuthToken), AuthServiceError> {
         let key_value_service = self.key_value_service.get_ref();
 
-        let value: Option<String> =
-            key_value_service.get(self.get_token_value_key(&token))
-                .map_err(log_map_err!(
-                    AuthServiceError::Fail,
-                    "AuthService::login_by_auth_token"
-                ))?;
+        let value: Option<String> = key_value_service
+            .get(self.get_token_value_key(&token))
+            .map_err(|e| {
+                log::error!("AuthService::login_by_auth_token - {e}");
+                return AuthServiceError::Fail;
+            })?;
 
         if value.is_none() {
             return Err(AuthServiceError::Fail);
         }
         let value = value.unwrap();
-        let (token_value, token_expires) = self.extract_store_data(&value).map_err(log_map_err!(
-            AuthServiceError::Fail,
-            "AuthService::login_by_auth_token"
-        ))?;
+        let (token_value, token_expires) = self.extract_store_data(&value).map_err(|e| {
+            log::error!("AuthService::login_by_auth_token - {e}");
+            return AuthServiceError::Fail;
+        })?;
 
         if token_value != token.get_token_value() {
             return Err(AuthServiceError::Fail);
@@ -282,10 +282,10 @@ impl<'a> AuthService<'a> {
         // Тут токен уже подтверждён и можно получить пользователя
         let user_service = self.user_service.get_ref();
         let user_id = token.get_user_id();
-        let user = user_service.first_by_id(user_id).map_err(log_map_err!(
-            AuthServiceError::Fail,
-            "AuthService::login_by_auth_token"
-        ))?;
+        let user = user_service.first_by_id(user_id).map_err(|e| {
+            log::error!("AuthService::login_by_auth_token - {e}");
+            return AuthServiceError::Fail;
+        })?;
 
         // Нужно сгенерировать новый токен
         let mut is_need_new_token = token_expires == 1;
@@ -293,10 +293,10 @@ impl<'a> AuthService<'a> {
         if !is_need_new_token {
             let expires = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .map_err(log_map_err!(
-                    AuthServiceError::Fail,
-                    "AuthService::login_by_auth_token"
-                ))?
+                .map_err(|e| {
+                    log::error!("AuthService::login_by_auth_token - {e}");
+                    return AuthServiceError::Fail;
+                })?
                 .as_secs();
 
             is_need_new_token = token_expires < expires;
@@ -306,18 +306,18 @@ impl<'a> AuthService<'a> {
         let is_expire_old_token = is_need_new_token && token_expires != 1;
 
         if is_expire_old_token {
-            self.expire_auth_token(token).map_err(log_map_err!(
-                AuthServiceError::Fail,
-                "AuthService::login_by_auth_token"
-            ))?
+            self.expire_auth_token(token).map_err(|e| {
+                log::error!("AuthService::login_by_auth_token - {e}");
+                return AuthServiceError::Fail;
+            })?
         }
 
         let token: AuthToken = if is_need_new_token {
             let token = self.generate_auth_token(user_id);
-            self.save_auth_token(&token).map_err(log_map_err!(
-                AuthServiceError::Fail,
-                "AuthService::login_by_auth_token"
-            ))?;
+            self.save_auth_token(&token).map_err(|e| {
+                log::error!("AuthService::login_by_auth_token - {e}");
+                return AuthServiceError::Fail;
+            })?;
             token
         } else {
             token.clone()
@@ -359,10 +359,10 @@ impl<'a> AuthService<'a> {
         password: &String,
     ) -> Result<u64, AuthServiceError> {
         let hash_service = self.hash.get_ref();
-        let mut connection = self.db_pool.get_ref().get().map_err(log_map_err!(
-            AuthServiceError::DbConnectionFail,
-            "AuthService::login_by_password"
-        ))?;
+        let mut connection = self.db_pool.get_ref().get().map_err(|e| {
+            log::error!("AuthService::login_by_password - {e}");
+            return AuthServiceError::DbConnectionFail;
+        })?;
 
         let user: PrivateUserData = crate::schema::users::dsl::users
             .filter(crate::schema::users::email.eq(email))
@@ -370,8 +370,7 @@ impl<'a> AuthService<'a> {
             .first::<PrivateUserData>(&mut connection)
             .map_err(|e| {
                 if e.to_string() != "Record not found" {
-                    let message = format!("AuthService::login_by_password - {} - {:}", email, e);
-                    log::error!("{}", message.as_str(),);
+                    log::error!("AuthService::login_by_password - {email} - {e}");
                 }
                 return AuthServiceError::Fail;
             })?;
@@ -401,12 +400,9 @@ impl<'a> AuthService<'a> {
                     .hash_password(&data.password)
                     .map_err(|e| {
                         log::error!(
-                            "{}",
-                            format!(
-                                "AuthService::register_by_credentials - {} - {:}",
-                                data.password, e
-                            )
-                            .as_str(),
+                            "AuthService::register_by_credentials - {} - {}",
+                            data.password,
+                            e
                         );
                         AuthServiceError::PasswordHashFail
                     })?,
@@ -414,11 +410,8 @@ impl<'a> AuthService<'a> {
         };
 
         let mut connection = self.db_pool.get_ref().get().map_err(|e| {
-            log::error!(
-                "{}",
-                format!("AuthService::register_by_credentials - {:}", &e).as_str()
-            );
-            AuthServiceError::DbConnectionFail
+            log::error!("AuthService::register_by_credentials - {e}");
+            return AuthServiceError::DbConnectionFail;
         })?;
 
         diesel::insert_into(crate::schema::users::table)
@@ -428,28 +421,19 @@ impl<'a> AuthService<'a> {
                 diesel::result::Error::DatabaseError(kind, _) => match &kind {
                     DatabaseErrorKind::UniqueViolation => {
                         log::info!(
-                            "{}",
-                            format!(
-                                "AuthService::register_by_credentials - {} - {:}",
-                                &data.email, e
-                            )
-                            .as_str(),
+                            "AuthService::register_by_credentials - {} - {}",
+                            &data.email,
+                            e
                         );
                         AuthServiceError::DuplicateEmail
                     }
                     _ => {
-                        log::error!(
-                            "{}",
-                            format!("AuthService::register_by_credentials - {:}", &e).as_str(),
-                        );
+                        log::error!("AuthService::register_by_credentials - {e}");
                         AuthServiceError::InsertNewUserFail
                     }
                 },
                 _ => {
-                    log::error!(
-                        "{}",
-                        format!("AuthService::register_by_credentials - {:}", &e).as_str()
-                    );
+                    log::error!("AuthService::register_by_credentials - {e}");
                     AuthServiceError::InsertNewUserFail
                 }
             })?;
@@ -467,10 +451,7 @@ impl<'a> AuthService<'a> {
             .get_ref()
             .set(&key, code)
             .map_err(|e| {
-                log::error!(
-                    "{}",
-                    format!("AuthService::save_reset_password_code - {} - {:}", &key, &e).as_str(),
-                );
+                log::error!("AuthService::save_reset_password_code - {key} - {e}");
                 e
             })?;
         Ok(())
@@ -483,10 +464,7 @@ impl<'a> AuthService<'a> {
         let key = format!("{}:{}", RESET_PASSWORD_CODE_KEY, &email);
 
         let value: Option<String> = self.key_value_service.get_ref().get(&key).map_err(|e| {
-            log::error!(
-                "{}",
-                format!("AuthService::get_reset_password_code - {} - {:}", &key, &e).as_str(),
-            );
+            log::error!("AuthService::get_reset_password_code - {key} - {e}");
             e
         })?;
         Ok(value)
@@ -498,14 +476,7 @@ impl<'a> AuthService<'a> {
         code: &str,
     ) -> Result<bool, KeyValueServiceError> {
         let stored_code: Option<String> = self.get_reset_password_code(email).map_err(|e| {
-            log::error!(
-                "{}",
-                format!(
-                    "AuthService::is_equal_reset_password_code - {} - {:}",
-                    email, e
-                )
-                .as_str(),
-            );
+            log::error!("AuthService::is_equal_reset_password_code - {email} - {e}");
             e
         })?;
         match stored_code {
@@ -524,22 +495,12 @@ impl<'a> AuthService<'a> {
         use crate::schema::users::dsl::users as dsl_users;
 
         let hashed_password = self.hash.get_ref().hash_password(password).map_err(|e| {
-            log::error!(
-                "{}",
-                format!(
-                    "AuthService::update_password_by_email - {} - {:}",
-                    &email, &e
-                )
-                .as_str(),
-            );
+            log::error!("AuthService::update_password_by_email - {email} - {e}",);
             AuthServiceError::Fail
         })?;
 
         let mut connection = self.db_pool.get_ref().get().map_err(|e| {
-            log::error!(
-                "{}",
-                format!("AuthService::update_password_by_email - {:}", &e).as_str()
-            );
+            log::error!("AuthService::update_password_by_email - {e}",);
             AuthServiceError::DbConnectionFail
         })?;
 
@@ -547,14 +508,7 @@ impl<'a> AuthService<'a> {
             .set(dsl_password.eq(hashed_password))
             .execute(&mut connection)
             .map_err(|e| {
-                log::error!(
-                    "{}",
-                    format!(
-                        "AuthService::update_password_by_email - {} - {:}",
-                        &email, &e
-                    )
-                    .as_str(),
-                );
+                log::error!("AuthService::update_password_by_email - {email} - {e}");
                 AuthServiceError::Fail
             })?;
         Ok(())
@@ -567,20 +521,14 @@ impl<'a> AuthService<'a> {
         use diesel::select;
 
         let mut connection = self.db_pool.get_ref().get().map_err(|e| {
-            log::error!(
-                "{}",
-                format!("AuthService::exists_user_by_email - {:}", &e).as_str()
-            );
+            log::error!("AuthService::exists_user_by_email - {e}");
             AuthServiceError::DbConnectionFail
         })?;
 
         let email_exists: bool = select(exists(dsl_users.filter(dsl_email.eq(email))))
             .get_result(&mut connection)
             .map_err(|e| {
-                log::error!(
-                    "{}",
-                    format!("AuthService::exists_user_by_email - {:}", &e).as_str()
-                );
+                log::error!("AuthService::exists_user_by_email - {e}");
                 AuthServiceError::Fail
             })?;
 

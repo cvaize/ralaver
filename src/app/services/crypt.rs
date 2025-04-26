@@ -1,5 +1,5 @@
 use crate::helpers::vec_into_array;
-use crate::{log_map_err, Config, HashService, RandomService};
+use crate::{Config, HashService, RandomService};
 use actix_web::web::Data;
 use base64_stream::FromBase64Reader;
 use base64_stream::ToBase64Reader;
@@ -14,7 +14,7 @@ pub struct EncryptedData {
     pub mac: String,
 }
 
-pub struct CryptService <'a>{
+pub struct CryptService<'a> {
     random_service: Data<RandomService>,
     hash_service: Data<HashService<'a>>,
     cipher: openssl::symm::Cipher,
@@ -22,7 +22,7 @@ pub struct CryptService <'a>{
     cipher_key: [u8; 32],
 }
 
-impl<'a> CryptService <'a>{
+impl<'a> CryptService<'a> {
     pub fn new(
         config: Data<Config>,
         random_service: Data<RandomService>,
@@ -65,10 +65,10 @@ impl<'a> CryptService <'a>{
         let mut reader = ToBase64Reader::new(Cursor::new(value));
 
         let mut base64 = String::new();
-        reader.read_to_string(&mut base64).map_err(log_map_err!(
-            CryptServiceError::Fail,
-            "CryptService::to_base64"
-        ))?;
+        reader.read_to_string(&mut base64).map_err(|e| {
+            log::error!("CryptService::to_base64 - {e}");
+            CryptServiceError::Fail
+        })?;
         Ok(base64)
     }
 
@@ -77,10 +77,10 @@ impl<'a> CryptService <'a>{
 
         let mut result: Vec<u8> = vec![];
 
-        reader.read_to_end(&mut result).map_err(log_map_err!(
-            CryptServiceError::Fail,
-            "CryptService::decrypt_string"
-        ))?;
+        reader.read_to_end(&mut result).map_err(|e| {
+            log::error!("CryptService::base64_to_end - {e}");
+            CryptServiceError::Fail
+        })?;
 
         Ok(result)
     }
@@ -90,10 +90,10 @@ impl<'a> CryptService <'a>{
 
         let mut result: String = "".to_string();
 
-        reader.read_to_string(&mut result).map_err(log_map_err!(
-            CryptServiceError::Fail,
-            "CryptService::base64_to_string"
-        ))?;
+        reader.read_to_string(&mut result).map_err(|e| {
+            log::error!("CryptService::base64_to_string - {e}");
+            CryptServiceError::Fail
+        })?;
 
         Ok(result)
     }
@@ -103,33 +103,35 @@ impl<'a> CryptService <'a>{
         s.push_str(value);
         s.push_str(key);
         let hash = self.hash_service.get_ref().hash(s);
-        self.to_base64(hash)
-            .map_err(log_map_err!(CryptServiceError::Fail, "CryptService::hash"))
+        self.to_base64(hash).map_err(|e| {
+            log::error!("CryptService::hash - {e}");
+            CryptServiceError::Fail
+        })
     }
 
     pub fn encrypt_string(&self, string: &str) -> Result<String, CryptServiceError> {
         let iv: [u8; 128] = self.random_service.get_ref().bytes_128();
         let value: Vec<u8> =
             openssl::symm::encrypt(self.cipher, &self.cipher_key, Some(&iv), string.as_bytes())
-                .map_err(log_map_err!(
-                    CryptServiceError::Fail,
-                    "CryptService::encrypt_string"
-                ))?;
+                .map_err(|e| {
+                    log::error!("CryptService::encrypt_string - {e}");
+                    CryptServiceError::Fail
+                })?;
 
-        let iv_base64: String = self.to_base64(iv).map_err(log_map_err!(
-            CryptServiceError::Fail,
-            "CryptService::encrypt_string"
-        ))?;
-        let value_base64: String = self.to_base64(value).map_err(log_map_err!(
-            CryptServiceError::Fail,
-            "CryptService::encrypt_string"
-        ))?;
+        let iv_base64: String = self.to_base64(iv).map_err(|e| {
+            log::error!("CryptService::encrypt_string - {e}");
+            CryptServiceError::Fail
+        })?;
+        let value_base64: String = self.to_base64(value).map_err(|e| {
+            log::error!("CryptService::encrypt_string - {e}");
+            CryptServiceError::Fail
+        })?;
         let mac: String = self
             .hash(&iv_base64, &value_base64, &self.cipher_key_string)
-            .map_err(log_map_err!(
-                CryptServiceError::Fail,
-                "CryptService::encrypt_string"
-            ))?;
+            .map_err(|e| {
+                log::error!("CryptService::encrypt_string - {e}");
+                CryptServiceError::Fail
+            })?;
 
         let data = EncryptedData {
             iv: iv_base64,
@@ -137,56 +139,57 @@ impl<'a> CryptService <'a>{
             mac,
         };
 
-        let data_string: String = serde_json::to_string(&data).map_err(log_map_err!(
-            CryptServiceError::Fail,
-            "CryptService::encrypt_string"
-        ))?;
-        let data_base64: String = self.to_base64(data_string).map_err(log_map_err!(
-            CryptServiceError::Fail,
-            "CryptService::encrypt_string"
-        ))?;
+        let data_string: String = serde_json::to_string(&data).map_err(|e| {
+            log::error!("CryptService::encrypt_string - {e}");
+            CryptServiceError::Fail
+        })?;
+        let data_base64: String = self.to_base64(data_string).map_err(|e| {
+            log::error!("CryptService::encrypt_string - {e}");
+            CryptServiceError::Fail
+        })?;
 
         Ok(data_base64)
     }
 
     pub fn decrypt_string(&self, data_base64: &str) -> Result<String, CryptServiceError> {
-        let data_string: String = self.base64_to_string(data_base64).map_err(log_map_err!(
-            CryptServiceError::Fail,
-            "CryptService::decrypt_string"
-        ))?;
-        let data: EncryptedData = serde_json::from_str(&data_string).map_err(log_map_err!(
-            CryptServiceError::Fail,
-            "CryptService::decrypt_string"
-        ))?;
+        let data_string: String = self.base64_to_string(data_base64).map_err(|e| {
+            log::error!("CryptService::decrypt_string - {e}");
+            CryptServiceError::Fail
+        })?;
+        let data: EncryptedData = serde_json::from_str(&data_string).map_err(|e| {
+            log::error!("CryptService::decrypt_string - {e}");
+            CryptServiceError::Fail
+        })?;
         let mac: String = self
             .hash(&data.iv, &data.value, &self.cipher_key_string)
-            .map_err(log_map_err!(
-                CryptServiceError::Fail,
-                "CryptService::decrypt_string"
-            ))?;
+            .map_err(|e| {
+                log::error!("CryptService::decrypt_string - {e}");
+                CryptServiceError::Fail
+            })?;
 
         if mac.ne(&data.mac) {
             return Err(CryptServiceError::Fail);
         }
 
-        let iv: Vec<u8> = self.base64_to_end(&data.iv).map_err(log_map_err!(
-            CryptServiceError::Fail,
-            "CryptService::decrypt_string"
-        ))?;
-        let value: Vec<u8> = self.base64_to_end(&data.value).map_err(log_map_err!(
-            CryptServiceError::Fail,
-            "CryptService::decrypt_string"
-        ))?;
+        let iv: Vec<u8> = self.base64_to_end(&data.iv).map_err(|e| {
+            log::error!("CryptService::decrypt_string - {e}");
+            CryptServiceError::Fail
+        })?;
+        let value: Vec<u8> = self.base64_to_end(&data.value).map_err(|e| {
+            log::error!("CryptService::decrypt_string - {e}");
+            CryptServiceError::Fail
+        })?;
 
-        let decrypted =
-            openssl::symm::decrypt(self.cipher, &self.cipher_key, Some(&iv), &value).map_err(
-                log_map_err!(CryptServiceError::Fail, "CryptService::decrypt_string"),
-            )?;
+        let decrypted = openssl::symm::decrypt(self.cipher, &self.cipher_key, Some(&iv), &value)
+            .map_err(|e| {
+                log::error!("CryptService::decrypt_string - {e}");
+                CryptServiceError::Fail
+            })?;
 
-        String::from_utf8(decrypted).map_err(log_map_err!(
-            CryptServiceError::Fail,
-            "CryptService::decrypt_string"
-        ))
+        String::from_utf8(decrypted).map_err(|e| {
+            log::error!("CryptService::decrypt_string - {e}");
+            CryptServiceError::Fail
+        })
     }
 }
 

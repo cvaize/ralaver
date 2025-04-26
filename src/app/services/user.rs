@@ -1,4 +1,4 @@
-use crate::{log_map_err, MysqlPool, User};
+use crate::{MysqlPool, User};
 use actix_web::web::Data;
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use strum_macros::{Display, EnumString};
@@ -13,19 +13,20 @@ impl UserService {
     }
 
     pub fn first_by_id(&self, user_id: u64) -> Result<User, UserServiceError> {
-        let mut connection = self.db_pool.get_ref().get().map_err(log_map_err!(
-            UserServiceError::DbConnectionFail,
-            "UserService::first_by_id"
-        ))?;
+        let mut connection = self.db_pool.get_ref().get()
+            .map_err(|e| {
+                log::error!("UserService::first_by_id - {e}");
+                UserServiceError::DbConnectionFail
+            })?;
 
         let user = crate::schema::users::dsl::users
             .find(user_id)
             .select(User::as_select())
             .first(&mut connection)
-            .map_err(log_map_err!(
-                UserServiceError::Fail,
-                "UserService::first_by_id"
-            ))?;
+            .map_err(|e| {
+                log::error!("UserService::first_by_id - {e}");
+                UserServiceError::Fail
+            })?;
         Ok(user)
     }
 }
