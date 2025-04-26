@@ -1,4 +1,5 @@
 {
+    "rate_limit": "Вы можете повторить попытку через :seconds секунд.",
     "accepted": "Вы должны принять \":attribute\".",
     "accepted_if": "Вы должны принять \":attribute\", когда :other соответствует :value.",
     "active_url": "Поле \":attribute\" содержит недействительный URL.",

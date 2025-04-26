@@ -1,7 +1,10 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{AlertVariant, AuthServiceError, AuthToken, User, WebHttpRequest, WebHttpResponse};
+use crate::{
+    AlertVariant, AuthServiceError, AuthToken, RateLimitService, User, WebHttpRequest,
+    WebHttpResponse,
+};
 use crate::{AppService, AuthService, TemplateService, Translator, TranslatorService};
 use actix_web::web::Data;
 use actix_web::web::Form;
@@ -16,12 +19,16 @@ pub struct LoginData {
     pub password: Option<String>,
 }
 
+static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
+static RATE_LIMIT_TTL: u64 = 60;
+
 pub async fn show(
     req: HttpRequest,
     auth_service: Data<AuthService<'_>>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
+    rate_limit_service: Data<RateLimitService>,
 ) -> Result<HttpResponse, Error> {
     invoke(
         req,
@@ -33,6 +40,7 @@ pub async fn show(
         tmpl_service,
         app_service,
         translator_service,
+        rate_limit_service,
     )
     .await
 }
@@ -44,11 +52,13 @@ pub async fn invoke(
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
+    rate_limit_service: Data<RateLimitService>,
 ) -> Result<HttpResponse, Error> {
     let auth_service = auth_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
     let translator_service = translator_service.get_ref();
+    let rate_limit_service = rate_limit_service.get_ref();
 
     let auth_result: Result<(User, AuthToken), AuthServiceError> = auth_service.login_by_req(&req);
 
@@ -69,11 +79,13 @@ pub async fn invoke(
     let is_post = req.method().eq(&Method::POST);
     let (is_done, email_errors, password_errors, form_errors, auth_token) = post(
         is_post,
+        &req,
         &mut data,
         &email_str,
         &password_str,
         &translator,
         auth_service,
+        rate_limit_service,
     )
     .await?;
 
@@ -137,11 +149,13 @@ pub async fn invoke(
 
 async fn post<'a>(
     is_post: bool,
+    req: &HttpRequest,
     data: &mut Form<LoginData>,
     email_str: &String,
     password_str: &String,
     translator: &Translator<'a>,
     auth_service: &AuthService<'a>,
+    rate_limit_service: &RateLimitService,
 ) -> Result<
     (
         bool,
@@ -159,38 +173,59 @@ async fn post<'a>(
     let mut auth_token: Option<AuthToken> = None;
 
     if is_post {
-        email_errors = Required::validated(&translator, &data.email, |value| {
-            Email::validate(&translator, value, email_str)
-        });
-        password_errors = Required::validated(&translator, &data.password, |value| {
-            MinMaxLengthString::validate(&translator, value, 4, 255, password_str)
-        });
+        let rate_limit_key = rate_limit_service
+            .make_key_from_request(req)
+            .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
 
-        if email_errors.len() == 0 && password_errors.len() == 0 {
-            let email_value = data.email.as_ref().unwrap();
-            let password_value = data.password.as_ref().unwrap();
-            let auth_result = auth_service.login_by_password(email_value, password_value);
+        let executed = rate_limit_service
+            .attempt(&rate_limit_key, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_TTL)
+            .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
 
-            if let Ok(user_id) = auth_result {
-                let auth_token_ = auth_service.generate_auth_token(user_id);
-                auth_service
-                    .save_auth_token(&auth_token_)
-                    .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
-                auth_token = Some(auth_token_);
-                is_done = true;
-            } else {
-                form_errors.push(translator.simple("auth.alert.login.fail"));
+        if executed {
+            email_errors = Required::validated(&translator, &data.email, |value| {
+                Email::validate(&translator, value, email_str)
+            });
+            password_errors = Required::validated(&translator, &data.password, |value| {
+                MinMaxLengthString::validate(&translator, value, 4, 255, password_str)
+            });
+
+            if email_errors.len() == 0 && password_errors.len() == 0 {
+                let email_value = data.email.as_ref().unwrap();
+                let password_value = data.password.as_ref().unwrap();
+                let auth_result = auth_service.login_by_password(email_value, password_value);
+
+                if let Ok(user_id) = auth_result {
+                    let auth_token_ = auth_service.generate_auth_token(user_id);
+                    auth_service
+                        .save_auth_token(&auth_token_)
+                        .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
+                    auth_token = Some(auth_token_);
+                    is_done = true;
+                } else {
+                    form_errors.push(translator.simple("auth.alert.login.fail"));
+                }
+            };
+
+            if let Some(email) = &data.email {
+                if email.len() > 400 {
+                    data.email = None;
+                }
             }
-        };
 
-        if let Some(email) = &data.email {
-            if email.len() > 400 {
-                data.email = None;
+            if password_errors.len() != 0 {
+                data.password = None;
             }
+        } else {
+            let ttl_message = rate_limit_service
+                .ttl_message(&translator, &rate_limit_key)
+                .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
+            form_errors.push(ttl_message)
         }
 
-        if password_errors.len() != 0 {
-            data.password = None;
+        if is_done {
+            rate_limit_service
+                .clear(&rate_limit_key)
+                .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
         }
     }
 

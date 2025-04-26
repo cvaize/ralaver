@@ -1,4 +1,4 @@
-use crate::{KeyValueConnection, KeyValueService};
+use crate::{KeyValueConnection, KeyValueService, Translator, TranslatorVariable};
 use actix_web::web::Data;
 use actix_web::HttpRequest;
 use strum_macros::{Display, EnumString};
@@ -68,6 +68,18 @@ impl RateLimitService {
         self.ttl_(&mut connection, key)
     }
 
+    pub fn ttl_message(
+        &self,
+        translator: &Translator,
+        key: &str,
+    ) -> Result<String, RateLimitServiceError> {
+        let ttl = self.ttl(key)?;
+        Ok(translator.variables(
+            "validation.rate_limit",
+            vec![TranslatorVariable::U64("seconds".to_string(), ttl)],
+        ))
+    }
+
     fn get_(
         &self,
         connection: &mut KeyValueConnection,
@@ -132,7 +144,12 @@ impl RateLimitService {
         self.incr_(&mut connection, key, amount, ttl)
     }
 
-    fn remaining_(&self, connection: &mut KeyValueConnection, key: &str, max_attempts: u64) -> Result<u64, RateLimitServiceError> {
+    fn remaining_(
+        &self,
+        connection: &mut KeyValueConnection,
+        key: &str,
+        max_attempts: u64,
+    ) -> Result<u64, RateLimitServiceError> {
         let value = self.get_(connection, key)?;
         if value >= max_attempts {
             return Ok(0);
@@ -184,8 +201,8 @@ pub enum RateLimitServiceError {
 
 #[cfg(test)]
 mod tests {
-    use test::Bencher;
     use crate::preparation;
+    use test::Bencher;
 
     static KEY: &str = "172.18.0.1";
     static MAX_ATTEMPTS: u64 = 5;

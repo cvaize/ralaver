@@ -103,6 +103,9 @@ impl TranslatorService {
                 TranslatorVariable::I32(key, value) => {
                     string.replace(&format!(":{}", key), value.to_string().as_str())
                 }
+                TranslatorVariable::U64(key, value) => {
+                    string.replace(&format!(":{}", key), value.to_string().as_str())
+                }
                 TranslatorVariable::String(key, value) => {
                     string.replace(&format!(":{}", key), value)
                 }
@@ -185,6 +188,7 @@ impl<'a> Translator<'a> {
 pub enum TranslatorVariable {
     String(String, String),
     I32(String, i32),
+    U64(String, u64),
     Usize(String, usize),
 }
 
