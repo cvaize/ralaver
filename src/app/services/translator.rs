@@ -171,6 +171,7 @@ impl TranslatorService {
     }
 
     pub fn variables(&self, lang: &str, key: &str, variables: Vec<TranslatorVariable>) -> String {
+        // TODO: Добавить кеширование с ограничением на количество элементов в HashMap кеша
         self.apply_variables(self.translate(lang, key), variables)
     }
 
@@ -186,6 +187,7 @@ impl TranslatorService {
         let result_len = result_split.len();
         let u_value = if value < 0 { value * -1 } else { value };
 
+        // TODO: Добавить кеширование с ограничением на количество элементов в HashMap кеша
         // TODO: Оформить по нормальному
         let choices = match lang {
             "ru" => choices_rule_ru(u_value, result_len),
