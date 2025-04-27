@@ -1,4 +1,4 @@
-use crate::{Translator, TranslatorVariable};
+use crate::{TranslatorService, TranslatorVariable};
 
 pub struct Confirmed;
 
@@ -9,7 +9,8 @@ impl Confirmed {
     }
 
     pub fn validate<T: PartialEq>(
-        translator: &Translator,
+        translator_service: &TranslatorService,
+        lang: &str,
         a: &T,
         b: &T,
         attribute_name: &str,
@@ -17,7 +18,7 @@ impl Confirmed {
         if Self::apply(a, b) {
             vec![]
         } else {
-            vec![translator.variables(
+            vec![translator_service.variables(&lang,
                 "validation.confirmed",
                 vec![TranslatorVariable::String(
                     "attribute".to_string(),

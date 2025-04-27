@@ -3,7 +3,7 @@ use crate::app::validator::rules::required::Required;
 use crate::WebHttpRequest;
 use crate::{
     Alert, AppService, AuthService, EmailAddress, EmailMessage, MailService, RandomService,
-    TemplateService, Translator, TranslatorService, WebHttpResponse,
+    TemplateService,  TranslatorService, WebHttpResponse,
 };
 use actix_web::web::{Data, Form};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -58,8 +58,7 @@ pub async fn invoke(
     let random_service = random_service.get_ref();
 
     let (lang, locale, locales) = app_service.locale(Some(&req), None);
-    let translator = Translator::new(&lang, translator_service);
-    let email_str = translator.simple("auth.page.reset_password.form.fields.email.label");
+    let email_str = translator_service.translate(&lang, "auth.page.reset_password.form.fields.email.label");
 
     let is_post = req.method().eq(&Method::POST);
     let email_errors = post(
@@ -67,40 +66,40 @@ pub async fn invoke(
         &lang,
         &mut data,
         &email_str,
-        &translator,
-        &auth_service,
-        &mail_service,
-        &tmpl_service,
-        &app_service,
-        &random_service,
+        translator_service,
+        auth_service,
+        mail_service,
+        tmpl_service,
+        app_service,
+        random_service,
     )
     .await?;
     let is_done = is_post && email_errors.len() == 0;
-    let mut alerts = req.get_alerts(&translator);
+    let mut alerts = req.get_alerts(&translator_service, &lang);
 
     if is_done {
         alerts.push(Alert::success(
-            translator.simple("auth.alert.reset_password.success"),
+            translator_service.translate(&lang, "auth.alert.reset_password.success"),
         ));
     }
 
     let ctx = json!({
-        "title": translator.simple("auth.page.reset_password.title"),
+        "title": translator_service.translate(&lang, "auth.page.reset_password.title"),
         "locale": locale,
         "locales": locales,
         "alerts": alerts,
         "dark_mode": app_service.dark_mode(&req),
         "back": {
-            "label": translator.simple("auth.page.reset_password.back.label"),
+            "label": translator_service.translate(&lang, "auth.page.reset_password.back.label"),
             "href": "/login",
         },
         "form": {
             "action": "/reset-password",
             "method": "post",
-            "header": translator.simple("auth.page.reset_password.form.header"),
+            "header": translator_service.translate(&lang, "auth.page.reset_password.form.header"),
             "fields": [
                 {
-                    "label": translator.simple("auth.page.reset_password.form.fields.email.label"),
+                    "label": translator_service.translate(&lang, "auth.page.reset_password.form.fields.email.label"),
                     "type": "email",
                     "name": "email",
                     "value": &data.email,
@@ -108,8 +107,8 @@ pub async fn invoke(
                 }
             ],
             "submit": {
-                "label": translator.simple("auth.page.reset_password.form.submit.label"),
-                "text": translator.simple("auth.page.reset_password.form.submit.text")
+                "label": translator_service.translate(&lang, "auth.page.reset_password.form.submit.label"),
+                "text": translator_service.translate(&lang, "auth.page.reset_password.form.submit.text")
             }
         },
     });
@@ -123,10 +122,10 @@ pub async fn invoke(
 
 async fn post<'a>(
     is_post: bool,
-    lang: &String,
+    lang: &str,
     data: &mut Form<ResetPasswordData>,
     email_str: &String,
-    translator: &Translator<'a>,
+    translator_service: &TranslatorService,
     auth_service: &AuthService<'a>,
     mail_service: &MailService,
     tmpl_service: &TemplateService,
@@ -136,8 +135,8 @@ async fn post<'a>(
     let mut email_errors: Vec<String> = vec![];
 
     if is_post {
-        email_errors = Required::validated(&translator, &data.email, |value| {
-            Email::validate(&translator, value, &email_str)
+        email_errors = Required::validated(translator_service, lang, &data.email, |value| {
+            Email::validate(translator_service, lang, value, &email_str)
         });
         let email: String = data.email.clone().unwrap_or("".to_string());
 
@@ -146,7 +145,7 @@ async fn post<'a>(
                 .exists_user_by_email(&email)
                 .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
             if exists == false {
-                email_errors.push(translator.simple("validation.custom.email.exists"));
+                email_errors.push(translator_service.translate(&lang, "validation.custom.email.exists"));
             }
         }
 
@@ -176,22 +175,22 @@ async fn post<'a>(
                 .to_string();
 
             let ctx = json!({
-                "title": translator.simple("auth.page.reset_password.mail.title"),
-                "description": translator.simple("auth.page.reset_password.mail.description"),
+                "title": translator_service.translate(&lang, "auth.page.reset_password.mail.title"),
+                "description": translator_service.translate(&lang, "auth.page.reset_password.mail.description"),
                 "lang": lang.to_owned(),
-                "site_name": translator.simple("auth.page.reset_password.mail.site_name"),
+                "site_name": translator_service.translate(&lang, "auth.page.reset_password.mail.site_name"),
                 "site_href": app_service.url().to_string(),
                 "site_domain": site_domain,
                 "logo_src": logo_src,
-                "header": translator.simple("auth.page.reset_password.mail.header"),
-                "button_label": translator.simple("auth.page.reset_password.mail.button"),
+                "header": translator_service.translate(&lang, "auth.page.reset_password.mail.header"),
+                "button_label": translator_service.translate(&lang, "auth.page.reset_password.mail.button"),
                 "button_href": button_href.to_owned(),
             });
             let message = EmailMessage {
                 from: None,
                 reply_to: None,
                 to: EmailAddress { name: None, email },
-                subject: translator.simple("auth.page.reset_password.mail.subject"),
+                subject: translator_service.translate(&lang, "auth.page.reset_password.mail.subject"),
                 html_body: Some(
                     tmpl_service.render_throw_http("emails/auth/reset_password.hbs", &ctx)?,
                 ),
@@ -200,7 +199,7 @@ async fn post<'a>(
             let send_email_result = mail_service.send_email(&message);
 
             if send_email_result.is_err() {
-                let email_str = translator.simple("auth.alert.reset_password.fail");
+                let email_str = translator_service.translate(&lang, "auth.alert.reset_password.fail");
                 email_errors.push(email_str);
             }
         }

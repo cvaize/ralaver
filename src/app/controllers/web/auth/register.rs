@@ -4,8 +4,7 @@ use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
 use crate::{AlertVariant, WebHttpRequest, WebHttpResponse};
 use crate::{
-    AppService, AuthService, AuthServiceError, Credentials, TemplateService, Translator,
-    TranslatorService,
+    AppService, AuthService, AuthServiceError, Credentials, TemplateService, TranslatorService,
 };
 use actix_web::web::{Data, Form};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
@@ -57,11 +56,14 @@ pub async fn invoke(
 
     let (lang, locale, locales) = app_service.locale(Some(&req), None);
 
-    let translator = Translator::new(&lang, translator_service);
-    let email_str = translator.simple("auth.page.register.form.fields.email.label");
-    let password_str = translator.simple("auth.page.register.form.fields.password.label");
-    let confirm_password_str =
-        translator.simple("auth.page.register.form.fields.confirm_password.label");
+    let email_str =
+        translator_service.translate(&lang, "auth.page.register.form.fields.email.label");
+    let password_str =
+        translator_service.translate(&lang, "auth.page.register.form.fields.password.label");
+    let confirm_password_str = translator_service.translate(
+        &lang,
+        "auth.page.register.form.fields.confirm_password.label",
+    );
 
     let is_post = req.method().eq(&Method::POST);
     let (is_done, email_errors, password_errors, confirm_password_errors) = post(
@@ -70,7 +72,8 @@ pub async fn invoke(
         &email_str,
         &password_str,
         &confirm_password_str,
-        &translator,
+        translator_service,
+        &lang,
         auth_service,
     )
     .await?;
@@ -86,15 +89,15 @@ pub async fn invoke(
     }
 
     let ctx = json!({
-        "title": translator.simple("auth.page.register.title"),
+        "title": translator_service.translate(&lang, "auth.page.register.title"),
         "locale": locale,
         "locales": locales,
-        "alerts": req.get_alerts(&translator),
+        "alerts": req.get_alerts(&translator_service, &lang),
         "dark_mode": app_service.dark_mode(&req),
         "form": {
             "action": "/register",
             "method": "post",
-            "header": translator.simple("auth.page.register.form.header"),
+            "header": translator_service.translate(&lang, "auth.page.register.form.header"),
             "fields": [
                 {
                     "label": email_str,
@@ -119,14 +122,14 @@ pub async fn invoke(
                 }
             ],
             "submit": {
-                "label": translator.simple("auth.page.register.form.submit.label"),
+                "label": translator_service.translate(&lang, "auth.page.register.form.submit.label"),
             },
             "reset_password": {
-                "label": translator.simple("auth.page.register.form.reset_password.label"),
+                "label": translator_service.translate(&lang, "auth.page.register.form.reset_password.label"),
                 "href": "/reset-password",
             },
             "login": {
-                "label": translator.simple("auth.page.register.form.login.label"),
+                "label": translator_service.translate(&lang, "auth.page.register.form.login.label"),
                 "href": "/login",
             },
         },
@@ -145,7 +148,8 @@ async fn post<'a>(
     email_str: &String,
     password_str: &String,
     confirm_password_str: &String,
-    translator: &Translator<'a>,
+    translator_service: &TranslatorService,
+    lang: &str,
     auth_service: &AuthService<'a>,
 ) -> Result<(bool, Vec<String>, Vec<String>, Vec<String>), Error> {
     let mut is_done = false;
@@ -154,20 +158,28 @@ async fn post<'a>(
     let mut confirm_password_errors: Vec<String> = vec![];
 
     if is_post {
-        email_errors = Required::validated(&translator, &data.email, |value| {
-            Email::validate(&translator, value, email_str)
+        email_errors = Required::validated(translator_service, lang, &data.email, |value| {
+            Email::validate(translator_service, lang, value, email_str)
         });
-        password_errors = Required::validated(&translator, &data.password, |value| {
-            MinMaxLengthString::validate(&translator, value, 4, 255, password_str)
+        password_errors = Required::validated(translator_service, lang, &data.password, |value| {
+            MinMaxLengthString::validate(translator_service, lang, value, 4, 255, password_str)
         });
         confirm_password_errors =
-            Required::validated(&translator, &data.confirm_password, |value| {
-                MinMaxLengthString::validate(&translator, value, 4, 255, &confirm_password_str)
+            Required::validated(translator_service, lang, &data.confirm_password, |value| {
+                MinMaxLengthString::validate(
+                    translator_service,
+                    lang,
+                    value,
+                    4,
+                    255,
+                    &confirm_password_str,
+                )
             });
 
         if password_errors.len() == 0 && confirm_password_errors.len() == 0 {
             let mut password_errors2: Vec<String> = Confirmed::validate(
-                &translator,
+                translator_service,
+                lang,
                 data.password.as_ref().unwrap(),
                 data.confirm_password.as_ref().unwrap(),
                 &password_str,
@@ -189,7 +201,9 @@ async fn post<'a>(
             if let Err(error) = register_result {
                 match error {
                     AuthServiceError::DuplicateEmail => {
-                        email_errors.push(translator.simple("auth.alert.register.duplicate"));
+                        email_errors.push(
+                            translator_service.translate(&lang, "auth.alert.register.duplicate"),
+                        );
                     }
                     _ => {}
                 }

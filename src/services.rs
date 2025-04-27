@@ -1,5 +1,8 @@
 use crate::connections::Connections;
-use crate::{AppService, AuthService, Config, CryptService, HashService, KeyValueService, LocaleService, MailService, RandomService, RateLimitService, TemplateService, TranslatorService, UserService};
+use crate::{
+    AppService, AuthService, Config, CryptService, HashService, KeyValueService, LocaleService,
+    MailService, RandomService, RateLimitService, TemplateService, TranslatorService, UserService,
+};
 use actix_web::web::Data;
 
 pub struct BaseServices {
@@ -12,7 +15,7 @@ pub fn base(config: Config) -> BaseServices {
     }
 }
 
-pub struct AdvancedServices <'a>{
+pub struct AdvancedServices<'a> {
     pub key_value: Data<KeyValueService>,
     pub translator: Data<TranslatorService>,
     pub template: Data<TemplateService>,
@@ -27,7 +30,7 @@ pub struct AdvancedServices <'a>{
     pub user: Data<UserService>,
 }
 
-pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices <'a>{
+pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices<'a> {
     let user = Data::new(UserService::new(c.mysql.clone()));
     let key_value = Data::new(KeyValueService::new(c.redis.clone()));
     let translator = Data::new(
@@ -41,7 +44,11 @@ pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices <'a>{
     let rand = Data::new(RandomService::new());
 
     let hash = Data::new(HashService::new());
-    let crypt = Data::new(CryptService::new(s.config.clone(), rand.clone(), hash.clone()));
+    let crypt = Data::new(CryptService::new(
+        s.config.clone(),
+        rand.clone(),
+        hash.clone(),
+    ));
     let auth = Data::new(AuthService::new(
         s.config.clone(),
         c.mysql.clone(),
@@ -73,7 +80,7 @@ pub fn advanced<'a>(c: &Connections, s: &BaseServices) -> AdvancedServices <'a>{
 }
 
 #[allow(dead_code)]
-pub struct Services <'a>{
+pub struct Services<'a> {
     pub config: Data<Config>,
     pub key_value: Data<KeyValueService>,
     pub translator: Data<TranslatorService>,

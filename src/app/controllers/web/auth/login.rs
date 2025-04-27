@@ -5,7 +5,7 @@ use crate::{
     AlertVariant, AuthServiceError, AuthToken, RateLimitService, User, WebHttpRequest,
     WebHttpResponse,
 };
-use crate::{AppService, AuthService, TemplateService, Translator, TranslatorService};
+use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::web::Data;
 use actix_web::web::Form;
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -71,10 +71,10 @@ pub async fn invoke(
     }
 
     let (lang, locale, locales) = app_service.locale(Some(&req), None);
-    let translator = Translator::new(&lang, translator_service);
 
-    let email_str = translator.simple("auth.page.login.form.fields.email.label");
-    let password_str = translator.simple("auth.page.login.form.fields.password.label");
+    let email_str = translator_service.translate(&lang, "auth.page.login.form.fields.email.label");
+    let password_str =
+        translator_service.translate(&lang, "auth.page.login.form.fields.password.label");
 
     let is_post = req.method().eq(&Method::POST);
     let (is_done, email_errors, password_errors, form_errors, auth_token) = post(
@@ -83,7 +83,8 @@ pub async fn invoke(
         &mut data,
         &email_str,
         &password_str,
-        &translator,
+        &lang,
+        translator_service,
         auth_service,
         rate_limit_service,
     )
@@ -99,15 +100,15 @@ pub async fn invoke(
     }
 
     let ctx = json!({
-        "title": translator.simple("auth.page.login.title"),
+        "title": translator_service.translate(&lang, "auth.page.login.title"),
         "locale": locale,
         "locales": locales,
-        "alerts": req.get_alerts(&translator),
+        "alerts": req.get_alerts(&translator_service, &lang),
         "dark_mode": app_service.dark_mode(&req),
         "form": {
             "action": "/login",
             "method": "post",
-            "header": translator.simple("auth.page.login.form.header"),
+            "header": translator_service.translate(&lang, "auth.page.login.form.header"),
             "fields": [
                 {
                     "label": email_str,
@@ -125,14 +126,14 @@ pub async fn invoke(
                 }
             ],
             "submit": {
-                "label": translator.simple("auth.page.login.form.submit.label")
+                "label": translator_service.translate(&lang, "auth.page.login.form.submit.label")
             },
             "reset_password": {
-                "label": translator.simple("auth.page.login.form.reset_password.label"),
+                "label": translator_service.translate(&lang, "auth.page.login.form.reset_password.label"),
                 "href": "/reset-password"
             },
             "register": {
-                "label": translator.simple("auth.page.login.form.register.label"),
+                "label": translator_service.translate(&lang, "auth.page.login.form.register.label"),
                 "href": "/register"
             },
             "errors": form_errors,
@@ -153,7 +154,8 @@ async fn post<'a>(
     data: &mut Form<LoginData>,
     email_str: &String,
     password_str: &String,
-    translator: &Translator<'a>,
+    lang: &str,
+    translator_service: &TranslatorService,
     auth_service: &AuthService<'a>,
     rate_limit_service: &RateLimitService,
 ) -> Result<
@@ -182,12 +184,20 @@ async fn post<'a>(
             .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
 
         if executed {
-            email_errors = Required::validated(&translator, &data.email, |value| {
-                Email::validate(&translator, value, email_str)
+            email_errors = Required::validated(translator_service, lang, &data.email, |value| {
+                Email::validate(translator_service, lang, value, email_str)
             });
-            password_errors = Required::validated(&translator, &data.password, |value| {
-                MinMaxLengthString::validate(&translator, value, 4, 255, password_str)
-            });
+            password_errors =
+                Required::validated(translator_service, lang, &data.password, |value| {
+                    MinMaxLengthString::validate(
+                        translator_service,
+                        lang,
+                        value,
+                        4,
+                        255,
+                        password_str,
+                    )
+                });
 
             if email_errors.len() == 0 && password_errors.len() == 0 {
                 let email_value = data.email.as_ref().unwrap();
@@ -202,7 +212,7 @@ async fn post<'a>(
                     auth_token = Some(auth_token_);
                     is_done = true;
                 } else {
-                    form_errors.push(translator.simple("auth.alert.login.fail"));
+                    form_errors.push(translator_service.translate(&lang, "auth.alert.login.fail"));
                 }
             };
 
@@ -217,7 +227,7 @@ async fn post<'a>(
             }
         } else {
             let ttl_message = rate_limit_service
-                .ttl_message(&translator, &rate_limit_key)
+                .ttl_message(translator_service, lang, &rate_limit_key)
                 .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
             form_errors.push(ttl_message)
         }

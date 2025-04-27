@@ -4,7 +4,7 @@ use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
 use crate::{AlertVariant, WebHttpRequest, WebHttpResponse};
-use crate::{AppService, AuthService, TemplateService, Translator, TranslatorService};
+use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::web::{Data, Form, Query};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
@@ -66,13 +66,19 @@ pub async fn invoke(
 
     let query = query.into_inner();
     let (lang, locale, locales) = app_service.locale(Some(&req), None);
-    let translator = Translator::new(&lang, translator_service);
 
-    let email_str = translator.simple("auth.page.reset_password_confirm.form.fields.email.label");
-    let password_str =
-        translator.simple("auth.page.reset_password_confirm.form.fields.password.label");
-    let confirm_password_str =
-        translator.simple("auth.page.reset_password_confirm.form.fields.confirm_password.label");
+    let email_str = translator_service.translate(
+        &lang,
+        "auth.page.reset_password_confirm.form.fields.email.label",
+    );
+    let password_str = translator_service.translate(
+        &lang,
+        "auth.page.reset_password_confirm.form.fields.password.label",
+    );
+    let confirm_password_str = translator_service.translate(
+        &lang,
+        "auth.page.reset_password_confirm.form.fields.confirm_password.label",
+    );
 
     if let Some(email) = query.email {
         data.email = Some(email.to_owned());
@@ -100,8 +106,9 @@ pub async fn invoke(
         &email_str,
         &password_str,
         &confirm_password_str,
-        &translator,
-        &auth_service,
+        translator_service,
+        &lang,
+        auth_service,
     )
     .await?;
 
@@ -126,19 +133,19 @@ pub async fn invoke(
     }
 
     let ctx = json!({
-        "title": translator.simple("auth.page.reset_password_confirm.title"),
+        "title": translator_service.translate(&lang, "auth.page.reset_password_confirm.title"),
         "locale": locale,
         "locales": locales,
-        "alerts": req.get_alerts(&translator),
+        "alerts": req.get_alerts(&translator_service, &lang),
         "dark_mode": app_service.dark_mode(&req),
         "back": {
-            "label": translator.simple("auth.page.reset_password_confirm.back.label"),
+            "label": translator_service.translate(&lang, "auth.page.reset_password_confirm.back.label"),
             "href": "/reset-password",
         },
         "form": {
             "action": action,
             "method": "post",
-            "header": translator.simple("auth.page.reset_password_confirm.form.header"),
+            "header": translator_service.translate(&lang, "auth.page.reset_password_confirm.form.header"),
             "fields": [
                 {
                     "name": "code",
@@ -146,7 +153,7 @@ pub async fn invoke(
                     "value": code,
                 },
                 {
-                    "label": translator.simple("auth.page.reset_password_confirm.form.fields.email.label"),
+                    "label": translator_service.translate(&lang, "auth.page.reset_password_confirm.form.fields.email.label"),
                     "type": "email",
                     "name": "email",
                     "readonly": "readonly",
@@ -154,14 +161,14 @@ pub async fn invoke(
                     "errors": email_errors,
                 },
                 {
-                    "label": translator.simple("auth.page.reset_password_confirm.form.fields.password.label"),
+                    "label": translator_service.translate(&lang, "auth.page.reset_password_confirm.form.fields.password.label"),
                     "type": "password",
                     "name": "password",
                     "value": &data.password,
                     "errors": password_errors,
                 },
                 {
-                    "label": translator.simple("auth.page.reset_password_confirm.form.fields.confirm_password.label"),
+                    "label": translator_service.translate(&lang, "auth.page.reset_password_confirm.form.fields.confirm_password.label"),
                     "type": "password",
                     "name": "confirm_password",
                     "value": &data.confirm_password,
@@ -169,7 +176,7 @@ pub async fn invoke(
                 }
             ],
             "submit": {
-                "label": translator.simple("auth.page.reset_password_confirm.form.submit.label"),
+                "label": translator_service.translate(&lang, "auth.page.reset_password_confirm.form.submit.label"),
             },
         },
     });
@@ -184,7 +191,8 @@ async fn post<'a>(
     email_str: &String,
     password_str: &String,
     confirm_password_str: &String,
-    translator: &Translator<'a>,
+    translator_service: &TranslatorService,
+    lang: &str,
     auth_service: &AuthService<'a>,
 ) -> Result<(bool, Vec<String>, Vec<String>, Vec<String>, Vec<String>), Error> {
     let mut is_done = false;
@@ -194,23 +202,38 @@ async fn post<'a>(
     let mut code_errors: Vec<String> = vec![];
 
     if is_post {
-        email_errors = Required::validated(&translator, &data.email, |value| {
-            Email::validate(&translator, value, &email_str)
+        email_errors = Required::validated(translator_service, lang, &data.email, |value| {
+            Email::validate(translator_service, lang, value, &email_str)
         });
-        password_errors = Required::validated(&translator, &data.password, |value| {
-            MinMaxLengthString::validate(&translator, value, 4, 255, &password_str)
+        password_errors = Required::validated(translator_service, lang, &data.password, |value| {
+            MinMaxLengthString::validate(translator_service, lang, value, 4, 255, &password_str)
         });
         confirm_password_errors =
-            Required::validated(&translator, &data.confirm_password, |value| {
-                MinMaxLengthString::validate(&translator, value, 4, 255, &confirm_password_str)
+            Required::validated(translator_service, lang, &data.confirm_password, |value| {
+                MinMaxLengthString::validate(
+                    translator_service,
+                    lang,
+                    value,
+                    4,
+                    255,
+                    &confirm_password_str,
+                )
             });
-        code_errors = Required::validated(&translator, &data.code, |value| {
-            MinMaxLengthString::validate(&translator, value, CODE_LEN, CODE_LEN, "code")
+        code_errors = Required::validated(translator_service, lang, &data.code, |value| {
+            MinMaxLengthString::validate(
+                translator_service,
+                lang,
+                value,
+                CODE_LEN,
+                CODE_LEN,
+                "code",
+            )
         });
 
         if password_errors.len() == 0 && confirm_password_errors.len() == 0 {
             let mut password_errors2: Vec<String> = Confirmed::validate(
-                &translator,
+                translator_service,
+                lang,
                 data.password.as_ref().unwrap(),
                 data.confirm_password.as_ref().unwrap(),
                 &password_str,

@@ -1,4 +1,4 @@
-use crate::{KeyValueConnection, KeyValueService, Translator, TranslatorVariable};
+use crate::{KeyValueConnection, KeyValueService, TranslatorService, TranslatorVariable};
 use actix_web::web::Data;
 use actix_web::HttpRequest;
 use strum_macros::{Display, EnumString};
@@ -70,14 +70,21 @@ impl RateLimitService {
 
     pub fn ttl_message(
         &self,
-        translator: &Translator,
+        translator_service: &TranslatorService,
+        lang: &str,
         key: &str,
     ) -> Result<String, RateLimitServiceError> {
         let ttl = self.ttl(key)?;
-        Ok(translator.variables(
+        let unit = translator_service.choices(&lang, "unit.after_seconds", ttl as i64, None);
+        let message = translator_service.variables(
+            &lang,
             "validation.rate_limit",
-            vec![TranslatorVariable::U64("seconds".to_string(), ttl)],
-        ))
+            vec![
+                TranslatorVariable::U64("seconds".to_string(), ttl),
+                TranslatorVariable::String("unit".to_string(), unit),
+            ],
+        );
+        Ok(message)
     }
 
     fn get_(

@@ -1,4 +1,4 @@
-use crate::Translator;
+use crate::TranslatorService;
 
 pub struct Required;
 
@@ -8,19 +8,28 @@ impl Required {
         value.is_some()
     }
 
-    pub fn validate<T>(translator: &Translator, value: &Option<T>) -> Vec<String> {
+    pub fn validate<T>(
+        translator_service: &TranslatorService,
+        lang: &str,
+        value: &Option<T>,
+    ) -> Vec<String> {
         if Self::apply(value) {
             vec![]
         } else {
-            vec![translator.simple("validation.required")]
+            vec![translator_service.translate(&lang, "validation.required")]
         }
     }
 
-    pub fn validated<T, O: FnOnce(&T) -> Vec<String>>(translator: &Translator, value: &Option<T>, cb: O) -> Vec<String> {
+    pub fn validated<T, O: FnOnce(&T) -> Vec<String>>(
+        translator_service: &TranslatorService,
+        lang: &str,
+        value: &Option<T>,
+        cb: O,
+    ) -> Vec<String> {
         if Self::apply(value) {
             cb(value.as_ref().unwrap())
         } else {
-            vec![translator.simple("validation.required")]
+            vec![translator_service.translate(&lang, "validation.required")]
         }
     }
 }

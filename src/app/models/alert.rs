@@ -1,4 +1,4 @@
-use crate::{model_redis_impl, Translator};
+use crate::{model_redis_impl, TranslatorService};
 use serde_bare;
 use serde_derive::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
@@ -27,12 +27,12 @@ impl Alert {
     pub fn error(content: String) -> Self {
         Self::new("error".to_string(), content)
     }
-    pub fn from_variant(translator: &Translator, variant: &AlertVariant) -> Self {
+    pub fn from_variant(translator_service: &TranslatorService, lang: &str, variant: &AlertVariant) -> Self {
         match variant {
             AlertVariant::ResetPasswordConfirmCodeNotEqual => {
-                Self::error(translator.simple(variant.get_message_key()))
+                Self::error(translator_service.translate(&lang, variant.get_message_key()))
             }
-            _ => Self::success(translator.simple(variant.get_message_key())),
+            _ => Self::success(translator_service.translate(&lang, variant.get_message_key())),
         }
     }
 }

@@ -5,20 +5,20 @@ pub mod locale;
 pub mod profile;
 pub mod users;
 
-use crate::{Alert, AlertVariant, Translator, ALERTS_KEY};
+use crate::{Alert, AlertVariant,  TranslatorService, ALERTS_KEY};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
 use actix_web::{HttpRequest, HttpResponseBuilder};
 use std::str::FromStr;
 
 pub trait WebHttpRequest {
-    fn get_alerts(&self, translator: &Translator) -> Vec<Alert>;
+    fn get_alerts(&self, translator_service: &TranslatorService, lang: &str) -> Vec<Alert>;
 }
 
 impl WebHttpRequest for HttpRequest {
-    fn get_alerts(&self, translator: &Translator) -> Vec<Alert> {
+    fn get_alerts(&self, translator_service: &TranslatorService, lang: &str) -> Vec<Alert> {
         match self.cookie(ALERTS_KEY) {
-            Some(cookie) => string_to_alerts(cookie.value(), translator),
+            Some(cookie) => string_to_alerts(cookie.value(), translator_service, lang),
             _ => Vec::new(),
         }
     }
@@ -54,12 +54,12 @@ impl WebHttpResponse for HttpResponseBuilder {
     }
 }
 
-fn string_to_alerts(s: &str, translator: &Translator) -> Vec<Alert> {
+fn string_to_alerts(s: &str, translator_service: &TranslatorService, lang: &str) -> Vec<Alert> {
     let mut alerts = Vec::new();
     for item in s.split(",") {
         let result = AlertVariant::from_str(item.trim());
         if let Ok(variant) = result {
-            alerts.push(Alert::from_variant(translator, &variant));
+            alerts.push(Alert::from_variant(translator_service, lang, &variant));
         }
     }
     alerts

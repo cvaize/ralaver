@@ -1,4 +1,4 @@
-use crate::{Translator, TranslatorVariable};
+use crate::{TranslatorService, TranslatorVariable};
 
 pub struct Email;
 
@@ -9,14 +9,16 @@ impl Email {
     }
 
     pub fn validate(
-        translator: &Translator,
+        translator_service: &TranslatorService,
+        lang: &str,
         value: &String,
         attribute_name: &str,
     ) -> Vec<String> {
         if Self::apply(value) {
             vec![]
         } else {
-            vec![translator.variables(
+            vec![translator_service.variables(
+                &lang,
                 "validation.email",
                 vec![TranslatorVariable::String(
                     "attribute".to_string(),
@@ -26,7 +28,6 @@ impl Email {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
