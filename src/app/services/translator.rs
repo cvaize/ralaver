@@ -125,27 +125,6 @@ impl TranslatorService {
         v_key
     }
 
-    fn apply_variables(&self, string: String, variables: Vec<TranslatorVariable>) -> String {
-        let mut string: String = string;
-        for variable in &variables {
-            string = match variable {
-                TranslatorVariable::Usize(key, value) => {
-                    string.replace(self.v_key(key).as_str(), value.to_string().as_str())
-                }
-                TranslatorVariable::I32(key, value) => {
-                    string.replace(self.v_key(key).as_str(), value.to_string().as_str())
-                }
-                TranslatorVariable::U64(key, value) => {
-                    string.replace(self.v_key(key).as_str(), value.to_string().as_str())
-                }
-                TranslatorVariable::String(key, value) => {
-                    string.replace(self.v_key(key).as_str(), value)
-                }
-            }
-        }
-        string
-    }
-
     // Функция возвращает перевод по переданному языку. Если перевод не найден по переданному языку,
     // то функция возвращает перевод по языку по умолчанию (app.locale). А если нет перевода по умолчанию, то берётся fallback язык (app.fallback_locale).
     // Если нет переводов с fallback языком, то возвращается переданный ключ.
@@ -170,17 +149,11 @@ impl TranslatorService {
         key.to_string()
     }
 
-    pub fn variables(&self, lang: &str, key: &str, variables: Vec<TranslatorVariable>) -> String {
-        // TODO: Добавить кеширование с ограничением на количество элементов в HashMap кеша
-        self.apply_variables(self.translate(lang, key), variables)
-    }
-
     pub fn choices(
         &self,
         lang: &str,
         key: &str,
         value: i64,
-        variables: Option<Vec<TranslatorVariable>>,
     ) -> String {
         let mut result = self.translate(lang, key);
         let result_split: Vec<&str> = result.split("|").collect();
@@ -202,19 +175,32 @@ impl TranslatorService {
             }
         }
 
-        if let Some(variables) = variables {
-            self.apply_variables(result, variables)
-        } else {
-            result
-        }
+        result
     }
-}
 
-pub enum TranslatorVariable {
-    String(String, String),
-    I32(String, i32),
-    U64(String, u64),
-    Usize(String, usize),
+    pub fn var_str(&self, content: &str, key: &str, value: &str) -> String {
+        content.replace(self.v_key(key).as_str(), value)
+    }
+
+    pub fn var_u64(&self, content: &str, key: &str, value: u64) -> String {
+        content.replace(self.v_key(key).as_str(), value.to_string().as_str())
+    }
+
+    pub fn var_u32(&self, content: &str, key: &str, value: u32) -> String {
+        content.replace(self.v_key(key).as_str(), value.to_string().as_str())
+    }
+
+    pub fn var_i64(&self, content: &str, key: &str, value: i64) -> String {
+        content.replace(self.v_key(key).as_str(), value.to_string().as_str())
+    }
+
+    pub fn var_i32(&self, content: &str, key: &str, value: i32) -> String {
+        content.replace(self.v_key(key).as_str(), value.to_string().as_str())
+    }
+
+    pub fn var_usize(&self, content: &str, key: &str, value: usize) -> String {
+        content.replace(self.v_key(key).as_str(), value.to_string().as_str())
+    }
 }
 
 fn choices_rule_ru(value: i64, choices: usize) -> usize {
@@ -281,33 +267,9 @@ mod tests {
         });
     }
 
-    #[test]
-    fn variables() {
-        let config = Data::new(Config::new());
-        let mut t: TranslatorService = TranslatorService::new_from_files(config).unwrap();
-        t.insert(
-            "en",
-            "test_key".to_string(),
-            "test_value :variable 213".to_string(),
-        );
-        t.insert("en", "test_key2".to_string(), "test_value2".to_string());
-
-        assert_eq!(
-            "test_value test321 213".to_string(),
-            t.variables(
-                "en",
-                "test_key",
-                vec![TranslatorVariable::String(
-                    "variable".to_string(),
-                    "test321".to_string()
-                ),]
-            )
-        );
-    }
-
     #[bench]
-    fn bench_variables(b: &mut Bencher) {
-        // 170.20 ns/iter (+/- 5.15)
+    fn bench_variable(b: &mut Bencher) {
+        // 123.49 ns/iter (+/- 4.11)
         let config = Data::new(Config::new());
         let mut t: TranslatorService = TranslatorService::new_from_files(config).unwrap();
         t.insert(
@@ -318,14 +280,7 @@ mod tests {
         t.insert("en", "test_key2".to_string(), "test_value2".to_string());
 
         b.iter(|| {
-            t.variables(
-                "en",
-                "test_key",
-                vec![TranslatorVariable::String(
-                    "variable".to_string(),
-                    "test321".to_string(),
-                )],
-            );
+            let _ = t.var_str(t.translate("en", "test_key").as_str(), "variable", "test321");
         });
     }
 
@@ -340,17 +295,17 @@ mod tests {
             "секунда|секунды|секунд".to_string(),
         );
 
-        let value = t.choices("en", "test_key", 1, None);
+        let value = t.choices("en", "test_key", 1);
         assert_eq!("second".to_string(), value);
-        let value = t.choices("en", "test_key", 2, None);
+        let value = t.choices("en", "test_key", 2);
         assert_eq!("seconds".to_string(), value);
-        let value = t.choices("ru", "test_key", 1, None);
+        let value = t.choices("ru", "test_key", 1);
         assert_eq!("секунда".to_string(), value);
-        let value = t.choices("ru", "test_key", 2, None);
+        let value = t.choices("ru", "test_key", 2);
         assert_eq!("секунды".to_string(), value);
-        let value = t.choices("ru", "test_key", 10, None);
+        let value = t.choices("ru", "test_key", 10);
         assert_eq!("секунд".to_string(), value);
-        let value = t.choices("ru", "test_key", 100033, None);
+        let value = t.choices("ru", "test_key", 100033);
         assert_eq!("секунды".to_string(), value);
     }
 

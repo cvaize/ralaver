@@ -1,4 +1,4 @@
-use crate::{TranslatorService, TranslatorVariable};
+use crate::TranslatorService;
 
 pub struct Email;
 
@@ -15,16 +15,15 @@ impl Email {
         attribute_name: &str,
     ) -> Vec<String> {
         if Self::apply(value) {
-            vec![]
+            Vec::new()
         } else {
-            vec![translator_service.variables(
-                &lang,
-                "validation.email",
-                vec![TranslatorVariable::String(
-                    "attribute".to_string(),
-                    attribute_name.to_string(),
-                )],
-            )]
+            Vec::from([translator_service.var_str(
+                translator_service
+                    .translate(&lang, "validation.email")
+                    .as_str(),
+                "attribute",
+                attribute_name,
+            )])
         }
     }
 }

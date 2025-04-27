@@ -1,4 +1,4 @@
-use crate::{TranslatorService, TranslatorVariable};
+use crate::TranslatorService;
 
 pub struct MinLengthString;
 pub struct MaxLengthString;
@@ -18,16 +18,21 @@ impl MinLengthString {
         attribute_name: &str,
     ) -> Vec<String> {
         if Self::apply(value, min) {
-            vec![]
+            Vec::new()
         } else {
-            vec![translator_service.variables(
-                &lang,
-                "validation.min.string",
-                vec![
-                    TranslatorVariable::String("attribute".to_string(), attribute_name.to_string()),
-                    TranslatorVariable::Usize("min".to_string(), min),
-                ],
-            )]
+            Vec::from([translator_service.var_usize(
+                translator_service
+                    .var_str(
+                        translator_service
+                            .translate(&lang, "validation.min.string")
+                            .as_str(),
+                        "attribute",
+                        attribute_name,
+                    )
+                    .as_str(),
+                "min",
+                min,
+            )])
         }
     }
 }
@@ -46,16 +51,21 @@ impl MaxLengthString {
         attribute_name: &str,
     ) -> Vec<String> {
         if Self::apply(value, max) {
-            vec![]
+            Vec::new()
         } else {
-            vec![translator_service.variables(
-                &lang,
-                "validation.max.string",
-                vec![
-                    TranslatorVariable::String("attribute".to_string(), attribute_name.to_string()),
-                    TranslatorVariable::Usize("max".to_string(), max),
-                ],
-            )]
+            Vec::from([translator_service.var_usize(
+                translator_service
+                    .var_str(
+                        translator_service
+                            .translate(&lang, "validation.max.string")
+                            .as_str(),
+                        "attribute",
+                        attribute_name,
+                    )
+                    .as_str(),
+                "max",
+                max,
+            )])
         }
     }
 }
