@@ -40,6 +40,8 @@ pub struct AppConfig {
 #[derive(Debug, Clone)]
 pub struct AuthConfig {
     // in seconds
+    pub csrf_expires: u64,
+    // in seconds
     pub token_expires: u64,
     // in seconds
     pub old_token_expires: u64,
@@ -131,12 +133,17 @@ impl Config {
                 },
             },
             auth: AuthConfig {
-                token_expires: env::var("AUTH_EXPIRES")
+                csrf_expires: env::var("AUTH_CSRF_EXPIRES")
+                    // Default: 24 hours equal 86400 seconds
+                    .unwrap_or("86400".to_string())
+                    .trim()
+                    .parse::<u64>().unwrap_or(86400),
+                token_expires: env::var("AUTH_TOKEN_EXPIRES")
                     // Default: 30 days equal 2592000 seconds
                     .unwrap_or("2592000".to_string())
                     .trim()
                     .parse::<u64>().unwrap_or(2592000),
-                old_token_expires: env::var("AUTH_OLD_EXPIRES")
+                old_token_expires: env::var("AUTH_OLD_TOKEN_EXPIRES")
                     // Default: 10 minutes equal 600 seconds
                     .unwrap_or("600".to_string())
                     .trim()

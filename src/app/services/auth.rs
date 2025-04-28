@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::{
@@ -17,13 +18,14 @@ use serde_derive::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 use strum_macros::{Display, EnumString};
 
+pub static CSRF_ERROR_MESSAGE: &str = "CSRF token mismatch.";
 static RESET_PASSWORD_CODE_KEY: &str = "reset_password.code";
 
 pub struct AuthService<'a> {
     #[allow(dead_code)]
     config: Data<Config>,
     db_pool: Data<MysqlPool>,
-    hash: Data<HashService<'a>>,
+    hash_service: Data<HashService<'a>>,
     key_value_service: Data<KeyValueService>,
     user_service: Data<UserService>,
     random_service: Data<RandomService>,
@@ -48,6 +50,21 @@ impl AuthToken {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Session(Rc<AuthToken>, Rc<AuthToken>);
+
+impl Session {
+    pub fn new(old_auth_token: Rc<AuthToken>, new_auth_token: Rc<AuthToken>) -> Self {
+        Session(old_auth_token, new_auth_token)
+    }
+    pub fn get_old_auth_token(&self) -> &AuthToken {
+        &self.0
+    }
+    pub fn get_new_auth_token(&self) -> &AuthToken {
+        &self.1
+    }
+}
+
 impl<'a> AuthService<'a> {
     pub fn new(
         config: Data<Config>,
@@ -61,7 +78,7 @@ impl<'a> AuthService<'a> {
         Self {
             config,
             db_pool,
-            hash,
+            hash_service: hash,
             key_value_service,
             user_service,
             random_service,
@@ -184,6 +201,14 @@ impl<'a> AuthService<'a> {
         key
     }
 
+    pub fn get_csrf_key(&self, user_id: &str, token_id: &str) -> String {
+        let mut key = "auth.".to_string();
+        key.push_str(user_id);
+        key.push_str(".csrf.");
+        key.push_str(token_id);
+        key
+    }
+
     fn make_store_data(&self, token_value: &str, expires: u64) -> String {
         let mut value = "".to_string();
         value.push_str(token_value);
@@ -288,7 +313,8 @@ impl<'a> AuthService<'a> {
         })?;
 
         // Нужно сгенерировать новый токен
-        let mut is_need_new_token = token_expires == 1;
+        // let mut is_need_new_token = token_expires == 1;
+        let mut is_need_new_token = true;
 
         if !is_need_new_token {
             let expires = SystemTime::now()
@@ -358,7 +384,7 @@ impl<'a> AuthService<'a> {
         email: &String,
         password: &String,
     ) -> Result<u64, AuthServiceError> {
-        let hash_service = self.hash.get_ref();
+        let hash_service = self.hash_service.get_ref();
         let mut connection = self.db_pool.get_ref().get().map_err(|e| {
             log::error!("AuthService::login_by_password - {e}");
             return AuthServiceError::DbConnectionFail;
@@ -395,7 +421,7 @@ impl<'a> AuthService<'a> {
         let new_user = NewUser {
             email: data.email.to_owned(),
             password: Some(
-                self.hash
+                self.hash_service
                     .get_ref()
                     .hash_password(&data.password)
                     .map_err(|e| {
@@ -494,10 +520,14 @@ impl<'a> AuthService<'a> {
         use crate::schema::users::dsl::password as dsl_password;
         use crate::schema::users::dsl::users as dsl_users;
 
-        let hashed_password = self.hash.get_ref().hash_password(password).map_err(|e| {
-            log::error!("AuthService::update_password_by_email - {email} - {e}",);
-            AuthServiceError::Fail
-        })?;
+        let hashed_password = self
+            .hash_service
+            .get_ref()
+            .hash_password(password)
+            .map_err(|e| {
+                log::error!("AuthService::update_password_by_email - {email} - {e}",);
+                AuthServiceError::Fail
+            })?;
 
         let mut connection = self.db_pool.get_ref().get().map_err(|e| {
             log::error!("AuthService::update_password_by_email - {e}",);
@@ -534,6 +564,37 @@ impl<'a> AuthService<'a> {
 
         Ok(email_exists)
     }
+
+    fn csrf_by_token(&self, token: &str) -> String {
+        let config = self.config.get_ref();
+        let hash_service = self.hash_service.get_ref();
+        let mut csrf = token.to_owned();
+        csrf.push_str(&config.app.key);
+        hash_service.hex_hash(csrf)
+    }
+
+    pub fn csrf(&self, session: &Session) -> String {
+        // TODO: Сделать csrf защиту для не авторизованных пользователей.
+        // А это значит, что для не авторизованных пользователей всё же придётся генерировать токены.
+        self.csrf_by_token(session.get_new_auth_token().get_token_value())
+    }
+
+    pub fn check_csrf(&self, session: &Session, token: &str) -> bool {
+        self.csrf_by_token(session.get_old_auth_token().get_token_value()).eq(token)
+    }
+
+    pub fn check_csrf_throw_http(&self, session: &Session, token: &Option<String>) -> Result<bool, Error> {
+        if let Some(token) = token {
+            let is = self.check_csrf(session, token);
+            if is {
+                Ok(is)
+            } else {
+                Err(error::ErrorForbidden(CSRF_ERROR_MESSAGE))
+            }
+        } else {
+            Err(error::ErrorForbidden(CSRF_ERROR_MESSAGE))
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -550,13 +611,11 @@ impl Credentials {
 
 #[derive(Debug, Clone, Copy, Display, EnumString)]
 pub enum AuthServiceError {
-    RegisterFail,
     CredentialsInvalid,
     DbConnectionFail,
     DuplicateEmail,
     InsertNewUserFail,
     PasswordHashFail,
-    LogoutFail,
     Fail,
 }
 

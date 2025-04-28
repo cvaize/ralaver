@@ -1,10 +1,10 @@
-use crate::{AuthService, User};
+use crate::{AuthService, AuthServiceError, AuthToken, Session, User};
 use actix_utils::future::{ready, Ready};
 use actix_web::body::BoxBody;
 use actix_web::web::Data;
 use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    Error, HttpMessage, HttpResponse,
+    Error, HttpMessage, HttpRequest, HttpResponse,
 };
 use http::{HeaderValue, StatusCode};
 use std::sync::Arc;
@@ -37,6 +37,16 @@ pub struct InnerWebAuthMiddleware<S> {
     service: Rc<S>,
 }
 
+fn unauthorized_redirect(auth_service: &AuthService) -> HttpResponse {
+    HttpResponse::SeeOther()
+        .cookie(auth_service.make_auth_token_clear_cookie())
+        .insert_header((
+            http::header::LOCATION,
+            HeaderValue::from_static(REDIRECT_TO),
+        ))
+        .finish()
+}
+
 impl<S> Service<ServiceRequest> for InnerWebAuthMiddleware<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<BoxBody>, Error = Error> + 'static,
@@ -52,24 +62,37 @@ where
         let auth_service: &Data<AuthService<'_>> = req.app_data::<Data<AuthService<'_>>>().unwrap();
         let auth_service = Arc::clone(auth_service);
 
-        let auth_data = auth_service.login_by_req(req.request());
+        let old_auth_token = auth_service.get_auth_token_from_request(req.request());
 
-        if auth_data.is_err() {
+        if old_auth_token.is_none() {
             return Box::pin(async move {
-                let res = HttpResponse::SeeOther()
-                    .cookie(auth_service.make_auth_token_clear_cookie())
-                    .insert_header((
-                        http::header::LOCATION,
-                        HeaderValue::from_static(REDIRECT_TO),
-                    ))
-                    .finish();
+                let res = unauthorized_redirect(auth_service.as_ref());
                 Ok(req.into_response(res))
             });
         }
-        let (user, auth_token) = auth_data.unwrap();
+        let old_auth_token: Rc<AuthToken> = Rc::new(old_auth_token.unwrap());
+
+        let auth_data = auth_service.login_by_auth_token(old_auth_token.as_ref());
+
+        if auth_data.is_err() {
+            return Box::pin(async move {
+                let res = unauthorized_redirect(auth_service.as_ref());
+                Ok(req.into_response(res))
+            });
+        }
+
+        let (user, new_auth_token) = auth_data.unwrap();
+        let new_auth_token: Rc<AuthToken> = Rc::new(new_auth_token);
+        let new_auth_token_rc: Rc<AuthToken> = Rc::clone(&new_auth_token);
 
         let user_rc: Rc<User> = Rc::new(user);
-        req.extensions_mut().insert(user_rc);
+        req.extensions_mut().insert(Rc::clone(&user_rc));
+
+        let session_rc: Rc<Session> = Rc::new(Session::new(
+            Rc::clone(&old_auth_token),
+            Rc::clone(&new_auth_token),
+        ));
+        req.extensions_mut().insert(Rc::clone(&session_rc));
 
         let fut = self.service.call(req);
 
@@ -93,7 +116,7 @@ where
                         );
 
                         let cookie = auth_service.make_auth_token_clear_cookie();
-                        let _ = auth_service.expire_auth_token(&auth_token);
+                        let _ = auth_service.expire_auth_token(new_auth_token_rc.as_ref());
                         let _ = res_mut.add_cookie(&cookie);
 
                         Ok(res)
@@ -102,7 +125,8 @@ where
                     }
                 }
                 _ => {
-                    let cookie = auth_service.make_auth_token_cookie_throw_http(&auth_token)?;
+                    let cookie = auth_service
+                        .make_auth_token_cookie_throw_http(new_auth_token_rc.as_ref())?;
                     res.response_mut().add_cookie(&cookie).unwrap();
 
                     Ok(res)

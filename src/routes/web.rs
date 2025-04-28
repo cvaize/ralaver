@@ -40,6 +40,7 @@ pub fn register(cfg: &mut web::ServiceConfig) {
     );
     cfg.service(
         web::resource("/users")
+            .wrap(WebAuthMiddleware)
             .route(web::post().to(controllers::web::users::index)),
     );
 

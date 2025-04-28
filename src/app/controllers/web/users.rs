@@ -1,17 +1,23 @@
-use actix_web::web::Form;
+use std::rc::Rc;
+use actix_web::web::{Data, Form, ReqData};
 use actix_web::{Error, HttpResponse, Result};
 use serde_derive::Deserialize;
+use crate::{AuthService, Session};
 
 #[derive(Deserialize, Debug)]
 pub struct TestData {
-    pub csrf: Option<String>,
+    pub _token: Option<String>,
     pub test: Option<String>,
 }
 
 pub async fn index(
     data: Form<TestData>,
+    session: ReqData<Rc<Session>>,
+    auth_service: Data<AuthService<'_>>,
 ) -> Result<HttpResponse, Error> {
-    dbg!(data);
+    let session = session.as_ref();
+
+    auth_service.check_csrf_throw_http(session, &data._token)?;
 
     Ok(HttpResponse::SeeOther()
         .insert_header((http::header::LOCATION, http::HeaderValue::from_static("/")))
