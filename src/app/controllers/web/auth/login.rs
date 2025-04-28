@@ -13,14 +13,15 @@ use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
 
+static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
+static RATE_LIMIT_TTL: u64 = 60;
+static RATE_KEY: &str = "login";
+
 #[derive(Deserialize, Debug)]
 pub struct LoginData {
     pub email: Option<String>,
     pub password: Option<String>,
 }
-
-static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
-static RATE_LIMIT_TTL: u64 = 60;
 
 pub async fn show(
     req: HttpRequest,
@@ -169,14 +170,14 @@ async fn post<'a>(
     Error,
 > {
     let mut is_done = false;
-    let mut form_errors: Vec<String> = vec![];
-    let mut email_errors: Vec<String> = vec![];
-    let mut password_errors: Vec<String> = vec![];
+    let mut form_errors: Vec<String> = Vec::new();
+    let mut email_errors: Vec<String> = Vec::new();
+    let mut password_errors: Vec<String> = Vec::new();
     let mut auth_token: Option<AuthToken> = None;
 
     if is_post {
         let rate_limit_key = rate_limit_service
-            .make_key_from_request(req)
+            .make_key_from_request(req, RATE_KEY)
             .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
 
         let executed = rate_limit_service

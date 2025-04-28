@@ -154,6 +154,7 @@ impl TranslatorService {
         lang: &str,
         key: &str,
         value: i64,
+        vars: Option<&HashMap<&str, &str>>
     ) -> String {
         let mut result = self.translate(lang, key);
         let result_split: Vec<&str> = result.split("|").collect();
@@ -175,31 +176,22 @@ impl TranslatorService {
             }
         }
 
-        result
+        if let Some(vars) = vars {
+            self.apply_variables(result, vars)
+        } else {
+            result
+        }
     }
 
-    pub fn var_str(&self, content: &str, key: &str, value: &str) -> String {
-        content.replace(self.v_key(key).as_str(), value)
+    fn apply_variables(&self, mut value: String, vars: &HashMap<&str, &str>) -> String {
+        for (k, v) in vars.iter() {
+            value = value.replace(self.v_key(k).as_str(), v);
+        }
+        value
     }
 
-    pub fn var_u64(&self, content: &str, key: &str, value: u64) -> String {
-        content.replace(self.v_key(key).as_str(), value.to_string().as_str())
-    }
-
-    pub fn var_u32(&self, content: &str, key: &str, value: u32) -> String {
-        content.replace(self.v_key(key).as_str(), value.to_string().as_str())
-    }
-
-    pub fn var_i64(&self, content: &str, key: &str, value: i64) -> String {
-        content.replace(self.v_key(key).as_str(), value.to_string().as_str())
-    }
-
-    pub fn var_i32(&self, content: &str, key: &str, value: i32) -> String {
-        content.replace(self.v_key(key).as_str(), value.to_string().as_str())
-    }
-
-    pub fn var_usize(&self, content: &str, key: &str, value: usize) -> String {
-        content.replace(self.v_key(key).as_str(), value.to_string().as_str())
+    pub fn variables(&self, lang: &str, key: &str, vars: &HashMap<&str, &str>) -> String {
+        self.apply_variables(self.translate(lang, key), vars)
     }
 }
 
@@ -280,7 +272,9 @@ mod tests {
         t.insert("en", "test_key2".to_string(), "test_value2".to_string());
 
         b.iter(|| {
-            let _ = t.var_str(t.translate("en", "test_key").as_str(), "variable", "test321");
+            let mut vars = HashMap::new();
+            vars.insert("variable", "test321");
+            t.variables("en", "test_key", &vars);
         });
     }
 
@@ -295,17 +289,17 @@ mod tests {
             "секунда|секунды|секунд".to_string(),
         );
 
-        let value = t.choices("en", "test_key", 1);
+        let value = t.choices("en", "test_key", 1, None);
         assert_eq!("second".to_string(), value);
-        let value = t.choices("en", "test_key", 2);
+        let value = t.choices("en", "test_key", 2, None);
         assert_eq!("seconds".to_string(), value);
-        let value = t.choices("ru", "test_key", 1);
+        let value = t.choices("ru", "test_key", 1, None);
         assert_eq!("секунда".to_string(), value);
-        let value = t.choices("ru", "test_key", 2);
+        let value = t.choices("ru", "test_key", 2, None);
         assert_eq!("секунды".to_string(), value);
-        let value = t.choices("ru", "test_key", 10);
+        let value = t.choices("ru", "test_key", 10, None);
         assert_eq!("секунд".to_string(), value);
-        let value = t.choices("ru", "test_key", 100033);
+        let value = t.choices("ru", "test_key", 100033, None);
         assert_eq!("секунды".to_string(), value);
     }
 

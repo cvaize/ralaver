@@ -17,7 +17,7 @@ pub fn vec_into_array<T, const N: usize>(v: Vec<T>) -> [T; N] {
 }
 
 pub fn collect_files_from_dir(dir: &Path) -> io::Result<Vec<PathBuf>> {
-    let mut result: Vec<PathBuf> = vec![];
+    let mut result: Vec<PathBuf> = Vec::new();
     if dir.is_dir() {
         for entry in fs::read_dir(dir)? {
             let entry = entry?;

@@ -40,7 +40,7 @@ pub fn register(cfg: &mut web::ServiceConfig) {
     );
     cfg.service(
         web::resource("/users")
-            .route(web::get().to(controllers::web::users::index)),
+            .route(web::post().to(controllers::web::users::index)),
     );
 
     // NotFound route

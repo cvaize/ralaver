@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::TranslatorService;
 
 pub struct Confirmed;
@@ -18,13 +19,9 @@ impl Confirmed {
         if Self::apply(a, b) {
             Vec::new()
         } else {
-            Vec::from([translator_service.var_str(
-                translator_service
-                    .translate(&lang, "validation.confirmed")
-                    .as_str(),
-                "attribute",
-                attribute_name,
-            )])
+            let mut vars = HashMap::new();
+            vars.insert("attribute", attribute_name);
+            Vec::from([translator_service.variables(&lang, "validation.confirmed", &vars)])
         }
     }
 }

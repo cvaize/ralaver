@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::TranslatorService;
 
 pub struct Email;
@@ -17,13 +18,9 @@ impl Email {
         if Self::apply(value) {
             Vec::new()
         } else {
-            Vec::from([translator_service.var_str(
-                translator_service
-                    .translate(&lang, "validation.email")
-                    .as_str(),
-                "attribute",
-                attribute_name,
-            )])
+            let mut vars = HashMap::new();
+            vars.insert("attribute", attribute_name);
+            Vec::from([translator_service.variables(&lang, "validation.email", &vars)])
         }
     }
 }

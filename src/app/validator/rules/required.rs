@@ -14,9 +14,9 @@ impl Required {
         value: &Option<T>,
     ) -> Vec<String> {
         if Self::apply(value) {
-            vec![]
+            Vec::new()
         } else {
-            vec![translator_service.translate(&lang, "validation.required")]
+            Vec::from([translator_service.translate(&lang, "validation.required")])
         }
     }
 
@@ -29,7 +29,7 @@ impl Required {
         if Self::apply(value) {
             cb(value.as_ref().unwrap())
         } else {
-            vec![translator_service.translate(&lang, "validation.required")]
+            Vec::from([translator_service.translate(&lang, "validation.required")])
         }
     }
 }

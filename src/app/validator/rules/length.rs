@@ -1,4 +1,5 @@
 use crate::TranslatorService;
+use std::collections::HashMap;
 
 pub struct MinLengthString;
 pub struct MaxLengthString;
@@ -20,19 +21,11 @@ impl MinLengthString {
         if Self::apply(value, min) {
             Vec::new()
         } else {
-            Vec::from([translator_service.var_usize(
-                translator_service
-                    .var_str(
-                        translator_service
-                            .translate(&lang, "validation.min.string")
-                            .as_str(),
-                        "attribute",
-                        attribute_name,
-                    )
-                    .as_str(),
-                "min",
-                min,
-            )])
+            let m = min.to_string();
+            let mut vars = HashMap::new();
+            vars.insert("attribute", attribute_name);
+            vars.insert("min", m.as_str());
+            Vec::from([translator_service.variables(&lang, "validation.min.string", &vars)])
         }
     }
 }
@@ -53,19 +46,11 @@ impl MaxLengthString {
         if Self::apply(value, max) {
             Vec::new()
         } else {
-            Vec::from([translator_service.var_usize(
-                translator_service
-                    .var_str(
-                        translator_service
-                            .translate(&lang, "validation.max.string")
-                            .as_str(),
-                        "attribute",
-                        attribute_name,
-                    )
-                    .as_str(),
-                "max",
-                max,
-            )])
+            let m = max.to_string();
+            let mut vars = HashMap::new();
+            vars.insert("attribute", attribute_name);
+            vars.insert("max", m.as_str());
+            Vec::from([translator_service.variables(&lang, "validation.max.string", &vars)])
         }
     }
 }

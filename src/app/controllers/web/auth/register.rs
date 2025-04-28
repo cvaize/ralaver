@@ -2,15 +2,19 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{AlertVariant, WebHttpRequest, WebHttpResponse};
+use crate::{AlertVariant, RateLimitService, WebHttpRequest, WebHttpResponse};
 use crate::{
     AppService, AuthService, AuthServiceError, Credentials, TemplateService, TranslatorService,
 };
 use actix_web::web::{Data, Form};
-use actix_web::{Error, HttpRequest, HttpResponse, Result};
+use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
+
+static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
+static RATE_LIMIT_TTL: u64 = 60;
+static RATE_KEY: &str = "register";
 
 #[derive(Deserialize, Debug)]
 pub struct RegisterData {
@@ -25,6 +29,7 @@ pub async fn show(
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
+    rate_limit_service: Data<RateLimitService>,
 ) -> Result<HttpResponse, Error> {
     invoke(
         req,
@@ -37,6 +42,7 @@ pub async fn show(
         app_service,
         translator_service,
         auth_service,
+        rate_limit_service,
     )
     .await
 }
@@ -48,11 +54,13 @@ pub async fn invoke(
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     auth_service: Data<AuthService<'_>>,
+    rate_limit_service: Data<RateLimitService>,
 ) -> Result<HttpResponse, Error> {
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
     let translator_service = translator_service.get_ref();
     let auth_service = auth_service.get_ref();
+    let rate_limit_service = rate_limit_service.get_ref();
 
     let (lang, locale, locales) = app_service.locale(Some(&req), None);
 
@@ -66,8 +74,9 @@ pub async fn invoke(
     );
 
     let is_post = req.method().eq(&Method::POST);
-    let (is_done, email_errors, password_errors, confirm_password_errors) = post(
+    let (is_done, form_errors, email_errors, password_errors, confirm_password_errors) = post(
         is_post,
+        &req,
         &mut data,
         &email_str,
         &password_str,
@@ -75,6 +84,7 @@ pub async fn invoke(
         translator_service,
         &lang,
         auth_service,
+        rate_limit_service,
     )
     .await?;
 
@@ -132,6 +142,7 @@ pub async fn invoke(
                 "label": translator_service.translate(&lang, "auth.page.register.form.login.label"),
                 "href": "/login",
             },
+            "errors": form_errors,
         },
     });
 
@@ -144,6 +155,7 @@ pub async fn invoke(
 
 async fn post<'a>(
     is_post: bool,
+    req: &HttpRequest,
     data: &mut Form<RegisterData>,
     email_str: &String,
     password_str: &String,
@@ -151,91 +163,124 @@ async fn post<'a>(
     translator_service: &TranslatorService,
     lang: &str,
     auth_service: &AuthService<'a>,
-) -> Result<(bool, Vec<String>, Vec<String>, Vec<String>), Error> {
+    rate_limit_service: &RateLimitService,
+) -> Result<(bool, Vec<String>, Vec<String>, Vec<String>, Vec<String>), Error> {
     let mut is_done = false;
-    let mut email_errors: Vec<String> = vec![];
-    let mut password_errors: Vec<String> = vec![];
-    let mut confirm_password_errors: Vec<String> = vec![];
+    let mut form_errors: Vec<String> = Vec::new();
+    let mut email_errors: Vec<String> = Vec::new();
+    let mut password_errors: Vec<String> = Vec::new();
+    let mut confirm_password_errors: Vec<String> = Vec::new();
 
     if is_post {
-        email_errors = Required::validated(translator_service, lang, &data.email, |value| {
-            Email::validate(translator_service, lang, value, email_str)
-        });
-        password_errors = Required::validated(translator_service, lang, &data.password, |value| {
-            MinMaxLengthString::validate(translator_service, lang, value, 4, 255, password_str)
-        });
-        confirm_password_errors =
-            Required::validated(translator_service, lang, &data.confirm_password, |value| {
-                MinMaxLengthString::validate(
+        let rate_limit_key = rate_limit_service
+            .make_key_from_request(req, RATE_KEY)
+            .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
+
+        let executed = rate_limit_service
+            .attempt(&rate_limit_key, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_TTL)
+            .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
+
+        if executed {
+            email_errors = Required::validated(translator_service, lang, &data.email, |value| {
+                Email::validate(translator_service, lang, value, email_str)
+            });
+            password_errors =
+                Required::validated(translator_service, lang, &data.password, |value| {
+                    MinMaxLengthString::validate(
+                        translator_service,
+                        lang,
+                        value,
+                        4,
+                        255,
+                        password_str,
+                    )
+                });
+            confirm_password_errors =
+                Required::validated(translator_service, lang, &data.confirm_password, |value| {
+                    MinMaxLengthString::validate(
+                        translator_service,
+                        lang,
+                        value,
+                        4,
+                        255,
+                        &confirm_password_str,
+                    )
+                });
+
+            if password_errors.len() == 0 && confirm_password_errors.len() == 0 {
+                let mut password_errors2: Vec<String> = Confirmed::validate(
                     translator_service,
                     lang,
-                    value,
-                    4,
-                    255,
-                    &confirm_password_str,
-                )
-            });
+                    data.password.as_ref().unwrap(),
+                    data.confirm_password.as_ref().unwrap(),
+                    &password_str,
+                );
+                confirm_password_errors.append(&mut password_errors2);
+            }
 
-        if password_errors.len() == 0 && confirm_password_errors.len() == 0 {
-            let mut password_errors2: Vec<String> = Confirmed::validate(
-                translator_service,
-                lang,
-                data.password.as_ref().unwrap(),
-                data.confirm_password.as_ref().unwrap(),
-                &password_str,
-            );
-            confirm_password_errors.append(&mut password_errors2);
-        }
+            is_done = if email_errors.len() == 0
+                && password_errors.len() == 0
+                && confirm_password_errors.len() == 0
+            {
+                let credentials = Credentials {
+                    email: data.email.to_owned().unwrap(),
+                    password: data.password.to_owned().unwrap(),
+                };
 
-        is_done = if email_errors.len() == 0
-            && password_errors.len() == 0
-            && confirm_password_errors.len() == 0
-        {
-            let credentials = Credentials {
-                email: data.email.to_owned().unwrap(),
-                password: data.password.to_owned().unwrap(),
+                let register_result = auth_service.register_by_credentials(&credentials);
+
+                if let Err(error) = register_result {
+                    match error {
+                        AuthServiceError::DuplicateEmail => {
+                            email_errors.push(
+                                translator_service
+                                    .translate(&lang, "auth.alert.register.duplicate"),
+                            );
+                        }
+                        _ => {}
+                    }
+                    false
+                } else {
+                    true
+                }
+            } else {
+                false
             };
 
-            let register_result = auth_service.register_by_credentials(&credentials);
-
-            if let Err(error) = register_result {
-                match error {
-                    AuthServiceError::DuplicateEmail => {
-                        email_errors.push(
-                            translator_service.translate(&lang, "auth.alert.register.duplicate"),
-                        );
-                    }
-                    _ => {}
+            if let Some(email) = &data.email {
+                if email.len() > 400 {
+                    data.email = None;
                 }
-                false
-            } else {
-                true
+            }
+
+            if let Some(password) = &data.password {
+                if password.len() > 400 {
+                    data.password = None;
+                }
+            }
+
+            if let Some(confirm_password) = &data.confirm_password {
+                if confirm_password.len() > 400 {
+                    data.confirm_password = None;
+                }
             }
         } else {
-            false
-        };
-
-        if let Some(email) = &data.email {
-            if email.len() > 400 {
-                data.email = None;
-            }
+            let ttl_message = rate_limit_service
+                .ttl_message(translator_service, lang, &rate_limit_key)
+                .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
+            form_errors.push(ttl_message)
         }
 
-        if let Some(password) = &data.password {
-            if password.len() > 400 {
-                data.password = None;
-            }
-        }
-
-        if let Some(confirm_password) = &data.confirm_password {
-            if confirm_password.len() > 400 {
-                data.confirm_password = None;
-            }
+        if is_done {
+            rate_limit_service
+                .clear(&rate_limit_key)
+                .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
         }
     }
 
     Ok((
         is_done,
+        form_errors,
         email_errors,
         password_errors,
         confirm_password_errors,

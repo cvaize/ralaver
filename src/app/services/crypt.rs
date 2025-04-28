@@ -55,7 +55,7 @@ impl<'a> CryptService<'a> {
     fn parse_key(key: &str) -> [u8; 32] {
         let mut reader = FromBase64Reader::new(Cursor::new(key));
 
-        let mut key: Vec<u8> = vec![];
+        let mut key: Vec<u8> = Vec::new();
         reader.read_to_end(&mut key).unwrap();
 
         vec_into_array(key)
@@ -75,7 +75,7 @@ impl<'a> CryptService<'a> {
     pub fn base64_to_end(&self, base64: &str) -> Result<Vec<u8>, CryptServiceError> {
         let mut reader = FromBase64Reader::new(Cursor::new(base64));
 
-        let mut result: Vec<u8> = vec![];
+        let mut result: Vec<u8> = Vec::new();
 
         reader.read_to_end(&mut result).map_err(|e| {
             log::error!("CryptService::base64_to_end - {e}");
@@ -294,7 +294,7 @@ mod tests {
 
         let mut reader = FromBase64Reader::new(Cursor::new(encrypted_base64.clone()));
 
-        let mut encrypted_after_base64: Vec<u8> = vec![];
+        let mut encrypted_after_base64: Vec<u8> = Vec::new();
 
         reader.read_to_end(&mut encrypted_after_base64).unwrap();
 
@@ -329,7 +329,7 @@ mod tests {
 
             let mut reader = FromBase64Reader::new(Cursor::new(encrypted_base64));
 
-            let mut encrypted_after_base64: Vec<u8> = vec![];
+            let mut encrypted_after_base64: Vec<u8> = Vec::new();
 
             reader.read_to_end(&mut encrypted_after_base64).unwrap();
 
