@@ -28,7 +28,7 @@ pub async fn show(
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     mail_service: Data<MailService>,
-    auth_service: Data<AuthService<'_>>,
+    auth_service: Data<AuthService>,
     random_service: Data<RandomService>,
     rate_limit_service: Data<RateLimitService>,
 ) -> Result<HttpResponse, Error> {
@@ -53,7 +53,7 @@ pub async fn invoke(
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     mail_service: Data<MailService>,
-    auth_service: Data<AuthService<'_>>,
+    auth_service: Data<AuthService>,
     random_service: Data<RandomService>,
     rate_limit_service: Data<RateLimitService>,
 ) -> Result<HttpResponse, Error> {
@@ -131,14 +131,14 @@ pub async fn invoke(
         .body(s))
 }
 
-async fn post<'a>(
+async fn post(
     is_post: bool,
     req: &HttpRequest,
     lang: &str,
     data: &mut Form<ResetPasswordData>,
     email_str: &String,
     translator_service: &TranslatorService,
-    auth_service: &AuthService<'a>,
+    auth_service: &AuthService,
     mail_service: &MailService,
     tmpl_service: &TemplateService,
     app_service: &AppService,

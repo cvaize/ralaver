@@ -11,6 +11,7 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
+use crate::app::middlewares::web::REDIRECT_TO;
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
 static RATE_LIMIT_TTL: u64 = 60;
@@ -25,7 +26,7 @@ pub struct RegisterData {
 
 pub async fn show(
     req: HttpRequest,
-    auth_service: Data<AuthService<'_>>,
+    auth_service: Data<AuthService>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
@@ -53,7 +54,7 @@ pub async fn invoke(
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    auth_service: Data<AuthService<'_>>,
+    auth_service: Data<AuthService>,
     rate_limit_service: Data<RateLimitService>,
 ) -> Result<HttpResponse, Error> {
     let tmpl_service = tmpl_service.get_ref();
@@ -93,7 +94,7 @@ pub async fn invoke(
             .set_alerts(vec![AlertVariant::RegisterSuccess])
             .insert_header((
                 http::header::LOCATION,
-                http::HeaderValue::from_static("/login"),
+                http::HeaderValue::from_static(REDIRECT_TO),
             ))
             .finish());
     }
@@ -153,7 +154,7 @@ pub async fn invoke(
         .body(s))
 }
 
-async fn post<'a>(
+async fn post(
     is_post: bool,
     req: &HttpRequest,
     data: &mut Form<RegisterData>,
@@ -162,7 +163,7 @@ async fn post<'a>(
     confirm_password_str: &String,
     translator_service: &TranslatorService,
     lang: &str,
-    auth_service: &AuthService<'a>,
+    auth_service: &AuthService,
     rate_limit_service: &RateLimitService,
 ) -> Result<(bool, Vec<String>, Vec<String>, Vec<String>, Vec<String>), Error> {
     let mut is_done = false;

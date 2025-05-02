@@ -1,8 +1,8 @@
-use std::rc::Rc;
+use std::sync::Arc;
 use actix_web::web::{Data, Form, ReqData};
 use actix_web::{Error, HttpResponse, Result};
 use serde_derive::Deserialize;
-use crate::{AuthService, Session};
+use crate::{Session, SessionService};
 
 #[derive(Deserialize, Debug)]
 pub struct TestData {
@@ -12,12 +12,16 @@ pub struct TestData {
 
 pub async fn index(
     data: Form<TestData>,
-    session: ReqData<Rc<Session>>,
-    auth_service: Data<AuthService<'_>>,
+    session: ReqData<Arc<Session>>,
+    session_service: Data<SessionService>,
 ) -> Result<HttpResponse, Error> {
+    let session_service = session_service.get_ref();
     let session = session.as_ref();
 
-    auth_service.check_csrf_throw_http(session, &data._token)?;
+    session_service.check_csrf_throw_http(session, &data._token)?;
+
+    dbg!(&data._token);
+    dbg!(&data.test);
 
     Ok(HttpResponse::SeeOther()
         .insert_header((http::header::LOCATION, http::HeaderValue::from_static("/")))

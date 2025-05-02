@@ -24,7 +24,10 @@
     <form action="/users" method="post">
         <h3>Тест CSRF защиты</h3>
         {{#if csrf }}
-            <input type="hidden" name="_token" value="{{csrf}}">
+            <label class="admin-login__field admin-field">
+                <input class="admin-login__field__input admin-field__input" type="text" name="_token" placeholder="_token"
+                       value="{{csrf}}">
+            </label>
         {{/if}}
         <label class="admin-login__field admin-field">
             <input class="admin-login__field__input admin-field__input" type="text" name="test" placeholder="test"

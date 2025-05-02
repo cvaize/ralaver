@@ -1,2 +1,2 @@
 pub mod error_redirect;
-pub mod web_auth;
+pub mod web;

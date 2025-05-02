@@ -2,8 +2,7 @@ use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
 use crate::{
-    AlertVariant, AuthServiceError, AuthToken, RateLimitService, User, WebHttpRequest,
-    WebHttpResponse,
+    AlertVariant, AuthToken, RateLimitService, WebAuthService, WebHttpRequest, WebHttpResponse,
 };
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::web::Data;
@@ -25,11 +24,12 @@ pub struct LoginData {
 
 pub async fn show(
     req: HttpRequest,
-    auth_service: Data<AuthService<'_>>,
+    auth_service: Data<AuthService>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     rate_limit_service: Data<RateLimitService>,
+    web_auth_service: Data<WebAuthService>,
 ) -> Result<HttpResponse, Error> {
     invoke(
         req,
@@ -42,6 +42,7 @@ pub async fn show(
         app_service,
         translator_service,
         rate_limit_service,
+        web_auth_service,
     )
     .await
 }
@@ -49,23 +50,25 @@ pub async fn show(
 pub async fn invoke(
     req: HttpRequest,
     mut data: Form<LoginData>,
-    auth_service: Data<AuthService<'_>>,
+    auth_service: Data<AuthService>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     rate_limit_service: Data<RateLimitService>,
+    web_auth_service: Data<WebAuthService>,
 ) -> Result<HttpResponse, Error> {
     let auth_service = auth_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
     let translator_service = translator_service.get_ref();
     let rate_limit_service = rate_limit_service.get_ref();
+    let web_auth_service = web_auth_service.get_ref();
 
-    let auth_result: Result<(User, AuthToken), AuthServiceError> = auth_service.login_by_req(&req);
+    let auth_result = web_auth_service.login_by_req(&req);
 
     if let Ok((_, token)) = auth_result {
         return Ok(HttpResponse::SeeOther()
-            .cookie(auth_service.make_auth_token_cookie_throw_http(&token)?)
+            .cookie(web_auth_service.make_cookie_throw_http(&token)?)
             .clear_alerts()
             .insert_header((http::header::LOCATION, http::HeaderValue::from_static("/")))
             .finish());
@@ -87,6 +90,7 @@ pub async fn invoke(
         &lang,
         translator_service,
         auth_service,
+        web_auth_service,
         rate_limit_service,
     )
     .await?;
@@ -94,7 +98,7 @@ pub async fn invoke(
     if is_done {
         let auth_token = auth_token.unwrap();
         return Ok(HttpResponse::SeeOther()
-            .cookie(auth_service.make_auth_token_cookie_throw_http(&auth_token)?)
+            .cookie(web_auth_service.make_cookie_throw_http(&auth_token)?)
             .set_alerts(vec![AlertVariant::LoginSuccess])
             .insert_header((http::header::LOCATION, http::HeaderValue::from_static("/")))
             .finish());
@@ -149,7 +153,7 @@ pub async fn invoke(
         .body(s))
 }
 
-async fn post<'a>(
+async fn post(
     is_post: bool,
     req: &HttpRequest,
     data: &mut Form<LoginData>,
@@ -157,7 +161,8 @@ async fn post<'a>(
     password_str: &String,
     lang: &str,
     translator_service: &TranslatorService,
-    auth_service: &AuthService<'a>,
+    auth_service: &AuthService,
+    web_auth_service: &WebAuthService,
     rate_limit_service: &RateLimitService,
 ) -> Result<
     (
@@ -206,8 +211,8 @@ async fn post<'a>(
                 let auth_result = auth_service.login_by_password(email_value, password_value);
 
                 if let Ok(user_id) = auth_result {
-                    let auth_token_ = auth_service.generate_auth_token(user_id);
-                    auth_service
+                    let auth_token_ = web_auth_service.generate_auth_token(user_id);
+                    web_auth_service
                         .save_auth_token(&auth_token_)
                         .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
                     auth_token = Some(auth_token_);

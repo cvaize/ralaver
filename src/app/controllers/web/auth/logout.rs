@@ -1,24 +1,25 @@
-use crate::{AlertVariant, AuthService, WebHttpResponse};
+use crate::app::middlewares::web::REDIRECT_TO;
+use crate::{AlertVariant, WebAuthService, WebHttpResponse};
 use actix_web::web::Data;
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
 
 pub async fn invoke(
     req: HttpRequest,
-    auth_service: Data<AuthService<'_>>,
+    web_auth_service: Data<WebAuthService>,
 ) -> Result<impl Responder, Error> {
-    let auth_service = auth_service.get_ref();
+    let web_auth_service = web_auth_service.get_ref();
 
-    auth_service.logout_by_req(&req).map_err(|e| {
+    web_auth_service.logout_by_req(&req).map_err(|e| {
         log::error!("Logout:invoke - {e}");
-        return error::ErrorInternalServerError("AuthService error");
+        return error::ErrorInternalServerError("WebAuthService error");
     })?;
 
     Ok(HttpResponse::SeeOther()
-        .cookie(auth_service.make_auth_token_clear_cookie())
+        .cookie(web_auth_service.make_clear_cookie())
         .set_alerts(vec![AlertVariant::LogoutSuccess])
         .insert_header((
             http::header::LOCATION,
-            http::HeaderValue::from_static("/login"),
+            http::HeaderValue::from_static(REDIRECT_TO),
         ))
         .finish())
 }

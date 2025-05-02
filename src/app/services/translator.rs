@@ -372,7 +372,7 @@ mod tests {
                 value.push(' ');
                 value.push_str(s);
             }
-            value = value.trim().to_string();
+            let _ = value.trim().to_string();
         });
     }
 

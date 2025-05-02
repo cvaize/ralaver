@@ -10,25 +10,23 @@ mod routes;
 mod schema;
 mod services;
 
+use crate::services::BaseServices;
+use actix_web::middleware;
+use actix_web::App;
+use actix_web::HttpServer;
 pub use app::connections::mysql as mysql_connection;
 pub use app::connections::redis as redis_connection;
+pub use app::controllers::web::WebHttpRequest;
+pub use app::controllers::web::WebHttpResponse;
+use app::middlewares::error_redirect::ErrorRedirectWrap;
 pub use app::models::*;
 pub use app::services::*;
 pub use config::Config;
 pub use connections::Connections;
 pub use mysql_connection::MysqlPool;
 pub use services::Services;
-use actix_web::middleware;
-use actix_web::App;
-use actix_web::HttpServer;
-use app::middlewares::error_redirect::ErrorRedirectWrap;
-pub use app::controllers::web::WebHttpRequest;
-pub use app::controllers::web::WebHttpResponse;
-use crate::services::BaseServices;
 
-pub static ARGON2_SECRET_KEY: &[u8; 64] = b"\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07";
-
-fn preparation<'a>() -> (Connections, Services<'a>) {
+fn preparation() -> (Connections, Services) {
     let base_services: BaseServices = services::base(Config::new());
     let _ = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("info"));
 
@@ -47,7 +45,7 @@ fn preparation<'a>() -> (Connections, Services<'a>) {
 async fn main() -> std::io::Result<()> {
     let (_, all_services) = preparation();
 
-    log::info!("{}","Starting HTTP server at http://0.0.0.0:8080");
+    log::info!("{}", "Starting HTTP server at http://0.0.0.0:8080");
 
     HttpServer::new(move || {
         App::new()
@@ -57,6 +55,8 @@ async fn main() -> std::io::Result<()> {
             .app_data(all_services.template.clone())
             .app_data(all_services.hash.clone())
             .app_data(all_services.auth.clone())
+            .app_data(all_services.session.clone())
+            .app_data(all_services.web_auth.clone())
             .app_data(all_services.locale.clone())
             .app_data(all_services.app.clone())
             .app_data(all_services.mail.clone())
@@ -64,8 +64,8 @@ async fn main() -> std::io::Result<()> {
             .app_data(all_services.user.clone())
             .app_data(all_services.crypt.clone())
             .app_data(all_services.rate_limit.clone())
-            .configure(routes::register)
             .wrap(middleware::Logger::default())
+            .configure(routes::register)
             .wrap(ErrorRedirectWrap)
     })
     .bind("0.0.0.0:8080")?

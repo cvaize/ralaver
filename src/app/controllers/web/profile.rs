@@ -3,11 +3,11 @@ use crate::{AppService, TemplateService, TranslatorService, WebHttpRequest};
 use actix_web::web::{Data, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use serde_json::json;
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub async fn index(
     req: HttpRequest,
-    user: ReqData<Rc<User>>,
+    user: ReqData<Arc<User>>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,

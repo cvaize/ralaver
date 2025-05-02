@@ -3,6 +3,7 @@ use std::env;
 #[derive(Debug, Clone)]
 pub struct Config {
     pub app: AppConfig,
+    pub session: SessionConfig,
     pub db: DbConfig,
     pub auth: AuthConfig,
     pub translator: TranslatorConfig,
@@ -39,18 +40,32 @@ pub struct AppConfig {
 
 #[derive(Debug, Clone)]
 pub struct AuthConfig {
-    // in seconds
-    pub csrf_expires: u64,
+    pub cookie: AuthCookieConfig
+}
+
+#[derive(Debug, Clone)]
+pub struct AuthCookieConfig {
     // in seconds
     pub token_expires: u64,
     // in seconds
     pub old_token_expires: u64,
     pub token_length: usize,
-    pub token_cookie_key: String,
-    pub token_cookie_secure: bool,
-    pub token_cookie_http_only: bool,
-    pub token_cookie_path: String,
-    pub token_cookie_domain: String,
+    pub cookie_key: String,
+    pub cookie_secure: bool,
+    pub cookie_http_only: bool,
+    pub cookie_path: String,
+    pub cookie_domain: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct SessionConfig {
+    // in seconds
+    pub cookie_expires: u64,
+    pub cookie_key: String,
+    pub cookie_secure: bool,
+    pub cookie_http_only: bool,
+    pub cookie_path: String,
+    pub cookie_domain: String,
 }
 
 #[derive(Debug, Clone)]
@@ -133,42 +148,66 @@ impl Config {
                 },
             },
             auth: AuthConfig {
-                csrf_expires: env::var("AUTH_CSRF_EXPIRES")
-                    // Default: 24 hours equal 86400 seconds
-                    .unwrap_or("86400".to_string())
+                cookie: AuthCookieConfig {
+                    token_expires: env::var("AUTH_COOKIE_TOKEN_EXPIRES")
+                        // Default: 30 days equal 2592000 seconds
+                        .unwrap_or("2592000".to_string())
+                        .trim()
+                        .parse::<u64>().unwrap_or(2592000),
+                    old_token_expires: env::var("AUTH_COOKIE_OLD_TOKEN_EXPIRES")
+                        // Default: 1 hours equal 3600 seconds
+                        .unwrap_or("3600".to_string())
+                        .trim()
+                        .parse::<u64>().unwrap_or(3600),
+                    token_length: env::var("AUTH_COOKIE_TOKEN_LENGTH")
+                        .unwrap_or("64".to_string())
+                        .trim()
+                        .parse::<usize>().unwrap_or(64),
+                    cookie_key: env::var("AUTH_COOKIE_KEY")
+                        .unwrap_or("access_token".to_string())
+                        .trim()
+                        .to_string(),
+                    cookie_http_only: env::var("AUTH_COOKIE_HTTP_ONLY")
+                        .unwrap_or("1".to_string())
+                        .trim()
+                        .parse::<bool>().unwrap_or(true),
+                    cookie_path: env::var("AUTH_COOKIE_PATH")
+                        .unwrap_or("/".to_string())
+                        .trim()
+                        .to_string(),
+                    cookie_secure: env::var("AUTH_COOKIE_SECURE")
+                        .unwrap_or("0".to_string())
+                        .trim()
+                        .parse::<bool>().unwrap_or(false),
+                    cookie_domain: env::var("AUTH_COOKIE_DOMAIN")
+                        .unwrap_or("".to_string())
+                        .trim()
+                        .to_string(),
+                }
+            },
+            session: SessionConfig {
+                cookie_expires: env::var("AUTH_SESSION_COOKIE_EXPIRES")
+                    // Default: 1 hours equal 3600 seconds
+                    .unwrap_or("3600".to_string())
                     .trim()
-                    .parse::<u64>().unwrap_or(86400),
-                token_expires: env::var("AUTH_TOKEN_EXPIRES")
-                    // Default: 30 days equal 2592000 seconds
-                    .unwrap_or("2592000".to_string())
-                    .trim()
-                    .parse::<u64>().unwrap_or(2592000),
-                old_token_expires: env::var("AUTH_OLD_TOKEN_EXPIRES")
-                    // Default: 10 minutes equal 600 seconds
-                    .unwrap_or("600".to_string())
-                    .trim()
-                    .parse::<u64>().unwrap_or(600),
-                token_length: env::var("AUTH_TOKEN_LENGTH")
-                    .unwrap_or("64".to_string())
-                    .trim()
-                    .parse::<usize>().unwrap_or(64),
-                token_cookie_key: env::var("AUTH_TOKEN_COOKIE_KEY")
-                    .unwrap_or("access_token".to_string())
+                    .parse::<u64>().unwrap_or(3600),
+                cookie_key: env::var("AUTH_SESSION_COOKIE_KEY")
+                    .unwrap_or("session".to_string())
                     .trim()
                     .to_string(),
-                token_cookie_http_only: env::var("AUTH_TOKEN_COOKIE_HTTP_ONLY")
+                cookie_http_only: env::var("AUTH_SESSION_COOKIE_HTTP_ONLY")
                     .unwrap_or("1".to_string())
                     .trim()
                     .parse::<bool>().unwrap_or(true),
-                token_cookie_path: env::var("AUTH_TOKEN_COOKIE_PATH")
+                cookie_path: env::var("AUTH_SESSION_COOKIE_PATH")
                     .unwrap_or("/".to_string())
                     .trim()
                     .to_string(),
-                token_cookie_secure: env::var("AUTH_TOKEN_COOKIE_SECURE")
+                cookie_secure: env::var("AUTH_SESSION_COOKIE_SECURE")
                     .unwrap_or("0".to_string())
                     .trim()
                     .parse::<bool>().unwrap_or(false),
-                token_cookie_domain: env::var("AUTH_TOKEN_COOKIE_DOMAIN")
+                cookie_domain: env::var("AUTH_SESSION_COOKIE_DOMAIN")
                     .unwrap_or("".to_string())
                     .trim()
                     .to_string(),

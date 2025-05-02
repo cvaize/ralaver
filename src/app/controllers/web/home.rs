@@ -1,30 +1,30 @@
-use crate::{AuthService, AuthToken, Session, TemplateService};
 use crate::{AppService, TranslatorService, User, WebHttpRequest, WebHttpResponse};
+use crate::{Session, SessionService, TemplateService};
 use actix_web::web::{Data, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use serde_json::json;
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub async fn index(
     req: HttpRequest,
-    user: ReqData<Rc<User>>,
-    session: ReqData<Rc<Session>>,
+    user: ReqData<Arc<User>>,
+    session: ReqData<Arc<Session>>,
     translator_service: Data<TranslatorService>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
-    auth_service: Data<AuthService<'_>>,
+    session_service: Data<SessionService>,
 ) -> Result<HttpResponse, Error> {
     let translator_service = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
-    let auth_service = auth_service.get_ref();
+    let session_service = session_service.get_ref();
     let user = user.as_ref();
     let session = session.as_ref();
 
     let dark_mode = app_service.dark_mode(&req);
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(user));
 
-    let csrf = auth_service.csrf(session);
+    let csrf = session_service.new_csrf(&session);
     let ctx = json!({
         "locale": locale,
         "locales": locales,

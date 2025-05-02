@@ -1,4 +1,5 @@
 use crate::app::controllers::web::auth::reset_password::CODE_LEN;
+use crate::app::middlewares::web::REDIRECT_TO;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
@@ -35,7 +36,7 @@ pub async fn show(
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    auth_service: Data<AuthService<'_>>,
+    auth_service: Data<AuthService>,
     rate_limit_service: Data<RateLimitService>,
 ) -> Result<HttpResponse, Error> {
     invoke(
@@ -63,7 +64,7 @@ pub async fn invoke(
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
-    auth_service: Data<AuthService<'_>>,
+    auth_service: Data<AuthService>,
     rate_limit_service: Data<RateLimitService>,
 ) -> Result<HttpResponse, Error> {
     let tmpl_service = tmpl_service.get_ref();
@@ -128,7 +129,7 @@ pub async fn invoke(
             .set_alerts(vec![AlertVariant::ResetPasswordConfirmSuccess])
             .insert_header((
                 http::header::LOCATION,
-                http::HeaderValue::from_static("/login"),
+                http::HeaderValue::from_static(REDIRECT_TO),
             ))
             .finish());
     }
@@ -197,7 +198,7 @@ pub async fn invoke(
     Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }
 
-async fn post<'a>(
+async fn post(
     is_post: bool,
     req: &HttpRequest,
     data: &mut Form<ResetPasswordConfirmData>,
@@ -206,7 +207,7 @@ async fn post<'a>(
     confirm_password_str: &String,
     translator_service: &TranslatorService,
     lang: &str,
-    auth_service: &AuthService<'a>,
+    auth_service: &AuthService,
     rate_limit_service: &RateLimitService,
 ) -> Result<
     (
