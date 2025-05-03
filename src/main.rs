@@ -18,7 +18,6 @@ pub use app::connections::mysql as mysql_connection;
 pub use app::connections::redis as redis_connection;
 pub use app::controllers::web::WebHttpRequest;
 pub use app::controllers::web::WebHttpResponse;
-use app::middlewares::error_redirect::ErrorRedirectWrap;
 pub use app::models::*;
 pub use app::services::*;
 pub use config::Config;
@@ -65,7 +64,6 @@ async fn main() -> std::io::Result<()> {
             .app_data(all_services.rate_limit.clone())
             .wrap(middleware::Logger::default())
             .configure(routes::register)
-            .wrap(ErrorRedirectWrap)
     })
     .bind("0.0.0.0:8080")?
     .run()
