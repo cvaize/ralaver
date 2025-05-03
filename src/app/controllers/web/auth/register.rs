@@ -11,7 +11,7 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
-use crate::app::middlewares::web::REDIRECT_TO;
+use crate::app::middlewares::web_auth::REDIRECT_TO;
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
 static RATE_LIMIT_TTL: u64 = 60;

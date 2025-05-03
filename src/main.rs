@@ -55,7 +55,6 @@ async fn main() -> std::io::Result<()> {
             .app_data(all_services.template.clone())
             .app_data(all_services.hash.clone())
             .app_data(all_services.auth.clone())
-            .app_data(all_services.session.clone())
             .app_data(all_services.web_auth.clone())
             .app_data(all_services.locale.clone())
             .app_data(all_services.app.clone())

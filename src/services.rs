@@ -1,5 +1,5 @@
 use crate::connections::Connections;
-use crate::{AppService, AuthService, Config, CryptService, HashService, KeyValueService, LocaleService, MailService, RandomService, RateLimitService, SessionService, TemplateService, TranslatorService, UserService, WebAuthService};
+use crate::{AppService, AuthService, Config, CryptService, HashService, KeyValueService, LocaleService, MailService, RandomService, RateLimitService, TemplateService, TranslatorService, UserService, WebAuthService};
 use actix_web::web::Data;
 
 pub struct BaseServices {
@@ -19,7 +19,6 @@ pub struct AdvancedServices {
     pub crypt: Data<CryptService>,
     pub hash: Data<HashService>,
     pub web_auth: Data<WebAuthService>,
-    pub session: Data<SessionService>,
     pub auth: Data<AuthService>,
     pub locale: Data<LocaleService>,
     pub app: Data<AppService>,
@@ -62,12 +61,8 @@ pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
         crypt.clone(),
         rand.clone(),
         key_value.clone(),
-        user.clone(),
-    ));
-    let session = Data::new(SessionService::new(
-        s.config.clone(),
-        rand.clone(),
         hash.clone(),
+        user.clone(),
     ));
 
     AdvancedServices {
@@ -78,7 +73,6 @@ pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
         crypt,
         web_auth,
         auth,
-        session,
         locale,
         app,
         mail,
@@ -96,7 +90,6 @@ pub struct Services {
     pub template: Data<TemplateService>,
     pub hash: Data<HashService>,
     pub web_auth: Data<WebAuthService>,
-    pub session: Data<SessionService>,
     pub auth: Data<AuthService>,
     pub crypt: Data<CryptService>,
     pub locale: Data<LocaleService>,
@@ -115,7 +108,6 @@ pub fn join_to_all(base: BaseServices, advanced: AdvancedServices) -> Services {
         template: advanced.template,
         hash: advanced.hash,
         web_auth: advanced.web_auth,
-        session: advanced.session,
         auth: advanced.auth,
         crypt: advanced.crypt,
         locale: advanced.locale,

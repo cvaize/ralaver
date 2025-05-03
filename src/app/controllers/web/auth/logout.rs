@@ -1,4 +1,4 @@
-use crate::app::middlewares::web::REDIRECT_TO;
+use crate::app::middlewares::web_auth::REDIRECT_TO;
 use crate::{AlertVariant, WebAuthService, WebHttpResponse};
 use actix_web::web::Data;
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};

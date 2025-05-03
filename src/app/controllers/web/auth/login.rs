@@ -2,7 +2,7 @@ use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
 use crate::{
-    AlertVariant, AuthToken, RateLimitService, WebAuthService, WebHttpRequest, WebHttpResponse,
+    AlertVariant, Session, RateLimitService, WebAuthService, WebHttpRequest, WebHttpResponse,
 };
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::web::Data;
@@ -81,7 +81,7 @@ pub async fn invoke(
         translator_service.translate(&lang, "auth.page.login.form.fields.password.label");
 
     let is_post = req.method().eq(&Method::POST);
-    let (is_done, email_errors, password_errors, form_errors, auth_token) = post(
+    let (is_done, email_errors, password_errors, form_errors, session) = post(
         is_post,
         &req,
         &mut data,
@@ -96,9 +96,9 @@ pub async fn invoke(
     .await?;
 
     if is_done {
-        let auth_token = auth_token.unwrap();
+        let session = session.unwrap();
         return Ok(HttpResponse::SeeOther()
-            .cookie(web_auth_service.make_cookie_throw_http(&auth_token)?)
+            .cookie(web_auth_service.make_cookie_throw_http(&session)?)
             .set_alerts(vec![AlertVariant::LoginSuccess])
             .insert_header((http::header::LOCATION, http::HeaderValue::from_static("/")))
             .finish());
@@ -170,7 +170,7 @@ async fn post(
         Vec<String>,
         Vec<String>,
         Vec<String>,
-        Option<AuthToken>,
+        Option<Session>,
     ),
     Error,
 > {
@@ -178,7 +178,7 @@ async fn post(
     let mut form_errors: Vec<String> = Vec::new();
     let mut email_errors: Vec<String> = Vec::new();
     let mut password_errors: Vec<String> = Vec::new();
-    let mut auth_token: Option<AuthToken> = None;
+    let mut session: Option<Session> = None;
 
     if is_post {
         let rate_limit_key = rate_limit_service
@@ -211,11 +211,11 @@ async fn post(
                 let auth_result = auth_service.login_by_password(email_value, password_value);
 
                 if let Ok(user_id) = auth_result {
-                    let auth_token_ = web_auth_service.generate_auth_token(user_id);
+                    let session_ = web_auth_service.generate_session(user_id);
                     web_auth_service
-                        .save_auth_token(&auth_token_)
+                        .save_session(&session_)
                         .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
-                    auth_token = Some(auth_token_);
+                    session = Some(session_);
                     is_done = true;
                 } else {
                     form_errors.push(translator_service.translate(&lang, "auth.alert.login.fail"));
@@ -250,6 +250,6 @@ async fn post(
         email_errors,
         password_errors,
         form_errors,
-        auth_token,
+        session,
     ))
 }

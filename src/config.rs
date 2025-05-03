@@ -3,7 +3,6 @@ use std::env;
 #[derive(Debug, Clone)]
 pub struct Config {
     pub app: AppConfig,
-    pub session: SessionConfig,
     pub db: DbConfig,
     pub auth: AuthConfig,
     pub translator: TranslatorConfig,
@@ -48,19 +47,8 @@ pub struct AuthCookieConfig {
     // in seconds
     pub token_expires: u64,
     // in seconds
-    pub old_token_expires: u64,
+    pub session_expires: u64,
     pub token_length: usize,
-    pub cookie_key: String,
-    pub cookie_secure: bool,
-    pub cookie_http_only: bool,
-    pub cookie_path: String,
-    pub cookie_domain: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct SessionConfig {
-    // in seconds
-    pub cookie_expires: u64,
     pub cookie_key: String,
     pub cookie_secure: bool,
     pub cookie_http_only: bool,
@@ -154,9 +142,9 @@ impl Config {
                         .unwrap_or("2592000".to_string())
                         .trim()
                         .parse::<u64>().unwrap_or(2592000),
-                    old_token_expires: env::var("AUTH_COOKIE_OLD_TOKEN_EXPIRES")
-                        // Default: 1 hours equal 3600 seconds
-                        .unwrap_or("3600".to_string())
+                    session_expires: env::var("AUTH_COOKIE_SESSION_EXPIRES")
+                        // Default: 24 hours equal 86400 seconds
+                        .unwrap_or("86400".to_string())
                         .trim()
                         .parse::<u64>().unwrap_or(3600),
                     token_length: env::var("AUTH_COOKIE_TOKEN_LENGTH")
@@ -164,7 +152,7 @@ impl Config {
                         .trim()
                         .parse::<usize>().unwrap_or(64),
                     cookie_key: env::var("AUTH_COOKIE_KEY")
-                        .unwrap_or("access_token".to_string())
+                        .unwrap_or("session".to_string())
                         .trim()
                         .to_string(),
                     cookie_http_only: env::var("AUTH_COOKIE_HTTP_ONLY")
@@ -184,33 +172,6 @@ impl Config {
                         .trim()
                         .to_string(),
                 }
-            },
-            session: SessionConfig {
-                cookie_expires: env::var("AUTH_SESSION_COOKIE_EXPIRES")
-                    // Default: 1 hours equal 3600 seconds
-                    .unwrap_or("3600".to_string())
-                    .trim()
-                    .parse::<u64>().unwrap_or(3600),
-                cookie_key: env::var("AUTH_SESSION_COOKIE_KEY")
-                    .unwrap_or("session".to_string())
-                    .trim()
-                    .to_string(),
-                cookie_http_only: env::var("AUTH_SESSION_COOKIE_HTTP_ONLY")
-                    .unwrap_or("1".to_string())
-                    .trim()
-                    .parse::<bool>().unwrap_or(true),
-                cookie_path: env::var("AUTH_SESSION_COOKIE_PATH")
-                    .unwrap_or("/".to_string())
-                    .trim()
-                    .to_string(),
-                cookie_secure: env::var("AUTH_SESSION_COOKIE_SECURE")
-                    .unwrap_or("0".to_string())
-                    .trim()
-                    .parse::<bool>().unwrap_or(false),
-                cookie_domain: env::var("AUTH_SESSION_COOKIE_DOMAIN")
-                    .unwrap_or("".to_string())
-                    .trim()
-                    .to_string(),
             },
             translator: TranslatorConfig {
                 translates_folder: env::var("TRANSLATOR_TRANSLATES_FOLDER")

@@ -1,5 +1,5 @@
 use crate::app::controllers::web::auth::reset_password::CODE_LEN;
-use crate::app::middlewares::web::REDIRECT_TO;
+use crate::app::middlewares::web_auth::REDIRECT_TO;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;

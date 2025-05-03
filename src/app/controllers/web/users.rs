@@ -2,7 +2,7 @@ use std::sync::Arc;
 use actix_web::web::{Data, Form, ReqData};
 use actix_web::{Error, HttpResponse, Result};
 use serde_derive::Deserialize;
-use crate::{Session, SessionService};
+use crate::{Session, WebAuthService};
 
 #[derive(Deserialize, Debug)]
 pub struct TestData {
@@ -13,12 +13,12 @@ pub struct TestData {
 pub async fn index(
     data: Form<TestData>,
     session: ReqData<Arc<Session>>,
-    session_service: Data<SessionService>,
+    web_auth_service: Data<WebAuthService>,
 ) -> Result<HttpResponse, Error> {
-    let session_service = session_service.get_ref();
+    let web_auth_service = web_auth_service.get_ref();
     let session = session.as_ref();
 
-    session_service.check_csrf_throw_http(session, &data._token)?;
+    web_auth_service.check_csrf_throw_http(session, &data._token)?;
 
     dbg!(&data._token);
     dbg!(&data.test);
