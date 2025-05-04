@@ -1,6 +1,6 @@
 use crate::{
-    AppService, Session, TemplateService, TranslatorService, User, WebAuthService,
-    WebHttpRequest, WebHttpResponse,
+    AppService, Session, TemplateService, TranslatorService, User, WebAuthService, WebHttpRequest,
+    WebHttpResponse,
 };
 use actix_web::web::{Data, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};

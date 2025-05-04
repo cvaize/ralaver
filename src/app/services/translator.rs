@@ -119,6 +119,13 @@ impl TranslatorService {
         None
     }
 
+    pub fn is(&self, lang: &str, key: &str) -> bool {
+        if let Some(ts) = self.translates.get(lang) {
+            return ts.contains_key(key);
+        }
+        false
+    }
+
     fn v_key(&self, key: &str) -> String {
         let mut v_key = ":".to_string();
         v_key.push_str(key);
@@ -147,6 +154,27 @@ impl TranslatorService {
         }
 
         key.to_string()
+    }
+
+    pub fn contains(&self, lang: &str, key: &str) -> bool {
+        if self.is(lang, key) {
+            return true;
+        }
+
+        let app = &self.config.get_ref().app;
+        if lang != app.locale {
+            if self.is(&app.locale, key) {
+                return true;
+            }
+        }
+
+        if lang != app.fallback_locale && app.locale != app.fallback_locale {
+            if self.is(&app.fallback_locale, key) {
+                return true;
+            }
+        }
+
+        false
     }
 
     pub fn choices(
