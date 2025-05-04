@@ -1,9 +1,7 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{
-    AlertVariant, Session, RateLimitService, WebAuthService, WebHttpRequest, WebHttpResponse,
-};
+use crate::{AlertVariant, Session, RateLimitService, WebAuthService, WebHttpRequest, WebHttpResponse};
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::web::Data;
 use actix_web::web::Form;
@@ -149,7 +147,7 @@ pub async fn invoke(
 
     Ok(HttpResponse::Ok()
         .clear_alerts()
-        .content_type("text/html")
+        .content_type(mime::TEXT_HTML_UTF_8.as_ref())
         .body(s))
 }
 

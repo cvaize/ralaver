@@ -1,6 +1,6 @@
 use crate::app::controllers;
 use crate::app::middlewares::web_auth::WebAuthMiddleware;
-use actix_web::web;
+use actix_web::{error, web, Error, HttpResponse};
 
 pub fn register(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -17,8 +17,7 @@ pub fn register(cfg: &mut web::ServiceConfig) {
             .route(web::post().to(controllers::web::auth::login::invoke)),
     );
     cfg.service(
-        web::resource("/logout")
-            .route(web::post().to(controllers::web::auth::logout::invoke)),
+        web::resource("/logout").route(web::post().to(controllers::web::auth::logout::invoke)),
     );
     cfg.service(
         web::resource("/register")
@@ -47,8 +46,8 @@ pub fn register(cfg: &mut web::ServiceConfig) {
     );
 
     // NotFound route
-    cfg.service(
-        web::scope("")
-            .wrap(controllers::web::errors::error_handlers()),
-    );
+    // cfg.service(
+    //     web::scope("")
+    //         .wrap(controllers::web::errors::error_handlers()),
+    // );
 }

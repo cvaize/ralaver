@@ -29,5 +29,5 @@ pub async fn index(
         "dark_mode": dark_mode
     });
     let s = tmpl_service.render_throw_http("pages/profile/index.hbs", &ctx)?;
-    Ok(HttpResponse::Ok().content_type("text/html").body(s))
+    Ok(HttpResponse::Ok().content_type(mime::TEXT_HTML_UTF_8.as_ref()).body(s))
 }

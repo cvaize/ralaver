@@ -37,6 +37,6 @@ pub async fn index(
     let s = tmpl_service.render_throw_http("pages/home/index.hbs", &ctx)?;
     Ok(HttpResponse::Ok()
         .clear_alerts()
-        .content_type("text/html")
+        .content_type(mime::TEXT_HTML_UTF_8.as_ref())
         .body(s))
 }

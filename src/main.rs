@@ -11,9 +11,12 @@ mod schema;
 mod services;
 
 use crate::services::BaseServices;
-use actix_web::middleware;
+use actix_web::dev::ServiceResponse;
+use actix_web::http::header;
+use actix_web::middleware::{ErrorHandlerResponse, ErrorHandlers};
 use actix_web::App;
 use actix_web::HttpServer;
+use actix_web::{middleware, Error};
 pub use app::connections::mysql as mysql_connection;
 pub use app::connections::redis as redis_connection;
 pub use app::controllers::web::WebHttpRequest;
@@ -22,8 +25,10 @@ pub use app::models::*;
 pub use app::services::*;
 pub use config::Config;
 pub use connections::Connections;
+use http::StatusCode;
 pub use mysql_connection::MysqlPool;
 pub use services::Services;
+use crate::app::controllers::web::errors::default_error_handler;
 
 fn preparation() -> (Connections, Services) {
     let base_services: BaseServices = services::base(Config::new());
@@ -64,6 +69,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(all_services.rate_limit.clone())
             .wrap(middleware::Logger::default())
             .configure(routes::register)
+            .wrap(ErrorHandlers::new().default_handler(default_error_handler))
     })
     .bind("0.0.0.0:8080")?
     .run()

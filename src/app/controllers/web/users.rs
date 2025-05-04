@@ -32,5 +32,5 @@ pub async fn index(
     //     .make_key_from_request(&req)
     //     .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
     //
-    // Ok(HttpResponse::Ok().content_type("text/html").body(key))
+    // Ok(HttpResponse::Ok().content_type(mime::TEXT_HTML_UTF_8.as_ref()).body(key))
 }

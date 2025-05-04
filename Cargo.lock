@@ -1987,6 +1987,7 @@ dependencies = [
  "lettre",
  "libc 1.0.0-alpha.1",
  "log",
+ "mime",
  "openssl",
  "openssl-sys",
  "r2d2",

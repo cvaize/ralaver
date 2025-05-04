@@ -195,7 +195,7 @@ pub async fn invoke(
     });
 
     let s = tmpl_service.render_throw_http("pages/auth.hbs", &ctx)?;
-    Ok(HttpResponse::Ok().content_type("text/html").body(s))
+    Ok(HttpResponse::Ok().content_type(mime::TEXT_HTML_UTF_8.as_ref()).body(s))
 }
 
 async fn post(
