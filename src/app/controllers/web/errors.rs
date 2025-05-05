@@ -180,6 +180,7 @@ fn get_error_html_response<B>(
     }
     let translator_service = translator_service.unwrap();
 
+    // TODO: Вывести пользователя на странице ошибок. 404 ошибка вызывает панику при обращении к request.extensions
     // let extensions = request.extensions();
     // let user = extensions.get::<Arc<User>>().map(|u| {u.as_ref()});
     // dbg!(&user);

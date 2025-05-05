@@ -1,0 +1,38 @@
+{{#> components/layout.hbs user=user locales=locales locale=locale dark_mode=dark_mode title=title }}
+    {{#if alerts}}
+        {{#each alerts}}
+            {{> components/alert.hbs index=@index type=style content=content close=true }}
+        {{/each}}
+    {{/if}}
+
+    <nav aria-label="breadcrumb">
+        <ol class="admin-breadcrumb">
+            <li class="admin-breadcrumb__item admin-breadcrumb__item--active" aria-current="page">
+                Пользователи
+            </li>
+        </ol>
+    </nav>
+
+    <h1>Панель управления</h1>
+
+    {{#if user and user.id and user.email}}
+        <h1>Привет, ID:{{user.id}} {{user.email}}!</h1>
+    {{else}}
+        <h1>Привет, незнакомец!</h1>
+    {{/if}}
+
+    <form action="/users" method="post">
+        <h3>Тест CSRF защиты</h3>
+        {{#if csrf }}
+            <label class="admin-login__field admin-field">
+                <input class="admin-login__field__input admin-field__input" type="text" name="_token" placeholder="_token"
+                       value="{{csrf}}">
+            </label>
+        {{/if}}
+        <label class="admin-login__field admin-field">
+            <input class="admin-login__field__input admin-field__input" type="text" name="test" placeholder="test"
+                   value="test">
+        </label>
+        <button type="submit" class="admin-btn">Submit</button>
+    </form>
+{{/components/layout.hbs}}
