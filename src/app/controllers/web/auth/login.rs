@@ -1,7 +1,9 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{AlertVariant, Session, RateLimitService, WebAuthService, WebHttpRequest, WebHttpResponse};
+use crate::{
+    AlertVariant, RateLimitService, Session, WebAuthService, WebHttpRequest, WebHttpResponse,
+};
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::web::Data;
 use actix_web::web::Form;
@@ -9,6 +11,7 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
+use crate::app::controllers::{AUTH_SERVICE_ERROR, RATE_LIMIT_SERVICE_ERROR};
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
 static RATE_LIMIT_TTL: u64 = 60;
@@ -74,9 +77,8 @@ pub async fn invoke(
 
     let (lang, locale, locales) = app_service.locale(Some(&req), None);
 
-    let email_str = translator_service.translate(&lang, "auth.page.login.form.fields.email.label");
-    let password_str =
-        translator_service.translate(&lang, "auth.page.login.form.fields.password.label");
+    let email_str = translator_service.translate(&lang, "validation.attributes.email");
+    let password_str = translator_service.translate(&lang, "validation.attributes.password");
 
     let is_post = req.method().eq(&Method::POST);
     let (is_done, email_errors, password_errors, form_errors, session) = post(
@@ -162,16 +164,7 @@ async fn post(
     auth_service: &AuthService,
     web_auth_service: &WebAuthService,
     rate_limit_service: &RateLimitService,
-) -> Result<
-    (
-        bool,
-        Vec<String>,
-        Vec<String>,
-        Vec<String>,
-        Option<Session>,
-    ),
-    Error,
-> {
+) -> Result<(bool, Vec<String>, Vec<String>, Vec<String>, Option<Session>), Error> {
     let mut is_done = false;
     let mut form_errors: Vec<String> = Vec::new();
     let mut email_errors: Vec<String> = Vec::new();
@@ -181,11 +174,11 @@ async fn post(
     if is_post {
         let rate_limit_key = rate_limit_service
             .make_key_from_request(req, RATE_KEY)
-            .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
+            .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
 
         let executed = rate_limit_service
             .attempt(&rate_limit_key, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_TTL)
-            .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
+            .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
 
         if executed {
             email_errors = Required::validated(translator_service, lang, &data.email, |value| {
@@ -212,7 +205,7 @@ async fn post(
                     let session_ = web_auth_service.generate_session(user_id);
                     web_auth_service
                         .save_session(&session_)
-                        .map_err(|_| error::ErrorInternalServerError("AuthService error"))?;
+                        .map_err(|_| error::ErrorInternalServerError(AUTH_SERVICE_ERROR))?;
                     session = Some(session_);
                     is_done = true;
                 } else {
@@ -232,22 +225,16 @@ async fn post(
         } else {
             let ttl_message = rate_limit_service
                 .ttl_message(translator_service, lang, &rate_limit_key)
-                .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
+                .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
             form_errors.push(ttl_message)
         }
 
         if is_done {
             rate_limit_service
                 .clear(&rate_limit_key)
-                .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
+                .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
         }
     }
 
-    Ok((
-        is_done,
-        email_errors,
-        password_errors,
-        form_errors,
-        session,
-    ))
+    Ok((is_done, email_errors, password_errors, form_errors, session))
 }

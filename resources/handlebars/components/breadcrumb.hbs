@@ -1,11 +1,11 @@
 <nav aria-label="breadcrumb">
     <ol class="admin-breadcrumb">
-        <li class="admin-breadcrumb__item"><a href="#" class="admin-breadcrumb__link">Lorem ipsum dolor sit amet</a></li>
-        <li class="admin-breadcrumb__item"><a href="#" class="admin-breadcrumb__link">Lorem ipsum dolor sit amet</a></li>
-        <li class="admin-breadcrumb__item"><a href="#" class="admin-breadcrumb__link">Lorem ipsum dolor sit amet</a></li>
-        <li class="admin-breadcrumb__item"><a href="#" class="admin-breadcrumb__link">Lorem ipsum dolor sit amet</a></li>
-        <li class="admin-breadcrumb__item admin-breadcrumb__item--active" aria-current="page">
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-        </li>
+        {{#each breadcrumbs}}
+            {{#if @last}}
+                <li class="admin-breadcrumb__item admin-breadcrumb__item--active" aria-current="page">{{label}}</li>
+            {{else}}
+                <li class="admin-breadcrumb__item"><a href="{{href}}" class="admin-breadcrumb__link">{{label}}</a></li>
+            {{/if}}
+        {{/each}}
     </ol>
 </nav>

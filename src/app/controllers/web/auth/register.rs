@@ -11,6 +11,7 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
+use crate::app::controllers::RATE_LIMIT_SERVICE_ERROR;
 use crate::app::middlewares::web_auth::REDIRECT_TO;
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
@@ -65,14 +66,9 @@ pub async fn invoke(
 
     let (lang, locale, locales) = app_service.locale(Some(&req), None);
 
-    let email_str =
-        translator_service.translate(&lang, "auth.page.register.form.fields.email.label");
-    let password_str =
-        translator_service.translate(&lang, "auth.page.register.form.fields.password.label");
-    let confirm_password_str = translator_service.translate(
-        &lang,
-        "auth.page.register.form.fields.confirm_password.label",
-    );
+    let email_str = translator_service.translate(&lang, "validation.attributes.email");
+    let password_str = translator_service.translate(&lang, "validation.attributes.password");
+    let confirm_password_str = translator_service.translate(&lang, "validation.attributes.confirm_password");
 
     let is_post = req.method().eq(&Method::POST);
     let (is_done, form_errors, email_errors, password_errors, confirm_password_errors) = post(
@@ -175,11 +171,11 @@ async fn post(
     if is_post {
         let rate_limit_key = rate_limit_service
             .make_key_from_request(req, RATE_KEY)
-            .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
+            .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
 
         let executed = rate_limit_service
             .attempt(&rate_limit_key, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_TTL)
-            .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
+            .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
 
         if executed {
             email_errors = Required::validated(translator_service, lang, &data.email, |value| {
@@ -268,14 +264,14 @@ async fn post(
         } else {
             let ttl_message = rate_limit_service
                 .ttl_message(translator_service, lang, &rate_limit_key)
-                .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
+                .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
             form_errors.push(ttl_message)
         }
 
         if is_done {
             rate_limit_service
                 .clear(&rate_limit_key)
-                .map_err(|_| error::ErrorInternalServerError("RateLimitService error"))?;
+                .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
         }
     }
 

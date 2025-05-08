@@ -1,4 +1,19 @@
 {
-  "Page not found": "Страница не найдена",
-  "Requested application data is not configured correctly. View/enable debug logs for more details.": "Запрошенные данные приложения настроены неправильно. Просмотрите/включите журналы отладки для получения более подробной информации."
+  "Not Found": "Страница не найдена",
+  "Method Not Allowed": "Метод не разрешён",
+  "Requested application data is not configured correctly. View/enable debug logs for more details.": "Запрошенные данные приложения настроены неправильно. Просмотрите/включите журналы отладки для получения более подробной информации.",
+  "AppService error":  "Внутренняя ошибка сервиса AppService",
+  "AuthService error": "Внутренняя ошибка сервиса AuthService",
+  "CryptService error":  "Внутренняя ошибка сервиса CryptService",
+  "HashService error": "Внутренняя ошибка сервиса HashService",
+  "KeyValueService error":  "Внутренняя ошибка сервиса KeyValueService",
+  "LocaleService error": "Внутренняя ошибка сервиса LocaleService",
+  "MailService error":  "Внутренняя ошибка сервиса MailService",
+  "RandomService error": "Внутренняя ошибка сервиса RandomService",
+  "RateLimitService error":  "Внутренняя ошибка сервиса RateLimitService",
+  "TemplateService error": "Внутренняя ошибка сервиса TemplateService",
+  "TranslatorService error":  "Внутренняя ошибка сервиса TranslatorService",
+  "UserService error": "Внутренняя ошибка сервиса UserService",
+  "WebAuthService error":  "Внутренняя ошибка сервиса WebAuthService",
+  "Validation error": "Ошибка валидации"
 }

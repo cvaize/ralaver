@@ -100,7 +100,7 @@ impl HashService {
             sodoken::argon2::ARGON2_ID_MEMLIMIT_INTERACTIVE,
         )
             .map_err(|e| {
-                log::error!("HashService::hash_password - {password} - {e}");
+                log::error!("HashService::hash_password - {e}");
                 HashServiceError::Fail
             })?;
 

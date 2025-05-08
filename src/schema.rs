@@ -9,5 +9,11 @@ diesel::table! {
         password -> Nullable<Varchar>,
         #[max_length = 6]
         locale -> Nullable<Varchar>,
+        #[max_length = 255]
+        surname -> Nullable<Varchar>,
+        #[max_length = 255]
+        name -> Nullable<Varchar>,
+        #[max_length = 255]
+        patronymic -> Nullable<Varchar>,
     }
 }

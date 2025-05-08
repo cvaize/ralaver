@@ -7,6 +7,7 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::{env, io};
 use strum_macros::{Display, EnumString};
+use crate::app::controllers::TEMPLATE_SERVICE_ERROR;
 
 #[allow(dead_code)]
 pub struct TemplateService {
@@ -26,7 +27,7 @@ impl TemplateService {
         let mut handlebars: Handlebars = Handlebars::new();
 
         let mut dir = env::current_dir().map_err(|e| {
-            log::error!("{}",format!("TemplateService::new_from_files - {:}", &e).as_str());
+            log::error!("TemplateService::new_from_files - {e}");
             e
         })?;
         dir.push(Path::new(&config.get_ref().template.handlebars.folder));
@@ -34,7 +35,7 @@ impl TemplateService {
         let str_dir = str_dir.to_str().unwrap();
 
         let collect_paths: Vec<PathBuf> = collect_files_from_dir(dir.as_path()).map_err(|e| {
-            log::error!("{}",format!("TemplateService::new_from_files - {:}", &e).as_str());
+            log::error!("TemplateService::new_from_files - {e}");
             e
         })?;
         let paths: Vec<&PathBuf> = collect_paths
@@ -79,12 +80,12 @@ impl TemplateService {
     ) -> Result<String, TemplateServiceError> {
         match name.ends_with(".hbs") || name.ends_with(".handlebars") || name.ends_with(".html") {
             true => self.handlebars.render(name, data).map_err(|e| {
-                log::error!("{}",format!("TemplateService::render - {:}", &e).as_str());
+                log::error!("TemplateService::render - {e}");
                 TemplateServiceError::RenderFail
             }),
             _ => {
                 let e = TemplateServiceError::RenderFail;
-                log::error!("{}",format!("TemplateService::render - {:}", &e).as_str());
+                log::error!("TemplateService::render - {e}");
                 Err(e)
             }
         }
@@ -92,8 +93,8 @@ impl TemplateService {
 
     pub fn render_throw_http<T: Serialize>(&self, name: &str, data: &T) -> Result<String, Error> {
         self.render(name, data).map_err(|e| {
-            log::error!("{}",format!("TemplateService::render_throw_http - {:}", &e).as_str());
-            error::ErrorInternalServerError("Template error")
+            log::error!("TemplateService::render_throw_http - {e}");
+            error::ErrorInternalServerError(TEMPLATE_SERVICE_ERROR)
         })
     }
 }

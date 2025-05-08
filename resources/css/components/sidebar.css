@@ -23,6 +23,9 @@
     font-weight: 700;
     position: relative;
     height: 4rem;
+    display: block;
+    text-decoration: none;
+    color: inherit;
 }
 
 .admin-sidebar__brand__logo {

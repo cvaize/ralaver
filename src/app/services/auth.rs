@@ -1,6 +1,6 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
-use crate::{HashService, MysqlPool};
+use crate::{HashService, MysqlPool, UserService, UserServiceError};
 use crate::{KeyValueService, KeyValueServiceError, NewUser, PrivateUserData};
 use actix_web::web::Data;
 #[allow(unused_imports)]
@@ -16,6 +16,7 @@ pub struct AuthService {
     db_pool: Data<MysqlPool>,
     key_value_service: Data<KeyValueService>,
     hash_service: Data<HashService>,
+    user_service: Data<UserService>,
 }
 
 impl AuthService {
@@ -23,11 +24,13 @@ impl AuthService {
         db_pool: Data<MysqlPool>,
         key_value_service: Data<KeyValueService>,
         hash_service: Data<HashService>,
+        user_service: Data<UserService>,
     ) -> Self {
         Self {
             db_pool,
             key_value_service,
             hash_service,
+            user_service,
         }
     }
 
@@ -77,51 +80,21 @@ impl AuthService {
         if data.is_valid() == false {
             return Err(AuthServiceError::CredentialsInvalid);
         }
-        let new_user = NewUser {
-            email: data.email.to_owned(),
-            password: Some(
-                self.hash_service
-                    .get_ref()
-                    .hash_password(&data.password)
-                    .map_err(|e| {
-                        log::error!(
-                            "AuthService::register_by_credentials - {} - {}",
-                            data.password,
-                            e
-                        );
-                        AuthServiceError::PasswordHashFail
-                    })?,
-            ),
-        };
+        let user_service = self.user_service.get_ref();
 
-        let mut connection = self.db_pool.get_ref().get().map_err(|e| {
+        let mut new_user = NewUser::empty(data.email.to_owned());
+        new_user.password = Some(data.password.to_owned());
+
+        user_service.insert(new_user).map_err(|e| {
             log::error!("AuthService::register_by_credentials - {e}");
-            return AuthServiceError::DbConnectionFail;
+            match e {
+                UserServiceError::DbConnectionFail => AuthServiceError::DbConnectionFail,
+                UserServiceError::PasswordHashFail => AuthServiceError::PasswordHashFail,
+                UserServiceError::DuplicateEmail => AuthServiceError::DuplicateEmail,
+                _ => AuthServiceError::InsertNewUserFail,
+            }
         })?;
 
-        diesel::insert_into(crate::schema::users::table)
-            .values(new_user)
-            .execute(&mut connection)
-            .map_err(|e: diesel::result::Error| match &e {
-                diesel::result::Error::DatabaseError(kind, _) => match &kind {
-                    DatabaseErrorKind::UniqueViolation => {
-                        log::info!(
-                            "AuthService::register_by_credentials - {} - {}",
-                            &data.email,
-                            e
-                        );
-                        AuthServiceError::DuplicateEmail
-                    }
-                    _ => {
-                        log::error!("AuthService::register_by_credentials - {e}");
-                        AuthServiceError::InsertNewUserFail
-                    }
-                },
-                _ => {
-                    log::error!("AuthService::register_by_credentials - {e}");
-                    AuthServiceError::InsertNewUserFail
-                }
-            })?;
         Ok(())
     }
 

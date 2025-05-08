@@ -29,7 +29,6 @@ pub struct AdvancedServices {
 }
 
 pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
-    let user = Data::new(UserService::new(c.mysql.clone()));
     let key_value = Data::new(KeyValueService::new(c.redis.clone()));
     let translator = Data::new(
         TranslatorService::new_from_files(s.config.clone())
@@ -42,6 +41,7 @@ pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
     let rand = Data::new(RandomService::new());
 
     let hash = Data::new(HashService::new(s.config.clone()));
+    let user = Data::new(UserService::new(c.mysql.clone(), hash.clone()));
     let crypt = Data::new(CryptService::new(
         s.config.clone(),
         rand.clone(),
@@ -51,6 +51,7 @@ pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
         c.mysql.clone(),
         key_value.clone(),
         hash.clone(),
+        user.clone(),
     ));
     let locale = Data::new(LocaleService::new(s.config.clone()));
     let app = Data::new(AppService::new(s.config.clone(), locale.clone()));

@@ -43,7 +43,7 @@
 
                 {{#if form.fields}}
                     {{#each form.fields}}
-                        {{> components/field.hbs index=@index }}
+                        {{> components/field.hbs label_class="admin-login__field" input_class="admin-login__field__input" }}
                     {{/each}}
                 {{/if}}
 

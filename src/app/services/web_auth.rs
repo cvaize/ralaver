@@ -6,6 +6,7 @@ use actix_web::{error, Error, HttpRequest};
 use std::borrow::Cow;
 use std::time::{SystemTime, UNIX_EPOCH};
 use strum_macros::{Display, EnumString};
+use crate::app::controllers::WEB_AUTH_SERVICE_ERROR;
 
 pub static CSRF_ERROR_MESSAGE: &str = "CSRF token mismatch.";
 
@@ -155,7 +156,7 @@ impl WebAuthService {
     pub fn make_cookie_throw_http(&self, token: &Session) -> Result<Cookie, Error> {
         self.make_cookie(token).map_err(|e| {
             log::error!("WebAuthService::make_cookie_throw_http - {e}");
-            return error::ErrorInternalServerError("WebAuthService error");
+            return error::ErrorInternalServerError(WEB_AUTH_SERVICE_ERROR);
         })
     }
 

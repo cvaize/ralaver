@@ -9,5 +9,12 @@
     "dark": "Currently using dark theme. Click once if you want to switch to light theme or twice if you want to automatically use your computer's light/dark theme.",
     "light": "Light theme is currently in use. Click twice if you want to switch to dark theme or click once if you want to automatically use your computer's light/dark theme.",
     "auto": "Your computer is currently using the light/dark theme. Click once if you want to switch to the dark theme or twice if you want to use the light theme."
-  }
+  },
+  "Save": "Save",
+  "Create user": "Create user",
+  "Main": "Main",
+  "Extended": "Extended",
+  "Panel": "Panel",
+  "Users": "Users",
+  "Create": "Create"
 }

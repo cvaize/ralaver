@@ -28,4 +28,25 @@ pub struct NewUser {
     pub email: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub locale: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub surname: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub patronymic: Option<String>,
+}
+
+impl NewUser {
+    pub fn empty(email: String) -> Self {
+        Self {
+            email,
+            password: None,
+            locale: None,
+            surname: None,
+            name: None,
+            patronymic: None,
+        }
+    }
 }

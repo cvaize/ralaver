@@ -1,0 +1,112 @@
+{{#> components/layout.hbs user=user locales=locales locale=locale dark_mode=dark_mode title=title }}
+    {{#if alerts}}
+        {{#each alerts}}
+            {{> components/alert.hbs index=@index type=style content=content close=true }}
+        {{/each}}
+    {{/if}}
+
+    {{#if breadcrumbs}}
+        {{> components/breadcrumb.hbs breadcrumbs=breadcrumbs }}
+    {{/if}}
+    <h1>{{heading_label}}</h1>
+
+    <form action="{{form.action}}" method="{{form.method}}" style="display: block;">
+        <div class="admin-tabs admin-tabs--menu-mod-xs">
+            <input id="admin-tabs__0" class="admin-tabs__checkbox" type="radio" name="admin-tabs__1" hidden checked>
+            <input id="admin-tabs__1" class="admin-tabs__checkbox" type="radio" name="admin-tabs__1" hidden>
+            <input id="admin-tabs--menu-checkbox" class="admin-tabs__menu-checkbox" type="checkbox" hidden>
+            <label for="admin-tabs--menu-checkbox" class="admin-tabs__menu-label">
+                <span class="admin-tabs__burger"></span>
+            </label>
+            <nav class="admin-tabs__nav">
+                <label for="admin-tabs__0" class="admin-tabs__link">{{main_label}}</label>
+                <label for="admin-tabs__1" class="admin-tabs__link">{{extended_label}}</label>
+            </nav>
+            <div class="admin-tabs__content">
+                <div class="admin-tabs__pane">
+                    <div class="admin-row">
+                        <div class="admin-col-auto">
+                            {{> components/field.hbs
+                                    label=form.fields.email.label
+                                    value=form.fields.email.value
+                                    errors=form.fields.email.errors
+                                    name="email"
+                                    type="email"
+                                    required=true
+                                    style="margin-bottom: 0.5rem;"
+                            }}
+                            {{> components/field.hbs
+                                    label=form.fields.password.label
+                                    value=form.fields.password.value
+                                    errors=form.fields.password.errors
+                                    name="password"
+                                    type="password"
+                                    required=true
+                                    style="margin-bottom: 0.5rem;"
+                            }}
+                            {{> components/field.hbs
+                                    label=form.fields.confirm_password.label
+                                    value=form.fields.confirm_password.value
+                                    errors=form.fields.confirm_password.errors
+                                    name="confirm_password"
+                                    type="password"
+                                    required=true
+                                    style="margin-bottom: 0.5rem;"
+                            }}
+                        </div>
+                        <div class="admin-col-auto">
+                            {{> components/field.hbs
+                                    label=form.fields.surname.label
+                                    value=form.fields.surname.value
+                                    errors=form.fields.surname.errors
+                                    name="surname"
+                                    type="text"
+                                    style="margin-bottom: 0.5rem;"
+                            }}
+                            {{> components/field.hbs
+                                    label=form.fields.name.label
+                                    value=form.fields.name.value
+                                    errors=form.fields.name.errors
+                                    name="name"
+                                    type="text"
+                                    style="margin-bottom: 0.5rem;"
+                            }}
+                            {{> components/field.hbs
+                                    label=form.fields.patronymic.label
+                                    value=form.fields.patronymic.value
+                                    errors=form.fields.patronymic.errors
+                                    name="patronymic"
+                                    type="text"
+                                    style="margin-bottom: 0.5rem;"
+                            }}
+                        </div>
+                    </div>
+                </div>
+                <div class="admin-tabs__pane">
+                    <div class="admin-row">
+                        <div class="admin-col-auto">
+                            {{> components/field.hbs
+                                    label=form.fields.locale.label
+                                    value=form.fields.locale.value
+                                    errors=form.fields.locale.errors
+                                    name="locale"
+                                    type="text"
+                                    style="margin-bottom: 0.5rem;"
+                            }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{#if form.errors}}
+            {{#each form.errors}}
+                <div class="admin-text--danger" style="margin: 0.5rem 0;">{{this}}</div>
+            {{/each}}
+        {{/if}}
+
+        {{#if form.submit.label}}
+            <button type="submit" class="admin-btn admin-success">{{form.submit.label}}</button>
+        {{/if}}
+    </form>
+{{/components/layout.hbs}}

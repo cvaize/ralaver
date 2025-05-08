@@ -5,9 +5,10 @@ use crate::{
 use actix_web::web::{Data, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use serde_json::json;
+use std::collections::HashMap;
 use std::sync::Arc;
 
-pub async fn index(
+pub async fn invoke(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
@@ -25,9 +26,13 @@ pub async fn index(
     let dark_mode = app_service.dark_mode(&req);
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(user));
 
-    // web_auth_service.check_csrf_throw_http(session, &data._token)?;
+    let mut title_vars: HashMap<&str, &str> = HashMap::new();
+    title_vars.insert("page_title", "Пользователи");
+    let title = translator_service.variables(&lang, "page.title", &title_vars);
+
     let csrf = web_auth_service.new_csrf(&session);
     let ctx = json!({
+        "title": title,
         "locale": locale,
         "locales": locales,
         "user" : user,
@@ -35,7 +40,7 @@ pub async fn index(
         "dark_mode": dark_mode,
         "csrf": csrf
     });
-    let s = tmpl_service.render_throw_http("pages/home/index.hbs", &ctx)?;
+    let s = tmpl_service.render_throw_http("pages/users/index.hbs", &ctx)?;
     Ok(HttpResponse::Ok()
         .clear_alerts()
         .content_type(mime::TEXT_HTML_UTF_8.as_ref())

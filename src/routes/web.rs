@@ -1,6 +1,6 @@
 use crate::app::controllers;
 use crate::app::middlewares::web_auth::WebAuthMiddleware;
-use actix_web::{error, web, Error, HttpResponse};
+use actix_web::web;
 
 pub fn register(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -42,12 +42,12 @@ pub fn register(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/users")
             .wrap(WebAuthMiddleware)
-            .route(web::post().to(controllers::web::users::index)),
+            .route(web::get().to(controllers::web::users::index::invoke)),
     );
-
-    // NotFound route
-    // cfg.service(
-    //     web::scope("")
-    //         .wrap(controllers::web::errors::error_handlers()),
-    // );
+    cfg.service(
+        web::resource("/users/create")
+            .wrap(WebAuthMiddleware)
+            .route(web::get().to(controllers::web::users::create::show))
+            .route(web::post().to(controllers::web::users::create::invoke)),
+    );
 }
