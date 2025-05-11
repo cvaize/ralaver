@@ -49,12 +49,12 @@ pub enum AlertVariant {
 impl AlertVariant {
     pub fn get_message_key(&self) -> &'static str {
         match self {
-            Self::LoginSuccess => "auth.alert.login.success",
-            Self::LogoutSuccess => "auth.alert.logout.success",
-            Self::RegisterSuccess => "auth.alert.register.success",
-            Self::ResetPasswordConfirmSuccess => "auth.alert.reset_password_confirm.success",
+            Self::LoginSuccess => "alert.login.success",
+            Self::LogoutSuccess => "alert.logout.success",
+            Self::RegisterSuccess => "alert.register.success",
+            Self::ResetPasswordConfirmSuccess => "alert.reset_password_confirm.success",
             Self::ResetPasswordConfirmCodeNotEqual => {
-                "auth.alert.reset_password_confirm.code_not_equal"
+                "alert.reset_password_confirm.code_not_equal"
             }
         }
     }

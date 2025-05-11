@@ -21,10 +21,7 @@ impl TranslatorService {
         let mut translates: HashMap<String, String> = HashMap::from([]);
 
         let mut dir = env::current_dir().map_err(|e| {
-            log::error!(
-                "{}",
-                format!("TranslatorService::new_from_files - {:}", &e).as_str()
-            );
+            log::error!("TranslatorService::new_from_files - {e}");
             e
         })?;
         dir.push(Path::new(&config.get_ref().translator.translates_folder));
@@ -32,10 +29,7 @@ impl TranslatorService {
         let str_dir = str_dir.to_str().unwrap();
 
         let collect_paths: Vec<PathBuf> = collect_files_from_dir(dir.as_path()).map_err(|e| {
-            log::error!(
-                "{}",
-                format!("TranslatorService::new_from_files - {:}", &e).as_str()
-            );
+            log::error!("TranslatorService::new_from_files - {e}");
             e
         })?;
         let paths: Vec<&PathBuf> = collect_paths
@@ -53,25 +47,16 @@ impl TranslatorService {
                 .replace("/", ".");
 
             let content = fs::read_to_string(str_path).map_err(|e| {
-                log::error!(
-                    "{}",
-                    format!("TranslatorService::new_from_files - {:}", &e).as_str()
-                );
+                log::error!("TranslatorService::new_from_files - {e}");
                 e
             })?;
 
             let flat_json: String = flatten_json::flatten_from_str(&content).map_err(|e| {
-                log::error!(
-                    "{}",
-                    format!("TranslatorService::new_from_files - {:}", &e).as_str()
-                );
+                log::error!("TranslatorService::new_from_files - {e}");
                 e
             })?;
             let flatten_keys: Value = serde_json::from_str(&flat_json).map_err(|e| {
-                log::error!(
-                    "{}",
-                    format!("TranslatorService::new_from_files - {:}", &e).as_str()
-                );
+                log::error!("TranslatorService::new_from_files - {e}");
                 e
             })?;
 
@@ -99,7 +84,60 @@ impl TranslatorService {
             }
         }
 
-        Ok(Self::new(config, save_translates))
+        let mut translator_service = Self::new(config, save_translates);
+        translator_service.compile_inner_variables();
+        Ok(translator_service)
+    }
+
+    pub fn compile_inner_variables(&mut self) {
+        for _ in 0..5 {
+            let mut insert_rows: Vec<[String; 3]> = Vec::new();
+
+            for (lang, translates) in &self.translates {
+                for (key, value) in translates {
+                    let mut variables: HashMap<String, String> = HashMap::new();
+                    let start_strings: Vec<&str> = value.split("{{").collect();
+                    for start_string in start_strings {
+                        let end_strings: Vec<&str> = start_string.split("}}").collect();
+                        if end_strings.len() > 1 {
+                            variables.insert(
+                                end_strings[0].trim().to_owned(),
+                                end_strings[0].to_owned(),
+                            );
+                        }
+                    }
+
+                    if variables.len() > 0 {
+                        let mut value_ = value.to_owned();
+
+                        for (variable, variable_replace) in variables {
+                            let variable_value: &str =
+                                self.get(lang, &variable).to_owned().unwrap_or(&variable);
+                            if variable_value.ne(&variable) {
+                                let mut pattern: String = "{{".to_string();
+                                pattern.push_str(&variable_replace);
+                                pattern.push_str("}}");
+                                value_ = value_.replace(&pattern, variable_value);
+                            }
+                        }
+
+                        insert_rows.push([lang.to_owned(), key.to_owned(), value_]);
+                    }
+                }
+            }
+
+            for insert_row in &insert_rows {
+                self.insert(
+                    &insert_row[0],
+                    insert_row[1].to_owned(),
+                    insert_row[2].to_owned(),
+                );
+            }
+
+            if insert_rows.len() == 0 {
+                break;
+            }
+        }
     }
 
     pub fn insert(&mut self, lang: &str, key: String, value: String) {

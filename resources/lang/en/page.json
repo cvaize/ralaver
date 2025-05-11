@@ -1,20 +1,90 @@
 {
-  "title": ":page_title - Admin panel",
-  "sidebar": {
-    "profile": "My profile",
-    "logout": "Logout",
-    "panel":  "Panel"
+  "home": {
+    "title": "{{page.home.header}} - {{app.name}}",
+    "header": "Panel"
   },
-  "dark_mode": {
-    "dark": "Currently using dark theme. Click once if you want to switch to light theme or twice if you want to automatically use your computer's light/dark theme.",
-    "light": "Light theme is currently in use. Click twice if you want to switch to dark theme or click once if you want to automatically use your computer's light/dark theme.",
-    "auto": "Your computer is currently using the light/dark theme. Click once if you want to switch to the dark theme or twice if you want to use the light theme."
+  "login": {
+    "title": "{{page.login.header}} - {{app.name}}",
+    "header": "Login",
+    "fields": {
+      "email": "{{validation.attributes.email}}",
+      "password": "{{validation.attributes.password}}"
+    },
+    "submit": "Submit",
+    "reset_password": "Reset password?",
+    "register": "Register"
   },
-  "Save": "Save",
-  "Create user": "Create user",
-  "Main": "Main",
-  "Extended": "Extended",
-  "Panel": "Panel",
-  "Users": "Users",
-  "Create": "Create"
+  "reset_password": {
+    "title": "{{page.reset_password.header}} - {{app.name}}",
+    "header": "Reset password",
+    "back": "Back",
+    "fields": {
+      "email": "{{validation.attributes.email}}"
+    },
+    "submit": "Submit",
+    "text": "Send confirmation code to email.",
+    "validation": {
+      "email": {
+        "exists": "{{validation.custom.email.exists}}"
+      }
+    }
+  },
+  "reset_password_confirm": {
+    "title": "{{page.reset_password_confirm.header}} - {{app.name}}",
+    "header": "Reset password",
+    "back": "Back",
+    "fields": {
+      "email": "{{validation.attributes.email}}",
+      "password": "{{validation.attributes.password}}",
+      "confirm_password": "{{validation.attributes.confirm_password}}"
+    },
+    "submit": "Submit"
+  },
+  "register": {
+    "title": "{{page.register.header}} - {{app.name}}",
+    "header": "Register",
+    "back": "Back",
+    "fields": {
+      "email": "{{validation.attributes.email}}",
+      "password": "{{validation.attributes.password}}",
+      "confirm_password": "{{validation.attributes.confirm_password}}"
+    },
+    "submit": "Submit",
+    "reset_password": "Reset password?",
+    "login": "Login"
+  },
+  "users": {
+    "index": {
+      "title": "{{page.users.index.header}} - {{app.name}}",
+      "header": "Users list"
+    },
+    "create": {
+      "title": "{{page.users.create.header}} - {{app.name}}",
+      "header": "Create user",
+      "fields": {
+        "email": "{{validation.attributes.email}}",
+        "password": "{{validation.attributes.password}}",
+        "confirm_password": "{{validation.attributes.confirm_password}}",
+        "surname": "{{validation.attributes.surname}}",
+        "name": "{{validation.attributes.user_name}}",
+        "patronymic": "{{validation.attributes.patronymic}}",
+        "locale": "{{validation.attributes.locale}}"
+      },
+      "submit": "Save",
+      "clear": "Clear form",
+      "tabs": {
+        "main": "Main",
+        "extended": "Extended"
+      },
+      "breadcrumbs": {
+        "home": "{{page.home.header}}",
+        "users": "{{page.users.index.header}}",
+        "create": "{{page.users.create.header}}"
+      }
+    },
+    "edit": {
+      "title": "{{page.users.edit.header}} :user_name - {{app.name}}",
+      "header": "Edit user"
+    }
+  }
 }

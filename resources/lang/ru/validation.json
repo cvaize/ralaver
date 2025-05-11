@@ -1,5 +1,5 @@
 {
-    "rate_limit": "Вы можете повторить попытку через :seconds :unit.",
+    "rate_limit": "Слишком много запросов. Вы можете повторить попытку через :seconds :unit.",
     "accepted": "Вы должны принять \":attribute\".",
     "accepted_if": "Вы должны принять \":attribute\", когда :other соответствует :value.",
     "active_url": "Поле \":attribute\" содержит недействительный URL.",

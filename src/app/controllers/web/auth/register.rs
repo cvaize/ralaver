@@ -66,9 +66,9 @@ pub async fn invoke(
 
     let (lang, locale, locales) = app_service.locale(Some(&req), None);
 
-    let email_str = translator_service.translate(&lang, "validation.attributes.email");
-    let password_str = translator_service.translate(&lang, "validation.attributes.password");
-    let confirm_password_str = translator_service.translate(&lang, "validation.attributes.confirm_password");
+    let email_str = translator_service.translate(&lang, "page.register.fields.email");
+    let password_str = translator_service.translate(&lang, "page.register.fields.password");
+    let confirm_password_str = translator_service.translate(&lang, "page.register.fields.confirm_password");
 
     let is_post = req.method().eq(&Method::POST);
     let (is_done, form_errors, email_errors, password_errors, confirm_password_errors) = post(
@@ -96,7 +96,7 @@ pub async fn invoke(
     }
 
     let ctx = json!({
-        "title": translator_service.translate(&lang, "auth.page.register.title"),
+        "title": translator_service.translate(&lang, "page.register.title"),
         "locale": locale,
         "locales": locales,
         "alerts": req.get_alerts(&translator_service, &lang),
@@ -104,7 +104,7 @@ pub async fn invoke(
         "form": {
             "action": "/register",
             "method": "post",
-            "header": translator_service.translate(&lang, "auth.page.register.form.header"),
+            "header": translator_service.translate(&lang, "page.register.header"),
             "fields": [
                 {
                     "label": email_str,
@@ -129,14 +129,14 @@ pub async fn invoke(
                 }
             ],
             "submit": {
-                "label": translator_service.translate(&lang, "auth.page.register.form.submit.label"),
+                "label": translator_service.translate(&lang, "page.register.submit"),
             },
             "reset_password": {
-                "label": translator_service.translate(&lang, "auth.page.register.form.reset_password.label"),
+                "label": translator_service.translate(&lang, "page.register.reset_password"),
                 "href": "/reset-password",
             },
             "login": {
-                "label": translator_service.translate(&lang, "auth.page.register.form.login.label"),
+                "label": translator_service.translate(&lang, "page.register.login"),
                 "href": "/login",
             },
             "errors": form_errors,

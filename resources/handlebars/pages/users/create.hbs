@@ -8,7 +8,7 @@
     {{#if breadcrumbs}}
         {{> components/breadcrumb.hbs breadcrumbs=breadcrumbs }}
     {{/if}}
-    <h1>{{heading_label}}</h1>
+    <h1>{{heading}}</h1>
 
     <form action="{{form.action}}" method="{{form.method}}" style="display: block;">
         <div style="margin-bottom: 1rem;">
@@ -23,8 +23,8 @@
                 <span class="admin-tabs__burger"></span>
             </label>
             <nav class="admin-tabs__nav">
-                <label for="admin-tabs__0" class="admin-tabs__link">{{main_label}}</label>
-                <label for="admin-tabs__1" class="admin-tabs__link">{{extended_label}}</label>
+                <label for="admin-tabs__0" class="admin-tabs__link">{{tabs.main}}</label>
+                <label for="admin-tabs__1" class="admin-tabs__link">{{tabs.extended}}</label>
             </nav>
             <div class="admin-tabs__content">
                 <div class="admin-tabs__pane">

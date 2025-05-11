@@ -1,0 +1,31 @@
+{
+  "login": {
+    "success": "Authorization completed successfully.",
+    "fail": "Invalid E-mail or password.",
+    "error": "An internal application error has occurred. Please try logging in later.",
+    "throttle": "Too many login attempts. Please try again in :seconds :unit."
+  },
+  "logout": {
+    "success": "You have successfully logged out.",
+    "error": "An internal application error has occurred. Try logout later."
+  },
+  "reset_password_confirm": {
+    "success": "You have successfully set a new password. You can now log in with your new password.",
+    "code_not_equal": "You used a broken password reset link. Try resetting your password again."
+  },
+  "reset_password": {
+    "success": "An email with instructions on how to reset your password has been sent to the email address you provided.",
+    "fail": "Failed to send message to specified email. Try reset your password later.",
+    "error": "An internal application error occurred. Try reset your password later."
+  },
+  "register": {
+    "success": "You have successfully registered on the site.",
+    "error": "An internal application error occurred. Please try registering later."
+  },
+  "users": {
+    "create": {
+      "success": "User \":name\" has been successfully registered.",
+      "success_and_not_found": "The user was successfully saved, but for some reason it was found by E-mail: :email"
+    }
+  }
+}

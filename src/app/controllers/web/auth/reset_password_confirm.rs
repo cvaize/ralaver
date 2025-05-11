@@ -1,4 +1,5 @@
 use crate::app::controllers::web::auth::reset_password::CODE_LEN;
+use crate::app::controllers::{AUTH_SERVICE_ERROR, RATE_LIMIT_SERVICE_ERROR};
 use crate::app::middlewares::web_auth::REDIRECT_TO;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
@@ -11,7 +12,6 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
-use crate::app::controllers::{AUTH_SERVICE_ERROR, RATE_LIMIT_SERVICE_ERROR};
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
 static RATE_LIMIT_TTL: u64 = 60;
@@ -77,9 +77,11 @@ pub async fn invoke(
     let query = query.into_inner();
     let (lang, locale, locales) = app_service.locale(Some(&req), None);
 
-    let email_str = translator_service.translate(&lang, "validation.attributes.email");
-    let password_str = translator_service.translate(&lang, "validation.attributes.password");
-    let confirm_password_str = translator_service.translate(&lang, "validation.attributes.confirm_password");
+    let email_str = translator_service.translate(&lang, "page.reset_password_confirm.fields.email");
+    let password_str =
+        translator_service.translate(&lang, "page.reset_password_confirm.fields.password");
+    let confirm_password_str =
+        translator_service.translate(&lang, "page.reset_password_confirm.fields.confirm_password");
 
     if let Some(email) = query.email {
         data.email = Some(email.to_owned());
@@ -137,19 +139,19 @@ pub async fn invoke(
     }
 
     let ctx = json!({
-        "title": translator_service.translate(&lang, "auth.page.reset_password_confirm.title"),
+        "title": translator_service.translate(&lang, "page.reset_password_confirm.title"),
         "locale": locale,
         "locales": locales,
         "alerts": req.get_alerts(&translator_service, &lang),
         "dark_mode": app_service.dark_mode(&req),
         "back": {
-            "label": translator_service.translate(&lang, "auth.page.reset_password_confirm.back.label"),
+            "label": translator_service.translate(&lang, "page.reset_password_confirm.back"),
             "href": "/reset-password",
         },
         "form": {
             "action": action,
             "method": "post",
-            "header": translator_service.translate(&lang, "auth.page.reset_password_confirm.form.header"),
+            "header": translator_service.translate(&lang, "page.reset_password_confirm.header"),
             "fields": [
                 {
                     "name": "code",
@@ -180,14 +182,16 @@ pub async fn invoke(
                 }
             ],
             "submit": {
-                "label": translator_service.translate(&lang, "auth.page.reset_password_confirm.form.submit.label"),
+                "label": translator_service.translate(&lang, "page.reset_password_confirm.submit"),
             },
             "errors": form_errors
         },
     });
 
     let s = tmpl_service.render_throw_http("pages/auth.hbs", &ctx)?;
-    Ok(HttpResponse::Ok().content_type(mime::TEXT_HTML_UTF_8.as_ref()).body(s))
+    Ok(HttpResponse::Ok()
+        .content_type(mime::TEXT_HTML_UTF_8.as_ref())
+        .body(s))
 }
 
 async fn post(

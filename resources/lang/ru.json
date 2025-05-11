@@ -1,7 +1,4 @@
 {
-  "Save":  "Сохранить",
-  "Clear": "Очистить",
-  "Clear form": "Очистить форму",
   "Not Found": "Страница не найдена",
   "Method Not Allowed": "Метод не разрешён",
   "Requested application data is not configured correctly. View/enable debug logs for more details.": "Запрошенные данные приложения настроены неправильно. Просмотрите/включите журналы отладки для получения более подробной информации.",
@@ -24,8 +21,5 @@
   "Validation error": "Ошибка валидации",
   "A user with this E-mail is already registered": "Пользователь с таким E-mail уже зарегистрирован",
   "Password could not be hashed": "Пароль не удалось хэшировать",
-  "New user registration failed": "Регистрация нового пользователя не удалась",
-  "The user has been successfully registered": "Пользователь успешно зарегистрирован",
-  "User \":name\" has been successfully registered": "Пользователь \":name\" успешно зарегистрирован",
-  "The user was successfully saved, but for some reason it was found by E-mail: :email": "Пользователь успешно сохранён, но по какой то причине найден по E-mail: :email"
+  "New user registration failed": "Регистрация нового пользователя не удалась"
 }

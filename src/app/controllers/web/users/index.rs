@@ -26,13 +26,14 @@ pub async fn invoke(
     let dark_mode = app_service.dark_mode(&req);
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(user));
 
-    let mut title_vars: HashMap<&str, &str> = HashMap::new();
-    title_vars.insert("page_title", "Пользователи");
-    let title = translator_service.variables(&lang, "page.title", &title_vars);
+
+    let title = translator_service.translate(&lang, "page.users.index.title");
+    let heading = translator_service.translate(&lang, "page.users.index.header");
 
     let csrf = web_auth_service.new_csrf(&session);
     let ctx = json!({
         "title": title,
+        "heading": heading,
         "locale": locale,
         "locales": locales,
         "user" : user,

@@ -1,3 +1,4 @@
+use crate::app::controllers::{AUTH_SERVICE_ERROR, RATE_LIMIT_SERVICE_ERROR};
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
@@ -11,7 +12,6 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
-use crate::app::controllers::{AUTH_SERVICE_ERROR, RATE_LIMIT_SERVICE_ERROR};
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
 static RATE_LIMIT_TTL: u64 = 60;
@@ -77,8 +77,8 @@ pub async fn invoke(
 
     let (lang, locale, locales) = app_service.locale(Some(&req), None);
 
-    let email_str = translator_service.translate(&lang, "validation.attributes.email");
-    let password_str = translator_service.translate(&lang, "validation.attributes.password");
+    let email_str = translator_service.translate(&lang, "page.login.fields.email");
+    let password_str = translator_service.translate(&lang, "page.login.fields.password");
 
     let is_post = req.method().eq(&Method::POST);
     let (is_done, email_errors, password_errors, form_errors, session) = post(
@@ -105,7 +105,7 @@ pub async fn invoke(
     }
 
     let ctx = json!({
-        "title": translator_service.translate(&lang, "auth.page.login.title"),
+        "title": translator_service.translate(&lang, "page.login.title"),
         "locale": locale,
         "locales": locales,
         "alerts": req.get_alerts(&translator_service, &lang),
@@ -113,7 +113,7 @@ pub async fn invoke(
         "form": {
             "action": "/login",
             "method": "post",
-            "header": translator_service.translate(&lang, "auth.page.login.form.header"),
+            "header": translator_service.translate(&lang, "page.login.header"),
             "fields": [
                 {
                     "label": email_str,
@@ -131,14 +131,14 @@ pub async fn invoke(
                 }
             ],
             "submit": {
-                "label": translator_service.translate(&lang, "auth.page.login.form.submit.label")
+                "label": translator_service.translate(&lang, "page.login.submit")
             },
             "reset_password": {
-                "label": translator_service.translate(&lang, "auth.page.login.form.reset_password.label"),
+                "label": translator_service.translate(&lang, "page.login.reset_password"),
                 "href": "/reset-password"
             },
             "register": {
-                "label": translator_service.translate(&lang, "auth.page.login.form.register.label"),
+                "label": translator_service.translate(&lang, "page.login.register"),
                 "href": "/register"
             },
             "errors": form_errors,
@@ -209,7 +209,7 @@ async fn post(
                     session = Some(session_);
                     is_done = true;
                 } else {
-                    form_errors.push(translator_service.translate(&lang, "auth.alert.login.fail"));
+                    form_errors.push(translator_service.translate(&lang, "alert.login.fail"));
                 }
             };
 

@@ -4,7 +4,11 @@ use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString};
 use crate::app::validator::rules::required::Required;
 use crate::helpers::dot_to_end;
-use crate::{Alert, AppService, AuthServiceError, Locale, LocaleService, NewUser, RateLimitService, Session, TemplateService, TranslatorService, User, UserService, UserServiceError, WebAuthService, WebHttpRequest, WebHttpResponse};
+use crate::{
+    Alert, AppService, AuthServiceError, Locale, LocaleService, NewUser, RateLimitService, Session,
+    TemplateService, TranslatorService, User, UserService, UserServiceError, WebAuthService,
+    WebHttpRequest, WebHttpResponse,
+};
 use actix_web::web::{Data, Form, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
@@ -89,19 +93,17 @@ pub async fn invoke(
     let dark_mode = app_service.dark_mode(&req);
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(user));
 
-    let email_str = translator_service.translate(&lang, "validation.attributes.email");
-    let password_str = translator_service.translate(&lang, "validation.attributes.password");
+    let email_str = translator_service.translate(&lang, "page.users.create.fields.email");
+    let password_str = translator_service.translate(&lang, "page.users.create.fields.password");
     let confirm_password_str =
-        translator_service.translate(&lang, "validation.attributes.confirm_password");
-    let surname_str = translator_service.translate(&lang, "validation.attributes.surname");
-    let name_str = translator_service.translate(&lang, "validation.attributes.user_name");
-    let patronymic_str = translator_service.translate(&lang, "validation.attributes.patronymic");
-    let locale_str = translator_service.translate(&lang, "validation.attributes.locale");
+        translator_service.translate(&lang, "page.users.create.fields.confirm_password");
+    let surname_str = translator_service.translate(&lang, "page.users.create.fields.surname");
+    let name_str = translator_service.translate(&lang, "page.users.create.fields.user_name");
+    let patronymic_str = translator_service.translate(&lang, "page.users.create.fields.patronymic");
+    let locale_str = translator_service.translate(&lang, "page.users.create.fields.locale");
 
-    let heading = translator_service.translate(&lang, "page.Create user");
-    let mut title_vars: HashMap<&str, &str> = HashMap::new();
-    title_vars.insert("page_title", &heading);
-    let title = translator_service.variables(&lang, "page.title", &title_vars);
+    let title = translator_service.translate(&lang, "page.users.create.title");
+    let heading = translator_service.translate(&lang, "page.users.create.header");
 
     let is_post = req.method().eq(&Method::POST);
     let (
@@ -144,15 +146,19 @@ pub async fn invoke(
                 let mut vars: HashMap<&str, &str> = HashMap::new();
                 let name_ = user_.get_full_name_with_id_and_email();
                 vars.insert("name", &name_);
-                alerts.push(Alert::success(
-                    translator_service.variables(&lang, "User \":name\" has been successfully registered", &vars),
-                ));
+                alerts.push(Alert::success(translator_service.variables(
+                    &lang,
+                    "alert.users.create.success",
+                    &vars,
+                )));
             } else {
                 let mut vars: HashMap<&str, &str> = HashMap::new();
                 vars.insert("email", email_);
-                alerts.push(Alert::success(
-                    translator_service.variables(&lang, "The user was successfully saved, but for some reason it was found by E-mail: :email", &vars),
-                ));
+                alerts.push(Alert::success(translator_service.variables(
+                    &lang,
+                    "alert.users.create.success_and_not_found",
+                    &vars,
+                )));
             }
         }
     }
@@ -175,13 +181,15 @@ pub async fn invoke(
         "alerts": alerts,
         "dark_mode": dark_mode,
         "csrf": csrf,
-        "heading_label": heading,
-        "main_label": translator_service.translate(&lang, "page.Main"),
-        "extended_label": translator_service.translate(&lang, "page.Extended"),
+        "heading": heading,
+        "tabs": {
+            "main": translator_service.translate(&lang, "page.users.create.tabs.main"),
+            "extended": translator_service.translate(&lang, "page.users.create.tabs.extended"),
+        },
         "breadcrumbs": [
-            {"href": "/", "label": translator_service.translate(&lang, "page.Panel")},
-            {"href": "/users", "label": translator_service.translate(&lang, "page.Users")},
-            {"label": translator_service.translate(&lang, "page.Create")},
+            {"href": "/", "label": translator_service.translate(&lang, "page.users.create.breadcrumbs.home")},
+            {"href": "/users", "label": translator_service.translate(&lang, "page.users.create.breadcrumbs.users")},
+            {"label": translator_service.translate(&lang, "page.users.create.breadcrumbs.create")},
         ],
         "form": {
             "action": "/users/create",
@@ -224,10 +232,10 @@ pub async fn invoke(
                 }
             },
             "submit": {
-                "label": translator_service.translate(&lang, "Save"),
+                "label": translator_service.translate(&lang, "page.users.create.submit"),
             },
             "clear": {
-                "label": translator_service.translate(&lang, "Clear form"),
+                "label": translator_service.translate(&lang, "page.users.create.clear"),
             }
         },
     });

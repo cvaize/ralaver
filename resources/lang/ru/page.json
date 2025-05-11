@@ -1,20 +1,90 @@
 {
-  "title": ":page_title - Admin panel",
-  "sidebar": {
-    "profile": "Профиль",
-    "logout": "Выход",
-    "panel":  "Панель"
+  "home": {
+    "title": "{{page.home.header}} - {{app.name}}",
+    "header": "Панель"
   },
-  "dark_mode": {
-    "dark": "Сейчас используется тёмная тема. Кликните 1 раз если хотите переключиться на светлую тему или 2 раза если вы хотите автоматически использовать светлую/тёмную тему вашего компьютера.",
-    "light": "Сейчас используется светлая тема. Кликните 2 раза если хотите переключиться на тёмную тему или 1 раз если вы хотите автоматически использовать светлую/тёмную тему вашего компьютера.",
-    "auto": "Сейчас используется светлая/тёмная тема вашего компьютера. Кликните 1 раз если хотите переключиться на тёмную тему или 2 раза если вы хотите использовать светлую тему."
+  "login": {
+    "title": "{{page.login.header}} - {{app.name}}",
+    "header": "Вход",
+    "fields": {
+      "email": "{{validation.attributes.email}}",
+      "password": "{{validation.attributes.password}}"
+    },
+    "submit": "Войти",
+    "reset_password": "Сбросить пароль?",
+    "register": "Зарегистрироваться"
   },
-  "Save": "Сохранить",
-  "Create user": "Создание пользователя",
-  "Main": "Основные",
-  "Extended": "Расширенные",
-  "Panel": "Панель",
-  "Users": "Пользователи",
-  "Create": "Создание"
+  "reset_password": {
+    "title": "{{page.reset_password.header}} - {{app.name}}",
+    "header": "Сброс пароля",
+    "back": "Назад",
+    "fields": {
+      "email": "{{validation.attributes.email}}"
+    },
+    "submit": "Отправить",
+    "text": "Отправить код подтверждения на E-mail.",
+    "validation": {
+      "email": {
+        "exists": "{{validation.custom.email.exists}}"
+      }
+    }
+  },
+  "reset_password_confirm": {
+    "title": "{{page.reset_password_confirm.header}} - {{app.name}}",
+    "header": "Сброс пароля",
+    "back": "Назад",
+    "fields": {
+      "email": "{{validation.attributes.email}}",
+      "password": "{{validation.attributes.password}}",
+      "confirm_password": "{{validation.attributes.confirm_password}}"
+    },
+    "submit": "Сбросить"
+  },
+  "register": {
+    "title": "{{page.register.header}} - {{app.name}}",
+    "header": "Регистрация",
+    "back": "Назад",
+    "fields": {
+      "email": "{{validation.attributes.email}}",
+      "password": "{{validation.attributes.password}}",
+      "confirm_password": "{{validation.attributes.confirm_password}}"
+    },
+    "submit": "Зарегистрироваться",
+    "reset_password": "Сбросить пароль?",
+    "login": "Войти"
+  },
+  "users": {
+    "index": {
+      "title": "{{page.users.index.header}} - {{app.name}}",
+      "header": "Список пользователей"
+    },
+    "create": {
+      "title": "{{page.users.create.header}} - {{app.name}}",
+      "header": "Создание пользователя",
+      "fields": {
+        "email": "{{validation.attributes.email}}",
+        "password": "{{validation.attributes.password}}",
+        "confirm_password": "{{validation.attributes.confirm_password}}",
+        "surname": "{{validation.attributes.surname}}",
+        "name": "{{validation.attributes.user_name}}",
+        "patronymic": "{{validation.attributes.patronymic}}",
+        "locale": "{{validation.attributes.locale}}"
+      },
+      "submit": "Сохранить",
+      "clear": "Очистить форму",
+      "tabs": {
+        "main": "Основные",
+        "extended": "Расширенные"
+      },
+      "breadcrumbs": {
+        "home": "{{page.home.header}}",
+        "users": "{{page.users.index.header}}",
+        "create": "{{page.users.create.header}}"
+      }
+    },
+    "edit": {
+      "title": "{{page.users.edit.header}} :user_name - {{app.name}}",
+      "header": "Редактирование пользователя"
+    }
+  }
 }
