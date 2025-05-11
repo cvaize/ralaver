@@ -1,5 +1,5 @@
-use crate::helpers::collect_files_from_dir;
-use crate::Config;
+use crate::helpers::{collect_files_from_dir, dot_to_end};
+use crate::{AuthServiceError, Config, UserServiceError};
 use actix_web::web::Data;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -182,7 +182,7 @@ impl TranslatorService {
         lang: &str,
         key: &str,
         value: i64,
-        vars: Option<&HashMap<&str, &str>>
+        vars: Option<&HashMap<&str, &str>>,
     ) -> String {
         let mut result = self.translate(lang, key);
         let result_split: Vec<&str> = result.split("|").collect();
@@ -245,6 +245,47 @@ fn choices_rule_en(value: i64, _: usize) -> usize {
         1
     } else {
         0
+    }
+}
+
+pub trait TranslatableError {
+    fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String;
+}
+
+impl TranslatableError for UserServiceError {
+    fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
+        dot_to_end(match self {
+            Self::DbConnectionFail => {
+                translate_service.translate(lang, "Error connecting to the UserService database")
+            }
+            Self::DuplicateEmail => {
+                translate_service.translate(lang, "A user with this E-mail is already registered")
+            }
+            Self::PasswordHashFail => {
+                translate_service.translate(lang, "Password could not be hashed")
+            }
+            _ => translate_service.translate(lang, "UserService error"),
+        })
+    }
+}
+
+impl TranslatableError for AuthServiceError {
+    fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
+        dot_to_end(match self {
+            Self::DbConnectionFail => {
+                translate_service.translate(lang, "Error connecting to the AuthService database")
+            }
+            Self::DuplicateEmail => {
+                translate_service.translate(lang, "A user with this E-mail is already registered")
+            }
+            Self::InsertNewUserFail => {
+                translate_service.translate(lang, "New user registration failed")
+            }
+            Self::PasswordHashFail => {
+                translate_service.translate(lang, "Password could not be hashed")
+            }
+            _ => translate_service.translate(lang, "AuthService error"),
+        })
     }
 }
 

@@ -10,7 +10,6 @@ pub struct LocaleService {
     config: Data<Config>,
     locales: HashMap<String, Locale>,
     locales_codes: Vec<String>,
-    locales_without_current: HashMap<String, Vec<Locale>>,
     locales_vec: Vec<Locale>,
 }
 
@@ -30,24 +29,15 @@ impl LocaleService {
         ];
         let mut locales_codes: Vec<String> = Vec::new();
         let mut locales: HashMap<String, Locale> = HashMap::new();
-        let mut locales_without_current: HashMap<String, Vec<Locale>> = HashMap::new();
         for locale in locales_vec.iter() {
             locales_codes.push(locale.code.to_string());
             locales.insert(locale.code.to_string(), locale.clone());
-            let mut vec_without_current: Vec<Locale> = Vec::new();
-            for locale2 in locales_vec.iter() {
-                if locale.code != locale2.code {
-                    vec_without_current.push(locale2.clone());
-                }
-            }
-            locales_without_current.insert(locale.code.to_string(), vec_without_current);
         }
         Self {
             config,
             locales,
             locales_codes,
             locales_vec,
-            locales_without_current,
         }
     }
 
@@ -61,20 +51,12 @@ impl LocaleService {
             .unwrap_or(self.locales.get(&self.config.get_ref().app.locale).unwrap())
     }
 
+    pub fn get_default_ref(&self) -> &Locale {
+        self.locales.get(&self.config.get_ref().app.locale).unwrap()
+    }
+
     pub fn get_locales_ref(&self) -> &Vec<Locale> {
         &self.locales_vec
-    }
-
-    pub fn get_locales_without_current_ref(&self, current_code: &str) -> Option<&Vec<Locale>> {
-        self.locales_without_current.get(current_code)
-    }
-
-    pub fn get_locales_or_default_without_current_ref(&self, current_code: &str) -> &Vec<Locale> {
-        self.locales_without_current.get(current_code).unwrap_or(
-            self.locales_without_current
-                .get(&self.config.get_ref().app.locale)
-                .unwrap(),
-        )
     }
 
     fn exists_locale_code_or_default(&self, key: String) -> String {

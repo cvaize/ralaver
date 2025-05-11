@@ -34,10 +34,9 @@ impl AppService {
         let locale_service = self.locale_service.get_ref();
         let lang: String = locale_service.get_locale_code(req, user);
         let locale: &Locale = locale_service.get_locale_or_default_ref(&lang);
-        let locales_without_current: &Vec<Locale> =
-            locale_service.get_locales_or_default_without_current_ref(&lang);
+        let locales: &Vec<Locale> = locale_service.get_locales_ref();
 
-        (lang, locale, locales_without_current)
+        (lang, locale, locales)
     }
 
     // Return "dark" or "light" or None

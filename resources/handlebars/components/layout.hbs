@@ -158,10 +158,12 @@
                     <div class="admin-accordion__body" style="--admin-accordion-max-height: 6rem;">
                         <ul class="admin-sidebar__menu__items">
                             {{#each locales}}
-                                <li class="admin-sidebar__menu__item">
-                                    <button form="switch_locale" type="submit" name="locale" value="{{code}}"
-                                            class="admin-sidebar__menu__item__link">{{ full_name }}</button>
-                                </li>
+                                {{#if (ne code locale.code)}}
+                                    <li class="admin-sidebar__menu__item">
+                                        <button form="switch_locale" type="submit" name="locale" value="{{code}}"
+                                                class="admin-sidebar__menu__item__link">{{ full_name }}</button>
+                                    </li>
+                                {{/if}}
                             {{/each}}
                         </ul>
                     </div>

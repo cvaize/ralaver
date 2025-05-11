@@ -3,7 +3,8 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString};
 use crate::app::validator::rules::required::Required;
-use crate::{AppService, AuthServiceError, NewUser, RateLimitService, Session, TemplateService, TranslatorService, User, UserService, UserServiceError, WebAuthService, WebHttpRequest, WebHttpResponse};
+use crate::helpers::dot_to_end;
+use crate::{Alert, AppService, AuthServiceError, Locale, LocaleService, NewUser, RateLimitService, Session, TemplateService, TranslatorService, User, UserService, UserServiceError, WebAuthService, WebHttpRequest, WebHttpResponse};
 use actix_web::web::{Data, Form, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
@@ -37,6 +38,7 @@ pub async fn show(
     web_auth_service: Data<WebAuthService>,
     rate_limit_service: Data<RateLimitService>,
     user_service: Data<UserService>,
+    locale_service: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
     invoke(
         req,
@@ -57,6 +59,7 @@ pub async fn show(
         web_auth_service,
         rate_limit_service,
         user_service,
+        locale_service,
     )
     .await
 }
@@ -72,6 +75,7 @@ pub async fn invoke(
     web_auth_service: Data<WebAuthService>,
     rate_limit_service: Data<RateLimitService>,
     user_service: Data<UserService>,
+    locale_service: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
     let translator_service = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
@@ -79,6 +83,7 @@ pub async fn invoke(
     let web_auth_service = web_auth_service.get_ref();
     let rate_limit_service = rate_limit_service.get_ref();
     let user_service = user_service.get_ref();
+    let locale_service = locale_service.get_ref();
     let user = user.as_ref();
 
     let dark_mode = app_service.dark_mode(&req);
@@ -127,13 +132,47 @@ pub async fn invoke(
     )
     .await?;
 
+    let mut alerts: Vec<Alert> = req.get_alerts(&translator_service, &lang);
+    for form_error in form_errors {
+        alerts.push(Alert::error(form_error));
+    }
+
+    if is_done {
+        if let Some(email_) = &data.email {
+            let user_ = user_service.first_by_email(email_);
+            if let Ok(user_) = user_ {
+                let mut vars: HashMap<&str, &str> = HashMap::new();
+                let name_ = user_.get_full_name_with_id_and_email();
+                vars.insert("name", &name_);
+                alerts.push(Alert::success(
+                    translator_service.variables(&lang, "User \":name\" has been successfully registered", &vars),
+                ));
+            } else {
+                let mut vars: HashMap<&str, &str> = HashMap::new();
+                vars.insert("email", email_);
+                alerts.push(Alert::success(
+                    translator_service.variables(&lang, "The user was successfully saved, but for some reason it was found by E-mail: :email", &vars),
+                ));
+            }
+        }
+    }
+
+    let default_locale = locale_service.get_default_ref();
+    let mut locales_: Vec<&Locale> = vec![default_locale];
+
+    for locale_ in locales {
+        if locale_.code.ne(&default_locale.code) {
+            locales_.push(locale_);
+        }
+    }
+
     let csrf = web_auth_service.new_csrf(&session);
     let ctx = json!({
         "title": title,
         "locale": locale,
-        "locales": locales,
+        "locales": locales_,
         "user" : user,
-        "alerts": req.get_alerts(&translator_service, &lang),
+        "alerts": alerts,
         "dark_mode": dark_mode,
         "csrf": csrf,
         "heading_label": heading,
@@ -185,9 +224,11 @@ pub async fn invoke(
                 }
             },
             "submit": {
-                "label": translator_service.translate(&lang, "page.Save"),
+                "label": translator_service.translate(&lang, "Save"),
             },
-            "errors": form_errors
+            "clear": {
+                "label": translator_service.translate(&lang, "Clear form"),
+            }
         },
     });
     let s = tmpl_service.render_throw_http("pages/users/create.hbs", &ctx)?;
@@ -326,18 +367,13 @@ async fn post(
                 if let Err(error) = result {
                     match error {
                         UserServiceError::DuplicateEmail => {
-                            email_errors.push(
-                                translator_service
-                                    .translate(&lang, "auth.alert.register.duplicate"),
-                            );
+                            email_errors.push(error.translate(lang, translator_service));
                         }
                         UserServiceError::PasswordHashFail => {
-                            // TODO
-                            password_errors.push("Неопределённая ошибка".to_string());
+                            password_errors.push(error.translate(lang, translator_service));
                         }
                         _ => {
-                            // TODO
-                            form_errors.push("Неопределённая ошибка".to_string())
+                            form_errors.push(error.translate(lang, translator_service));
                         }
                     }
                     false

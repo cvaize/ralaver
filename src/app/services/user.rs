@@ -1,8 +1,12 @@
-use crate::{HashService, MysqlPool, NewUser, User};
+use crate::helpers::dot_to_end;
+use crate::{HashService, MysqlPool, NewUser, TranslatorService, User};
 use actix_web::web::Data;
 use diesel::result::DatabaseErrorKind;
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use strum_macros::{Display, EnumString};
+use crate::schema::users::dsl::users as dsl_users;
+use crate::schema::users::dsl::email as dsl_email;
+use diesel::ExpressionMethods;
 
 pub struct UserService {
     db_pool: Data<MysqlPool>,
@@ -27,8 +31,23 @@ impl UserService {
             .find(user_id)
             .select(User::as_select())
             .first(&mut connection)
-            .map_err(|e| {
-                log::error!("UserService::first_by_id - {e}");
+            .map_err(|_| {
+                UserServiceError::Fail
+            })?;
+        Ok(user)
+    }
+
+    pub fn first_by_email(&self, email: &str) -> Result<User, UserServiceError> {
+        let mut connection = self.db_pool.get_ref().get().map_err(|e| {
+            log::error!("UserService::first_by_email - {e}");
+            UserServiceError::DbConnectionFail
+        })?;
+
+        let user = dsl_users
+            .filter(dsl_email.eq(email))
+            .select(User::as_select())
+            .first(&mut connection)
+            .map_err(|_| {
                 UserServiceError::Fail
             })?;
         Ok(user)
@@ -78,4 +97,19 @@ pub enum UserServiceError {
     DuplicateEmail,
     PasswordHashFail,
     Fail,
+}
+
+impl UserServiceError {
+    pub fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
+        dot_to_end(match self {
+            Self::DbConnectionFail => translate_service.translate(lang, "UserService error"),
+            Self::DuplicateEmail => {
+                translate_service.translate(lang, "A user with this E-mail is already registered")
+            }
+            Self::PasswordHashFail => {
+                translate_service.translate(lang, "Password could not be hashed")
+            }
+            Self::Fail => translate_service.translate(lang, "UserService error"),
+        })
+    }
 }

@@ -41,6 +41,14 @@ pub fn get_sys_gettime_nsec() -> i64 {
     time.tv_nsec
 }
 
+#[allow(dead_code)]
+pub fn dot_to_end(mut string: String) -> String {
+    if string.ends_with('.') == false {
+        string.push('.');
+    }
+    string
+}
+
 #[cfg(test)]
 mod tests {
     use serde_derive::{Deserialize, Serialize};

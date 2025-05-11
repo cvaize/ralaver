@@ -2,7 +2,7 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{AlertVariant, RateLimitService, WebHttpRequest, WebHttpResponse};
+use crate::{AlertVariant, RateLimitService, TranslatableError, WebHttpRequest, WebHttpResponse};
 use crate::{
     AppService, AuthService, AuthServiceError, Credentials, TemplateService, TranslatorService,
 };
@@ -229,10 +229,7 @@ async fn post(
                 if let Err(error) = register_result {
                     match error {
                         AuthServiceError::DuplicateEmail => {
-                            email_errors.push(
-                                translator_service
-                                    .translate(&lang, "auth.alert.register.duplicate"),
-                            );
+                            email_errors.push(error.translate(lang, translator_service));
                         }
                         _ => {}
                     }

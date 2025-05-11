@@ -113,15 +113,10 @@ fn get_error_html_response<B>(
 
     let (lang, locale, _) = app_service.locale(Some(&request), None);
 
-    let mut error_message_key = "error.".to_string();
-    error_message_key.push_str(&error_message);
-
-    if translator_service.contains(&lang, &error_message_key) {
-        error_message = translator_service.translate(&lang, &error_message_key);
-        title = status_code.to_owned();
-        title.push_str(" - ");
-        title.push_str(&error_message);
-    }
+    error_message = translator_service.translate(&lang, &error_message);
+    title = status_code.to_owned();
+    title.push_str(" - ");
+    title.push_str(&error_message);
 
     let dark_mode = app_service.dark_mode(&request).unwrap_or("".to_string());
 

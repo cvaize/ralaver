@@ -11,6 +11,10 @@
     <h1>{{heading_label}}</h1>
 
     <form action="{{form.action}}" method="{{form.method}}" style="display: block;">
+        <div style="margin-bottom: 1rem;">
+            <button type="submit" class="admin-btn admin-success">{{form.submit.label}}</button>
+            <a href="{{form.action}}" class="admin-btn admin-accent">{{form.clear.label}}</a>
+        </div>
         <div class="admin-tabs admin-tabs--menu-mod-xs">
             <input id="admin-tabs__0" class="admin-tabs__checkbox" type="radio" name="admin-tabs__1" hidden checked>
             <input id="admin-tabs__1" class="admin-tabs__checkbox" type="radio" name="admin-tabs__1" hidden>
@@ -90,23 +94,16 @@
                                     value=form.fields.locale.value
                                     errors=form.fields.locale.errors
                                     name="locale"
-                                    type="text"
+                                    type="select"
                                     style="margin-bottom: 0.5rem;"
+                                    options=locales
+                                    option_value_key="code"
+                                    option_label_key="full_name"
                             }}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        {{#if form.errors}}
-            {{#each form.errors}}
-                <div class="admin-text--danger" style="margin: 0.5rem 0;">{{this}}</div>
-            {{/each}}
-        {{/if}}
-
-        {{#if form.submit.label}}
-            <button type="submit" class="admin-btn admin-success">{{form.submit.label}}</button>
-        {{/if}}
     </form>
 {{/components/layout.hbs}}

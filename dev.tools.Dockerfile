@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libsodium-dev l
 
 #RUN cargo install --debug --path .
 RUN cargo install diesel_cli
+RUN cargo install cargo-watch
 
 # Install Node.js
 ENV NODE_VERSION=22.13.1
