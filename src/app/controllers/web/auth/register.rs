@@ -1,8 +1,10 @@
+use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
+use crate::app::middlewares::web_auth::REDIRECT_TO;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{AlertVariant, RateLimitService, TranslatableError, WebHttpRequest, WebHttpResponse};
+use crate::{AlertVariant, RateLimitService, TranslatableError, WebHttpResponse};
 use crate::{
     AppService, AuthService, AuthServiceError, Credentials, TemplateService, TranslatorService,
 };
@@ -11,8 +13,6 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
-use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
-use crate::app::middlewares::web_auth::REDIRECT_TO;
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
 static RATE_LIMIT_TTL: u64 = 60;
@@ -67,10 +67,11 @@ pub async fn invoke(
     let mut context_data = get_public_context_data(&req, translator_service, app_service);
     let lang = &context_data.lang;
     context_data.title = translator_service.translate(lang, "page.register.title");
-    
+
     let email_str = translator_service.translate(lang, "page.register.fields.email");
     let password_str = translator_service.translate(lang, "page.register.fields.password");
-    let confirm_password_str = translator_service.translate(lang, "page.register.fields.confirm_password");
+    let confirm_password_str =
+        translator_service.translate(lang, "page.register.fields.confirm_password");
 
     let is_post = req.method().eq(&Method::POST);
     let (is_done, form_errors, email_errors, password_errors, confirm_password_errors) = post(

@@ -38,7 +38,7 @@ pub async fn switch(
 
     let headers = req.headers();
     let default = HeaderValue::from_static("/");
-    let location = headers.get(ORIGIN).unwrap_or(headers.get(REFERER).unwrap_or(&default));
+    let location = headers.get(REFERER).unwrap_or(headers.get(ORIGIN).unwrap_or(&default));
     let location = location.to_str().unwrap_or("/");
 
     Ok(HttpResponse::SeeOther()

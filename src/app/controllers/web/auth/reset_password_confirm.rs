@@ -1,17 +1,17 @@
 use crate::app::controllers::web::auth::reset_password::CODE_LEN;
+use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
 use crate::app::middlewares::web_auth::REDIRECT_TO;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{AlertVariant, RateLimitService, WebHttpRequest, WebHttpResponse};
+use crate::{AlertVariant, RateLimitService, WebHttpResponse};
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::web::{Data, Form, Query};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
-use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
 static RATE_LIMIT_TTL: u64 = 60;

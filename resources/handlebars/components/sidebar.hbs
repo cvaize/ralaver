@@ -1,206 +1,130 @@
-<!doctype html>
-<html lang="en" class="admin-html">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-</head>
-<body class="admin-body">
-<input id="admin-sidebar__nav__checkbox"
-       class="admin-sidebar__nav__checkbox"
-       type="checkbox"
-       hidden>
-<main class="admin-app">
-    <label for="admin-sidebar__nav__checkbox" class="admin-sidebar__burger" aria-label="Open menu"></label>
-    <label for="admin-sidebar__nav__checkbox" class="admin-sidebar__backdrop" aria-label="Close menu"></label>
-
-    <div class="admin-sidebar">
-        <div class="admin-sidebar__brand">
-            Admin front
-            <img style="display: none" class="admin-sidebar__brand__logo" src="https://placehold.co/600x400"
-                 alt="Admin front">
-        </div>
-        <nav class="admin-sidebar__nav">
-            <div class="admin-accordion admin-sidebar__menu">
-                <input id="admin-sidebar__accordion-account"
-                       class="admin-accordion__checkbox admin-sidebar__menu__checkbox"
-                       type="checkbox"
-                       name="admin-accordion__checkbox"
-                       hidden>
-                <label class="admin-accordion__header admin-sidebar__menu__header"
-                       for="admin-sidebar__accordion-account">
-                    <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                         viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20z"/>
-                    </svg>
-                    Иванов И. И.
-                </label>
-                <div class="admin-accordion__body" style="--admin-accordion-max-height: 4rem;">
-                    <ul class="admin-sidebar__menu__items">
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                     viewBox="0 0 24 24">
-                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20z"/>
-                                </svg>
-                                Профиль
-                            </a>
-                        </li>
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                     viewBox="0 0 24 24">
-                                    <path d="M5 5h6c.55 0 1-.45 1-1s-.45-1-1-1H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h6c.55 0 1-.45 1-1s-.45-1-1-1H5V5z"/>
-                                    <path d="m20.65 11.65-2.79-2.79a.501.501 0 0 0-.86.35V11h-7c-.55 0-1 .45-1 1s.45 1 1 1h7v1.79c0 .45.54.67.85.35l2.79-2.79c.2-.19.2-.51.01-.7z"/>
-                                </svg>
-                                Выход
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            <div class="admin-sidebar__menu">
-                <a class="admin-sidebar__menu__header" href="#">
-                    <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+<div class="admin-sidebar">
+    <a href="/" class="admin-sidebar__brand">
+        {{ctx.brand}}
+    </a>
+    <nav class="admin-sidebar__nav">
+        <div class="admin-sidebar__menu">
+            <a class="admin-sidebar__menu__header admin-active" href="/">
+                <span class="admin-sidebar__menu__header__content">
+                    <svg class="admin-sidebar__menu__header__icon admin-icon--svg"
+                         xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                          viewBox="0 0 24 24">
                         <path d="M14 9.5h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm0 7h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm5 4.5H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2zM7 11h3c.55 0 1-.45 1-1V7c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7V7zm0 11h3c.55 0 1-.45 1-1v-3c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7v-3z"/>
                     </svg>
-                    Панель
-                </a>
+                    <span class="admin-sidebar__menu__header__text">{{ctx.sidebar.home}}</span>
+                </span>
+            </a>
+        </div>
+
+        <div class="admin-accordion admin-sidebar__menu">
+            <input id="admin-sidebar__accordion-account"
+                   class="admin-accordion__checkbox admin-sidebar__menu__checkbox"
+                   type="checkbox"
+                   name="admin-accordion__checkbox"
+                   hidden>
+            <label data-user-id="{{ctx.user.id}}" class="admin-accordion__header admin-sidebar__menu__header"
+                   for="admin-sidebar__accordion-account">
+                    <span class="admin-sidebar__menu__header__content">
+                        <svg class="admin-sidebar__menu__header__icon admin-icon--svg"
+                             xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                             viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20z"/>
+                        </svg>
+                        <span class="admin-sidebar__menu__header__text">{{ctx.user.email}}</span>
+                    </span>
+            </label>
+            <div class="admin-accordion__body" style="--admin-accordion-max-height: 4rem;">
+                <ul class="admin-sidebar__menu__items">
+                    <li class="admin-sidebar__menu__item">
+                        <a class="admin-sidebar__menu__item__link" href="/profile">
+                            <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                 viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20z"/>
+                            </svg>
+                            {{ctx.sidebar.profile}}
+                        </a>
+                    </li>
+                    <li class="admin-sidebar__menu__item">
+                        <button form="logout" type="submit" class="admin-sidebar__menu__item__link">
+                            <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                 viewBox="0 0 24 24">
+                                <path d="M5 5h6c.55 0 1-.45 1-1s-.45-1-1-1H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h6c.55 0 1-.45 1-1s-.45-1-1-1H5V5z"/>
+                                <path d="m20.65 11.65-2.79-2.79a.501.501 0 0 0-.86.35V11h-7c-.55 0-1 .45-1 1s.45 1 1 1h7v1.79c0 .45.54.67.85.35l2.79-2.79c.2-.19.2-.51.01-.7z"/>
+                            </svg>
+                            {{ctx.sidebar.logout}}
+                        </button>
+                    </li>
+                </ul>
             </div>
-            <div class="admin-accordion admin-sidebar__menu">
-                <input id="admin-sidebar__accordion-sales"
-                       class="admin-accordion__checkbox admin-sidebar__menu__checkbox"
-                       type="checkbox"
-                       name="admin-accordion__checkbox"
-                       hidden>
-                <label class="admin-accordion__header admin-sidebar__menu__header"
-                       for="admin-sidebar__accordion-sales">
-                    <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                         viewBox="0 0 24 24">
-                        <path d="M17 2H7c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-.5 4h-9c-.28 0-.5-.22-.5-.5v-1c0-.28.22-.5.5-.5h9c.28 0 .5.22.5.5v1c0 .28-.22.5-.5.5zM20 22H4c-1.1 0-2-.9-2-2v-1h20v1c0 1.1-.9 2-2 2zm-1.47-11.81A2.008 2.008 0 0 0 16.7 9H7.3c-.79 0-1.51.47-1.83 1.19L2 18h20l-3.47-7.81zM9.5 16h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm3 4h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm3 4h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5z"/>
-                    </svg>
-                    Продажи
-                </label>
-                <div class="admin-accordion__body">
-                    <ul class="admin-sidebar__menu__items" style="--admin-accordion-max-height: 8rem;">
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                     viewBox="0 0 24 24">
-                                    <path d="M14 9.5h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm0 7h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm5 4.5H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2zM7 11h3c.55 0 1-.45 1-1V7c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7V7zm0 11h3c.55 0 1-.45 1-1v-3c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7v-3z"/>
-                                </svg>
-                                Заказы
-                            </a>
-                        </li>
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                     viewBox="0 0 24 24">
-                                    <path d="M14 9.5h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm0 7h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm5 4.5H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2zM7 11h3c.55 0 1-.45 1-1V7c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7V7zm0 11h3c.55 0 1-.45 1-1v-3c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7v-3z"/>
-                                </svg>
-                                Возвраты
-                            </a>
-                        </li>
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                     viewBox="0 0 24 24">
-                                    <path d="M14 9.5h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm0 7h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm5 4.5H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2zM7 11h3c.55 0 1-.45 1-1V7c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7V7zm0 11h3c.55 0 1-.45 1-1v-3c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7v-3z"/>
-                                </svg>
-                                Подписки
-                            </a>
-                        </li>
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                     viewBox="0 0 24 24">
-                                    <path d="M14 9.5h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm0 7h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm5 4.5H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2zM7 11h3c.55 0 1-.45 1-1V7c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7V7zm0 11h3c.55 0 1-.45 1-1v-3c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7v-3z"/>
-                                </svg>
-                                Сбор данных
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+        </div>
+
+        <div class="admin-accordion admin-sidebar__menu">
+            <input id="admin-sidebar__accordion-users"
+                   class="admin-accordion__checkbox admin-sidebar__menu__checkbox"
+                   type="checkbox"
+                   name="admin-accordion__checkbox"
+                   hidden>
+            <label class="admin-accordion__header admin-sidebar__menu__header"
+                   for="admin-sidebar__accordion-users">
+                    <span class="admin-sidebar__menu__header__content">
+                        <svg class="admin-sidebar__menu__header__icon admin-icon--svg"
+                             xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path
+                                d="M9 12c1.93 0 3.5-1.57 3.5-3.5S10.93 5 9 5 5.5 6.57 5.5 8.5 7.07 12 9 12zm0-5c.83 0 1.5.67 1.5 1.5S9.83 10 9 10s-1.5-.67-1.5-1.5S8.17 7 9 7zm0 6.75c-2.34 0-7 1.17-7 3.5V18c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-.75c0-2.33-4.66-3.5-7-3.5zM4.34 17c.84-.58 2.87-1.25 4.66-1.25s3.82.67 4.66 1.25H4.34zm11.7-3.19c1.16.84 1.96 1.96 1.96 3.44V19h3c.55 0 1-.45 1-1v-.75c0-2.02-3.5-3.17-5.96-3.44zM15 12c1.93 0 3.5-1.57 3.5-3.5S16.93 5 15 5c-.54 0-1.04.13-1.5.35.63.89 1 1.98 1 3.15s-.37 2.26-1 3.15c.46.22.96.35 1.5.35z"/></svg>
+                        <span class="admin-sidebar__menu__header__text">{{ctx.sidebar.users.index}}</span>
+                    </span>
+            </label>
+            <div class="admin-accordion__body" style="--admin-accordion-max-height: 6rem;">
+                <ul class="admin-sidebar__menu__items">
+                    <li class="admin-sidebar__menu__item">
+                        <a class="admin-sidebar__menu__item__link" href="/users">
+                            <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                 viewBox="0 0 24 24">
+                                <path d="M9 12c1.93 0 3.5-1.57 3.5-3.5S10.93 5 9 5 5.5 6.57 5.5 8.5 7.07 12 9 12zm0-5c.83 0 1.5.67 1.5 1.5S9.83 10 9 10s-1.5-.67-1.5-1.5S8.17 7 9 7zm0 6.75c-2.34 0-7 1.17-7 3.5V18c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-.75c0-2.33-4.66-3.5-7-3.5zM4.34 17c.84-.58 2.87-1.25 4.66-1.25s3.82.67 4.66 1.25H4.34zm11.7-3.19c1.16.84 1.96 1.96 1.96 3.44V19h3c.55 0 1-.45 1-1v-.75c0-2.02-3.5-3.17-5.96-3.44zM15 12c1.93 0 3.5-1.57 3.5-3.5S16.93 5 15 5c-.54 0-1.04.13-1.5.35.63.89 1 1.98 1 3.15s-.37 2.26-1 3.15c.46.22.96.35 1.5.35z"/>
+                            </svg>
+                            {{ctx.sidebar.users.index}}
+                        </a>
+                    </li>
+                    <li class="admin-sidebar__menu__item">
+                        <a class="admin-sidebar__menu__item__link" href="#">
+                            {{ctx.sidebar.users.roles}}
+                        </a>
+                    </li>
+                    <li class="admin-sidebar__menu__item">
+                        <a class="admin-sidebar__menu__item__link" href="#">
+                            {{ctx.sidebar.users.permissions}}
+                        </a>
+                    </li>
+                </ul>
             </div>
-            <div class="admin-accordion admin-sidebar__menu">
-                <input id="admin-sidebar__accordion-catalog"
-                       class="admin-accordion__checkbox admin-sidebar__menu__checkbox"
-                       type="checkbox"
-                       name="admin-accordion__checkbox"
-                       hidden>
-                <label class="admin-accordion__header admin-sidebar__menu__header"
-                       for="admin-sidebar__accordion-catalog">
-                    Каталог товаров
-                </label>
-                <div class="admin-accordion__body" style="--admin-accordion-max-height: 8rem;">
-                    <ul class="admin-sidebar__menu__items">
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">Товары</a>
-                        </li>
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">Категории</a>
-                        </li>
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">Атрибуты</a>
-                        </li>
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">Поставщики</a>
-                        </li>
-                    </ul>
-                </div>
+        </div>
+
+        <div class="admin-accordion admin-sidebar__menu">
+            <input id="admin-sidebar__lang"
+                   class="admin-accordion__checkbox admin-sidebar__menu__checkbox"
+                   type="checkbox"
+                   name="admin-accordion__checkbox"
+                   hidden checked>
+            <label class="admin-accordion__header admin-sidebar__menu__header"
+                   for="admin-sidebar__lang">
+                    <span class="admin-sidebar__menu__header__content">
+                        <svg class="admin-sidebar__menu__header__icon admin-icon--svg"
+                             xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path
+                                d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2s.07-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
+                        <span class="admin-sidebar__menu__header__text">{{ ctx.locale.full_name }}</span>
+                    </span>
+            </label>
+            <div class="admin-accordion__body" style="--admin-accordion-max-height: 6rem;">
+                <ul class="admin-sidebar__menu__items">
+                    {{#each ctx.locales as |locale|}}
+                        {{#if (ne locale.code ../ctx.locale.code)}}
+                            <li class="admin-sidebar__menu__item">
+                                <button form="switch_locale" type="submit" name="locale" value="{{locale.code}}"
+                                        class="admin-sidebar__menu__item__link">{{ locale.full_name }}</button>
+                            </li>
+                        {{/if}}
+                    {{/each}}
+                </ul>
             </div>
-            <div class="admin-accordion admin-sidebar__menu">
-                <input id="admin-sidebar__accordion-users"
-                       class="admin-accordion__checkbox admin-sidebar__menu__checkbox"
-                       type="checkbox"
-                       name="admin-accordion__checkbox"
-                       hidden>
-                <label class="admin-accordion__header admin-sidebar__menu__header"
-                       for="admin-sidebar__accordion-users">
-                    Пользователи
-                </label>
-                <div class="admin-accordion__body" style="--admin-accordion-max-height: 4rem;">
-                    <ul class="admin-sidebar__menu__items">
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">Пользователи</a>
-                        </li>
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">Роли</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            <div class="admin-accordion admin-sidebar__menu">
-                <input id="admin-sidebar__accordion-marketing"
-                       class="admin-accordion__checkbox admin-sidebar__menu__checkbox"
-                       type="checkbox"
-                       name="admin-accordion__checkbox"
-                       hidden>
-                <label class="admin-accordion__header admin-sidebar__menu__header"
-                       for="admin-sidebar__accordion-marketing">
-                    Маркетинг
-                </label>
-                <div class="admin-accordion__body" style="--admin-accordion-max-height: 6rem;">
-                    <ul class="admin-sidebar__menu__items">
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">Промокоды</a>
-                        </li>
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">Правило</a>
-                        </li>
-                        <li class="admin-sidebar__menu__item">
-                            <a class="admin-sidebar__menu__item__link" href="#">Отзывы</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            <div class="admin-sidebar__menu">
-                <a class="admin-sidebar__menu__header" href="#">Настройки</a>
-            </div>
-        </nav>
-    </div>
-</main>
-</body>
-</html>
+        </div>
+    </nav>
+</div>
