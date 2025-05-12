@@ -1,5 +1,4 @@
 use crate::app::controllers::web::auth::reset_password::CODE_LEN;
-use crate::app::controllers::{AUTH_SERVICE_ERROR, RATE_LIMIT_SERVICE_ERROR};
 use crate::app::middlewares::web_auth::REDIRECT_TO;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
@@ -226,11 +225,11 @@ async fn post(
     if is_post {
         let rate_limit_key = rate_limit_service
             .make_key_from_request(req, RATE_KEY)
-            .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+            .map_err(|_| error::ErrorInternalServerError(""))?;
 
         let executed = rate_limit_service
             .attempt(&rate_limit_key, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_TTL)
-            .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+            .map_err(|_| error::ErrorInternalServerError(""))?;
 
         if executed {
             email_errors = Required::validated(translator_service, lang, &data.email, |value| {
@@ -293,12 +292,12 @@ async fn post(
 
                 let is_code_equal: bool = auth_service
                     .is_equal_reset_password_code(email, code)
-                    .map_err(|_| error::ErrorInternalServerError(AUTH_SERVICE_ERROR))?;
+                    .map_err(|_| error::ErrorInternalServerError(""))?;
 
                 if is_code_equal {
                     auth_service
                         .update_password_by_email(email, password)
-                        .map_err(|_| error::ErrorInternalServerError(AUTH_SERVICE_ERROR))?;
+                        .map_err(|_| error::ErrorInternalServerError(""))?;
 
                     is_done1 = true;
                 }
@@ -334,14 +333,14 @@ async fn post(
         } else {
             let ttl_message = rate_limit_service
                 .ttl_message(translator_service, lang, &rate_limit_key)
-                .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+                .map_err(|_| error::ErrorInternalServerError(""))?;
             form_errors.push(ttl_message)
         }
 
         if is_done {
             rate_limit_service
                 .clear(&rate_limit_key)
-                .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+                .map_err(|_| error::ErrorInternalServerError(""))?;
         }
     }
 

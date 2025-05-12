@@ -6,7 +6,6 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::header::{ORIGIN, REFERER};
 use http::HeaderValue;
 use serde_derive::Deserialize;
-use crate::app::controllers::VALIDATION_ERROR;
 
 #[derive(Deserialize, Debug)]
 pub struct LocaleData {
@@ -20,7 +19,7 @@ pub async fn switch(
 ) -> Result<HttpResponse, Error> {
     let config = config.get_ref();
     if data.locale.is_none() {
-        return Err(error::ErrorBadRequest(VALIDATION_ERROR));
+        return Err(error::ErrorBadRequest(""));
     }
 
     let locale = match &data.locale {
@@ -29,7 +28,7 @@ pub async fn switch(
     };
 
     if !MinMaxLengthString::apply(&locale, 1, 6) {
-        return Err(error::ErrorBadRequest(VALIDATION_ERROR));
+        return Err(error::ErrorBadRequest(""));
     }
 
     let c = Cookie::build(&config.app.locale_cookie_key, locale)

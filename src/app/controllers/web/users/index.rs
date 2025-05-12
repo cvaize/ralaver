@@ -5,7 +5,6 @@ use crate::{
 use actix_web::web::{Data, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use serde_json::json;
-use std::collections::HashMap;
 use std::sync::Arc;
 
 pub async fn invoke(

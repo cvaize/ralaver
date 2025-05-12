@@ -2,10 +2,22 @@ version: '3'
 
 services:
 
-  dev_tools:
+#  tools:
+#    build:
+#      context: .
+#      dockerfile: dev.app.Dockerfile
+#    links:
+#      - mysql
+#      - redis
+#    volumes:
+#      - './:/app'
+#      - 'volume-cargo:/usr/local/cargo'
+
+  app:
+    entrypoint: ./dev.app.entrypoint.sh
     build:
       context: .
-      dockerfile: dev.tools.Dockerfile
+      dockerfile: dev.app.Dockerfile
     links:
       - mysql
       - redis

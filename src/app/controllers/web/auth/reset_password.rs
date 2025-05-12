@@ -1,4 +1,3 @@
-use crate::app::controllers::{APP_SERVICE_ERROR, AUTH_SERVICE_ERROR, RATE_LIMIT_SERVICE_ERROR};
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
 use crate::{
@@ -153,11 +152,11 @@ async fn post(
     if is_post {
         let rate_limit_key = rate_limit_service
             .make_key_from_request(req, RATE_KEY)
-            .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+            .map_err(|_| error::ErrorInternalServerError(""))?;
 
         let executed = rate_limit_service
             .attempt(&rate_limit_key, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_TTL)
-            .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+            .map_err(|_| error::ErrorInternalServerError(""))?;
 
         if executed {
             email_errors = Required::validated(translator_service, lang, &data.email, |value| {
@@ -168,7 +167,7 @@ async fn post(
             if email_errors.len() == 0 {
                 let exists = auth_service
                     .exists_user_by_email(&email)
-                    .map_err(|_| error::ErrorInternalServerError(AUTH_SERVICE_ERROR))?;
+                    .map_err(|_| error::ErrorInternalServerError(""))?;
                 if exists == false {
                     email_errors.push(
                         translator_service.translate(&lang, "page.reset_password.validation.email.exists"),
@@ -185,20 +184,20 @@ async fn post(
                 let logo_src = app_service
                     .url()
                     .join("/svg/logo.svg")
-                    .map_err(|_| error::ErrorInternalServerError(APP_SERVICE_ERROR))?
+                    .map_err(|_| error::ErrorInternalServerError(""))?
                     .to_string();
 
                 let code: String = random_service.str(CODE_LEN);
 
                 auth_service
                     .save_reset_password_code(&email, &code)
-                    .map_err(|_| error::ErrorInternalServerError(AUTH_SERVICE_ERROR))?;
+                    .map_err(|_| error::ErrorInternalServerError(""))?;
 
                 let params = format!("/reset-password-confirm?code={}&email={}", code, email);
                 let button_href = app_service
                     .url()
                     .join(&params)
-                    .map_err(|_| error::ErrorInternalServerError(APP_SERVICE_ERROR))?
+                    .map_err(|_| error::ErrorInternalServerError(""))?
                     .to_string();
 
                 let ctx = json!({
@@ -243,14 +242,14 @@ async fn post(
         } else {
             let ttl_message = rate_limit_service
                 .ttl_message(translator_service, lang, &rate_limit_key)
-                .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+                .map_err(|_| error::ErrorInternalServerError(""))?;
             form_errors.push(ttl_message)
         }
 
         if is_done {
             rate_limit_service
                 .clear(&rate_limit_key)
-                .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+                .map_err(|_| error::ErrorInternalServerError(""))?;
         }
     }
 

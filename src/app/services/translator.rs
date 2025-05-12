@@ -1,4 +1,4 @@
-use crate::helpers::{collect_files_from_dir, dot_to_end};
+use crate::helpers::collect_files_from_dir;
 use crate::{AuthServiceError, Config, UserServiceError};
 use actix_web::web::Data;
 use serde_json::Value;
@@ -292,38 +292,41 @@ pub trait TranslatableError {
 
 impl TranslatableError for UserServiceError {
     fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
-        dot_to_end(match self {
+        match self {
             Self::DbConnectionFail => {
-                translate_service.translate(lang, "Error connecting to the UserService database")
+                translate_service.translate(lang, "error.UserServiceError.DbConnectionFail")
             }
             Self::DuplicateEmail => {
-                translate_service.translate(lang, "A user with this E-mail is already registered")
+                translate_service.translate(lang, "error.UserServiceError.DuplicateEmail")
             }
             Self::PasswordHashFail => {
-                translate_service.translate(lang, "Password could not be hashed")
+                translate_service.translate(lang, "error.UserServiceError.PasswordHashFail")
             }
-            _ => translate_service.translate(lang, "UserService error"),
-        })
+            _ => translate_service.translate(lang, "error.UserServiceError.Fail"),
+        }
     }
 }
 
 impl TranslatableError for AuthServiceError {
     fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
-        dot_to_end(match self {
+        match self {
+            Self::CredentialsInvalid => {
+                translate_service.translate(lang, "error.AuthServiceError.CredentialsInvalid")
+            }
             Self::DbConnectionFail => {
-                translate_service.translate(lang, "Error connecting to the AuthService database")
+                translate_service.translate(lang, "error.AuthServiceError.DbConnectionFail")
             }
             Self::DuplicateEmail => {
-                translate_service.translate(lang, "A user with this E-mail is already registered")
+                translate_service.translate(lang, "error.AuthServiceError.DuplicateEmail")
             }
             Self::InsertNewUserFail => {
-                translate_service.translate(lang, "New user registration failed")
+                translate_service.translate(lang, "error.AuthServiceError.InsertNewUserFail")
             }
             Self::PasswordHashFail => {
-                translate_service.translate(lang, "Password could not be hashed")
+                translate_service.translate(lang, "error.AuthServiceError.PasswordHashFail")
             }
-            _ => translate_service.translate(lang, "AuthService error"),
-        })
+            _ => translate_service.translate(lang, "error.AuthServiceError.Fail"),
+        }
     }
 }
 

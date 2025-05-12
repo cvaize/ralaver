@@ -1,1 +1,19 @@
-{}
+{
+  "404": "Page not found",
+  "405": "Method not allowed",
+  "500": "Internal server error",
+  "UserServiceError": {
+    "DbConnectionFail":  "Error connecting to the UserService database.",
+    "DuplicateEmail": "A user with this E-mail is already registered.",
+    "PasswordHashFail":  "Password could not be hashed.",
+    "Fail": "UserService error."
+  },
+  "AuthServiceError": {
+    "CredentialsInvalid":  "Invalid credentials.",
+    "DbConnectionFail":  "Error connecting to the AuthService database.",
+    "DuplicateEmail": "{{error.UserServiceError.DuplicateEmail}}",
+    "PasswordHashFail":  "{{error.UserServiceError.PasswordHashFail}}",
+    "InsertNewUserFail":  "New user registration failed.",
+    "Fail": "AuthService error."
+  }
+}

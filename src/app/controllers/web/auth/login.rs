@@ -1,4 +1,3 @@
-use crate::app::controllers::{AUTH_SERVICE_ERROR, RATE_LIMIT_SERVICE_ERROR};
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
@@ -174,11 +173,11 @@ async fn post(
     if is_post {
         let rate_limit_key = rate_limit_service
             .make_key_from_request(req, RATE_KEY)
-            .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+            .map_err(|_| error::ErrorInternalServerError(""))?;
 
         let executed = rate_limit_service
             .attempt(&rate_limit_key, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_TTL)
-            .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+            .map_err(|_| error::ErrorInternalServerError(""))?;
 
         if executed {
             email_errors = Required::validated(translator_service, lang, &data.email, |value| {
@@ -205,7 +204,7 @@ async fn post(
                     let session_ = web_auth_service.generate_session(user_id);
                     web_auth_service
                         .save_session(&session_)
-                        .map_err(|_| error::ErrorInternalServerError(AUTH_SERVICE_ERROR))?;
+                        .map_err(|_| error::ErrorInternalServerError(""))?;
                     session = Some(session_);
                     is_done = true;
                 } else {
@@ -225,14 +224,14 @@ async fn post(
         } else {
             let ttl_message = rate_limit_service
                 .ttl_message(translator_service, lang, &rate_limit_key)
-                .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+                .map_err(|_| error::ErrorInternalServerError(""))?;
             form_errors.push(ttl_message)
         }
 
         if is_done {
             rate_limit_service
                 .clear(&rate_limit_key)
-                .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+                .map_err(|_| error::ErrorInternalServerError(""))?;
         }
     }
 

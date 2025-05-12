@@ -11,7 +11,6 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
-use crate::app::controllers::RATE_LIMIT_SERVICE_ERROR;
 use crate::app::middlewares::web_auth::REDIRECT_TO;
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
@@ -171,11 +170,11 @@ async fn post(
     if is_post {
         let rate_limit_key = rate_limit_service
             .make_key_from_request(req, RATE_KEY)
-            .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+            .map_err(|_| error::ErrorInternalServerError(""))?;
 
         let executed = rate_limit_service
             .attempt(&rate_limit_key, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_TTL)
-            .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+            .map_err(|_| error::ErrorInternalServerError(""))?;
 
         if executed {
             email_errors = Required::validated(translator_service, lang, &data.email, |value| {
@@ -261,14 +260,14 @@ async fn post(
         } else {
             let ttl_message = rate_limit_service
                 .ttl_message(translator_service, lang, &rate_limit_key)
-                .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+                .map_err(|_| error::ErrorInternalServerError(""))?;
             form_errors.push(ttl_message)
         }
 
         if is_done {
             rate_limit_service
                 .clear(&rate_limit_key)
-                .map_err(|_| error::ErrorInternalServerError(RATE_LIMIT_SERVICE_ERROR))?;
+                .map_err(|_| error::ErrorInternalServerError(""))?;
         }
     }
 

@@ -2,7 +2,6 @@ use crate::app::middlewares::web_auth::REDIRECT_TO;
 use crate::{AlertVariant, WebAuthService, WebHttpResponse};
 use actix_web::web::Data;
 use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
-use crate::app::controllers::WEB_AUTH_SERVICE_ERROR;
 
 pub async fn invoke(
     req: HttpRequest,
@@ -12,7 +11,7 @@ pub async fn invoke(
 
     web_auth_service.logout_by_req(&req).map_err(|e| {
         log::error!("Logout:invoke - {e}");
-        return error::ErrorInternalServerError(WEB_AUTH_SERVICE_ERROR);
+        return error::ErrorInternalServerError("");
     })?;
 
     Ok(HttpResponse::SeeOther()

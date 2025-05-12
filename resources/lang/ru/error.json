@@ -1,3 +1,19 @@
 {
-  
+  "404": "Страница не найдена",
+  "405": "Метод не разрешён",
+  "500": "Внутренняя ошибка сервера",
+  "UserServiceError": {
+    "DbConnectionFail":  "Ошибка подключения к базе данных UserService.",
+    "DuplicateEmail": "Пользователь с таким E-mail уже зарегистрирован.",
+    "PasswordHashFail":  "Пароль не удалось хэшировать.",
+    "Fail": "Ошибка сервиса UserService."
+  },
+  "AuthServiceError": {
+    "CredentialsInvalid":  "Неверные учетные данные.",
+    "DbConnectionFail":  "Ошибка подключения к базе данных AuthService.",
+    "DuplicateEmail": "{{error.UserServiceError.DuplicateEmail}}",
+    "PasswordHashFail":  "{{error.UserServiceError.PasswordHashFail}}",
+    "InsertNewUserFail":  "Регистрация нового пользователя не удалась.",
+    "Fail": "Ошибка сервиса AuthService."
+  }
 }

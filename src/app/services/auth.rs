@@ -5,7 +5,6 @@ use crate::{KeyValueService, KeyValueServiceError, NewUser, PrivateUserData};
 use actix_web::web::Data;
 #[allow(unused_imports)]
 use diesel::prelude::*;
-use diesel::result::DatabaseErrorKind;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
 use serde_derive::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};

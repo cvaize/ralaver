@@ -7,7 +7,6 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::{env, io};
 use strum_macros::{Display, EnumString};
-use crate::app::controllers::TEMPLATE_SERVICE_ERROR;
 
 #[allow(dead_code)]
 pub struct TemplateService {
@@ -94,7 +93,7 @@ impl TemplateService {
     pub fn render_throw_http<T: Serialize>(&self, name: &str, data: &T) -> Result<String, Error> {
         self.render(name, data).map_err(|e| {
             log::error!("TemplateService::render_throw_http - {e}");
-            error::ErrorInternalServerError(TEMPLATE_SERVICE_ERROR)
+            error::ErrorInternalServerError("")
         })
     }
 }

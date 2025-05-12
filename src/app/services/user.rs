@@ -1,5 +1,4 @@
-use crate::helpers::dot_to_end;
-use crate::{HashService, MysqlPool, NewUser, TranslatorService, User};
+use crate::{HashService, MysqlPool, NewUser, User};
 use actix_web::web::Data;
 use diesel::result::DatabaseErrorKind;
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
@@ -97,19 +96,4 @@ pub enum UserServiceError {
     DuplicateEmail,
     PasswordHashFail,
     Fail,
-}
-
-impl UserServiceError {
-    pub fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
-        dot_to_end(match self {
-            Self::DbConnectionFail => translate_service.translate(lang, "UserService error"),
-            Self::DuplicateEmail => {
-                translate_service.translate(lang, "A user with this E-mail is already registered")
-            }
-            Self::PasswordHashFail => {
-                translate_service.translate(lang, "Password could not be hashed")
-            }
-            Self::Fail => translate_service.translate(lang, "UserService error"),
-        })
-    }
 }
