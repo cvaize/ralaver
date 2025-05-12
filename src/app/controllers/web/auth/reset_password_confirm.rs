@@ -11,6 +11,7 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
+use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
 static RATE_LIMIT_TTL: u64 = 60;
@@ -74,13 +75,16 @@ pub async fn invoke(
     let rate_limit_service = rate_limit_service.get_ref();
 
     let query = query.into_inner();
-    let (lang, locale, locales) = app_service.locale(Some(&req), None);
 
-    let email_str = translator_service.translate(&lang, "page.reset_password_confirm.fields.email");
+    let mut context_data = get_public_context_data(&req, translator_service, app_service);
+    let lang = &context_data.lang;
+    context_data.title = translator_service.translate(lang, "page.reset_password_confirm.title");
+
+    let email_str = translator_service.translate(lang, "page.reset_password_confirm.fields.email");
     let password_str =
-        translator_service.translate(&lang, "page.reset_password_confirm.fields.password");
+        translator_service.translate(lang, "page.reset_password_confirm.fields.password");
     let confirm_password_str =
-        translator_service.translate(&lang, "page.reset_password_confirm.fields.confirm_password");
+        translator_service.translate(lang, "page.reset_password_confirm.fields.confirm_password");
 
     if let Some(email) = query.email {
         data.email = Some(email.to_owned());
@@ -111,7 +115,7 @@ pub async fn invoke(
             &password_str,
             &confirm_password_str,
             translator_service,
-            &lang,
+            lang,
             auth_service,
             rate_limit_service,
         )
@@ -137,20 +141,18 @@ pub async fn invoke(
             .finish());
     }
 
+    let layout_ctx = get_public_template_context(&context_data);
     let ctx = json!({
-        "title": translator_service.translate(&lang, "page.reset_password_confirm.title"),
-        "locale": locale,
-        "locales": locales,
-        "alerts": req.get_alerts(&translator_service, &lang),
-        "dark_mode": app_service.dark_mode(&req),
+        "ctx": layout_ctx,
+        "heading": translator_service.translate(lang, "page.reset_password_confirm.header"),
         "back": {
-            "label": translator_service.translate(&lang, "page.reset_password_confirm.back"),
+            "label": translator_service.translate(lang, "page.reset_password_confirm.back"),
             "href": "/reset-password",
         },
         "form": {
             "action": action,
             "method": "post",
-            "header": translator_service.translate(&lang, "page.reset_password_confirm.header"),
+            "header": translator_service.translate(lang, "page.reset_password_confirm.header"),
             "fields": [
                 {
                     "name": "code",
@@ -181,7 +183,7 @@ pub async fn invoke(
                 }
             ],
             "submit": {
-                "label": translator_service.translate(&lang, "page.reset_password_confirm.submit"),
+                "label": translator_service.translate(lang, "page.reset_password_confirm.submit"),
             },
             "errors": form_errors
         },

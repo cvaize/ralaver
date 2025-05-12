@@ -11,6 +11,7 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
+use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
 use crate::app::middlewares::web_auth::REDIRECT_TO;
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
@@ -63,11 +64,13 @@ pub async fn invoke(
     let auth_service = auth_service.get_ref();
     let rate_limit_service = rate_limit_service.get_ref();
 
-    let (lang, locale, locales) = app_service.locale(Some(&req), None);
-
-    let email_str = translator_service.translate(&lang, "page.register.fields.email");
-    let password_str = translator_service.translate(&lang, "page.register.fields.password");
-    let confirm_password_str = translator_service.translate(&lang, "page.register.fields.confirm_password");
+    let mut context_data = get_public_context_data(&req, translator_service, app_service);
+    let lang = &context_data.lang;
+    context_data.title = translator_service.translate(lang, "page.register.title");
+    
+    let email_str = translator_service.translate(lang, "page.register.fields.email");
+    let password_str = translator_service.translate(lang, "page.register.fields.password");
+    let confirm_password_str = translator_service.translate(lang, "page.register.fields.confirm_password");
 
     let is_post = req.method().eq(&Method::POST);
     let (is_done, form_errors, email_errors, password_errors, confirm_password_errors) = post(
@@ -78,7 +81,7 @@ pub async fn invoke(
         &password_str,
         &confirm_password_str,
         translator_service,
-        &lang,
+        lang,
         auth_service,
         rate_limit_service,
     )
@@ -94,16 +97,13 @@ pub async fn invoke(
             .finish());
     }
 
+    let layout_ctx = get_public_template_context(&context_data);
     let ctx = json!({
-        "title": translator_service.translate(&lang, "page.register.title"),
-        "locale": locale,
-        "locales": locales,
-        "alerts": req.get_alerts(&translator_service, &lang),
-        "dark_mode": app_service.dark_mode(&req),
+        "ctx": layout_ctx,
+        "heading": translator_service.translate(lang, "page.register.header"),
         "form": {
             "action": "/register",
             "method": "post",
-            "header": translator_service.translate(&lang, "page.register.header"),
             "fields": [
                 {
                     "label": email_str,
@@ -128,14 +128,14 @@ pub async fn invoke(
                 }
             ],
             "submit": {
-                "label": translator_service.translate(&lang, "page.register.submit"),
+                "label": translator_service.translate(lang, "page.register.submit"),
             },
             "reset_password": {
-                "label": translator_service.translate(&lang, "page.register.reset_password"),
+                "label": translator_service.translate(lang, "page.register.reset_password"),
                 "href": "/reset-password",
             },
             "login": {
-                "label": translator_service.translate(&lang, "page.register.login"),
+                "label": translator_service.translate(lang, "page.register.login"),
                 "href": "/login",
             },
             "errors": form_errors,

@@ -1,14 +1,7 @@
 {{#> components/layout.hbs }}
-    {{#if ctx.alerts}}
-        {{#each ctx.alerts}}
-            {{> components/alert.hbs index=@index type=style content=content close=true }}
-        {{/each}}
-    {{/if}}
-
-    {{#if breadcrumbs}}
-        {{> components/breadcrumb.hbs breadcrumbs=breadcrumbs }}
-    {{/if}}
-    <h1>{{heading}}</h1>
+    {{> components/alerts.hbs }}
+    {{> components/breadcrumb.hbs }}
+    {{> components/heading.hbs }}
 
     <form action="{{form.action}}" method="{{form.method}}" style="display: block;">
         <input type="hidden" name="_token" placeholder="_token" value="{{ctx.csrf}}">

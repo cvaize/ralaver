@@ -136,3 +136,50 @@ pub fn get_template_context<'a>(data: &'a ContextData) -> Value {
       "csrf": &data.csrf
     })
 }
+
+pub struct PublicContextData<'a> {
+    translator_service: &'a TranslatorService,
+    dark_mode: Option<String>,
+    lang: String,
+    locale: &'a Locale,
+    locales: &'a Vec<Locale>,
+    alerts: Vec<Alert>,
+    title: String,
+}
+
+pub fn get_public_context_data<'a>(
+    req: &'a HttpRequest,
+    translator_service: &'a TranslatorService,
+    app_service: &'a AppService,
+) -> PublicContextData<'a> {
+    let dark_mode: Option<String> = app_service.dark_mode(&req);
+    let (lang, locale, locales) = app_service.locale(Some(&req), None);
+    let alerts: Vec<Alert> = req.get_alerts(&translator_service, &lang);
+    let title = translator_service.translate(&lang, "app.name");
+    PublicContextData {
+        translator_service,
+        dark_mode,
+        lang,
+        locale,
+        locales,
+        alerts,
+        title,
+    }
+}
+
+pub fn get_public_template_context<'a>(data: &'a PublicContextData) -> Value {
+    let lang = &data.lang;
+    let translator_service = data.translator_service;
+    json!({
+      "title": &data.title,
+      "dark_mode": {
+        "value": &data.dark_mode,
+        "dark": translator_service.translate(lang, "layout.dark_mode.dark"),
+        "light": translator_service.translate(lang, "layout.dark_mode.light"),
+        "auto": translator_service.translate(lang, "layout.dark_mode.auto"),
+      },
+      "locale": &data.locale,
+      "locales": &data.locales,
+      "alerts": &data.alerts,
+    })
+}

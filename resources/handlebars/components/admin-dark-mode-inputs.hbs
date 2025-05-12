@@ -1,0 +1,6 @@
+<input id="admin-dark-mode__radio--dark" class="admin-dark-mode__radio--dark" type="radio" name="admin-dark-mode__radio"
+       hidden {{#if (eq ctx.dark_mode.value "dark")}} checked {{/if}}>
+<input id="admin-dark-mode__radio--light" class="admin-dark-mode__radio--light" type="radio"
+       name="admin-dark-mode__radio" hidden {{#if (eq ctx.dark_mode.value "light")}} checked {{/if}}>
+<input id="admin-dark-mode__radio--auto" class="admin-dark-mode__radio--auto" type="radio" name="admin-dark-mode__radio"
+       hidden {{#if (eq ctx.dark_mode.value "auto")}} checked {{/if}} {{#unless ctx.dark_mode.value}} checked {{/unless}}>

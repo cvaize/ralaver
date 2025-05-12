@@ -1,25 +1,22 @@
-{{#> components/login.hbs lang=lang dark_mode=dark_mode title=title }}
+{{#> components/auth-layout.hbs }}
     <div class="admin-login">
         <div class="admin-container admin-login__container">
-            {{#if alerts}}
+            {{#if ctx.alerts}}
                 <div class="admin-login__alerts">
-                    {{#each alerts}}
+                    {{#each ctx.alerts}}
                         {{> components/alert.hbs index=@index type=style content=content close=true }}
                     {{/each}}
                 </div>
             {{/if}}
-            <form class="admin-login__card"
-                {{#if form.action}} action="{{form.action}}" {{/if}}
-                {{#if form.method}} method="{{form.method}}" {{/if}}
-            >
+            <form class="admin-login__card" action="{{form.action}}" method="{{form.method}}">
 
-                {{#if locales and locale}}
+                {{#if ctx.locales and ctx.locale}}
                     <div class="admin-login__lang admin-dropdown" tabindex="-1">
                         <button class="admin-btn admin-dropdown__btn" type="button" style="text-transform: uppercase;min-width: 3.5rem;">
-                            {{ locale.short_name }}
+                            {{ ctx.locale.short_name }}
                         </button>
                         <ul class="admin-dropdown__menu" style="min-width: 3.5rem;">
-                            {{#each locales}}
+                            {{#each ctx.locales}}
                                 <li><button form="switch_locale" type="submit" name="locale" value="{{code}}" class="admin-dropdown__item"
                                        style="text-transform: uppercase">{{ short_name }}</button></li>
                             {{/each}}
@@ -37,9 +34,7 @@
                         </a>
                     </div>
                 {{/if}}
-                {{#if form.header}}
-                    <h1 class="admin-login__header">{{form.header}}</h1>
-                {{/if}}
+                <h1 class="admin-login__header">{{heading}}</h1>
 
                 {{#if form.fields}}
                     {{#each form.fields}}
@@ -84,4 +79,4 @@
         </div>
     </div>
     <form id="switch_locale" action="/locale/switch" method="post" style="display: none;"></form>
-{{/components/login.hbs}}
+{{/components/auth-layout.hbs}}

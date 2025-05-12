@@ -1,13 +1,6 @@
 {{#> components/layout.hbs }}
-    {{#if ctx.alerts}}
-        {{#each ctx.alerts}}
-            {{> components/alert.hbs index=@index type=style content=content close=true }}
-        {{/each}}
-    {{/if}}
-
-    {{#if breadcrumbs}}
-        {{> components/breadcrumb.hbs breadcrumbs=breadcrumbs }}
-    {{/if}}
+    {{> components/alerts.hbs }}
+    {{> components/breadcrumb.hbs }}
 
     <h1>Профиль, ID:{{ctx.user.id}} {{ctx.user.email}}!</h1>
 

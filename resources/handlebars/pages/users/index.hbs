@@ -1,9 +1,5 @@
 {{#> components/layout.hbs }}
-    {{#if ctx.alerts}}
-        {{#each ctx.alerts}}
-            {{> components/alert.hbs index=@index type=style content=content close=true }}
-        {{/each}}
-    {{/if}}
+    {{> components/alerts.hbs }}
 
     <div class="admin-list-page">
         <div class="admin-list-page__breadcrumb">

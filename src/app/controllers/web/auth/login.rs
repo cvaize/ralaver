@@ -1,9 +1,8 @@
+use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{
-    AlertVariant, RateLimitService, Session, WebAuthService, WebHttpRequest, WebHttpResponse,
-};
+use crate::{AlertVariant, RateLimitService, Session, WebAuthService, WebHttpResponse};
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::web::Data;
 use actix_web::web::Form;
@@ -74,10 +73,12 @@ pub async fn invoke(
             .finish());
     }
 
-    let (lang, locale, locales) = app_service.locale(Some(&req), None);
+    let mut context_data = get_public_context_data(&req, translator_service, app_service);
+    let lang = &context_data.lang;
+    context_data.title = translator_service.translate(lang, "page.login.title");
 
-    let email_str = translator_service.translate(&lang, "page.login.fields.email");
-    let password_str = translator_service.translate(&lang, "page.login.fields.password");
+    let email_str = translator_service.translate(lang, "page.login.fields.email");
+    let password_str = translator_service.translate(lang, "page.login.fields.password");
 
     let is_post = req.method().eq(&Method::POST);
     let (is_done, email_errors, password_errors, form_errors, session) = post(
@@ -86,7 +87,7 @@ pub async fn invoke(
         &mut data,
         &email_str,
         &password_str,
-        &lang,
+        lang,
         translator_service,
         auth_service,
         web_auth_service,
@@ -103,16 +104,13 @@ pub async fn invoke(
             .finish());
     }
 
+    let layout_ctx = get_public_template_context(&context_data);
     let ctx = json!({
-        "title": translator_service.translate(&lang, "page.login.title"),
-        "locale": locale,
-        "locales": locales,
-        "alerts": req.get_alerts(&translator_service, &lang),
-        "dark_mode": app_service.dark_mode(&req),
+        "ctx": layout_ctx,
+        "heading": translator_service.translate(lang, "page.login.header"),
         "form": {
             "action": "/login",
             "method": "post",
-            "header": translator_service.translate(&lang, "page.login.header"),
             "fields": [
                 {
                     "label": email_str,
@@ -130,14 +128,14 @@ pub async fn invoke(
                 }
             ],
             "submit": {
-                "label": translator_service.translate(&lang, "page.login.submit")
+                "label": translator_service.translate(lang, "page.login.submit")
             },
             "reset_password": {
-                "label": translator_service.translate(&lang, "page.login.reset_password"),
+                "label": translator_service.translate(lang, "page.login.reset_password"),
                 "href": "/reset-password"
             },
             "register": {
-                "label": translator_service.translate(&lang, "page.login.register"),
+                "label": translator_service.translate(lang, "page.login.register"),
                 "href": "/register"
             },
             "errors": form_errors,
@@ -208,7 +206,7 @@ async fn post(
                     session = Some(session_);
                     is_done = true;
                 } else {
-                    form_errors.push(translator_service.translate(&lang, "alert.login.fail"));
+                    form_errors.push(translator_service.translate(lang, "alert.login.fail"));
                 }
             };
 

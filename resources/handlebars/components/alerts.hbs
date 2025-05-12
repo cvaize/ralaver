@@ -1,0 +1,5 @@
+{{#if ctx.alerts}}
+    {{#each ctx.alerts}}
+        {{> components/alert.hbs index=@index type=style content=content close=true }}
+    {{/each}}
+{{/if}}
