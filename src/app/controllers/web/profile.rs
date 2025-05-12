@@ -1,5 +1,6 @@
-use crate::User;
-use crate::{AppService, TemplateService, TranslatorService, WebHttpRequest};
+use crate::app::controllers::web::{get_context_data, get_template_context};
+use crate::{AppService, TemplateService, TranslatorService};
+use crate::{Session, User, WebAuthService};
 use actix_web::web::{Data, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use serde_json::json;
@@ -8,26 +9,40 @@ use std::sync::Arc;
 pub async fn index(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
+    session: ReqData<Arc<Session>>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
+    web_auth_service: Data<WebAuthService>,
 ) -> Result<HttpResponse, Error> {
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
     let translator_service = translator_service.get_ref();
+    let web_auth_service = web_auth_service.get_ref();
     let user = user.as_ref();
 
-    let dark_mode = app_service.dark_mode(&req);
+    let mut context_data = get_context_data(
+        &req,
+        user,
+        &session,
+        translator_service,
+        app_service,
+        web_auth_service,
+    );
+    let lang = &context_data.lang;
+    context_data.title = translator_service.translate(lang, "page.profile.title");
 
-    let (lang, locale, locales) = app_service.locale(Some(&req), Some(&user));
+    let layout_ctx = get_template_context(&context_data);
 
     let ctx = json!({
-        "locale": locale,
-        "locales": locales,
-        "user" : &user,
-        "alerts": req.get_alerts(&translator_service, &lang),
-        "dark_mode": dark_mode
+        "ctx": layout_ctx,
+        "breadcrumbs": [
+            {"href": "/", "label": translator_service.translate(lang, "page.profile.breadcrumbs.home")},
+            {"label": translator_service.translate(lang, "page.profile.breadcrumbs.profile")},
+        ],
     });
     let s = tmpl_service.render_throw_http("pages/profile/index.hbs", &ctx)?;
-    Ok(HttpResponse::Ok().content_type(mime::TEXT_HTML_UTF_8.as_ref()).body(s))
+    Ok(HttpResponse::Ok()
+        .content_type(mime::TEXT_HTML_UTF_8.as_ref())
+        .body(s))
 }

@@ -1,7 +1,4 @@
-use crate::{
-    Config,
-    LocaleService,
-};
+use crate::{Config, LocaleService};
 use crate::{Locale, User};
 use actix_web::web::Data;
 use actix_web::HttpRequest;

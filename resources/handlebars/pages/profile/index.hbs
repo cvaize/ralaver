@@ -1,19 +1,14 @@
-{{#> components/layout.hbs user=user locales=locales locale=locale dark_mode=dark_mode title=title }}
-    {{#if alerts}}
-        {{#each alerts}}
+{{#> components/layout.hbs }}
+    {{#if ctx.alerts}}
+        {{#each ctx.alerts}}
             {{> components/alert.hbs index=@index type=style content=content close=true }}
         {{/each}}
     {{/if}}
 
-    <nav aria-label="breadcrumb">
-        <ol class="admin-breadcrumb">
-            <li class="admin-breadcrumb__item"><a href="/" class="admin-breadcrumb__link">Панель управления</a></li>
-            <li class="admin-breadcrumb__item admin-breadcrumb__item--active" aria-current="page">
-                Профиль
-            </li>
-        </ol>
-    </nav>
+    {{#if breadcrumbs}}
+        {{> components/breadcrumb.hbs breadcrumbs=breadcrumbs }}
+    {{/if}}
 
-    <h1>Профиль, ID:{{user.id}} {{user.email}}!</h1>
+    <h1>Профиль, ID:{{ctx.user.id}} {{ctx.user.email}}!</h1>
 
 {{/components/layout.hbs}}

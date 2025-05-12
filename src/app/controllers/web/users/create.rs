@@ -1,8 +1,13 @@
+use crate::app::controllers::web::{get_context_data, get_template_context};
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString};
 use crate::app::validator::rules::required::Required;
-use crate::{Alert, AppService, Locale, LocaleService, NewUser, RateLimitService, Session, TemplateService, TranslatableError, TranslatorService, User, UserService, UserServiceError, WebAuthService, WebHttpRequest, WebHttpResponse};
+use crate::{
+    Alert, AppService, Locale, LocaleService, NewUser, RateLimitService, Session, TemplateService,
+    TranslatableError, TranslatorService, User, UserService, UserServiceError, WebAuthService,
+    WebHttpResponse,
+};
 use actix_web::web::{Data, Form, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
@@ -17,6 +22,7 @@ static RATE_KEY: &str = "users_create";
 
 #[derive(Deserialize, Debug)]
 pub struct PostData {
+    pub _token: Option<String>,
     pub email: Option<String>,
     pub password: Option<String>,
     pub confirm_password: Option<String>,
@@ -41,6 +47,7 @@ pub async fn show(
     invoke(
         req,
         Form(PostData {
+            _token: None,
             email: None,
             password: None,
             confirm_password: None,
@@ -75,6 +82,7 @@ pub async fn invoke(
     user_service: Data<UserService>,
     locale_service: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
+    // TODO: Проверить csrf токен
     let translator_service = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
@@ -84,20 +92,27 @@ pub async fn invoke(
     let locale_service = locale_service.get_ref();
     let user = user.as_ref();
 
-    let dark_mode = app_service.dark_mode(&req);
-    let (lang, locale, locales) = app_service.locale(Some(&req), Some(user));
+    let mut context_data = get_context_data(
+        &req,
+        user,
+        &session,
+        translator_service,
+        app_service,
+        web_auth_service,
+    );
 
-    let email_str = translator_service.translate(&lang, "page.users.create.fields.email");
-    let password_str = translator_service.translate(&lang, "page.users.create.fields.password");
+    let lang = &context_data.lang;
+
+    let email_str = translator_service.translate(lang, "page.users.create.fields.email");
+    let password_str = translator_service.translate(lang, "page.users.create.fields.password");
     let confirm_password_str =
-        translator_service.translate(&lang, "page.users.create.fields.confirm_password");
-    let surname_str = translator_service.translate(&lang, "page.users.create.fields.surname");
-    let name_str = translator_service.translate(&lang, "page.users.create.fields.user_name");
-    let patronymic_str = translator_service.translate(&lang, "page.users.create.fields.patronymic");
-    let locale_str = translator_service.translate(&lang, "page.users.create.fields.locale");
+        translator_service.translate(lang, "page.users.create.fields.confirm_password");
+    let surname_str = translator_service.translate(lang, "page.users.create.fields.surname");
+    let name_str = translator_service.translate(lang, "page.users.create.fields.name");
+    let patronymic_str = translator_service.translate(lang, "page.users.create.fields.patronymic");
+    let locale_str = translator_service.translate(lang, "page.users.create.fields.locale");
 
-    let title = translator_service.translate(&lang, "page.users.create.title");
-    let heading = translator_service.translate(&lang, "page.users.create.header");
+    context_data.title = translator_service.translate(lang, "page.users.create.title");
 
     let is_post = req.method().eq(&Method::POST);
     let (
@@ -114,7 +129,7 @@ pub async fn invoke(
         is_post,
         &req,
         &data,
-        &lang,
+        lang,
         &email_str,
         &password_str,
         &confirm_password_str,
@@ -128,9 +143,8 @@ pub async fn invoke(
     )
     .await?;
 
-    let mut alerts: Vec<Alert> = req.get_alerts(&translator_service, &lang);
     for form_error in form_errors {
-        alerts.push(Alert::error(form_error));
+        context_data.alerts.push(Alert::error(form_error));
     }
 
     if is_done {
@@ -140,19 +154,23 @@ pub async fn invoke(
                 let mut vars: HashMap<&str, &str> = HashMap::new();
                 let name_ = user_.get_full_name_with_id_and_email();
                 vars.insert("name", &name_);
-                alerts.push(Alert::success(translator_service.variables(
-                    &lang,
-                    "alert.users.create.success",
-                    &vars,
-                )));
+                context_data
+                    .alerts
+                    .push(Alert::success(translator_service.variables(
+                        lang,
+                        "alert.users.create.success",
+                        &vars,
+                    )));
             } else {
                 let mut vars: HashMap<&str, &str> = HashMap::new();
                 vars.insert("email", email_);
-                alerts.push(Alert::success(translator_service.variables(
-                    &lang,
-                    "alert.users.create.success_and_not_found",
-                    &vars,
-                )));
+                context_data
+                    .alerts
+                    .push(Alert::success(translator_service.variables(
+                        lang,
+                        "alert.users.create.success_and_not_found",
+                        &vars,
+                    )));
             }
         }
     }
@@ -160,30 +178,25 @@ pub async fn invoke(
     let default_locale = locale_service.get_default_ref();
     let mut locales_: Vec<&Locale> = vec![default_locale];
 
-    for locale_ in locales {
+    for locale_ in context_data.locales {
         if locale_.code.ne(&default_locale.code) {
             locales_.push(locale_);
         }
     }
 
-    let csrf = web_auth_service.new_csrf(&session);
+    let layout_ctx = get_template_context(&context_data);
+
     let ctx = json!({
-        "title": title,
-        "locale": locale,
-        "locales": locales_,
-        "user" : user,
-        "alerts": alerts,
-        "dark_mode": dark_mode,
-        "csrf": csrf,
-        "heading": heading,
+        "ctx": layout_ctx,
+        "heading": translator_service.translate(lang, "page.users.create.header"),
         "tabs": {
-            "main": translator_service.translate(&lang, "page.users.create.tabs.main"),
-            "extended": translator_service.translate(&lang, "page.users.create.tabs.extended"),
+            "main": translator_service.translate(lang, "page.users.create.tabs.main"),
+            "extended": translator_service.translate(lang, "page.users.create.tabs.extended"),
         },
         "breadcrumbs": [
-            {"href": "/", "label": translator_service.translate(&lang, "page.users.create.breadcrumbs.home")},
-            {"href": "/users", "label": translator_service.translate(&lang, "page.users.create.breadcrumbs.users")},
-            {"label": translator_service.translate(&lang, "page.users.create.breadcrumbs.create")},
+            {"href": "/", "label": translator_service.translate(lang, "page.users.create.breadcrumbs.home")},
+            {"href": "/users", "label": translator_service.translate(lang, "page.users.create.breadcrumbs.users")},
+            {"label": translator_service.translate(lang, "page.users.create.breadcrumbs.create")},
         ],
         "form": {
             "action": "/users/create",
@@ -223,13 +236,14 @@ pub async fn invoke(
                     "label": locale_str,
                     "value": &data.locale,
                     "errors": locale_errors,
+                    "locales": locales_
                 }
             },
             "submit": {
-                "label": translator_service.translate(&lang, "page.users.create.submit"),
+                "label": translator_service.translate(lang, "page.users.create.submit"),
             },
             "clear": {
-                "label": translator_service.translate(&lang, "page.users.create.clear"),
+                "label": translator_service.translate(lang, "page.users.create.clear"),
             }
         },
     });

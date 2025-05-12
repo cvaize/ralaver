@@ -1,6 +1,6 @@
+use crate::app::controllers::web::{get_context_data, get_template_context};
 use crate::{
-    AppService, Session, TemplateService, TranslatorService, User, WebAuthService, WebHttpRequest,
-    WebHttpResponse,
+    AppService, Session, TemplateService, TranslatorService, User, WebAuthService, WebHttpResponse,
 };
 use actix_web::web::{Data, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
@@ -22,23 +22,26 @@ pub async fn invoke(
     let web_auth_service = web_auth_service.get_ref();
     let user = user.as_ref();
 
-    let dark_mode = app_service.dark_mode(&req);
-    let (lang, locale, locales) = app_service.locale(Some(&req), Some(user));
+    let mut context_data = get_context_data(
+        &req,
+        user,
+        &session,
+        translator_service,
+        app_service,
+        web_auth_service,
+    );
+    let lang = &context_data.lang;
+    context_data.title = translator_service.translate(lang, "page.users.index.title");
 
+    let layout_ctx = get_template_context(&context_data);
 
-    let title = translator_service.translate(&lang, "page.users.index.title");
-    let heading = translator_service.translate(&lang, "page.users.index.header");
-
-    let csrf = web_auth_service.new_csrf(&session);
     let ctx = json!({
-        "title": title,
-        "heading": heading,
-        "locale": locale,
-        "locales": locales,
-        "user" : user,
-        "alerts": req.get_alerts(&translator_service, &lang),
-        "dark_mode": dark_mode,
-        "csrf": csrf
+        "ctx": layout_ctx,
+        "heading": translator_service.translate(lang, "page.users.index.header"),
+        "breadcrumbs": [
+            {"href": "/", "label": translator_service.translate(lang, "page.users.index.breadcrumbs.home")},
+            {"label": translator_service.translate(lang, "page.users.index.breadcrumbs.users")},
+        ],
     });
     let s = tmpl_service.render_throw_http("pages/users/index.hbs", &ctx)?;
     Ok(HttpResponse::Ok()

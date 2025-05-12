@@ -1,8 +1,14 @@
 {
+  "brand": "Rust",
   "sidebar": {
+    "home": "Panel",
+    "users": {
+      "index": "Users",
+      "roles": "Roles",
+      "permissions": "Permissions"
+    },
     "profile": "My profile",
-    "logout": "Logout",
-    "panel":  "Panel"
+    "logout": "Logout"
   },
   "dark_mode": {
     "dark": "Currently using dark theme. Click once if you want to switch to light theme or twice if you want to automatically use your computer's light/dark theme.",

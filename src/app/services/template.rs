@@ -1,5 +1,5 @@
 use crate::helpers::collect_files_from_dir;
-use crate::{Config};
+use crate::Config;
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use handlebars::{handlebars_helper, Handlebars};
@@ -20,9 +20,7 @@ pub enum TemplateServiceError {
 }
 
 impl TemplateService {
-    pub fn new_from_files(
-        config: Data<Config>,
-    ) -> Result<Self, io::Error> {
+    pub fn new_from_files(config: Data<Config>) -> Result<Self, io::Error> {
         let mut handlebars: Handlebars = Handlebars::new();
 
         let mut dir = env::current_dir().map_err(|e| {
@@ -66,10 +64,7 @@ impl TemplateService {
         handlebars.register_helper("eq", Box::new(eq));
         handlebars.register_helper("ne", Box::new(ne));
 
-        Ok(TemplateService {
-            config,
-            handlebars,
-        })
+        Ok(TemplateService { config, handlebars })
     }
 
     pub fn render<T: Serialize>(

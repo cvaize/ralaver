@@ -1,8 +1,4 @@
 {
-  "home": {
-    "title": "{{page.home.header}} - {{app.name}}",
-    "header": "Panel"
-  },
   "login": {
     "title": "{{page.login.header}} - {{app.name}}",
     "header": "Login",
@@ -53,10 +49,29 @@
     "reset_password": "Reset password?",
     "login": "Login"
   },
+  "home": {
+    "title": "{{page.home.header}} - {{app.name}}",
+    "header": "Panel",
+    "breadcrumbs": {
+      "home": "{{page.home.header}}"
+    }
+  },
+  "profile": {
+    "title": "{{page.profile.header}} - {{app.name}}",
+    "header": "My profile",
+    "breadcrumbs": {
+      "home": "{{page.home.header}}",
+      "profile": "{{page.profile.header}}"
+    }
+  },
   "users": {
     "index": {
       "title": "{{page.users.index.header}} - {{app.name}}",
-      "header": "Users list"
+      "header": "Users list",
+      "breadcrumbs": {
+        "home": "{{page.home.header}}",
+        "users": "{{page.users.index.header}}"
+      }
     },
     "create": {
       "title": "{{page.users.create.header}} - {{app.name}}",

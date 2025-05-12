@@ -1,6 +1,6 @@
-{{#> components/layout.hbs user=user locales=locales locale=locale dark_mode=dark_mode title=title }}
-    {{#if alerts}}
-        {{#each alerts}}
+{{#> components/layout.hbs }}
+    {{#if ctx.alerts}}
+        {{#each ctx.alerts}}
             {{> components/alert.hbs index=@index type=style content=content close=true }}
         {{/each}}
     {{/if}}
@@ -11,6 +11,7 @@
     <h1>{{heading}}</h1>
 
     <form action="{{form.action}}" method="{{form.method}}" style="display: block;">
+        <input type="hidden" name="_token" placeholder="_token" value="{{ctx.csrf}}">
         <div style="margin-bottom: 1rem;">
             <button type="submit" class="admin-btn admin-success">{{form.submit.label}}</button>
             <a href="{{form.action}}" class="admin-btn admin-accent">{{form.clear.label}}</a>
@@ -96,7 +97,7 @@
                                     name="locale"
                                     type="select"
                                     style="margin-bottom: 0.5rem;"
-                                    options=locales
+                                    options=form.fields.locale.locales
                                     option_value_key="code"
                                     option_label_key="full_name"
                             }}

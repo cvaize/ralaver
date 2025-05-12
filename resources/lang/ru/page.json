@@ -1,8 +1,4 @@
 {
-  "home": {
-    "title": "{{page.home.header}} - {{app.name}}",
-    "header": "Панель"
-  },
   "login": {
     "title": "{{page.login.header}} - {{app.name}}",
     "header": "Вход",
@@ -53,10 +49,29 @@
     "reset_password": "Сбросить пароль?",
     "login": "Войти"
   },
+  "home": {
+    "title": "{{page.home.header}} - {{app.name}}",
+    "header": "Панель управления",
+    "breadcrumbs": {
+      "home": "{{page.home.header}}"
+    }
+  },
+  "profile": {
+    "title": "{{page.profile.header}} - {{app.name}}",
+    "header": "Мой профиль",
+    "breadcrumbs": {
+      "home": "{{page.home.header}}",
+      "profile": "{{page.profile.header}}"
+    }
+  },
   "users": {
     "index": {
       "title": "{{page.users.index.header}} - {{app.name}}",
-      "header": "Список пользователей"
+      "header": "Список пользователей",
+      "breadcrumbs": {
+        "home": "{{page.home.header}}",
+        "users": "{{page.users.index.header}}"
+      }
     },
     "create": {
       "title": "{{page.users.create.header}} - {{app.name}}",
