@@ -4,7 +4,7 @@ use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString};
 use crate::app::validator::rules::required::Required;
 use crate::{
-    Alert, AlertVariant, AppService, Locale, LocaleService, NewUser, RateLimitService, Session,
+    Alert, AppService, Locale, LocaleService, NewUser, RateLimitService, Session,
     TemplateService, TranslatableError, TranslatorService, User, UserService, UserServiceError,
     WebAuthService, WebHttpResponse,
 };

@@ -66,12 +66,14 @@
   },
   "users": {
     "index": {
-      "title": "{{page.users.index.header}} - {{app.name}}",
+      "title": "Страница :page из :per_page - {{page.users.index.header}} - {{app.name}}",
       "header": "Список пользователей",
       "breadcrumbs": {
         "home": "{{page.home.header}}",
-        "users": "{{page.users.index.header}}"
-      }
+        "users": "{{page.users.index.header}}",
+        "index": "{{layout.index}}"
+      },
+      "create": "Добавить пользователя"
     },
     "create": {
       "title": "{{page.users.create.header}} - {{app.name}}",

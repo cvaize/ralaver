@@ -1,0 +1,7 @@
+{
+  "Not Found": "Страница не найдена",
+  "Method Not Allowed": "Метод не разрешён",
+  "Internal Server Error": "Внутренняя ошибка сервера",
+  "Query deserialize error: invalid digit found in string": "Ошибка десериализации запроса: в строке найдена неверная цифра",
+  "Requested application data is not configured correctly. View/enable debug logs for more details.": "Запрошенные данные приложения настроены неправильно. Просмотрите/включите журналы отладки для получения более подробной информации."
+}
