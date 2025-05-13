@@ -85,8 +85,9 @@
         "patronymic": "{{validation.attributes.patronymic}}",
         "locale": "{{validation.attributes.locale}}"
       },
-      "submit": "Сохранить",
-      "clear": "Очистить форму",
+      "save": "Сохранить",
+      "save_and_close": "Сохранить и закрыть",
+      "close": "Закрыть",
       "tabs": {
         "main": "Основные",
         "extended": "Расширенные"

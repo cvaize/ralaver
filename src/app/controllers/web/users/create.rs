@@ -4,9 +4,9 @@ use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString};
 use crate::app::validator::rules::required::Required;
 use crate::{
-    Alert, AppService, Locale, LocaleService, NewUser, RateLimitService, Session, TemplateService,
-    TranslatableError, TranslatorService, User, UserService, UserServiceError, WebAuthService,
-    WebHttpResponse,
+    Alert, AlertVariant, AppService, Locale, LocaleService, NewUser, RateLimitService, Session,
+    TemplateService, TranslatableError, TranslatorService, User, UserService, UserServiceError,
+    WebAuthService, WebHttpResponse,
 };
 use actix_web::web::{Data, Form, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -23,6 +23,7 @@ static RATE_KEY: &str = "users_create";
 #[derive(Deserialize, Debug)]
 pub struct PostData {
     pub _token: Option<String>,
+    pub action: Option<String>,
     pub email: Option<String>,
     pub password: Option<String>,
     pub confirm_password: Option<String>,
@@ -48,6 +49,7 @@ pub async fn show(
         req,
         Form(PostData {
             _token: None,
+            action: None,
             email: None,
             password: None,
             confirm_password: None,
@@ -82,7 +84,6 @@ pub async fn invoke(
     user_service: Data<UserService>,
     locale_service: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
-    // TODO: Проверить csrf токен
     let translator_service = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
@@ -128,6 +129,7 @@ pub async fn invoke(
     ) = post(
         is_post,
         &req,
+        &session,
         &data,
         lang,
         &email_str,
@@ -140,6 +142,7 @@ pub async fn invoke(
         translator_service,
         rate_limit_service,
         user_service,
+        web_auth_service,
     )
     .await?;
 
@@ -151,6 +154,32 @@ pub async fn invoke(
         if let Some(email_) = &data.email {
             let user_ = user_service.first_by_email(email_);
             if let Ok(user_) = user_ {
+
+                // TODO: Save alerts
+
+                if let Some(action) = &data.action {
+                    let header_value_back = http::HeaderValue::from_static("/users");
+                    if action.eq("save") {
+                        let mut src = "/users/".to_string();
+                        src.push_str(&user_.id.to_string());
+                        return Ok(HttpResponse::SeeOther()
+                            .insert_header((
+                                http::header::LOCATION,
+                                http::HeaderValue::from_str(&src).unwrap_or(header_value_back),
+                            ))
+                            .finish());
+                    } else if action.eq("save_and_close") {
+                        return Ok(HttpResponse::SeeOther()
+                            .insert_header((
+                                http::header::LOCATION,
+                                header_value_back,
+                            ))
+                            .finish());
+                    }
+                }
+
+
+
                 let mut vars: HashMap<&str, &str> = HashMap::new();
                 let name_ = user_.get_full_name_with_id_and_email();
                 vars.insert("name", &name_);
@@ -239,12 +268,12 @@ pub async fn invoke(
                     "locales": locales_
                 }
             },
-            "submit": {
-                "label": translator_service.translate(lang, "page.users.create.submit"),
+            "save": translator_service.translate(lang, "page.users.create.save"),
+            "save_and_close": translator_service.translate(lang, "page.users.create.save_and_close"),
+            "close": {
+                "label": translator_service.translate(lang, "page.users.create.close"),
+                "href": "/users"
             },
-            "clear": {
-                "label": translator_service.translate(lang, "page.users.create.clear"),
-            }
         },
     });
     let s = tmpl_service.render_throw_http("pages/users/create.hbs", &ctx)?;
@@ -257,6 +286,7 @@ pub async fn invoke(
 async fn post(
     is_post: bool,
     req: &HttpRequest,
+    session: &Session,
     data: &Form<PostData>,
     lang: &str,
     email_str: &str,
@@ -269,6 +299,7 @@ async fn post(
     translator_service: &TranslatorService,
     rate_limit_service: &RateLimitService,
     user_service: &UserService,
+    web_auth_service: &WebAuthService,
 ) -> Result<
     (
         bool,
@@ -294,6 +325,8 @@ async fn post(
     let mut locale_errors: Vec<String> = Vec::new();
 
     if is_post {
+        web_auth_service.check_csrf_throw_http(session, &data._token)?;
+
         let rate_limit_key = rate_limit_service
             .make_key_from_request(req, RATE_KEY)
             .map_err(|_| error::ErrorInternalServerError(""))?;

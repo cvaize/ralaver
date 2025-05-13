@@ -6,8 +6,9 @@
     <form action="{{form.action}}" method="{{form.method}}" style="display: block;">
         <input type="hidden" name="_token" placeholder="_token" value="{{ctx.csrf}}">
         <div style="margin-bottom: 1rem;">
-            <button type="submit" class="admin-btn admin-success">{{form.submit.label}}</button>
-            <a href="{{form.action}}" class="admin-btn admin-accent">{{form.clear.label}}</a>
+            <button type="submit" class="admin-btn admin-success" name="action" value="save">{{form.save}}</button>
+            <button type="submit" class="admin-btn admin-success" name="action" value="save_and_close">{{form.save_and_close}}</button>
+            <a href="{{form.close.href}}" class="admin-btn">{{form.close.label}}</a>
         </div>
         <div class="admin-tabs admin-tabs--menu-mod-xs">
             <input id="admin-tabs__0" class="admin-tabs__checkbox" type="radio" name="admin-tabs__1" hidden checked>
@@ -25,57 +26,57 @@
                     <div class="admin-row">
                         <div class="admin-col-auto">
                             {{> components/field.hbs
-                                    label=form.fields.email.label
-                                    value=form.fields.email.value
-                                    errors=form.fields.email.errors
-                                    name="email"
-                                    type="email"
-                                    required=true
-                                    style="margin-bottom: 0.5rem;"
+                                label=form.fields.email.label
+                                value=form.fields.email.value
+                                errors=form.fields.email.errors
+                                name="email"
+                                type="email"
+                                required=true
+                                style="margin-bottom: 0.5rem;"
                             }}
                             {{> components/field.hbs
-                                    label=form.fields.password.label
-                                    value=form.fields.password.value
-                                    errors=form.fields.password.errors
-                                    name="password"
-                                    type="password"
-                                    required=true
-                                    style="margin-bottom: 0.5rem;"
+                                label=form.fields.password.label
+                                value=form.fields.password.value
+                                errors=form.fields.password.errors
+                                name="password"
+                                type="password"
+                                required=true
+                                style="margin-bottom: 0.5rem;"
                             }}
                             {{> components/field.hbs
-                                    label=form.fields.confirm_password.label
-                                    value=form.fields.confirm_password.value
-                                    errors=form.fields.confirm_password.errors
-                                    name="confirm_password"
-                                    type="password"
-                                    required=true
-                                    style="margin-bottom: 0.5rem;"
+                                label=form.fields.confirm_password.label
+                                value=form.fields.confirm_password.value
+                                errors=form.fields.confirm_password.errors
+                                name="confirm_password"
+                                type="password"
+                                required=true
+                                style="margin-bottom: 0.5rem;"
                             }}
                         </div>
                         <div class="admin-col-auto">
                             {{> components/field.hbs
-                                    label=form.fields.surname.label
-                                    value=form.fields.surname.value
-                                    errors=form.fields.surname.errors
-                                    name="surname"
-                                    type="text"
-                                    style="margin-bottom: 0.5rem;"
+                                label=form.fields.surname.label
+                                value=form.fields.surname.value
+                                errors=form.fields.surname.errors
+                                name="surname"
+                                type="text"
+                                style="margin-bottom: 0.5rem;"
                             }}
                             {{> components/field.hbs
-                                    label=form.fields.name.label
-                                    value=form.fields.name.value
-                                    errors=form.fields.name.errors
-                                    name="name"
-                                    type="text"
-                                    style="margin-bottom: 0.5rem;"
+                                label=form.fields.name.label
+                                value=form.fields.name.value
+                                errors=form.fields.name.errors
+                                name="name"
+                                type="text"
+                                style="margin-bottom: 0.5rem;"
                             }}
                             {{> components/field.hbs
-                                    label=form.fields.patronymic.label
-                                    value=form.fields.patronymic.value
-                                    errors=form.fields.patronymic.errors
-                                    name="patronymic"
-                                    type="text"
-                                    style="margin-bottom: 0.5rem;"
+                                label=form.fields.patronymic.label
+                                value=form.fields.patronymic.value
+                                errors=form.fields.patronymic.errors
+                                name="patronymic"
+                                type="text"
+                                style="margin-bottom: 0.5rem;"
                             }}
                         </div>
                     </div>
@@ -84,15 +85,15 @@
                     <div class="admin-row">
                         <div class="admin-col-auto">
                             {{> components/field.hbs
-                                    label=form.fields.locale.label
-                                    value=form.fields.locale.value
-                                    errors=form.fields.locale.errors
-                                    name="locale"
-                                    type="select"
-                                    style="margin-bottom: 0.5rem;"
-                                    options=form.fields.locale.locales
-                                    option_value_key="code"
-                                    option_label_key="full_name"
+                                label=form.fields.locale.label
+                                value=form.fields.locale.value
+                                errors=form.fields.locale.errors
+                                name="locale"
+                                type="select"
+                                style="margin-bottom: 0.5rem;"
+                                options=form.fields.locale.locales
+                                option_value_key="code"
+                                option_label_key="full_name"
                             }}
                         </div>
                     </div>

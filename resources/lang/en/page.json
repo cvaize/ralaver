@@ -85,8 +85,9 @@
         "patronymic": "{{validation.attributes.patronymic}}",
         "locale": "{{validation.attributes.locale}}"
       },
-      "submit": "Save",
-      "clear": "Clear form",
+      "save": "Save",
+      "save_and_close": "Save and close",
+      "close": "Close",
       "tabs": {
         "main": "Main",
         "extended": "Extended"
