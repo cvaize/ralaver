@@ -606,14 +606,12 @@
             </div>
         </div>
 
-        <div class="admin-list-page__page-number">
-            Страница 8 из 50
-        </div>
+        <div class="admin-list-page__page-number">{{page_per_page}}</div>
 
         <div class="admin-list-page__per-page">
             <label class="admin-list-page__per-page__field admin-field">
                 <span class="admin-list-page__per-page__label admin-field__text">Кол-во записей на странице</span>
-                <select form="admin-list-page-search-form" name="per-page" class="admin-field__input">
+                <select form="admin-list-page-search-form" name="per_page" class="admin-field__input">
                     <option selected>10</option>
                     <option>20</option>
                     <option>30</option>

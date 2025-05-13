@@ -64,6 +64,7 @@ pub async fn invoke(
             "href": "/users/create",
             "label": translator_service.translate(lang, "page.users.index.create")
         },
+        "page_per_page": translator_service.variables(lang, "page.users.index.page_per_page", &page_vars)
     });
     let s = tmpl_service.render_throw_http("pages/users/index.hbs", &ctx)?;
     Ok(HttpResponse::Ok()

@@ -73,7 +73,8 @@
         "users": "{{page.users.index.header}}",
         "index": "{{layout.index}}"
       },
-      "create": "Добавить пользователя"
+      "create": "Добавить пользователя",
+      "page_per_page": "{{layout.index}}"
     },
     "create": {
       "title": "{{page.users.create.header}} - {{app.name}}",

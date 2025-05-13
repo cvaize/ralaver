@@ -73,7 +73,8 @@
         "users": "{{page.users.index.header}}",
         "index": "{{layout.index}}"
       },
-      "create": "Create user"
+      "create": "Create user",
+      "page_per_page": "{{layout.index}}"
     },
     "create": {
       "title": "{{page.users.create.header}} - {{app.name}}",
