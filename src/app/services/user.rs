@@ -2,10 +2,15 @@ use crate::{HashService, MysqlPool, NewUser, User};
 use actix_web::web::Data;
 use diesel::result::DatabaseErrorKind;
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
+use diesel::prelude::*;
+use diesel::query_builder::*;
+use diesel::query_dsl::methods::LoadQuery;
 use strum_macros::{Display, EnumString};
 use crate::schema::users::dsl::users as dsl_users;
 use crate::schema::users::dsl::email as dsl_email;
 use diesel::ExpressionMethods;
+use serde_derive::{Deserialize, Serialize};
+use crate::mysql_connection::{Paginate, PaginationResult};
 
 pub struct UserService {
     db_pool: Data<MysqlPool>,
@@ -87,6 +92,30 @@ impl UserService {
                 }
             })?;
         Ok(())
+    }
+
+    pub fn paginate(&self, page: i64, per_page: i64) -> Result<PaginationResult<User>, UserServiceError> {
+        let db_pool = self.db_pool.get_ref();
+
+        let mut connection = db_pool.get().map_err(|e| {
+            log::error!("UserService::paginate - {e}");
+            return UserServiceError::DbConnectionFail;
+        })?;
+
+        let result = dsl_users
+            // .order(posts::published_at.desc())
+            // .filter(posts::published_at.is_not_null())
+            // .inner_join(users::table)
+            // .select((posts::all_columns, (users::id, users::username)))
+            .select(User::as_select())
+            .paginate(page, per_page)
+            .load_and_count_pages(&mut connection)
+            .map_err(|_| {
+                UserServiceError::Fail
+            })?;
+
+
+        Ok(result)
     }
 }
 

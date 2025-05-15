@@ -1,18 +1,17 @@
 use crate::app::controllers::web::{get_context_data, get_template_context};
-use crate::{
-    AppService, Session, TemplateService, TranslatorService, User, WebAuthService, WebHttpResponse,
-};
+use crate::{AppService, Config, Session, TemplateService, TranslatorService, User, UserService, WebAuthService, WebHttpResponse};
 use actix_web::web::{Data, Form, Query, ReqData};
-use actix_web::{Error, HttpRequest, HttpResponse, Result};
+use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use serde_derive::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::cmp::{min, max};
 
 #[derive(Deserialize, Debug)]
 pub struct IndexQuery {
-    pub page: Option<u64>,
-    pub per_page: Option<u64>,
+    pub page: Option<i64>,
+    pub per_page: Option<i64>,
 }
 
 pub async fn invoke(
@@ -24,16 +23,19 @@ pub async fn invoke(
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     web_auth_service: Data<WebAuthService>,
+    user_service: Data<UserService>,
+    config: Data<Config>
 ) -> Result<HttpResponse, Error> {
     let translator_service = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
     let web_auth_service = web_auth_service.get_ref();
     let user = user.as_ref();
+    let tmpl_service = TemplateService::new_from_files(config.clone()).unwrap();
 
-    let page = query.page.unwrap_or(1);
+    let page = max(query.page.unwrap_or(1), 1);
     let page_str = page.to_string();
-    let per_page = query.per_page.unwrap_or(10);
+    let per_page = min(query.per_page.unwrap_or(10), 100);
     let per_page_str = per_page.to_string();
 
     let mut context_data = get_context_data(
@@ -52,6 +54,12 @@ pub async fn invoke(
 
     let layout_ctx = get_template_context(&context_data);
 
+    let users = user_service.paginate(page, per_page).map_err(|e| {
+        error::ErrorInternalServerError("")
+    })?;
+
+    dbg!(&users);
+
     let ctx = json!({
         "ctx": layout_ctx,
         "heading": translator_service.translate(lang, "page.users.index.header"),
@@ -64,7 +72,8 @@ pub async fn invoke(
             "href": "/users/create",
             "label": translator_service.translate(lang, "page.users.index.create")
         },
-        "page_per_page": translator_service.variables(lang, "page.users.index.page_per_page", &page_vars)
+        "page_per_page": translator_service.variables(lang, "page.users.index.page_per_page", &page_vars),
+        "users": users
     });
     let s = tmpl_service.render_throw_http("pages/users/index.hbs", &ctx)?;
     Ok(HttpResponse::Ok()

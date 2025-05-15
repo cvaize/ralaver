@@ -15,6 +15,7 @@ use serde_derive::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
+use crate::helpers::none_if_empty;
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 10;
 static RATE_LIMIT_TTL: u64 = 60;
@@ -405,11 +406,11 @@ async fn post(
             {
                 let new_user = NewUser {
                     email: data.email.clone().unwrap(),
-                    password: data.password.clone(),
-                    locale: data.locale.clone(),
-                    surname: data.surname.clone(),
-                    name: data.name.clone(),
-                    patronymic: data.patronymic.clone(),
+                    password: none_if_empty(&data.password),
+                    locale: none_if_empty(&data.locale),
+                    surname: none_if_empty(&data.surname),
+                    name: none_if_empty(&data.name),
+                    patronymic: none_if_empty(&data.patronymic),
                 };
                 let result = user_service.insert(new_user);
 

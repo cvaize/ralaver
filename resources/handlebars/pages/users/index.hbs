@@ -245,362 +245,54 @@
                             </label>
                         </th>
                         <th class="admin-table__th" scope="col" style="width: 0;">ID</th>
-                        <th class="admin-table__th" scope="col">First</th>
-                        <th class="admin-table__th" scope="col">Last</th>
+                        <th class="admin-table__th" scope="col">E-mail</th>
+                        <th class="admin-table__th" scope="col">Фамилия</th>
+                        <th class="admin-table__th" scope="col">Имя</th>
+                        <th class="admin-table__th" scope="col">Отчество</th>
                         <th class="admin-table__th" scope="col">Действия</th>
                     </tr>
                     </thead>
                     <tbody class="admin-table__tbody">
-                    <tr class="admin-table__tr">
-                        <th class="admin-table__th" scope="row">
-                            <label class="admin-c-checkbox admin-c-checkbox--without-text" tabindex="0">
-                                <input class="admin-list-page__row-checkbox admin-c-checkbox__input" type="checkbox"
-                                       hidden
-                                       form="admin-list-page-mass-actions-form"
-                                       name="selected[]" value="1">
-                                <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg"
-                                     width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
-                                </svg>
-                            </label>
-                        </th>
-                        <th class="admin-table__th" scope="row">1</th>
-                        <td class="admin-table__td">Mark</td>
-                        <td class="admin-table__td">Otto</td>
-                        <td class="admin-table__td" style="white-space: nowrap;">
-                            <a href="#" class="admin-btn admin-btn--square" title="Редактировать">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="m14.06 9.02.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
-                                </svg>
-                            </a>
-                            <form action="#" style="display: inline-block">
-                                <button type="submit" class="admin-btn admin-btn--square admin-danger"
-                                        title="Удалить" onclick="return confirm('Удалить?');">
+                    {{#each users.records as |record|}}
+                        <tr class="admin-table__tr">
+                            <th class="admin-table__th" scope="row">
+                                <label class="admin-c-checkbox admin-c-checkbox--without-text" tabindex="0">
+                                    <input class="admin-list-page__row-checkbox admin-c-checkbox__input" type="checkbox"
+                                           hidden
+                                           form="admin-list-page-mass-actions-form"
+                                           name="selected[]" value="{{record.id}}">
+                                    <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg"
+                                         width="24"
+                                         height="24" viewBox="0 0 24 24">
+                                        <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
+                                    </svg>
+                                </label>
+                            </th>
+                            <th class="admin-table__th" scope="row">{{record.id}}</th>
+                            <td class="admin-table__td">{{record.email}}</td>
+                            <td class="admin-table__td">{{record.surname}}</td>
+                            <td class="admin-table__td">{{record.name}}</td>
+                            <td class="admin-table__td">{{record.patronymic}}</td>
+                            <td class="admin-table__td" style="white-space: nowrap;">
+                                <a href="/users/{{record.id}}/edit" class="admin-btn admin-btn--square" title="Редактировать">
                                     <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
                                          height="24" viewBox="0 0 24 24">
-                                        <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
+                                        <path d="m14.06 9.02.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
                                     </svg>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    <tr class="admin-table__tr">
-                        <th class="admin-table__th" scope="row">
-                            <label class="admin-c-checkbox admin-c-checkbox--without-text" tabindex="0">
-                                <input class="admin-list-page__row-checkbox admin-c-checkbox__input" type="checkbox"
-                                       hidden
-                                       form="admin-list-page-mass-actions-form"
-                                       name="selected[]" value="2">
-                                <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg"
-                                     width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
-                                </svg>
-                            </label>
-                        </th>
-                        <th class="admin-table__th" scope="row">2</th>
-                        <td class="admin-table__td">Mark</td>
-                        <td class="admin-table__td">Otto</td>
-                        <td class="admin-table__td" style="white-space: nowrap;">
-                            <a href="#" class="admin-btn admin-btn--square" title="Редактировать">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="m14.06 9.02.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
-                                </svg>
-                            </a>
-                            <form action="#" style="display: inline-block">
-                                <button type="submit" class="admin-btn admin-btn--square admin-danger"
-                                        title="Удалить" onclick="return confirm('Удалить?');">
-                                    <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                         height="24" viewBox="0 0 24 24">
-                                        <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
-                                    </svg>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    <tr class="admin-table__tr">
-                        <th class="admin-table__th" scope="row">
-                            <label class="admin-c-checkbox admin-c-checkbox--without-text" tabindex="0">
-                                <input class="admin-list-page__row-checkbox admin-c-checkbox__input" type="checkbox"
-                                       hidden
-                                       form="admin-list-page-mass-actions-form"
-                                       name="selected[]" value="3">
-                                <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg"
-                                     width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
-                                </svg>
-                            </label>
-                        </th>
-                        <th class="admin-table__th" scope="row">3</th>
-                        <td class="admin-table__td">Mark</td>
-                        <td class="admin-table__td">Otto</td>
-                        <td class="admin-table__td" style="white-space: nowrap;">
-                            <a href="#" class="admin-btn admin-btn--square" title="Редактировать">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="m14.06 9.02.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
-                                </svg>
-                            </a>
-                            <form action="#" style="display: inline-block">
-                                <button type="submit" class="admin-btn admin-btn--square admin-danger"
-                                        title="Удалить" onclick="return confirm('Удалить?');">
-                                    <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                         height="24" viewBox="0 0 24 24">
-                                        <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
-                                    </svg>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    <tr class="admin-table__tr">
-                        <th class="admin-table__th" scope="row">
-                            <label class="admin-c-checkbox admin-c-checkbox--without-text" tabindex="0">
-                                <input class="admin-list-page__row-checkbox admin-c-checkbox__input" type="checkbox"
-                                       hidden
-                                       form="admin-list-page-mass-actions-form"
-                                       name="selected[]" value="4">
-                                <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg"
-                                     width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
-                                </svg>
-                            </label>
-                        </th>
-                        <th class="admin-table__th" scope="row">4</th>
-                        <td class="admin-table__td">Mark</td>
-                        <td class="admin-table__td">Otto</td>
-                        <td class="admin-table__td" style="white-space: nowrap;">
-                            <a href="#" class="admin-btn admin-btn--square" title="Редактировать">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="m14.06 9.02.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
-                                </svg>
-                            </a>
-                            <form action="#" style="display: inline-block">
-                                <button type="submit" class="admin-btn admin-btn--square admin-danger"
-                                        title="Удалить" onclick="return confirm('Удалить?');">
-                                    <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                         height="24" viewBox="0 0 24 24">
-                                        <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
-                                    </svg>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    <tr class="admin-table__tr">
-                        <th class="admin-table__th" scope="row">
-                            <label class="admin-c-checkbox admin-c-checkbox--without-text" tabindex="0">
-                                <input class="admin-list-page__row-checkbox admin-c-checkbox__input" type="checkbox"
-                                       hidden
-                                       form="admin-list-page-mass-actions-form"
-                                       name="selected[]" value="5">
-                                <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg"
-                                     width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
-                                </svg>
-                            </label>
-                        </th>
-                        <th class="admin-table__th" scope="row">5</th>
-                        <td class="admin-table__td">Mark</td>
-                        <td class="admin-table__td">Otto</td>
-                        <td class="admin-table__td" style="white-space: nowrap;">
-                            <a href="#" class="admin-btn admin-btn--square" title="Редактировать">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="m14.06 9.02.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
-                                </svg>
-                            </a>
-                            <form action="#" style="display: inline-block">
-                                <button type="submit" class="admin-btn admin-btn--square admin-danger"
-                                        title="Удалить" onclick="return confirm('Удалить?');">
-                                    <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                         height="24" viewBox="0 0 24 24">
-                                        <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
-                                    </svg>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    <tr class="admin-table__tr">
-                        <th class="admin-table__th" scope="row">
-                            <label class="admin-c-checkbox admin-c-checkbox--without-text" tabindex="0">
-                                <input class="admin-list-page__row-checkbox admin-c-checkbox__input" type="checkbox"
-                                       hidden
-                                       form="admin-list-page-mass-actions-form"
-                                       name="selected[]" value="6">
-                                <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg"
-                                     width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
-                                </svg>
-                            </label>
-                        </th>
-                        <th class="admin-table__th" scope="row">6</th>
-                        <td class="admin-table__td">Mark</td>
-                        <td class="admin-table__td">Otto</td>
-                        <td class="admin-table__td" style="white-space: nowrap;">
-                            <a href="#" class="admin-btn admin-btn--square" title="Редактировать">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="m14.06 9.02.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
-                                </svg>
-                            </a>
-                            <form action="#" style="display: inline-block">
-                                <button type="submit" class="admin-btn admin-btn--square admin-danger"
-                                        title="Удалить" onclick="return confirm('Удалить?');">
-                                    <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                         height="24" viewBox="0 0 24 24">
-                                        <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
-                                    </svg>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    <tr class="admin-table__tr">
-                        <th class="admin-table__th" scope="row">
-                            <label class="admin-c-checkbox admin-c-checkbox--without-text" tabindex="0">
-                                <input class="admin-list-page__row-checkbox admin-c-checkbox__input" type="checkbox"
-                                       hidden
-                                       form="admin-list-page-mass-actions-form"
-                                       name="selected[]" value="7">
-                                <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg"
-                                     width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
-                                </svg>
-                            </label>
-                        </th>
-                        <th class="admin-table__th" scope="row">7</th>
-                        <td class="admin-table__td">Mark</td>
-                        <td class="admin-table__td">Otto</td>
-                        <td class="admin-table__td" style="white-space: nowrap;">
-                            <a href="#" class="admin-btn admin-btn--square" title="Редактировать">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="m14.06 9.02.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
-                                </svg>
-                            </a>
-                            <form action="#" style="display: inline-block">
-                                <button type="submit" class="admin-btn admin-btn--square admin-danger"
-                                        title="Удалить" onclick="return confirm('Удалить?');">
-                                    <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                         height="24" viewBox="0 0 24 24">
-                                        <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
-                                    </svg>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    <tr class="admin-table__tr">
-                        <th class="admin-table__th" scope="row">
-                            <label class="admin-c-checkbox admin-c-checkbox--without-text" tabindex="0">
-                                <input class="admin-list-page__row-checkbox admin-c-checkbox__input" type="checkbox"
-                                       hidden
-                                       form="admin-list-page-mass-actions-form"
-                                       name="selected[]" value="8">
-                                <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg"
-                                     width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
-                                </svg>
-                            </label>
-                        </th>
-                        <th class="admin-table__th" scope="row">8</th>
-                        <td class="admin-table__td">Mark</td>
-                        <td class="admin-table__td">Otto</td>
-                        <td class="admin-table__td" style="white-space: nowrap;">
-                            <a href="#" class="admin-btn admin-btn--square" title="Редактировать">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="m14.06 9.02.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
-                                </svg>
-                            </a>
-                            <form action="#" style="display: inline-block">
-                                <button type="submit" class="admin-btn admin-btn--square admin-danger"
-                                        title="Удалить" onclick="return confirm('Удалить?');">
-                                    <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                         height="24" viewBox="0 0 24 24">
-                                        <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
-                                    </svg>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    <tr class="admin-table__tr">
-                        <th class="admin-table__th" scope="row">
-                            <label class="admin-c-checkbox admin-c-checkbox--without-text" tabindex="0">
-                                <input class="admin-list-page__row-checkbox admin-c-checkbox__input" type="checkbox"
-                                       hidden
-                                       form="admin-list-page-mass-actions-form"
-                                       name="selected[]" value="9">
-                                <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg"
-                                     width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
-                                </svg>
-                            </label>
-                        </th>
-                        <th class="admin-table__th" scope="row">9</th>
-                        <td class="admin-table__td">Mark</td>
-                        <td class="admin-table__td">Otto</td>
-                        <td class="admin-table__td" style="white-space: nowrap;">
-                            <a href="#" class="admin-btn admin-btn--square" title="Редактировать">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="m14.06 9.02.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
-                                </svg>
-                            </a>
-                            <form action="#" style="display: inline-block">
-                                <button type="submit" class="admin-btn admin-btn--square admin-danger"
-                                        title="Удалить" onclick="return confirm('Удалить?');">
-                                    <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                         height="24" viewBox="0 0 24 24">
-                                        <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
-                                    </svg>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    <tr class="admin-table__tr">
-                        <th class="admin-table__th" scope="row">
-                            <label class="admin-c-checkbox admin-c-checkbox--without-text" tabindex="0">
-                                <input class="admin-list-page__row-checkbox admin-c-checkbox__input" type="checkbox"
-                                       hidden
-                                       form="admin-list-page-mass-actions-form"
-                                       name="selected[]" value="10">
-                                <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg"
-                                     width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
-                                </svg>
-                            </label>
-                        </th>
-                        <th class="admin-table__th" scope="row">10</th>
-                        <td class="admin-table__td">Mark</td>
-                        <td class="admin-table__td">Otto</td>
-                        <td class="admin-table__td" style="white-space: nowrap;">
-                            <a href="#" class="admin-btn admin-btn--square" title="Редактировать">
-                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                     height="24" viewBox="0 0 24 24">
-                                    <path d="m14.06 9.02.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
-                                </svg>
-                            </a>
-                            <form action="#" style="display: inline-block">
-                                <button type="submit" class="admin-btn admin-btn--square admin-danger"
-                                        title="Удалить" onclick="return confirm('Удалить?');">
-                                    <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                         height="24" viewBox="0 0 24 24">
-                                        <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
-                                    </svg>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
+                                </a>
+                                <form action="/users/{{record.id}}/delete" method="post" style="display: inline-block">
+                                    <input type="hidden" name="_token" value="{{ctx.csrf}}">
+                                    <button type="submit" class="admin-btn admin-btn--square admin-danger"
+                                            title="Удалить" onclick="return confirm('Удалить пользователя(ID:{{record.id}})?');">
+                                        <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
+                                             height="24" viewBox="0 0 24 24">
+                                            <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {{/each}}
                     </tbody>
                 </table>
             </div>

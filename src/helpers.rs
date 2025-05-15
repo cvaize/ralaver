@@ -11,6 +11,16 @@ pub fn dbg_type_of<T>(_: &T) {
     dbg!(std::any::type_name::<T>());
 }
 
+pub fn none_if_empty(v: &Option<String>) -> Option<String> {
+    if let Some(v_) = v {
+        let v = v_.trim();
+        if v.len() != 0 {
+            return Some(v.to_owned());
+        }
+    }
+    None
+}
+
 pub fn vec_into_array<T, const N: usize>(v: Vec<T>) -> [T; N] {
     v.try_into()
         .unwrap_or_else(|v: Vec<T>| panic!("Expected a Vec of length {} but it was {}", N, v.len()))
