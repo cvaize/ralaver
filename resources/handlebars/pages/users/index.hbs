@@ -79,7 +79,9 @@
         </div>
 
         <div class="admin-list-page__search">
-            <form id="admin-list-page-search-form" action="#" class="admin-list-page__search__grow admin-search-group">
+            <form id="admin-list-page-search-form" action="/users" method="get"
+                  class="admin-list-page__search__grow admin-search-group">
+                <input type="hidden" name="page" value="{{users.page}}">
                 <label class="admin-list-page__search__grow admin-search-group__input-wrapper">
                     <input class="admin-search-group__input admin-field__input" type="search"
                            placeholder="Поиск...">
@@ -156,7 +158,7 @@
 
         <div class="admin-list-page__sort">
             <label class="admin-list-page__sort__field admin-field">
-                <span class="admin-list-page__sort__label admin-field__text">Сортировка</span>
+                <span class="admin-list-page__sort__label admin-field__text">{{sort.label}}</span>
                 <select form="admin-list-page-search-form" name="sort" class="admin-field__input">
                     <option>Фамилия А-Я</option>
                     <option>Фамилия Я-А</option>
@@ -169,7 +171,7 @@
         </div>
 
         <div class="admin-list-page__top-paginate">
-            <nav aria-label="Page navigation example">
+            <nav aria-label="Page navigation">
                 <ul class="admin-pagination">
                     <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">1</a></li>
                     <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
@@ -184,7 +186,7 @@
         </div>
 
         <div class="admin-list-page__top-page-control">
-            <label class="admin-field" title="Выбрать страницу">
+            <label class="admin-field" title="{{select_page}}">
                 <select form="admin-list-page-search-form" name="top-page" class="admin-field__input">
                     <option>1</option>
                     <option>5</option>
@@ -203,13 +205,13 @@
         </div>
 
         <div class="admin-list-page__data">
-            <form id="admin-list-page-mass-actions-form" action="#"></form>
+            <form id="admin-list-page-mass-actions-form" action="/users" method="get"></form>
             <div class="admin-table__responsive" style="padding: 0.25rem 0 0 0.25rem; margin: -0.25rem 0 0 -0.25rem">
                 <div class="admin-list-page__actions-dropdown admin-dropdown" tabindex="-1"
                      style="white-space: nowrap; opacity: 0; pointer-events: none;">
                     <button class="admin-btn admin-btn--link admin-dropdown__btn" type="button"
                             style="padding-left: 0.25rem; padding-right: 0.5rem;">
-                        Выбрано
+                        {{selected.label}}
                         <span class="admin-list-page__actions-dropdown__count">0</span>
                     </button>
                     <ul class="admin-dropdown__menu">
@@ -217,15 +219,8 @@
                             <button type="submit" class="admin-dropdown__item"
                                     form="admin-list-page-mass-actions-form"
                                     name="action" value="selected-delete"
-                                    onclick="return confirm('Удалить выбранное?');">
-                                Удалить выбранное
-                            </button>
-                        </li>
-                        <li>
-                            <button type="submit" class="admin-dropdown__item"
-                                    form="admin-list-page-mass-actions-form"
-                                    name="action" value="selected-edit">
-                                Изменить выбранное
+                                    onclick="return confirm('{{selected.delete_q}}');">
+                                {{selected.delete}}
                             </button>
                         </li>
                     </ul>
@@ -244,12 +239,12 @@
                                 </svg>
                             </label>
                         </th>
-                        <th class="admin-table__th" scope="col" style="width: 0;">ID</th>
-                        <th class="admin-table__th" scope="col">E-mail</th>
-                        <th class="admin-table__th" scope="col">Фамилия</th>
-                        <th class="admin-table__th" scope="col">Имя</th>
-                        <th class="admin-table__th" scope="col">Отчество</th>
-                        <th class="admin-table__th" scope="col">Действия</th>
+                        <th class="admin-table__th" scope="col" style="width: 0;">{{columns.id}}</th>
+                        <th class="admin-table__th" scope="col">{{columns.email}}</th>
+                        <th class="admin-table__th" scope="col">{{columns.surname}}</th>
+                        <th class="admin-table__th" scope="col">{{columns.name}}</th>
+                        <th class="admin-table__th" scope="col">{{columns.patronymic}}</th>
+                        <th class="admin-table__th" scope="col">{{columns.actions}}</th>
                     </tr>
                     </thead>
                     <tbody class="admin-table__tbody">
@@ -274,7 +269,8 @@
                             <td class="admin-table__td">{{record.name}}</td>
                             <td class="admin-table__td">{{record.patronymic}}</td>
                             <td class="admin-table__td" style="white-space: nowrap;">
-                                <a href="/users/{{record.id}}/edit" class="admin-btn admin-btn--square" title="Редактировать">
+                                <a href="/users/{{record.id}}/edit" class="admin-btn admin-btn--square"
+                                   title="Редактировать">
                                     <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
                                          height="24" viewBox="0 0 24 24">
                                         <path d="m14.06 9.02.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
@@ -283,7 +279,8 @@
                                 <form action="/users/{{record.id}}/delete" method="post" style="display: inline-block">
                                     <input type="hidden" name="_token" value="{{ctx.csrf}}">
                                     <button type="submit" class="admin-btn admin-btn--square admin-danger"
-                                            title="Удалить" onclick="return confirm('Удалить пользователя(ID:{{record.id}})?');">
+                                            title="Удалить"
+                                            onclick="return confirm('Удалить пользователя(ID:{{record.id}})?');">
                                         <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
                                              height="24" viewBox="0 0 24 24">
                                             <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
@@ -301,17 +298,17 @@
         <div class="admin-list-page__page-number">{{page_per_page}}</div>
 
         <div class="admin-list-page__per-page">
-            <label class="admin-list-page__per-page__field admin-field">
-                <span class="admin-list-page__per-page__label admin-field__text">Кол-во записей на странице</span>
-                <select form="admin-list-page-search-form" name="per_page" class="admin-field__input">
-                    <option selected>10</option>
-                    <option>20</option>
-                    <option>30</option>
-                    <option>40</option>
-                    <option>50</option>
-                    <option>100</option>
-                </select>
-            </label>
+            {{> components/field.hbs
+                    form="admin-list-page-search-form"
+                    field_class="admin-list-page__per-page__field"
+                    label_class="admin-list-page__per-page__label"
+                    input_class="js-submit-on-change"
+                    label=per_page_label
+                    value=users.per_page
+                    name="per_page"
+                    type="select"
+                    options_values=per_pages
+            }}
         </div>
 
         <div class="admin-list-page__bottom-paginate">
@@ -330,7 +327,7 @@
         </div>
 
         <div class="admin-list-page__bottom-page-control">
-            <label class="admin-field" title="Выбрать страницу">
+            <label class="admin-field" title="{{select_page}}">
                 <select form="admin-list-page-search-form" name="bottom-page" class="admin-field__input">
                     <option>1</option>
                     <option>5</option>

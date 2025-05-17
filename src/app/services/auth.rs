@@ -5,7 +5,7 @@ use crate::{KeyValueService, KeyValueServiceError, NewUser, PrivateUserData};
 use actix_web::web::Data;
 #[allow(unused_imports)]
 use diesel::prelude::*;
-use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
+use diesel::{ExpressionMethods, NotFound, QueryDsl, RunQueryDsl, SelectableHelper};
 use serde_derive::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 
@@ -49,7 +49,7 @@ impl AuthService {
             .select(PrivateUserData::as_select())
             .first::<PrivateUserData>(&mut connection)
             .map_err(|e| {
-                if e.to_string() != "Record not found" {
+                if e != NotFound {
                     log::error!("AuthService::login_by_password - {email} - {e}");
                 }
                 return AuthServiceError::Fail;

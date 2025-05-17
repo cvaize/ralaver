@@ -8,6 +8,15 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::cmp::{min, max};
 
+pub const PER_PAGES: [u16; 6] = [
+    10,
+    20,
+    30,
+    40,
+    50,
+    100
+];
+
 #[derive(Deserialize, Debug)]
 pub struct IndexQuery {
     pub page: Option<i64>,
@@ -73,7 +82,26 @@ pub async fn invoke(
             "label": translator_service.translate(lang, "page.users.index.create")
         },
         "page_per_page": translator_service.variables(lang, "page.users.index.page_per_page", &page_vars),
-        "users": users
+        "per_page_label": translator_service.translate(lang, "page.users.index.per_page_label"),
+        "select_page": translator_service.translate(lang, "page.users.index.select_page"),
+        "sort": {
+            "label": translator_service.translate(lang, "page.users.index.sort")
+        },
+        "selected": {
+            "label": translator_service.translate(lang, "page.users.index.selected.label"),
+            "delete": translator_service.translate(lang, "page.users.index.selected.delete"),
+            "delete_q": translator_service.translate(lang, "page.users.index.selected.delete_q"),
+        },
+        "columns": {
+            "id": translator_service.translate(lang, "page.users.index.columns.id"),
+            "email": translator_service.translate(lang, "page.users.index.columns.email"),
+            "surname": translator_service.translate(lang, "page.users.index.columns.surname"),
+            "name": translator_service.translate(lang, "page.users.index.columns.name"),
+            "patronymic": translator_service.translate(lang, "page.users.index.columns.patronymic"),
+            "actions": translator_service.translate(lang, "page.users.index.columns.actions")
+        },
+        "users": users,
+        "per_pages": &PER_PAGES
     });
     let s = tmpl_service.render_throw_http("pages/users/index.hbs", &ctx)?;
     Ok(HttpResponse::Ok()

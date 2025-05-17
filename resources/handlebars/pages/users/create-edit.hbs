@@ -3,7 +3,7 @@
     {{> components/breadcrumb.hbs }}
     {{> components/heading.hbs }}
 
-    <form action="{{form.action}}" method="{{form.method}}" style="display: block;">
+    <form action="{{form.action}}" method="{{form.method}}" autocomplete="off" style="display: block;">
         <input type="hidden" name="_token" placeholder="_token" value="{{ctx.csrf}}">
         <div style="margin-bottom: 1rem;">
             <button type="submit" class="admin-btn admin-success" name="action" value="save">{{form.save}}</button>
@@ -33,6 +33,9 @@
                                 type="email"
                                 required=true
                                 style="margin-bottom: 0.5rem;"
+                                autocomplete="off"
+                                autocorrect="off"
+                                autocapitalize="none"
                             }}
                             {{> components/field.hbs
                                 label=form.fields.password.label
@@ -42,6 +45,7 @@
                                 type="password"
                                 required=true
                                 style="margin-bottom: 0.5rem;"
+                                autocomplete="new-password"
                             }}
                             {{> components/field.hbs
                                 label=form.fields.confirm_password.label
@@ -51,6 +55,7 @@
                                 type="password"
                                 required=true
                                 style="margin-bottom: 0.5rem;"
+                                autocomplete="new-password"
                             }}
                         </div>
                         <div class="admin-col-auto">

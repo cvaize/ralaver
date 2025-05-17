@@ -15,6 +15,7 @@ use serde_derive::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
+use actix_web::web::Path;
 use crate::helpers::none_if_empty;
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 10;
@@ -34,7 +35,7 @@ pub struct PostData {
     pub patronymic: Option<String>,
 }
 
-pub async fn show(
+pub async fn create(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
@@ -47,6 +48,7 @@ pub async fn show(
     locale_service: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
     invoke(
+        None,
         req,
         Form(PostData {
             _token: None,
@@ -72,7 +74,114 @@ pub async fn show(
     .await
 }
 
+pub async fn store(
+    req: HttpRequest,
+    data: Form<PostData>,
+    user: ReqData<Arc<User>>,
+    session: ReqData<Arc<Session>>,
+    translator_service: Data<TranslatorService>,
+    tmpl_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    user_service: Data<UserService>,
+    locale_service: Data<LocaleService>,
+) -> Result<HttpResponse, Error> {
+    invoke(
+        None,
+        req,
+        data,
+        user,
+        session,
+        translator_service,
+        tmpl_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        user_service,
+        locale_service,
+    )
+    .await
+}
+
+pub async fn edit(
+    path: Path<u64>,
+    req: HttpRequest,
+    user: ReqData<Arc<User>>,
+    session: ReqData<Arc<Session>>,
+    translator_service: Data<TranslatorService>,
+    tmpl_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    user_service: Data<UserService>,
+    locale_service: Data<LocaleService>,
+) -> Result<HttpResponse, Error> {
+    let (user_id) = path.into_inner();
+    let edit_user = user_service.get_ref().first_by_id_throw_http(user_id)?;
+    let post_data = PostData {
+        _token: None,
+        action: None,
+        email: Some(edit_user.email.to_owned()),
+        password: None,
+        confirm_password: None,
+        locale: edit_user.locale.to_owned(),
+        surname: edit_user.surname.to_owned(),
+        name: edit_user.name.to_owned(),
+        patronymic: edit_user.patronymic.to_owned(),
+    };
+    invoke(
+        Some(edit_user),
+        req,
+        Form(post_data),
+        user,
+        session,
+        translator_service,
+        tmpl_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        user_service,
+        locale_service,
+    )
+    .await
+}
+
+pub async fn update(
+    path: Path<u64>,
+    req: HttpRequest,
+    data: Form<PostData>,
+    user: ReqData<Arc<User>>,
+    session: ReqData<Arc<Session>>,
+    translator_service: Data<TranslatorService>,
+    tmpl_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    user_service: Data<UserService>,
+    locale_service: Data<LocaleService>,
+) -> Result<HttpResponse, Error> {
+    let (user_id) = path.into_inner();
+    let edit_user = user_service.get_ref().first_by_id_throw_http(user_id)?;
+    invoke(
+        Some(edit_user),
+        req,
+        data,
+        user,
+        session,
+        translator_service,
+        tmpl_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        user_service,
+        locale_service,
+    )
+    .await
+}
+
 pub async fn invoke(
+    edit_user: Option<User>,
     req: HttpRequest,
     data: Form<PostData>,
     user: ReqData<Arc<User>>,
@@ -93,6 +202,7 @@ pub async fn invoke(
     let user_service = user_service.get_ref();
     let locale_service = locale_service.get_ref();
     let user = user.as_ref();
+    let is_edit = edit_user.is_some();
 
     let mut context_data = get_context_data(
         &req,
@@ -277,7 +387,7 @@ pub async fn invoke(
             },
         },
     });
-    let s = tmpl_service.render_throw_http("pages/users/create.hbs", &ctx)?;
+    let s = tmpl_service.render_throw_http("pages/users/create-edit.hbs", &ctx)?;
     Ok(HttpResponse::Ok()
         .clear_alerts()
         .content_type(mime::TEXT_HTML_UTF_8.as_ref())

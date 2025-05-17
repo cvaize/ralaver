@@ -1,7 +1,8 @@
+use actix_web::{error, Error};
 use crate::{HashService, MysqlPool, NewUser, User};
 use actix_web::web::Data;
 use diesel::result::DatabaseErrorKind;
-use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
+use diesel::{NotFound, QueryDsl, RunQueryDsl, SelectableHelper};
 use diesel::prelude::*;
 use diesel::query_builder::*;
 use diesel::query_dsl::methods::LoadQuery;
@@ -35,10 +36,24 @@ impl UserService {
             .find(user_id)
             .select(User::as_select())
             .first(&mut connection)
-            .map_err(|_| {
-                UserServiceError::Fail
+            .map_err(|e| {
+                if e == NotFound {
+                    UserServiceError::NotFound
+                } else {
+                    UserServiceError::Fail
+                }
             })?;
         Ok(user)
+    }
+
+    pub fn first_by_id_throw_http(&self, user_id: u64) -> Result<User, Error> {
+        self.first_by_id(user_id)
+            .map_err(|e| {
+                match e {
+                    UserServiceError::NotFound => error::ErrorNotFound(""),
+                    _ => error::ErrorInternalServerError("")
+                }
+            })
     }
 
     pub fn first_by_email(&self, email: &str) -> Result<User, UserServiceError> {
@@ -124,5 +139,6 @@ pub enum UserServiceError {
     DbConnectionFail,
     DuplicateEmail,
     PasswordHashFail,
+    NotFound,
     Fail,
 }
