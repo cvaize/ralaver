@@ -2500,6 +2500,7 @@ input.admin-input[type="file"], input.admin-input[type="file"]:read-only, input.
 .admin-pagination {
     margin: 0;
     display: flex;
+    flex-wrap: wrap;
     padding: 0;
     list-style: none;
 }
@@ -2526,12 +2527,16 @@ input.admin-input[type="file"], input.admin-input[type="file"]:read-only, input.
 .admin-pagination__link {
     position: relative;
     display: block;
-    padding: 0.3rem 0.7rem;
     font-size: 0.8rem;
     color: rgb(var(--admin-app-color));
     text-decoration: none;
     background-color: transparent;
     border: 0.0625rem solid rgba(var(--admin-app-color), 0.1);
+    height: 1.875rem;
+    min-width: 1.875rem;
+    padding: 0.375rem;
+    text-align: center;
+    line-height: 1.125rem;
 }
 
 a.admin-pagination__link:hover, button.admin-pagination__link:hover,
