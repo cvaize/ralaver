@@ -2,6 +2,7 @@
     {{> components/alerts.hbs }}
 
     <div class="admin-list-page">
+        <form id="admin-list-page-search-form" action="/users" method="get"></form>
         <div class="admin-list-page__breadcrumb">
             {{> components/breadcrumb.hbs }}
         </div>
@@ -79,9 +80,7 @@
         </div>
 
         <div class="admin-list-page__search">
-            <form id="admin-list-page-search-form" action="/users" method="get"
-                  class="admin-list-page__search__grow admin-search-group">
-                <input type="hidden" name="page" value="{{users.page}}">
+            <div class="admin-list-page__search__grow admin-search-group">
                 <label class="admin-list-page__search__grow admin-search-group__input-wrapper">
                     <input class="admin-search-group__input admin-field__input" type="search"
                            placeholder="Поиск...">
@@ -99,7 +98,7 @@
                         <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
                     </svg>
                 </button>
-            </form>
+            </div>
             <label for="admin-modal__filters" class="admin-btn admin-btn" style="margin-left: 0.5rem;">
                 <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                      viewBox="0 0 24 24">
@@ -312,16 +311,23 @@
         </div>
 
         <div class="admin-list-page__bottom-paginate">
-            <nav aria-label="Page navigation example">
+            <nav aria-label="Page navigation">
                 <ul class="admin-pagination">
-                    <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">1</a></li>
-                    <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
-                    <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">7</a></li>
-                    <li class="admin-pagination__item"><a class="admin-pagination__link admin-active" href="#">8</a>
-                    </li>
-                    <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">9</a></li>
-                    <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
-                    <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">50</a></li>
+                    {{#each users.pagination as |num|}}
+                        {{#if (ne num -1)}}
+                            {{#if (eq num 0)}}
+                                <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
+                            {{else}}
+                                <li class="admin-pagination__item">
+                                    <a href="{{../users.pagination_link}}{{num}}"
+                                            class="admin-pagination__link{{#if (eq num ../users.page)}} admin-active{{/if}}"
+                                    >
+                                        {{num}}
+                                    </a>
+                                </li>
+                            {{/if}}
+                        {{/if}}
+                    {{/each}}
                 </ul>
             </nav>
         </div>

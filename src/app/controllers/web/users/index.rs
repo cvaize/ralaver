@@ -1,14 +1,15 @@
-use crate::app::controllers::web::{get_context_data, get_template_context};
+use crate::app::controllers::web::{generate_pagination_array, get_context_data, get_template_context};
 use crate::{AppService, Config, Session, TemplateService, TranslatorService, User, UserService, WebAuthService, WebHttpResponse};
 use actix_web::web::{Data, Form, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
-use serde_derive::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::cmp::{min, max};
+use serde::Deserialize;
 
-pub const PER_PAGES: [u16; 6] = [
+pub const PER_PAGES: [i64; 7] = [
+    2,
     10,
     20,
     30,
@@ -67,7 +68,7 @@ pub async fn invoke(
         error::ErrorInternalServerError("")
     })?;
 
-    dbg!(&users);
+    let users_pagination = generate_pagination_array(users.page, users.total_pages);
 
     let ctx = json!({
         "ctx": layout_ctx,
@@ -100,8 +101,16 @@ pub async fn invoke(
             "patronymic": translator_service.translate(lang, "page.users.index.columns.patronymic"),
             "actions": translator_service.translate(lang, "page.users.index.columns.actions")
         },
-        "users": users,
-        "per_pages": &PER_PAGES
+        "users": {
+            "page": users.page,
+            "per_page": users.per_page,
+            "total_pages": users.total_pages,
+            "total_records": users.total_records,
+            "records": users.records,
+            "pagination": users_pagination,
+            "pagination_link": "/users?per_page=2&page="
+        },
+        "per_pages": &PER_PAGES,
     });
     let s = tmpl_service.render_throw_http("pages/users/index.hbs", &ctx)?;
     Ok(HttpResponse::Ok()

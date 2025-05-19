@@ -14,6 +14,7 @@ use actix_web::cookie::Cookie;
 use actix_web::{HttpRequest, HttpResponseBuilder};
 use rand::distr::Alphanumeric;
 use rand::Rng;
+use serde_derive::Deserialize;
 use serde_json::{json, Value};
 use std::str::FromStr;
 
@@ -186,6 +187,7 @@ pub fn get_public_template_context<'a>(data: &'a PublicContextData) -> Value {
     })
 }
 
+#[allow(dead_code)]
 pub fn generate_pagination_vec(page: i64, total_pages: i64, offset: i64) -> Vec<i64> {
     let mut result: Vec<i64> = Vec::new();
 
@@ -243,6 +245,7 @@ pub fn generate_pagination_vec(page: i64, total_pages: i64, offset: i64) -> Vec<
     result
 }
 
+#[allow(dead_code)]
 pub fn generate_pagination_array(page: i64, total_pages: i64) -> [i64; 7] {
     let mut result: [i64; 7] = [-1; 7];
 
@@ -256,7 +259,10 @@ pub fn generate_pagination_array(page: i64, total_pages: i64) -> [i64; 7] {
         return result;
     }
 
-    result[0] = 1;
+    let mut i: usize = 0;
+
+    result[i] = 1;
+    i += 1;
 
     let mut start = page - 1;
     let mut end = page + 1;
@@ -284,18 +290,21 @@ pub fn generate_pagination_array(page: i64, total_pages: i64) -> [i64; 7] {
     }
 
     if is_start_dot {
-        result[1] = 0;
+        result[i] = 0;
+        i += 1;
     }
 
     for j in start..=end {
-        result[(j - 1) as usize] = j;
+        result[i] = j;
+        i += 1;
     }
 
     if is_end_dot {
-        result[5] = 0;
+        result[i] = 0;
+        i += 1;
     }
 
-    result[6] = total_pages;
+    result[i] = total_pages;
 
     result
 }
@@ -303,10 +312,9 @@ pub fn generate_pagination_array(page: i64, total_pages: i64) -> [i64; 7] {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test::Bencher;
-    use actix_web::web::Data;
-    use generate_pagination_vec as gv;
     use generate_pagination_array as ga;
+    use generate_pagination_vec as gv;
+    use test::Bencher;
 
     #[test]
     fn test_generate_pagination_vec() {
@@ -357,37 +365,37 @@ mod tests {
 
     #[test]
     fn test_generate_pagination_array() {
-        // assert_eq!(ga(-11, 5), [1, 2, 3, 4, 5, -1, -1]);
-        // assert_eq!(ga(1, 5), [1, 2, 3, 4, 5, -1, -1]);
-        // assert_eq!(ga(2, 5), [1, 2, 3, 4, 5, -1, -1]);
-        // assert_eq!(ga(3, 5), [1, 2, 3, 4, 5, -1, -1]);
-        // assert_eq!(ga(4, 5), [1, 2, 3, 4, 5, -1, -1]);
-        // assert_eq!(ga(5, 5), [1, 2, 3, 4, 5, -1, -1]);
-        // assert_eq!(ga(11, 5), [1, 2, 3, 4, 5, -1, -1]);
-        //
-        // assert_eq!(ga(-111, 10), [1, 2, 3, 4, 5, 0, 10]);
-        // assert_eq!(ga(1, 10), [1, 2, 3, 4, 5, 0, 10]);
-        // assert_eq!(ga(2, 10), [1, 2, 3, 4, 5, 0, 10]);
-        // assert_eq!(ga(3, 10), [1, 2, 3, 4, 5, 0, 10]);
-        // assert_eq!(ga(4, 10), [1, 2, 3, 4, 5, 0, 10]);
+        assert_eq!(ga(-11, 5), [1, 2, 3, 4, 5, -1, -1]);
+        assert_eq!(ga(1, 5), [1, 2, 3, 4, 5, -1, -1]);
+        assert_eq!(ga(2, 5), [1, 2, 3, 4, 5, -1, -1]);
+        assert_eq!(ga(3, 5), [1, 2, 3, 4, 5, -1, -1]);
+        assert_eq!(ga(4, 5), [1, 2, 3, 4, 5, -1, -1]);
+        assert_eq!(ga(5, 5), [1, 2, 3, 4, 5, -1, -1]);
+        assert_eq!(ga(11, 5), [1, 2, 3, 4, 5, -1, -1]);
+
+        assert_eq!(ga(-111, 10), [1, 2, 3, 4, 5, 0, 10]);
+        assert_eq!(ga(1, 10), [1, 2, 3, 4, 5, 0, 10]);
+        assert_eq!(ga(2, 10), [1, 2, 3, 4, 5, 0, 10]);
+        assert_eq!(ga(3, 10), [1, 2, 3, 4, 5, 0, 10]);
+        assert_eq!(ga(4, 10), [1, 2, 3, 4, 5, 0, 10]);
         assert_eq!(ga(5, 10), [1, 0, 4, 5, 6, 0, 10]);
-        // assert_eq!(ga(6, 10), [1, 0, 5, 6, 7, 0, 10]);
-        // assert_eq!(ga(7, 10), [1, 0, 6, 7, 8, 9, 10]);
-        // assert_eq!(ga(8, 10), [1, 0, 6, 7, 8, 9, 10]);
-        // assert_eq!(ga(9, 10), [1, 0, 6, 7, 8, 9, 10]);
-        // assert_eq!(ga(10, 10), [1, 0, 6, 7, 8, 9, 10]);
-        // assert_eq!(ga(111, 10), [1, 0, 6, 7, 8, 9, 10]);
+        assert_eq!(ga(6, 10), [1, 0, 5, 6, 7, 0, 10]);
+        assert_eq!(ga(7, 10), [1, 0, 6, 7, 8, 9, 10]);
+        assert_eq!(ga(8, 10), [1, 0, 6, 7, 8, 9, 10]);
+        assert_eq!(ga(9, 10), [1, 0, 6, 7, 8, 9, 10]);
+        assert_eq!(ga(10, 10), [1, 0, 6, 7, 8, 9, 10]);
+        assert_eq!(ga(111, 10), [1, 0, 6, 7, 8, 9, 10]);
     }
 
     #[bench]
     fn bench_generate_pagination_vec(b: &mut Bencher) {
-        // 37.64 ns/iter (+/- 1.27)
-        b.iter(|| gv(4, 10, 1));
+        // 38.12 ns/iter (+/- 2.45)
+        b.iter(|| gv(6, 10, 1));
     }
 
     #[bench]
     fn bench_generate_pagination_array(b: &mut Bencher) {
         // 0.88 ns/iter (+/- 0.01)
-        b.iter(|| ga(4, 10))
+        b.iter(|| ga(6, 10))
     }
 }

@@ -89,9 +89,9 @@ where
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PaginationResult<U> {
-    page: i64,
-    per_page: i64,
-    total_pages: i64,
-    total_records: i64,
-    records: Vec<U>
+    pub page: i64,
+    pub per_page: i64,
+    pub total_pages: i64,
+    pub total_records: i64,
+    pub records: Vec<U>
 }

@@ -40,6 +40,10 @@
     line-height: 1.125rem;
 }
 
+a.admin-pagination__link, button.admin-pagination__link {
+    cursor: pointer;
+}
+
 a.admin-pagination__link:hover, button.admin-pagination__link:hover,
 a.admin-pagination__link.admin-active, button.admin-pagination__link.admin-active {
     background-color: rgba(var(--admin-app-accent-color), 0.1);
