@@ -15,7 +15,7 @@
     "light": "Light theme is currently in use. Click twice if you want to switch to dark theme or click once if you want to automatically use your computer's light/dark theme.",
     "auto": "Your computer is currently using the light/dark theme. Click once if you want to switch to the dark theme or twice if you want to use the light theme."
   },
-  "index": "Page :page of :per_page",
+  "index": "Page :page of :total_pages",
   "select_page": "Select a page",
   "per_page_label": "Number of entries per page",
   "selected": {

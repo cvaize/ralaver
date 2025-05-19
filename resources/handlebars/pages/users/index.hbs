@@ -170,18 +170,11 @@
         </div>
 
         <div class="admin-list-page__top-paginate">
-            <nav aria-label="Page navigation">
-                <ul class="admin-pagination">
-                    <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">1</a></li>
-                    <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
-                    <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">7</a></li>
-                    <li class="admin-pagination__item"><a class="admin-pagination__link admin-active" href="#">8</a>
-                    </li>
-                    <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">9</a></li>
-                    <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
-                    <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">50</a></li>
-                </ul>
-            </nav>
+            {{> components/pagination.hbs
+                    page=users.page
+                    pagination_nums=users.pagination_nums
+                    pagination_link=users.pagination_link
+            }}
         </div>
 
         <div class="admin-list-page__top-page-control">
@@ -311,25 +304,11 @@
         </div>
 
         <div class="admin-list-page__bottom-paginate">
-            <nav aria-label="Page navigation">
-                <ul class="admin-pagination">
-                    {{#each users.pagination as |num|}}
-                        {{#if (ne num -1)}}
-                            {{#if (eq num 0)}}
-                                <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
-                            {{else}}
-                                <li class="admin-pagination__item">
-                                    <a href="{{../users.pagination_link}}{{num}}"
-                                            class="admin-pagination__link{{#if (eq num ../users.page)}} admin-active{{/if}}"
-                                    >
-                                        {{num}}
-                                    </a>
-                                </li>
-                            {{/if}}
-                        {{/if}}
-                    {{/each}}
-                </ul>
-            </nav>
+            {{> components/pagination.hbs
+                    page=users.page
+                    pagination_nums=users.pagination_nums
+                    pagination_link=users.pagination_link
+            }}
         </div>
 
         <div class="admin-list-page__bottom-page-control">

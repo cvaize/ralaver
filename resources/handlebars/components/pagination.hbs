@@ -1,11 +1,19 @@
-<nav aria-label="Page navigation example">
+<nav aria-label="Page navigation">
     <ul class="admin-pagination">
-        <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">1</a></li>
-        <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
-        <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">7</a></li>
-        <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">8</a></li>
-        <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">9</a></li>
-        <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
-        <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">10</a></li>
+        {{#each pagination_nums as |num|}}
+            {{#if (ne num -1)}}
+                {{#if (eq num 0)}}
+                    <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
+                {{else}}
+                    <li class="admin-pagination__item">
+                        <a href="{{../pagination_link}}{{num}}"
+                           class="admin-pagination__link{{#if (eq num ../page)}} admin-active{{/if}}"
+                        >
+                            {{num}}
+                        </a>
+                    </li>
+                {{/if}}
+            {{/if}}
+        {{/each}}
     </ul>
 </nav>

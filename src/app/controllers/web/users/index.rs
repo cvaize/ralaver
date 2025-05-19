@@ -46,7 +46,11 @@ pub async fn invoke(
     let page = max(query.page.unwrap_or(1), 1);
     let page_str = page.to_string();
     let per_page = min(query.per_page.unwrap_or(10), 100);
-    let per_page_str = per_page.to_string();
+
+    let users = user_service.paginate(page, per_page).map_err(|e| {
+        error::ErrorInternalServerError("")
+    })?;
+    let total_pages_str = users.total_pages.to_string();
 
     let mut context_data = get_context_data(
         &req,
@@ -59,16 +63,13 @@ pub async fn invoke(
     let lang = &context_data.lang;
     let mut page_vars: HashMap<&str, &str> = HashMap::new();
     page_vars.insert("page", &page_str);
-    page_vars.insert("per_page", &per_page_str);
+    page_vars.insert("total_pages", &total_pages_str);
     context_data.title = translator_service.variables(lang, "page.users.index.title", &page_vars);
 
     let layout_ctx = get_template_context(&context_data);
 
-    let users = user_service.paginate(page, per_page).map_err(|e| {
-        error::ErrorInternalServerError("")
-    })?;
-
-    let users_pagination = generate_pagination_array(users.page, users.total_pages);
+    let pagination_nums = generate_pagination_array(users.page, users.total_pages);
+    let pagination_link = format!("/users?per_page={per_page}&page=");
 
     let ctx = json!({
         "ctx": layout_ctx,
@@ -107,8 +108,8 @@ pub async fn invoke(
             "total_pages": users.total_pages,
             "total_records": users.total_records,
             "records": users.records,
-            "pagination": users_pagination,
-            "pagination_link": "/users?per_page=2&page="
+            "pagination_nums": pagination_nums,
+            "pagination_link": pagination_link
         },
         "per_pages": &PER_PAGES,
     });
