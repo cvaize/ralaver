@@ -34,14 +34,12 @@ pub async fn invoke(
     app_service: Data<AppService>,
     web_auth_service: Data<WebAuthService>,
     user_service: Data<UserService>,
-    config: Data<Config>
 ) -> Result<HttpResponse, Error> {
     let translator_service = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
     let web_auth_service = web_auth_service.get_ref();
     let user = user.as_ref();
-    let tmpl_service = TemplateService::new_from_files(config.clone()).unwrap();
 
     let page = max(query.page.unwrap_or(1), 1);
     let page_str = page.to_string();
