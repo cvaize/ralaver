@@ -1,7 +1,7 @@
 use crate::app::connections::smtp::{get_smtp_transport, LettreSmtpTransport};
 use crate::redis_connection::RedisPool;
 use crate::services::BaseServices;
-use crate::{mysql_connection, redis_connection, MysqlPool};
+use crate::{mysql_connection, mysql_connection2, redis_connection, MysqlPool, MysqlPool2};
 use actix_web::web::Data;
 
 pub fn smtp(s: &BaseServices) -> Data<LettreSmtpTransport> {
@@ -16,6 +16,12 @@ pub fn mysql(s: &BaseServices) -> Data<MysqlPool> {
             .expect("Failed to create connection MysqlPool.");
     Data::new(mysql_pool)
 }
+pub fn mysql2(s: &BaseServices) -> Data<MysqlPool2> {
+    let mysql_pool: MysqlPool2 =
+        mysql_connection2::get_connection_pool(&s.config.get_ref().db.mysql)
+            .expect("Failed to create connection MysqlPool.");
+    Data::new(mysql_pool)
+}
 pub fn redis(s: &BaseServices) -> Data<RedisPool> {
     let redis_pool: RedisPool =
         redis_connection::get_connection_pool(&s.config.get_ref().db.redis)
@@ -26,17 +32,20 @@ pub fn redis(s: &BaseServices) -> Data<RedisPool> {
 pub struct Connections {
     pub smtp: Data<LettreSmtpTransport>,
     pub mysql: Data<MysqlPool>,
+    pub mysql2: Data<MysqlPool2>,
     pub redis: Data<RedisPool>,
 }
 
 pub fn all(s: &BaseServices) -> Connections {
     let smtp: Data<LettreSmtpTransport> = smtp(s);
     let mysql: Data<MysqlPool> = mysql(s);
+    let mysql2: Data<MysqlPool2> = mysql2(s);
     let redis: Data<RedisPool> = redis(s);
 
     Connections {
         smtp,
         mysql,
+        mysql2,
         redis,
     }
 }

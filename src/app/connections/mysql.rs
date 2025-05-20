@@ -1,27 +1,25 @@
+use crate::app::connections::ConnectionError;
 use crate::config::MysqlDbConfig;
-use diesel::r2d2::ConnectionManager;
-use diesel::MysqlConnection;
 use diesel::mysql::Mysql;
 use diesel::prelude::*;
 use diesel::query_builder::*;
 use diesel::query_dsl::methods::LoadQuery;
+use diesel::r2d2::ConnectionManager;
 use diesel::sql_types::BigInt;
+use diesel::MysqlConnection;
 use r2d2::{Pool, PooledConnection};
 use serde_derive::{Deserialize, Serialize};
-use crate::app::connections::ConnectionError;
 
 pub type MysqlPool = Pool<ConnectionManager<MysqlConnection>>;
 pub type MysqlPooledConnection = PooledConnection<ConnectionManager<MysqlConnection>>;
 
-pub fn get_connection_pool(
-    config: &MysqlDbConfig,
-) -> Result<MysqlPool, ConnectionError> {
-    log::info!("{}","Connecting to MySQL database.");
+pub fn get_connection_pool(config: &MysqlDbConfig) -> Result<MysqlPool, ConnectionError> {
+    log::info!("Connecting to MySQL database.");
     let database_url = config.url.to_owned();
     let manager = ConnectionManager::<MysqlConnection>::new(database_url);
 
     Pool::builder().build(manager).map_err(|e| {
-        log::error!("{}",format!("ConnectionError::CreatePoolFail - {:}", &e).as_str());
+        log::error!("ConnectionError::CreatePoolFail - {e}");
         ConnectionError::CreatePoolFail
     })
 }
@@ -50,8 +48,10 @@ pub struct Paginated<T> {
 }
 
 impl<T> Paginated<T> {
-
-    pub fn load_and_count_pages<'a, U>(self, conn: &mut MysqlConnection) -> QueryResult<PaginationResult<U>>
+    pub fn load_and_count_pages<'a, U>(
+        self,
+        conn: &mut MysqlConnection,
+    ) -> QueryResult<PaginationResult<U>>
     where
         Self: LoadQuery<'a, MysqlConnection, (U, i64)>,
     {
@@ -61,7 +61,13 @@ impl<T> Paginated<T> {
         let total_records: i64 = results.first().map(|x| x.1).unwrap_or(0);
         let records: Vec<U> = results.into_iter().map(|x| x.0).collect();
         let total_pages: i64 = (total_records as f64 / per_page as f64).ceil() as i64;
-        Ok(PaginationResult{page, per_page, total_pages, total_records, records})
+        Ok(PaginationResult {
+            page,
+            per_page,
+            total_pages,
+            total_records,
+            records,
+        })
     }
 }
 
@@ -86,12 +92,11 @@ where
     }
 }
 
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PaginationResult<U> {
     pub page: i64,
     pub per_page: i64,
     pub total_pages: i64,
     pub total_records: i64,
-    pub records: Vec<U>
+    pub records: Vec<U>,
 }

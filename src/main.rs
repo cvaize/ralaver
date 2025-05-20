@@ -16,15 +16,18 @@ use actix_web::middleware::{Logger, ErrorHandlers};
 use actix_web::App;
 use actix_web::HttpServer;
 pub use app::connections::mysql as mysql_connection;
+pub use app::connections::mysql2 as mysql_connection2;
 pub use app::connections::redis as redis_connection;
 pub use app::controllers::web::WebHttpRequest;
 pub use app::controllers::web::WebHttpResponse;
-pub use app::models::*;
+pub use app::dto::*;
 pub use app::services::*;
 pub use config::Config;
 pub use connections::Connections;
 pub use mysql_connection::MysqlPool;
+pub use mysql_connection2::MysqlPool2;
 pub use services::Services;
+pub use app::repositories::PaginationResult;
 
 fn preparation() -> (Connections, Services) {
     let base_services: BaseServices = services::base(Config::new());

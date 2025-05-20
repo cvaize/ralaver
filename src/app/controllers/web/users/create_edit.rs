@@ -3,11 +3,13 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString};
 use crate::app::validator::rules::required::Required;
+use crate::helpers::none_if_empty;
 use crate::{
-    Alert, AppService, Locale, LocaleService, NewUser, RateLimitService, Session,
-    TemplateService, TranslatableError, TranslatorService, User, UserService, UserServiceError,
-    WebAuthService, WebHttpResponse,
+    Alert, AppService, Locale, LocaleService, NewUser, RateLimitService, Session, TemplateService,
+    TranslatableError, TranslatorService, User, UserService, UserServiceError, WebAuthService,
+    WebHttpResponse,
 };
+use actix_web::web::Path;
 use actix_web::web::{Data, Form, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
@@ -15,8 +17,6 @@ use serde_derive::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
-use actix_web::web::Path;
-use crate::helpers::none_if_empty;
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 10;
 static RATE_LIMIT_TTL: u64 = 60;
@@ -264,44 +264,43 @@ pub async fn invoke(
     if is_done {
         if let Some(email_) = &data.email {
             let user_ = user_service.first_by_email(email_);
+            let mut is_not_found = false;
             if let Ok(user_) = user_ {
-
-                // TODO: Save alerts
-
-                if let Some(action) = &data.action {
-                    let header_value_back = http::HeaderValue::from_static("/users");
-                    if action.eq("save") {
-                        let mut src = "/users/".to_string();
-                        src.push_str(&user_.id.to_string());
-                        return Ok(HttpResponse::SeeOther()
-                            .insert_header((
-                                http::header::LOCATION,
-                                http::HeaderValue::from_str(&src).unwrap_or(header_value_back),
-                            ))
-                            .finish());
-                    } else if action.eq("save_and_close") {
-                        return Ok(HttpResponse::SeeOther()
-                            .insert_header((
-                                http::header::LOCATION,
-                                header_value_back,
-                            ))
-                            .finish());
+                if let Some(user_) = user_ {
+                    is_not_found = true;
+                    // TODO: Save alerts
+                    if let Some(action) = &data.action {
+                        let header_value_back = http::HeaderValue::from_static("/users");
+                        if action.eq("save") {
+                            let mut src = "/users/".to_string();
+                            src.push_str(&user_.id.to_string());
+                            return Ok(HttpResponse::SeeOther()
+                                .insert_header((
+                                    http::header::LOCATION,
+                                    http::HeaderValue::from_str(&src).unwrap_or(header_value_back),
+                                ))
+                                .finish());
+                        } else if action.eq("save_and_close") {
+                            return Ok(HttpResponse::SeeOther()
+                                .insert_header((http::header::LOCATION, header_value_back))
+                                .finish());
+                        }
                     }
+
+                    let mut vars: HashMap<&str, &str> = HashMap::new();
+                    let name_ = user_.get_full_name_with_id_and_email();
+                    vars.insert("name", &name_);
+                    context_data
+                        .alerts
+                        .push(Alert::success(translator_service.variables(
+                            lang,
+                            "alert.users.create.success",
+                            &vars,
+                        )));
                 }
+            }
 
-
-
-                let mut vars: HashMap<&str, &str> = HashMap::new();
-                let name_ = user_.get_full_name_with_id_and_email();
-                vars.insert("name", &name_);
-                context_data
-                    .alerts
-                    .push(Alert::success(translator_service.variables(
-                        lang,
-                        "alert.users.create.success",
-                        &vars,
-                    )));
-            } else {
+            if is_not_found {
                 let mut vars: HashMap<&str, &str> = HashMap::new();
                 vars.insert("email", email_);
                 context_data
@@ -522,7 +521,7 @@ async fn post(
                     name: none_if_empty(&data.name),
                     patronymic: none_if_empty(&data.patronymic),
                 };
-                let result = user_service.insert(new_user);
+                let result = user_service.create(new_user);
 
                 if let Err(error) = result {
                     match error {

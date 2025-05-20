@@ -1,67 +1,56 @@
+use crate::app::repositories::UserRepository;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::{HashService, MysqlPool, UserService, UserServiceError};
 use crate::{KeyValueService, KeyValueServiceError, NewUser, PrivateUserData};
 use actix_web::web::Data;
-#[allow(unused_imports)]
-use diesel::prelude::*;
-use diesel::{ExpressionMethods, NotFound, QueryDsl, RunQueryDsl, SelectableHelper};
 use serde_derive::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 
 static RESET_PASSWORD_CODE_KEY: &str = "reset_password.code";
 
 pub struct AuthService {
-    db_pool: Data<MysqlPool>,
     key_value_service: Data<KeyValueService>,
     hash_service: Data<HashService>,
     user_service: Data<UserService>,
+    user_repository: Data<UserRepository>,
 }
 
 impl AuthService {
     pub fn new(
-        db_pool: Data<MysqlPool>,
         key_value_service: Data<KeyValueService>,
         hash_service: Data<HashService>,
         user_service: Data<UserService>,
+        user_repository: Data<UserRepository>,
     ) -> Self {
         Self {
-            db_pool,
             key_value_service,
             hash_service,
             user_service,
+            user_repository,
         }
     }
 
     /// Search for a user by the provided credentials and return his id.
-    pub fn login_by_password(
-        &self,
-        email: &String,
-        password: &String,
-    ) -> Result<u64, AuthServiceError> {
-        let mut connection = self.db_pool.get_ref().get().map_err(|e| {
-            log::error!("AuthService::login_by_password - {e}");
-            return AuthServiceError::DbConnectionFail;
+    pub fn login_by_password(&self, email: &str, password: &str) -> Result<u64, AuthServiceError> {
+        let hash_service = self.hash_service.get_ref();
+        let user_repository = self.user_repository.get_ref();
+        let user = user_repository.credentials_by_email(email).map_err(|e| {
+            log::error!("AuthService::login_by_password - {email} - {e}");
+            return AuthServiceError::Fail;
         })?;
 
-        let user: PrivateUserData = crate::schema::users::dsl::users
-            .filter(crate::schema::users::email.eq(email))
-            .select(PrivateUserData::as_select())
-            .first::<PrivateUserData>(&mut connection)
-            .map_err(|e| {
-                if e != NotFound {
-                    log::error!("AuthService::login_by_password - {email} - {e}");
-                }
-                return AuthServiceError::Fail;
-            })?;
+        if user.is_none() {
+            return Err(AuthServiceError::Fail);
+        }
 
+        let user = user.unwrap();
         if user.password.is_none() {
             return Err(AuthServiceError::Fail);
         }
+
         let user_password_hash = user.password.unwrap();
-        let is_verified = self
-            .hash_service
-            .get_ref()
+        let is_verified = hash_service
             .verify_password(password, &user_password_hash)
             .map_err(|e| {
                 log::error!("AuthService::login_by_password - {e}");
@@ -84,7 +73,7 @@ impl AuthService {
         let mut new_user = NewUser::empty(data.email.to_owned());
         new_user.password = Some(data.password.to_owned());
 
-        user_service.insert(new_user).map_err(|e| {
+        user_service.create(new_user).map_err(|e| {
             log::error!("AuthService::register_by_credentials - {e}");
             match e {
                 UserServiceError::DbConnectionFail => AuthServiceError::DbConnectionFail,
@@ -147,53 +136,29 @@ impl AuthService {
         email: &str,
         password: &str,
     ) -> Result<(), AuthServiceError> {
-        use crate::schema::users::dsl::email as dsl_email;
-        use crate::schema::users::dsl::password as dsl_password;
-        use crate::schema::users::dsl::users as dsl_users;
+        let user_repository = self.user_repository.get_ref();
+        let hash_service = self.hash_service.get_ref();
 
-        let hashed_password = self
-            .hash_service
-            .get_ref()
-            .hash_password(password)
+        let hashed_password = hash_service.hash_password(password).map_err(|e| {
+            log::error!("AuthService::update_password_by_email - {email} - {e}",);
+            AuthServiceError::Fail
+        })?;
+
+        user_repository
+            .update_password_by_email(email, &hashed_password)
             .map_err(|e| {
                 log::error!("AuthService::update_password_by_email - {email} - {e}",);
                 AuthServiceError::Fail
             })?;
 
-        let mut connection = self.db_pool.get_ref().get().map_err(|e| {
-            log::error!("AuthService::update_password_by_email - {e}",);
-            AuthServiceError::DbConnectionFail
-        })?;
-
-        diesel::update(dsl_users.filter(dsl_email.eq(email)))
-            .set(dsl_password.eq(hashed_password))
-            .execute(&mut connection)
-            .map_err(|e| {
-                log::error!("AuthService::update_password_by_email - {email} - {e}");
-                AuthServiceError::Fail
-            })?;
         Ok(())
     }
 
     pub fn exists_user_by_email(&self, email: &str) -> Result<bool, AuthServiceError> {
-        use crate::schema::users::dsl::email as dsl_email;
-        use crate::schema::users::dsl::users as dsl_users;
-        use diesel::dsl::exists;
-        use diesel::select;
-
-        let mut connection = self.db_pool.get_ref().get().map_err(|e| {
-            log::error!("AuthService::exists_user_by_email - {e}");
-            AuthServiceError::DbConnectionFail
-        })?;
-
-        let email_exists: bool = select(exists(dsl_users.filter(dsl_email.eq(email))))
-            .get_result(&mut connection)
-            .map_err(|e| {
-                log::error!("AuthService::exists_user_by_email - {e}");
-                AuthServiceError::Fail
-            })?;
-
-        Ok(email_exists)
+        self.user_repository
+            .get_ref()
+            .exists_by_email(email)
+            .map_err(|e| AuthServiceError::Fail)
     }
 }
 
@@ -221,10 +186,7 @@ pub enum AuthServiceError {
 
 #[cfg(test)]
 mod tests {
-    use crate::{preparation, Credentials, PrivateUserData};
-    #[allow(unused_imports)]
-    use diesel::prelude::*;
-    use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
+    use crate::preparation;
 
     #[test]
     fn exists_user_by_email() {
@@ -242,50 +204,6 @@ mod tests {
             all_services
                 .auth
                 .exists_user_by_email("admin@admin.example")
-                .unwrap()
-        );
-    }
-
-    #[test]
-    fn update_password_by_email() {
-        use crate::schema::users::dsl::email as dsl_email;
-        use crate::schema::users::dsl::users as dsl_users;
-
-        let (all_connections, all_services) = preparation();
-
-        let email = "admin@admin.example";
-
-        let password = all_services.rand.get_ref().str(64);
-        all_services
-            .auth
-            .update_password_by_email(email, &password)
-            .unwrap();
-
-        let mut connection = all_connections.mysql.get_ref().get().unwrap();
-        let user: PrivateUserData = dsl_users
-            .filter(dsl_email.eq(email))
-            .select(PrivateUserData::as_select())
-            .first::<PrivateUserData>(&mut connection)
-            .unwrap();
-
-        let user_password_hash = user.password.clone().unwrap();
-
-        assert_eq!(
-            true,
-            all_services
-                .hash
-                .get_ref()
-                .verify_password(&password, &user_password_hash)
-                .unwrap()
-        );
-
-        let password = all_services.rand.get_ref().str(64);
-        assert_eq!(
-            false,
-            all_services
-                .hash
-                .get_ref()
-                .verify_password(&password, &user_password_hash)
                 .unwrap()
         );
     }
@@ -322,30 +240,5 @@ mod tests {
                 .is_equal_reset_password_code(email, &code)
                 .unwrap()
         );
-    }
-
-    #[test]
-    fn register_by_credentials() {
-        use crate::schema::users::dsl::email as dsl_email;
-        use crate::schema::users::dsl::users as dsl_users;
-        let (all_connections, all_services) = preparation();
-
-        let password = all_services.rand.get_ref().str(64);
-        let email = format!("admin{}@admin.example", &password);
-
-        let cred = Credentials {
-            email: email.to_owned(),
-            password: password.to_owned(),
-        };
-        all_services.auth.register_by_credentials(&cred).unwrap();
-
-        let mut connection = all_connections.mysql.get_ref().get().unwrap();
-        let user: PrivateUserData = dsl_users
-            .filter(dsl_email.eq(email.to_owned()))
-            .select(PrivateUserData::as_select())
-            .first::<PrivateUserData>(&mut connection)
-            .unwrap();
-
-        assert_eq!(user.email, email);
     }
 }

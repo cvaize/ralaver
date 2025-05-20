@@ -7,9 +7,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::cmp::{min, max};
 use serde::Deserialize;
+use crate::app::repositories::UserPaginateParams;
 
-pub const PER_PAGES: [i64; 7] = [
-    2,
+pub const PER_PAGES: [i64; 6] = [
     10,
     20,
     30,
@@ -45,7 +45,8 @@ pub async fn invoke(
     let page_str = page.to_string();
     let per_page = min(query.per_page.unwrap_or(10), 100);
 
-    let users = user_service.paginate(page, per_page).map_err(|e| {
+    let pagination_params = UserPaginateParams::simple(page, per_page);
+    let users = user_service.paginate(&pagination_params).map_err(|e| {
         error::ErrorInternalServerError("")
     })?;
     let total_pages_str = users.total_pages.to_string();

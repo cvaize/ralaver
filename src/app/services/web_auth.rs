@@ -1,3 +1,4 @@
+use crate::app::repositories::UserRepository;
 use crate::{Config, CryptService, HashService, KeyValueService, RandomService, User, UserService};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
@@ -292,6 +293,12 @@ impl WebAuthService {
             log::error!("WebAuthService::login_by_session - {e}");
             return WebAuthServiceError::Fail;
         })?;
+
+        if user.is_none() {
+            return Err(WebAuthServiceError::Fail);
+        }
+
+        let user = user.unwrap();
 
         // Нужно сгенерировать новый токен, потому что этот старый токен помечен на удаление
         let mut is_need_new_token = token_expires == 1;

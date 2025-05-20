@@ -1,6 +1,7 @@
 use crate::connections::Connections;
 use crate::{AppService, AuthService, Config, CryptService, HashService, KeyValueService, LocaleService, MailService, RandomService, RateLimitService, TemplateService, TranslatorService, UserService, WebAuthService};
 use actix_web::web::Data;
+use crate::app::repositories::UserRepository;
 
 pub struct BaseServices {
     pub config: Data<Config>,
@@ -26,6 +27,7 @@ pub struct AdvancedServices {
     pub rand: Data<RandomService>,
     pub rate_limit: Data<RateLimitService>,
     pub user: Data<UserService>,
+    pub user_rep: Data<UserRepository>,
 }
 
 pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
@@ -41,17 +43,19 @@ pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
     let rand = Data::new(RandomService::new());
 
     let hash = Data::new(HashService::new(s.config.clone()));
-    let user = Data::new(UserService::new(c.mysql.clone(), hash.clone()));
+    let user_rep = Data::new(UserRepository::new(c.mysql2.clone()));
+    let user = Data::new(UserService::new(hash.clone(), user_rep.clone()));
+
     let crypt = Data::new(CryptService::new(
         s.config.clone(),
         rand.clone(),
         hash.clone(),
     ));
     let auth = Data::new(AuthService::new(
-        c.mysql.clone(),
         key_value.clone(),
         hash.clone(),
         user.clone(),
+        user_rep.clone(),
     ));
     let locale = Data::new(LocaleService::new(s.config.clone()));
     let app = Data::new(AppService::new(s.config.clone(), locale.clone()));
@@ -80,10 +84,10 @@ pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
         rand,
         rate_limit,
         user,
+        user_rep,
     }
 }
 
-#[allow(dead_code)]
 pub struct Services {
     pub config: Data<Config>,
     pub key_value: Data<KeyValueService>,
@@ -99,6 +103,7 @@ pub struct Services {
     pub rand: Data<RandomService>,
     pub rate_limit: Data<RateLimitService>,
     pub user: Data<UserService>,
+    pub user_rep: Data<UserRepository>,
 }
 
 pub fn join_to_all(base: BaseServices, advanced: AdvancedServices) -> Services {
@@ -117,5 +122,6 @@ pub fn join_to_all(base: BaseServices, advanced: AdvancedServices) -> Services {
         rand: advanced.rand,
         rate_limit: advanced.rate_limit,
         user: advanced.user,
+        user_rep: advanced.user_rep,
     }
 }

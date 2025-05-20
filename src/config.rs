@@ -19,6 +19,9 @@ pub struct DbConfig {
 #[derive(Debug, Clone)]
 pub struct MysqlDbConfig {
     pub url: String,
+    pub database: String,
+    pub user: String,
+    pub password: String,
 }
 
 #[derive(Debug, Clone)]
@@ -121,6 +124,18 @@ impl Config {
                 mysql: MysqlDbConfig {
                     url: env::var("MYSQL_URL")
                         .unwrap_or("mysql://test_user:test_password@mysql/test_db_name".to_string())
+                        .trim()
+                        .to_string(),
+                    database: env::var("MYSQL_DATABASE")
+                        .unwrap_or("test_db".to_string())
+                        .trim()
+                        .to_string(),
+                    user: env::var("MYSQL_USER")
+                        .unwrap_or("test_user".to_string())
+                        .trim()
+                        .to_string(),
+                    password: env::var("MYSQL_PASSWORD")
+                        .unwrap_or("test_password".to_string())
                         .trim()
                         .to_string(),
                 },
