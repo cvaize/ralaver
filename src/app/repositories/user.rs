@@ -1,6 +1,6 @@
 use crate::app::repositories::Value;
 use crate::{
-    AuthServiceError, MysqlPool2, NewUser, PaginationResult, RandomService, UpdateUser, User,
+    AuthServiceError, MysqlPool, NewUser, PaginationResult, RandomService, UpdateUser, User,
     UserServiceError,
 };
 use actix_web::web::Data;
@@ -35,11 +35,11 @@ static UPDATE_PASSWORD_BY_EMAIL_QUERY: &str =
 static UPDATE_BY_EMAIL_QUERY: [&str; 2] = ["UPDATE `users` SET ", " WHERE email=:email"];
 
 pub struct UserRepository {
-    db_pool: Data<MysqlPool2>,
+    db_pool: Data<MysqlPool>,
 }
 
 impl UserRepository {
-    pub fn new(db_pool: Data<MysqlPool2>) -> Self {
+    pub fn new(db_pool: Data<MysqlPool>) -> Self {
         Self { db_pool }
     }
 

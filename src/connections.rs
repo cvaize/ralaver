@@ -1,7 +1,7 @@
 use crate::app::connections::smtp::{get_smtp_transport, LettreSmtpTransport};
 use crate::redis_connection::RedisPool;
 use crate::services::BaseServices;
-use crate::{mysql_connection, mysql_connection2, redis_connection, MysqlPool, MysqlPool2};
+use crate::{diesel_mysql_connection, mysql_connection, redis_connection, DieselMysqlPool, MysqlPool};
 use actix_web::web::Data;
 
 pub fn smtp(s: &BaseServices) -> Data<LettreSmtpTransport> {
@@ -10,15 +10,15 @@ pub fn smtp(s: &BaseServices) -> Data<LettreSmtpTransport> {
             .expect("Failed to create connection MysqlPool.");
     Data::new(smtp)
 }
-pub fn mysql(s: &BaseServices) -> Data<MysqlPool> {
-    let mysql_pool: MysqlPool =
-        mysql_connection::get_connection_pool(&s.config.get_ref().db.mysql)
+pub fn mysql(s: &BaseServices) -> Data<DieselMysqlPool> {
+    let mysql_pool: DieselMysqlPool =
+        diesel_mysql_connection::get_connection_pool(&s.config.get_ref().db.mysql)
             .expect("Failed to create connection MysqlPool.");
     Data::new(mysql_pool)
 }
-pub fn mysql2(s: &BaseServices) -> Data<MysqlPool2> {
-    let mysql_pool: MysqlPool2 =
-        mysql_connection2::get_connection_pool(&s.config.get_ref().db.mysql)
+pub fn mysql2(s: &BaseServices) -> Data<MysqlPool> {
+    let mysql_pool: MysqlPool =
+        mysql_connection::get_connection_pool(&s.config.get_ref().db.mysql)
             .expect("Failed to create connection MysqlPool.");
     Data::new(mysql_pool)
 }
@@ -31,15 +31,15 @@ pub fn redis(s: &BaseServices) -> Data<RedisPool> {
 
 pub struct Connections {
     pub smtp: Data<LettreSmtpTransport>,
-    pub mysql: Data<MysqlPool>,
-    pub mysql2: Data<MysqlPool2>,
+    pub mysql: Data<DieselMysqlPool>,
+    pub mysql2: Data<MysqlPool>,
     pub redis: Data<RedisPool>,
 }
 
 pub fn all(s: &BaseServices) -> Connections {
     let smtp: Data<LettreSmtpTransport> = smtp(s);
-    let mysql: Data<MysqlPool> = mysql(s);
-    let mysql2: Data<MysqlPool2> = mysql2(s);
+    let mysql: Data<DieselMysqlPool> = mysql(s);
+    let mysql2: Data<MysqlPool> = mysql2(s);
     let redis: Data<RedisPool> = redis(s);
 
     Connections {

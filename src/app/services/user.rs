@@ -1,6 +1,5 @@
 use crate::app::repositories::{UserPaginateParams, UserRepository, UserRepositoryError};
-use crate::mysql_connection::Paginate;
-use crate::{HashService, MysqlPool, MysqlPool2, NewUser, PaginationResult, RandomService, User};
+use crate::{HashService, DieselMysqlPool, MysqlPool, NewUser, PaginationResult, RandomService, User};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use serde_derive::{Deserialize, Serialize};
