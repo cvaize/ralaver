@@ -1,12 +1,15 @@
-use crate::app::connections::ConnectionError;
 use crate::config::MysqlDbConfig;
 use r2d2_mysql::mysql::{OptsBuilder, QueryResult, from_row, Opts};
-use r2d2::Pool;
+use r2d2::{Pool, PooledConnection};
 use r2d2_mysql::MySqlConnectionManager;
 
 pub type MysqlPool = Pool<MySqlConnectionManager>;
+pub type MysqlPooledConnection = PooledConnection<MySqlConnectionManager>;
 
-pub fn get_connection_pool(config: &MysqlDbConfig) -> Result<MysqlPool, ConnectionError> {
+#[derive(Debug, Clone, Copy)]
+pub struct MysqlConnectionError;
+
+pub fn get_connection_pool(config: &MysqlDbConfig) -> Result<MysqlPool, MysqlConnectionError> {
     log::info!("Connecting to MySQL database.");
     // let o = OptsBuilder::new()
     // .db_name(Some(&config.database))
@@ -19,6 +22,6 @@ pub fn get_connection_pool(config: &MysqlDbConfig) -> Result<MysqlPool, Connecti
 
     Pool::builder().build(manager).map_err(|e| {
         log::error!("ConnectionError::CreatePoolFail - {e}");
-        ConnectionError::CreatePoolFail
+        MysqlConnectionError
     })
 }

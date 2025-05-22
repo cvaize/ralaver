@@ -1,21 +1,19 @@
 #![feature(test)]
 extern crate test;
 
-mod app;
-mod config;
-mod connections;
-mod helpers;
-mod migrations;
-mod routes;
-mod schema;
-mod services;
+pub mod app;
+pub mod config;
+pub mod connections;
+pub mod helpers;
+pub mod migrations;
+pub mod routes;
+pub mod services;
 
 use crate::app::controllers::web::errors::default_error_handler;
 use crate::services::BaseServices;
 use actix_web::middleware::{Logger, ErrorHandlers};
 use actix_web::App;
 use actix_web::HttpServer;
-pub use app::connections::diesel_mysql as diesel_mysql_connection;
 pub use app::connections::mysql as mysql_connection;
 pub use app::connections::redis as redis_connection;
 pub use app::controllers::web::WebHttpRequest;
@@ -24,18 +22,17 @@ pub use app::dto::*;
 pub use app::services::*;
 pub use config::Config;
 pub use connections::Connections;
-pub use diesel_mysql_connection::DieselMysqlPool;
 pub use mysql_connection::MysqlPool;
+pub use mysql_connection::MysqlPooledConnection;
 pub use services::Services;
 pub use app::repositories::PaginationResult;
 
 fn preparation() -> (Connections, Services) {
+    dotenv::dotenv().ok();
     let base_services: BaseServices = services::base(Config::new());
     let _ = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let all_connections: Connections = connections::all(&base_services);
-
-    migrations::migrate(&all_connections);
 
     let advanced_services = services::advanced(&all_connections, &base_services);
 

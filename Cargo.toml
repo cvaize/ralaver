@@ -3,11 +3,10 @@ name = "rust-admin-panel"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
+default-run = "rust-admin-panel"
 
 [dependencies]
 actix-web = "4"
-diesel = { version = "2.2.7", features = ["mysql", "r2d2", "sqlite"] }
-diesel_migrations = "2.2.0"
 dotenv = "0.15.0"
 r2d2 = "0.8.10"
 serde_json = "1.0.138"
@@ -38,3 +37,7 @@ url = "2.5.4"
 serde_with = "3.12.0"
 tokio = { version = "1.45.0", features = ["full"] }
 r2d2_mysql = "25.0.0"
+
+[[bin]]
+name = "migrate"
+path = "src/bin/migrate.rs"

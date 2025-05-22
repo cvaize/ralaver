@@ -74,6 +74,7 @@
         "index": "{{layout.index}}"
       },
       "create": "Добавить пользователя",
+      "search": "Поиск",
       "page_per_page": "{{layout.index}}",
       "per_page_label": "{{layout.per_page_label}}",
       "select_page": "{{layout.select_page}}",

@@ -43,7 +43,7 @@ pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
     let rand = Data::new(RandomService::new());
 
     let hash = Data::new(HashService::new(s.config.clone()));
-    let user_rep = Data::new(UserRepository::new(c.mysql2.clone()));
+    let user_rep = Data::new(UserRepository::new(c.mysql.clone()));
     let user = Data::new(UserService::new(hash.clone(), user_rep.clone()));
 
     let crypt = Data::new(CryptService::new(

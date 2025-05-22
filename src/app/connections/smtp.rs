@@ -1,4 +1,3 @@
-use crate::config::MailSmtpConfig;
 pub use lettre::error::Error as LettreError;
 pub use lettre::message::header::ContentType as LettreContentType;
 pub use lettre::message::Mailbox as LettreMailbox;
@@ -9,6 +8,7 @@ pub use lettre::{
     Transport as LettreTransport,
 };
 use strum_macros::{Display, EnumString};
+use crate::config::MailSmtpConfig;
 
 #[derive(Debug, Clone, Copy, Display, EnumString)]
 pub enum SmtpConnectionError {
@@ -20,7 +20,7 @@ pub enum SmtpConnectionError {
 pub fn get_smtp_transport(
     config: &MailSmtpConfig,
 ) -> Result<LettreSmtpTransport, SmtpConnectionError> {
-    log::info!("{}","Make smtp transport.");
+    log::info!("Make smtp transport.");
 
     let host = config.host.to_owned();
     let port: u16 = config.port.to_owned().parse().map_err(|e| {

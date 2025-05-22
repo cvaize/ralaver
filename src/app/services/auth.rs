@@ -1,7 +1,7 @@
 use crate::app::repositories::UserRepository;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
-use crate::{HashService, DieselMysqlPool, UserService, UserServiceError};
+use crate::{HashService, UserService, UserServiceError};
 use crate::{KeyValueService, KeyValueServiceError, NewUser, PrivateUserData};
 use actix_web::web::Data;
 use serde_derive::{Deserialize, Serialize};

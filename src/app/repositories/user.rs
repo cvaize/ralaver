@@ -27,12 +27,12 @@ static PAGINATION_QUERY: &str =
 static INSERT_QUERY: &str =
     "INSERT INTO users (email, password, locale, surname, name, patronymic) VALUES (:email, :password, :locale, :surname, :name, :patronymic)";
 
-static DELETE_BY_ID_QUERY: &str = "DELETE FROM `users` WHERE id=:id";
+static DELETE_BY_ID_QUERY: &str = "DELETE FROM users WHERE id=:id";
 
 static UPDATE_PASSWORD_BY_EMAIL_QUERY: &str =
-    "UPDATE `users` SET password=:password  WHERE email=:email";
+    "UPDATE users SET password=:password  WHERE email=:email";
 
-static UPDATE_BY_EMAIL_QUERY: [&str; 2] = ["UPDATE `users` SET ", " WHERE email=:email"];
+static UPDATE_BY_EMAIL_QUERY: [&str; 2] = ["UPDATE users SET ", " WHERE email=:email"];
 
 pub struct UserRepository {
     db_pool: Data<MysqlPool>,
@@ -294,9 +294,9 @@ pub enum UserRepositoryError {
     Fail,
 }
 
-#[derive(Debug, Default)]
-pub struct UserFilter {
-    search: Option<String>,
+#[derive(Debug)]
+pub struct UserFilter <'a> {
+    pub search: &'a Option<String>,
 }
 
 #[derive(Debug)]
@@ -307,10 +307,10 @@ pub enum UserSort {
 
 #[derive(Debug)]
 pub struct UserPaginateParams<'a> {
-    page: i64,
-    per_page: i64,
-    filter: Option<&'a UserFilter>,
-    sort: Option<&'a UserSort>,
+    pub page: i64,
+    pub per_page: i64,
+    pub filter: Option<&'a UserFilter<'a>>,
+    pub sort: Option<&'a UserSort>,
 }
 
 impl<'a> UserPaginateParams<'a> {

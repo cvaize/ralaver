@@ -1,5 +1,5 @@
 use crate::app::controllers::web::{generate_pagination_array, get_context_data, get_template_context};
-use crate::{AppService, Config, Session, TemplateService, TranslatorService, User, UserService, WebAuthService, WebHttpResponse};
+use crate::{Alert, AppService, Config, LocaleService, Session, TemplateService, TranslatorService, User, UserService, WebAuthService, WebHttpResponse};
 use actix_web::web::{Data, Form, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use serde_json::json;
@@ -7,7 +7,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::cmp::{min, max};
 use serde::Deserialize;
-use crate::app::repositories::UserPaginateParams;
+use crate::app::repositories::{UserFilter, UserPaginateParams};
+use crate::app::validator::rules::confirmed::Confirmed;
+use crate::app::validator::rules::length::MaxLengthString;
 
 pub const PER_PAGES: [i64; 6] = [
     10,
@@ -22,30 +24,55 @@ pub const PER_PAGES: [i64; 6] = [
 pub struct IndexQuery {
     pub page: Option<i64>,
     pub per_page: Option<i64>,
+    pub search: Option<String>,
 }
 
 pub async fn invoke(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    query: Query<IndexQuery>,
+    mut query: Query<IndexQuery>,
     translator_service: Data<TranslatorService>,
     tmpl_service: Data<TemplateService>,
     app_service: Data<AppService>,
     web_auth_service: Data<WebAuthService>,
     user_service: Data<UserService>,
+    locale_service: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
     let translator_service = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
     let web_auth_service = web_auth_service.get_ref();
+    let locale_service = locale_service.get_ref();
     let user = user.as_ref();
 
     let page = max(query.page.unwrap_or(1), 1);
     let page_str = page.to_string();
     let per_page = min(query.per_page.unwrap_or(10), 100);
+    let lang: String = locale_service.get_locale_code(Some(&req), Some(&user));
 
-    let pagination_params = UserPaginateParams::simple(page, per_page);
+    let search_str = translator_service.translate(&lang, "page.users.index.search");
+
+    let mut form_errors: Vec<String> = Vec::new();
+    if let Some(search) = &query.search {
+        let mut search_errors: Vec<String> = MaxLengthString::validate(translator_service, &lang, search, 255, &search_str);
+        let is_error = search_errors.len() != 0;
+        if is_error {
+            form_errors.append(&mut search_errors);
+            let mut len = search.len();
+            if len > 255 {
+                len = 255;
+            }
+            query.search = Some(search[0..len].to_owned());
+        }
+    }
+
+    let pagination_filter = UserFilter {
+        search: &query.search
+    };
+    let pagination_params = UserPaginateParams {
+        page, per_page, filter: Some(&pagination_filter), sort: None
+    };
     let users = user_service.paginate(&pagination_params).map_err(|e| {
         error::ErrorInternalServerError("")
     })?;
@@ -64,6 +91,10 @@ pub async fn invoke(
     page_vars.insert("page", &page_str);
     page_vars.insert("total_pages", &total_pages_str);
     context_data.title = translator_service.variables(lang, "page.users.index.title", &page_vars);
+
+    for form_error in form_errors {
+        context_data.alerts.push(Alert::error(form_error));
+    }
 
     let layout_ctx = get_template_context(&context_data);
 
