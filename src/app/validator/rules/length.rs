@@ -32,14 +32,14 @@ impl MinLengthString {
 
 #[allow(dead_code)]
 impl MaxLengthString {
-    pub fn apply(value: &String, max: usize) -> bool {
+    pub fn apply(value: &str, max: usize) -> bool {
         value.len() <= max
     }
 
     pub fn validate(
         translator_service: &TranslatorService,
         lang: &str,
-        value: &String,
+        value: &str,
         max: usize,
         attribute_name: &str,
     ) -> Vec<String> {

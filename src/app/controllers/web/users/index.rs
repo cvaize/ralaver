@@ -4,13 +4,13 @@ use crate::app::controllers::web::{
 use crate::app::repositories::{UserFilter, UserPaginateParams};
 use crate::app::validator::rules::length::MaxLengthString;
 use crate::{
-    Alert, AppService, Config, LocaleService, Session, TemplateService, TranslatorService, User,
-    UserService, WebAuthService, WebHttpResponse,
+    Alert, AppService, Config, Locale, LocaleService, Session, TemplateService, TranslatorService,
+    User, UserService, WebAuthService, WebHttpResponse,
 };
 use actix_web::web::{Data, Form, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Value};
 use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -24,6 +24,7 @@ pub struct IndexQuery {
     pub page: Option<i64>,
     pub per_page: Option<i64>,
     pub search: Option<String>,
+    pub locale: Option<String>,
 }
 
 pub async fn invoke(
@@ -45,33 +46,23 @@ pub async fn invoke(
     let locale_service = locale_service.get_ref();
     let user = user.as_ref();
 
-    let page = max(query.page.unwrap_or(1), 1);
-    let per_page = min(query.per_page.unwrap_or(10), 100);
-    query.page = Some(page);
-    query.per_page = Some(per_page);
+    let lang: String = locale_service.get_locale_code(Some(&req), Some(&user));
+    let lang = &lang;
+
+    let search_str = translator_service.translate(lang, "Search");
+    let reset_str = translator_service.translate(lang, "Reset");
+    let locale_str = translator_service.translate(lang, "page.users.index.columns.locale");
+
+    let mut form_errors: Vec<String> = query.prepare(translator_service, lang, &search_str, &locale_str);
+
+    let page = query.page.unwrap();
+    let per_page = query.per_page.unwrap();
 
     let page_str = page.to_string();
-    let lang: String = locale_service.get_locale_code(Some(&req), Some(&user));
-
-    let search_str = translator_service.translate(&lang, "page.users.index.search");
-
-    let mut form_errors: Vec<String> = Vec::new();
-    if let Some(search) = &query.search {
-        let mut search_errors: Vec<String> =
-            MaxLengthString::validate(translator_service, &lang, search, 255, &search_str);
-        let is_error = search_errors.len() != 0;
-        if is_error {
-            form_errors.append(&mut search_errors);
-            let mut len = search.len();
-            if len > 255 {
-                len = 255;
-            }
-            query.search = Some(search[0..len].to_owned());
-        }
-    }
 
     let pagination_filter = UserFilter {
         search: &query.search,
+        locale: &query.locale,
     };
     let pagination_params = UserPaginateParams {
         page,
@@ -97,7 +88,6 @@ pub async fn invoke(
         app_service,
         web_auth_service,
     );
-    let lang = &context_data.lang;
     let mut page_vars: HashMap<&str, &str> = HashMap::new();
     page_vars.insert("page", &page_str);
     page_vars.insert("total_pages", &total_pages_str);
@@ -114,7 +104,6 @@ pub async fn invoke(
     let pagination_nums = generate_pagination_array(users.page, total_pages);
 
     let link_without_search = query.without_search().to_url()?;
-
     let mut search_values = Vec::new();
     if let Some(search) = &query.search {
         search_values.push(json!({
@@ -122,13 +111,26 @@ pub async fn invoke(
             "label": search,
             "reset": {
                 "href": &link_without_search,
-                "label": "Сбросить"
+                "label": &reset_str
+            }
+        }));
+    }
+
+    let link_without_locale = query.without_locale().to_url()?;
+    let mut locale_values = Vec::new();
+    if let Some(locale) = &query.locale {
+        locale_values.push(json!({
+            "value": locale,
+            "label": locale,
+            "reset": {
+                "href": &link_without_locale,
+                "label": &reset_str
             }
         }));
     }
 
     let ctx = json!({
-        "ctx": layout_ctx,
+        "ctx": &layout_ctx,
         "heading": translator_service.translate(lang, "page.users.index.header"),
         "breadcrumbs": [
             {"href": "/", "label": translator_service.translate(lang, "page.users.index.breadcrumbs.home")},
@@ -139,16 +141,16 @@ pub async fn invoke(
             "href": "/users/create",
             "label": translator_service.translate(lang, "page.users.index.create")
         },
-        "page_per_page": translator_service.variables(lang, "page.users.index.page_per_page", &page_vars),
-        "per_page_label": translator_service.translate(lang, "page.users.index.per_page_label"),
-        "select_page": translator_service.translate(lang, "page.users.index.select_page"),
+        "page_per_page": translator_service.variables(lang, "Page :page of :total_pages", &page_vars),
+        "per_page_label": translator_service.translate(lang, "Number of entries per page"),
+        "select_page": translator_service.translate(lang, "Select page"),
         "sort": {
-            "label": translator_service.translate(lang, "page.users.index.sort")
+            "label": translator_service.translate(lang, "Sort")
         },
         "selected": {
-            "label": translator_service.translate(lang, "page.users.index.selected.label"),
-            "delete": translator_service.translate(lang, "page.users.index.selected.delete"),
-            "delete_q": translator_service.translate(lang, "page.users.index.selected.delete_q"),
+            "label": translator_service.translate(lang, "Selected"),
+            "delete": translator_service.translate(lang, "Delete selected"),
+            "delete_q": translator_service.translate(lang, "Delete selected?"),
         },
         "columns": {
             "id": translator_service.translate(lang, "page.users.index.columns.id"),
@@ -156,6 +158,7 @@ pub async fn invoke(
             "surname": translator_service.translate(lang, "page.users.index.columns.surname"),
             "name": translator_service.translate(lang, "page.users.index.columns.name"),
             "patronymic": translator_service.translate(lang, "page.users.index.columns.patronymic"),
+            "locale": locale_str,
             "actions": translator_service.translate(lang, "page.users.index.columns.actions")
         },
         "users": {
@@ -168,16 +171,25 @@ pub async fn invoke(
             "pagination_link": pagination_link
         },
         "per_pages": &PER_PAGES,
-        "filter_fields": ["search"],
         "filter": {
             "search": {
-                "label": "Поиск",
+                "label": search_str,
                 "values": search_values,
                 "value": &query.search,
-                "placeholder": "Поиск...",
                 "reset": {
                     "href": &link_without_search,
-                    "label": "Сбросить"
+                    "label": &reset_str
+                }
+            },
+            "locale": {
+                "label": locale_str,
+                "values": locale_values,
+                "value": &query.locale,
+                "placeholder": translator_service.translate(lang, "Not selected..."),
+                "options": layout_ctx.get("locales"),
+                "reset": {
+                    "href": &link_without_locale,
+                    "label": &reset_str
                 }
             }
         }
@@ -191,6 +203,47 @@ pub async fn invoke(
 }
 
 impl IndexQuery {
+    pub fn prepare(&mut self, translator_service: &TranslatorService, lang: &str, search_str: &str, locale_str: &str) -> Vec<String> {
+        let query = self;
+        let page = max(query.page.unwrap_or(1), 1);
+        let per_page = min(query.per_page.unwrap_or(10), 100);
+        query.page = Some(page);
+        query.per_page = Some(per_page);
+
+        let mut errors: Vec<String> = Vec::new();
+        if let Some(value_original) = &query.search {
+            let value = value_original.trim();
+            if value.len() == 0 {
+                query.search = None;
+            } else {
+                let mut errors_: Vec<String> =
+                    MaxLengthString::validate(translator_service, lang, value, 255, search_str);
+                if errors_.len() != 0 {
+                    errors.append(&mut errors_);
+                    query.search = None;
+                } else if value.len() != value_original.len(){
+                    query.search = Some(value.to_owned());
+                }
+            }
+        }
+        if let Some(value_original) = &query.locale {
+            let value = value_original.trim();
+            if value.len() == 0 {
+                query.locale = None;
+            } else {
+                let mut errors_: Vec<String> =
+                    MaxLengthString::validate(translator_service, lang, value, 6, locale_str);
+                if errors_.len() != 0 {
+                    errors.append(&mut errors_);
+                    query.locale = None;
+                } else if value.len() != value_original.len(){
+                    query.locale = Some(value.to_owned());
+                }
+            }
+        }
+
+        errors
+    }
     pub fn without_page(&self) -> Self {
         let mut query = self.clone();
         query.page = None;
@@ -204,6 +257,11 @@ impl IndexQuery {
     pub fn without_search(&self) -> Self {
         let mut query = self.clone();
         query.search = None;
+        query
+    }
+    pub fn without_locale(&self) -> Self {
+        let mut query = self.clone();
+        query.locale = None;
         query
     }
     pub fn to_url(&self) -> Result<String, Error> {

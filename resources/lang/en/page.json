@@ -74,24 +74,15 @@
         "index": "{{layout.index}}"
       },
       "create": "Create user",
-      "search": "Search",
-      "page_per_page": "{{layout.index}}",
-      "per_page_label": "{{layout.per_page_label}}",
-      "select_page": "{{layout.select_page}}",
-      "selected": {
-        "label": "{{layout.selected.label}}",
-        "delete": "{{layout.selected.delete}}",
-        "delete_q": "{{layout.selected.delete_q}}"
-      },
       "columns": {
         "id": "ID",
         "email": "E-mail",
         "surname": "Surname",
         "name": "Name",
         "patronymic": "Patronymic",
+        "locale": "Locale",
         "actions": "Actions"
-      },
-      "sort": "{{layout.sort}}"
+      }
     },
     "create": {
       "title": "{{page.users.create.header}} - {{app.name}}",

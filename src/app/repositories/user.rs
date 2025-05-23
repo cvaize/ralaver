@@ -312,12 +312,22 @@ pub enum UserRepositoryError {
 #[derive(Debug)]
 pub struct UserFilter<'a> {
     pub search: &'a Option<String>,
+    pub locale: &'a Option<String>,
 }
 
 impl UserFilter<'_> {
     pub fn push_params_to_mysql_query(&self, query: &mut String) {
+        let mut is_and = false;
         if self.search.is_some() {
             query.push_str("(email LIKE :search OR surname LIKE :search OR name LIKE :search OR patronymic LIKE :search)");
+            is_and = true;
+        }
+        if self.locale.is_some() {
+            if is_and {
+                query.push_str(" AND ");
+            }
+            query.push_str("locale=:locale");
+            is_and = true;
         }
     }
 
@@ -329,6 +339,12 @@ impl UserFilter<'_> {
             params.push((
                 String::from("search"),
                 Value::Bytes(s.into_bytes()),
+            ));
+        }
+        if let Some(locale) = self.locale {
+            params.push((
+                String::from("locale"),
+                Value::Bytes(locale.trim().to_string().into_bytes()),
             ));
         }
     }

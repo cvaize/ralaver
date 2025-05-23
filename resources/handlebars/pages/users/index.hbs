@@ -23,62 +23,6 @@
 
         <div class="admin-list-page__tags">
             {{> components/tags.hbs items=filter style="min-height: 100%;" }}
-
-            <div class="admin-tags" style="min-height: 100%; display: none;">
-                <div class="admin-tag">
-                    <div class="admin-tag__name">Цвет:</div>
-                    <div class="admin-tag__value">
-                        Черный
-                        <a href="#" class="admin-tag__close"></a>
-                    </div>
-                    <div class="admin-tag__value">
-                        Белый
-                        <a href="#" class="admin-tag__close"></a>
-                    </div>
-                </div>
-                <div class="admin-tag">
-                    <div class="admin-tag__name">Размер:</div>
-                    <div class="admin-tag__value">
-                        38
-                        <a href="#" class="admin-tag__close"></a>
-                    </div>
-                    <div class="admin-tag__value">
-                        40
-                        <a href="#" class="admin-tag__close"></a>
-                    </div>
-                    <div class="admin-tag__value">
-                        42
-                        <a href="#" class="admin-tag__close"></a>
-                    </div>
-                </div>
-                <div class="admin-tag">
-                    <div class="admin-tag__name">Цвет:</div>
-                    <div class="admin-tag__value">
-                        Черный
-                        <a href="#" class="admin-tag__close"></a>
-                    </div>
-                    <div class="admin-tag__value">
-                        Белый
-                        <a href="#" class="admin-tag__close"></a>
-                    </div>
-                </div>
-                <div class="admin-tag">
-                    <div class="admin-tag__name">Цвет:</div>
-                    <div class="admin-tag__value">
-                        Черный
-                        <a href="#" class="admin-tag__close"></a>
-                    </div>
-                    <div class="admin-tag__value">
-                        Белый
-                        <a href="#" class="admin-tag__close"></a>
-                    </div>
-                </div>
-                <div style="width: 100%; margin-top: auto;">
-                    <a href="#" class="admin-btn admin-btn--link" style="text-decoration: underline;">
-                        Сбросить все фильтры
-                    </a>
-                </div>
-            </div>
         </div>
 
         <div class="admin-list-page__search">
@@ -88,7 +32,7 @@
                            name="search"
                            value="{{filter.search.value}}"
                            form="admin-list-page-search-form"
-                           placeholder="{{filter.search.placeholder}}">
+                           placeholder="{{filter.search.label}}...">
                     <a href="{{filter.search.reset.href}}" class="admin-search-group__reset" aria-label="{{filter.search.reset.label}}">
                         <svg class="admin-search-group__reset-icon-svg admin-icon--svg"
                              xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
@@ -117,7 +61,7 @@
                    hidden>
             <div class="admin-modal" tabindex="-1">
                 <label for="admin-modal__filters" class="admin-modal__backdrop"></label>
-                <div class="admin-modal__dialog">
+                <div class="admin-modal__dialog" style="max-width: 15rem;">
                     <div class="admin-modal__content">
                         <div class="admin-modal__header">
                             <h5 class="admin-modal__title">Фильтры</h5>
@@ -125,26 +69,19 @@
                                    aria-label="Close"></label>
                         </div>
                         <div class="admin-modal__body">
-                            <label class="admin-field" style="margin-bottom: 0.5rem;">
-                                <span class="admin-field__text">Lorem</span>
-                                <input form="admin-list-page-search-form" name="filter1" class="admin-field__input"
-                                       type="text">
-                            </label>
-                            <label class="admin-field" style="margin-bottom: 0.5rem;">
-                                <span class="admin-field__text">Lorem</span>
-                                <input form="admin-list-page-search-form" name="filter2" class="admin-field__input"
-                                       type="text">
-                            </label>
-                            <label class="admin-field" style="margin-bottom: 0.5rem;">
-                                <span class="admin-field__text">Lorem</span>
-                                <input form="admin-list-page-search-form" name="filter3" class="admin-field__input"
-                                       type="text">
-                            </label>
-                            <label class="admin-field" style="margin-bottom: 0.5rem;">
-                                <span class="admin-field__text">Lorem</span>
-                                <input form="admin-list-page-search-form" name="filter4" class="admin-field__input"
-                                       type="text">
-                            </label>
+                            {{> components/field.hbs
+                                    label=filter.locale.label
+                                    value=filter.locale.value
+                                    placeholder=filter.locale.placeholder
+                                    options=filter.locale.options
+                                    form="admin-list-page-search-form"
+                                    name="locale"
+                                    type="select"
+                                    style="margin-bottom: 0.5rem;"
+                                    input_style="width: 100%;"
+                                    option_value_key="code"
+                                    option_label_key="full_name"
+                            }}
                         </div>
                         <div class="admin-modal__footer" style="display: flex; flex-wrap: wrap;">
                             <button form="admin-list-page-search-form" type="submit" class="admin-btn admin-success"
@@ -240,6 +177,7 @@
                         <th class="admin-table__th" scope="col">{{columns.surname}}</th>
                         <th class="admin-table__th" scope="col">{{columns.name}}</th>
                         <th class="admin-table__th" scope="col">{{columns.patronymic}}</th>
+                        <th class="admin-table__th" scope="col">{{columns.locale}}</th>
                         <th class="admin-table__th" scope="col">{{columns.actions}}</th>
                     </tr>
                     </thead>
@@ -264,6 +202,7 @@
                             <td class="admin-table__td">{{record.surname}}</td>
                             <td class="admin-table__td">{{record.name}}</td>
                             <td class="admin-table__td">{{record.patronymic}}</td>
+                            <td class="admin-table__td">{{record.locale}}</td>
                             <td class="admin-table__td" style="white-space: nowrap;">
                                 <a href="/users/{{record.id}}/edit" class="admin-btn admin-btn--square"
                                    title="Редактировать">

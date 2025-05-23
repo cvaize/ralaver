@@ -3,11 +3,15 @@
     {{#if label}}<span class="{{#if label_class}}{{label_class}} {{/if}}admin-field__text">{{label}}</span>{{/if}}
     {{#if (eq type "select")}}
         <select class="{{#if input_class}}{{input_class}} {{/if}}admin-field__input"
+            {{#if input_style}} style="{{input_style}}"{{/if}}
             {{#if form}} form="{{form}}" {{/if}}
             {{#if type}} type="{{type}}" {{/if}}
             {{#if name}} name="{{name}}" {{/if}}
             {{#if required}} required {{/if}}
         >
+            {{#if placeholder}}
+                <option value="">{{placeholder}}</option>
+            {{/if}}
             {{#if options_values}}
                 {{#each options_values as |option_value|}}
                     <option value="{{option_value}}"
@@ -25,18 +29,22 @@
         </select>
     {{else if (eq type "textarea") }}
         <textarea class="{{#if input_class}}{{input_class}} {{/if}}admin-field__input"
+            {{#if input_style}} style="{{input_style}}"{{/if}}
             {{#if form}} form="{{form}}" {{/if}}
             {{#if type}} type="{{type}}" {{/if}}
             {{#if name}} name="{{name}}" {{/if}}
+            {{#if placeholder}} placeholder="{{placeholder}}" {{/if}}
             {{#if readonly}} readonly {{/if}}
             {{#if required}} required {{/if}}
         >{{#if value}}{{value}}{{/if}}</textarea>
     {{else }}
         <input class="{{#if input_class}}{{input_class}} {{/if}}admin-field__input"
+            {{#if input_style}} style="{{input_style}}"{{/if}}
             {{#if form}} form="{{form}}" {{/if}}
             {{#if type}} type="{{type}}" {{/if}}
             {{#if name}} name="{{name}}" {{/if}}
             {{#if value}} value="{{value}}" {{/if}}
+            {{#if placeholder}} placeholder="{{placeholder}}" {{/if}}
             {{#if readonly}} readonly {{/if}}
             {{#if required}} required {{/if}}
             {{#if autofocus}} autofocus {{/if}}
