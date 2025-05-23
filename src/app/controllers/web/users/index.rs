@@ -1,50 +1,30 @@
-use crate::app::controllers::web::{generate_pagination_array, get_context_data, get_template_context};
-use crate::{Alert, AppService, Config, LocaleService, Session, TemplateService, TranslatorService, User, UserService, WebAuthService, WebHttpResponse};
-use actix_web::web::{Data, Form, Query, ReqData};
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
-use serde_json::json;
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::cmp::{min, max};
-use serde::{Deserialize, Serialize};
+use crate::app::controllers::web::{
+    generate_pagination_array, get_context_data, get_template_context,
+};
 use crate::app::repositories::{UserFilter, UserPaginateParams};
 use crate::app::validator::rules::length::MaxLengthString;
+use crate::{
+    Alert, AppService, Config, LocaleService, Session, TemplateService, TranslatorService, User,
+    UserService, WebAuthService, WebHttpResponse,
+};
+use actix_web::web::{Data, Form, Query, ReqData};
+use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::cmp::{max, min};
+use std::collections::HashMap;
+use std::sync::Arc;
 
-pub const PER_PAGES: [i64; 6] = [
-    10,
-    20,
-    30,
-    40,
-    50,
-    100
-];
+static PAGE_URL: &str = "/users?";
 
-#[derive(Deserialize, Debug)]
+pub const PER_PAGES: [i64; 6] = [10, 20, 30, 40, 50, 100];
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct IndexQuery {
     pub page: Option<i64>,
     pub per_page: Option<i64>,
     pub search: Option<String>,
 }
-
-// #[derive(Serialize,Deserialize, Debug)]
-// struct FilterItem<'a> {
-//     pub label: Option<&'a str>,
-//     pub placeholder: Option<&'a str>,
-//     pub values: FilterValue
-//
-//     "reset": {
-//     "href": "#",
-//     "label": "Сбросить"
-//     }
-// }
-//
-// #[derive(Serialize,Deserialize, Debug)]
-// struct FilterValue {
-//     value: String,
-//     label
-//     href
-//     label
-// }
 
 pub async fn invoke(
     req: HttpRequest,
@@ -66,15 +46,19 @@ pub async fn invoke(
     let user = user.as_ref();
 
     let page = max(query.page.unwrap_or(1), 1);
-    let page_str = page.to_string();
     let per_page = min(query.per_page.unwrap_or(10), 100);
+    query.page = Some(page);
+    query.per_page = Some(per_page);
+
+    let page_str = page.to_string();
     let lang: String = locale_service.get_locale_code(Some(&req), Some(&user));
 
     let search_str = translator_service.translate(&lang, "page.users.index.search");
 
     let mut form_errors: Vec<String> = Vec::new();
     if let Some(search) = &query.search {
-        let mut search_errors: Vec<String> = MaxLengthString::validate(translator_service, &lang, search, 255, &search_str);
+        let mut search_errors: Vec<String> =
+            MaxLengthString::validate(translator_service, &lang, search, 255, &search_str);
         let is_error = search_errors.len() != 0;
         if is_error {
             form_errors.append(&mut search_errors);
@@ -87,15 +71,23 @@ pub async fn invoke(
     }
 
     let pagination_filter = UserFilter {
-        search: &query.search
+        search: &query.search,
     };
     let pagination_params = UserPaginateParams {
-        page, per_page, filter: Some(&pagination_filter), sort: None
+        page,
+        per_page,
+        filter: Some(&pagination_filter),
+        sort: None,
     };
-    let users = user_service.paginate(&pagination_params).map_err(|e| {
-        error::ErrorInternalServerError("")
-    })?;
-    let total_pages_str = users.total_pages.to_string();
+    let users = user_service
+        .paginate(&pagination_params)
+        .map_err(|e| error::ErrorInternalServerError(""))?;
+    let total_pages = if users.total_pages <= 0 {
+        1
+    } else {
+        users.total_pages
+    };
+    let total_pages_str = total_pages.to_string();
 
     let mut context_data = get_context_data(
         &req,
@@ -117,8 +109,11 @@ pub async fn invoke(
 
     let layout_ctx = get_template_context(&context_data);
 
-    let pagination_nums = generate_pagination_array(users.page, users.total_pages);
-    let pagination_link = format!("/users?per_page={per_page}&page=");
+    let mut pagination_link = query.without_search().to_url()?;
+    pagination_link.push_str("&page=");
+    let pagination_nums = generate_pagination_array(users.page, total_pages);
+
+    let link_without_search = query.without_search().to_url()?;
 
     let mut search_values = Vec::new();
     if let Some(search) = &query.search {
@@ -126,7 +121,7 @@ pub async fn invoke(
             "value": search,
             "label": search,
             "reset": {
-                "href": "#",
+                "href": &link_without_search,
                 "label": "Сбросить"
             }
         }));
@@ -166,7 +161,7 @@ pub async fn invoke(
         "users": {
             "page": users.page,
             "per_page": users.per_page,
-            "total_pages": users.total_pages,
+            "total_pages": total_pages,
             "total_records": users.total_records,
             "records": users.records,
             "pagination_nums": pagination_nums,
@@ -181,7 +176,7 @@ pub async fn invoke(
                 "value": &query.search,
                 "placeholder": "Поиск...",
                 "reset": {
-                    "href": "#",
+                    "href": &link_without_search,
                     "label": "Сбросить"
                 }
             }
@@ -193,4 +188,31 @@ pub async fn invoke(
         .clear_alerts()
         .content_type(mime::TEXT_HTML_UTF_8.as_ref())
         .body(s))
+}
+
+impl IndexQuery {
+    pub fn without_page(&self) -> Self {
+        let mut query = self.clone();
+        query.page = None;
+        query
+    }
+    pub fn without_per_page(&self) -> Self {
+        let mut query = self.clone();
+        query.per_page = None;
+        query
+    }
+    pub fn without_search(&self) -> Self {
+        let mut query = self.clone();
+        query.search = None;
+        query
+    }
+    pub fn to_url(&self) -> Result<String, Error> {
+        let url = serde_urlencoded::to_string(self).map_err(|e| {
+            log::error!("app::controllers::web::users::index::IndexQuery::to_url - {e}");
+            error::ErrorInternalServerError("")
+        })?;
+        let mut result = String::from(PAGE_URL);
+        result.push_str(&url);
+        Ok(result)
+    }
 }

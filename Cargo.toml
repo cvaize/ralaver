@@ -34,7 +34,6 @@ sodoken = "0.1.0"
 mime = "0.3.17"
 serde_urlencoded = "0.7.1"
 url = "2.5.4"
-serde_with = "3.12.0"
 tokio = { version = "1.45.0", features = ["full"] }
 r2d2_mysql = "25.0.0"
 
