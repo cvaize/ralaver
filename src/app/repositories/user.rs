@@ -143,8 +143,6 @@ impl UserRepository {
 
         let sql = make_pagination_mysql_query(COLUMNS_QUERY, "users", &mysql_where, &mysql_order);
 
-        // dbg!(&sql);
-        // dbg!(&mysql_params);
         let rows = conn
             .exec_iter(&sql, Params::from(mysql_params))
             .map_err(|e| {

@@ -197,6 +197,9 @@ pub async fn invoke(
             "pagination_link": pagination_link
         },
         "per_pages": &PER_PAGES,
+        "filter_label": translator_service.translate(lang, "Filters"),
+        "close_label": translator_service.translate(lang, "Close"),
+        "apply_label": translator_service.translate(lang, "Apply"),
         "filter": {
             "search": {
                 "label": search_str,

@@ -170,20 +170,12 @@ impl TranslatorService {
         v_key
     }
 
-    // Функция возвращает перевод по переданному языку. Если перевод не найден по переданному языку,
-    // то функция возвращает перевод по языку по умолчанию (app.locale). А если нет перевода по умолчанию, то берётся fallback язык (app.fallback_locale).
-    // Если нет переводов с fallback языком, то возвращается переданный ключ.
     pub fn translate(&self, lang: &str, key: &str) -> String {
         if let Some(translate) = self.get(lang, key) {
             return translate.to_string();
         }
 
         let app = &self.config.get_ref().app;
-        if lang != app.locale {
-            if let Some(translate) = self.get(&app.locale, key) {
-                return translate.to_string();
-            }
-        }
 
         if lang != app.fallback_locale && app.locale != app.fallback_locale {
             if let Some(translate) = self.get(&app.fallback_locale, key) {
@@ -485,60 +477,6 @@ mod tests {
             let _ = value.trim().to_string();
         });
     }
-
-    // #[bench]
-    // fn bench_strfmt(b: &mut Bencher) {
-    //     // 227.62 ns/iter (+/- 6.12)
-    //     let vars: HashMap<String, String> = HashMap::from([
-    //         ("key".to_string(), "test123".to_string()),
-    //         ("value".to_string(), "test321".to_string())
-    //     ]);
-    //
-    //     let fmt = "test test test {key} {value}".to_string();
-    //     dbg!(strfmt::strfmt(&fmt, &vars).unwrap());
-    //     b.iter(|| {
-    //         let _ = strfmt::strfmt(&fmt, &vars).unwrap();
-    //     });
-    // }
-
-    // #[bench]
-    // fn bench_aho_corasick(b: &mut Bencher) {
-    //     // 103.25 ns/iter (+/- 2.73)
-    //     use aho_corasick::{AhoCorasick, MatchKind};
-    //
-    //     let patterns = &[":key", ":value"];
-    //     let replace_with = &["test123", "test321"];
-    //     let haystack = "test test test :key :value".to_string();
-    //
-    //     let ac = AhoCorasick::builder()
-    //         .match_kind(MatchKind::LeftmostFirst)
-    //         .build(patterns)
-    //         .unwrap();
-    //     let result = ac.replace_all(&haystack, replace_with);
-    //     b.iter(|| {
-    //         let _ = ac.replace_all(&haystack, replace_with);
-    //     });
-    // }
-
-    // #[bench]
-    // fn bench_formatify(b: &mut Bencher) {
-    //     // 403.43 ns/iter (+/- 17.36)
-    //     use formatify::PlaceholderFormatter;
-    //     use formatify::Formatify;
-    //
-    //     let vars: HashMap<&str, String> = HashMap::from([
-    //         ("key", "test123".to_string()),
-    //         ("value", "test321".to_string())
-    //     ]);
-    //     let fmt = "test test test %(key) %(value)".to_string();
-    //
-    //     let formatter = Formatify::new();
-    //     let formatted_string = formatter.replace_placeholders(&vars, &fmt);
-    //     dbg!(formatted_string);
-    //     b.iter(|| {
-    //         let _ = formatter.replace_placeholders(&vars, &fmt);
-    //     });
-    // }
 
     #[test]
     fn new_from_files() {
