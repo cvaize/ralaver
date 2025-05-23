@@ -1,13 +1,16 @@
-use crate::app::repositories::Value;
+use crate::app::repositories::make_pagination_mysql_query;
 use crate::{
     AuthServiceError, MysqlPool, NewUser, PaginationResult, RandomService, UpdateUser, User,
     UserServiceError,
 };
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;
-use r2d2_mysql::mysql::{params, Error, Row};
+use r2d2_mysql::mysql::Value;
+use r2d2_mysql::mysql::{params, Error, Params, Row};
 use serde_derive::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
+
+static COLUMNS_QUERY: &str = "id, email, locale, surname, name, patronymic";
 
 static SELECT_BY_ID_QUERY: &str =
     "SELECT id, email, locale, surname, name, patronymic FROM users WHERE id=:id";
@@ -22,7 +25,7 @@ static EXISTS_BY_EMAIL_QUERY: &str =
     "SELECT EXISTS(SELECT 1 FROM users WHERE email=:email LIMIT 1) as is_exists";
 
 static PAGINATION_QUERY: &str =
-    "SELECT id, email, locale, surname, name, patronymic, COUNT(*) OVER () as total_records FROM users t LIMIT :per_page OFFSET :offset";
+    "SELECT id, email, locale, surname, name, patronymic, COUNT(*) OVER () as total_records FROM users LIMIT :per_page OFFSET :offset";
 
 static INSERT_QUERY: &str =
     "INSERT INTO users (email, password, locale, surname, name, patronymic) VALUES (:email, :password, :locale, :surname, :name, :patronymic)";
@@ -119,17 +122,29 @@ impl UserRepository {
         })?;
         let page = params.page;
         let per_page = params.per_page;
-
         let offset = (page - 1) * per_page;
+
+        let mut mysql_where: String = String::new();
+        let mut mysql_params: Vec<(String, Value)> = vec![
+            (String::from("per_page"), Value::Int(per_page)),
+            (String::from("offset"), Value::Int(offset)),
+        ];
+
+        if let Some(filter) = params.filter {
+            filter.push_params_to_vec(&mut mysql_params);
+            filter.push_params_to_mysql_query(&mut mysql_where);
+        }
+
+        let sql = make_pagination_mysql_query(COLUMNS_QUERY, "users", &mysql_where);
+
+        // dbg!(&sql);
+        // dbg!(&mysql_params);
         let rows = conn
-            .exec_iter(
-                PAGINATION_QUERY,
-                params! {
-                    "per_page" => per_page,
-                    "offset" => offset,
-                },
-            )
-            .map_err(|_| UserRepositoryError::Fail)?;
+            .exec_iter(&sql, Params::from(mysql_params))
+            .map_err(|e| {
+                log::error!("UserRepository::paginate - {e}");
+                UserRepositoryError::Fail
+            })?;
 
         let mut records: Vec<User> = Vec::new();
         let mut total_records: i64 = 0;
@@ -295,8 +310,28 @@ pub enum UserRepositoryError {
 }
 
 #[derive(Debug)]
-pub struct UserFilter <'a> {
+pub struct UserFilter<'a> {
     pub search: &'a Option<String>,
+}
+
+impl UserFilter<'_> {
+    pub fn push_params_to_mysql_query(&self, query: &mut String) {
+        if self.search.is_some() {
+            query.push_str("(email LIKE :search OR surname LIKE :search OR name LIKE :search OR patronymic LIKE :search)");
+        }
+    }
+
+    pub fn push_params_to_vec(&self, params: &mut Vec<(String, Value)>) {
+        if let Some(search) = self.search {
+            let mut s = "%".to_string();
+            s.push_str(search.trim());
+            s.push_str("%");
+            params.push((
+                String::from("search"),
+                Value::Bytes(s.into_bytes()),
+            ));
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -540,6 +575,51 @@ mod tests {
 
         assert!(user_rep.exists_by_email(email).unwrap());
 
+        let user = user_rep.first_by_email(email);
+        if let Ok(user) = user {
+            if let Some(user) = user {
+                user_rep.delete_by_id(user.id).unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn test_paginate_with_filters() {
+        let (_, all_services) = preparation();
+        let user_rep = all_services.user_rep.get_ref();
+
+        let email = "admin_paginate_with_filters@admin.example";
+
+        let user = user_rep.first_by_email(email);
+        if let Ok(user) = user {
+            if let Some(user) = user {
+                user_rep.delete_by_id(user.id).unwrap();
+            }
+        }
+
+        // Create temp data
+        let users = vec![NewUser::empty(email.to_string())];
+        user_rep.insert(&users).unwrap();
+
+        // Search exists
+        let search = Some("paginate_with_filters".to_string());
+        let filter = UserFilter { search: &search };
+        let mut params = UserPaginateParams::one();
+        params.filter = Some(&filter);
+
+        let users = user_rep.paginate(&params).unwrap();
+        assert_eq!(users.records[0].email, email);
+
+        // Search not exists
+        let search = Some("paginate_____filters".to_string());
+        let filter = UserFilter { search: &search };
+        let mut params = UserPaginateParams::one();
+        params.filter = Some(&filter);
+
+        let users = user_rep.paginate(&params).unwrap();
+        assert_eq!(users.records.len(), 0);
+
+        // Delete temp data
         let user = user_rep.first_by_email(email);
         if let Ok(user) = user {
             if let Some(user) = user {

@@ -6,9 +6,8 @@ use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::cmp::{min, max};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use crate::app::repositories::{UserFilter, UserPaginateParams};
-use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::length::MaxLengthString;
 
 pub const PER_PAGES: [i64; 6] = [
@@ -26,6 +25,26 @@ pub struct IndexQuery {
     pub per_page: Option<i64>,
     pub search: Option<String>,
 }
+
+// #[derive(Serialize,Deserialize, Debug)]
+// struct FilterItem<'a> {
+//     pub label: Option<&'a str>,
+//     pub placeholder: Option<&'a str>,
+//     pub values: FilterValue
+//
+//     "reset": {
+//     "href": "#",
+//     "label": "Сбросить"
+//     }
+// }
+//
+// #[derive(Serialize,Deserialize, Debug)]
+// struct FilterValue {
+//     value: String,
+//     label
+//     href
+//     label
+// }
 
 pub async fn invoke(
     req: HttpRequest,
@@ -101,6 +120,18 @@ pub async fn invoke(
     let pagination_nums = generate_pagination_array(users.page, users.total_pages);
     let pagination_link = format!("/users?per_page={per_page}&page=");
 
+    let mut search_values = Vec::new();
+    if let Some(search) = &query.search {
+        search_values.push(json!({
+            "value": search,
+            "label": search,
+            "reset": {
+                "href": "#",
+                "label": "Сбросить"
+            }
+        }));
+    }
+
     let ctx = json!({
         "ctx": layout_ctx,
         "heading": translator_service.translate(lang, "page.users.index.header"),
@@ -142,7 +173,21 @@ pub async fn invoke(
             "pagination_link": pagination_link
         },
         "per_pages": &PER_PAGES,
+        "filter_fields": ["search"],
+        "filter": {
+            "search": {
+                "label": "Поиск",
+                "values": search_values,
+                "value": &query.search,
+                "placeholder": "Поиск...",
+                "reset": {
+                    "href": "#",
+                    "label": "Сбросить"
+                }
+            }
+        }
     });
+
     let s = tmpl_service.render_throw_http("pages/users/index.hbs", &ctx)?;
     Ok(HttpResponse::Ok()
         .clear_alerts()

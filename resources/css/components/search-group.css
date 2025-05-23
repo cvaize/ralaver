@@ -14,7 +14,7 @@
 }
 
 .admin-search-group__reset {
-    display: block;
+    display: flex;
     position: absolute;
     right: 0.1em;
     top: 50%;
@@ -29,6 +29,8 @@
     font-size: 1.4rem;
     opacity: 0.5;
     padding: 0;
+    align-items: center;
+    justify-content: center;
 }
 
 .admin-search-group__input:placeholder-shown ~ .admin-search-group__reset {
@@ -36,6 +38,7 @@
 }
 
 .admin-search-group__reset-icon-svg {
+    top: 0;
 }
 
 .admin-search-group__reset:hover {

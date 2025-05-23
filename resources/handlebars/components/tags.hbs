@@ -1,0 +1,5 @@
+<div class="admin-tags" {{#if style}} style="{{style}}"{{/if}}>
+    {{#each items as |item|}}
+        {{> components/tag.hbs label=item.label values=item.values }}
+    {{/each}}
+</div>

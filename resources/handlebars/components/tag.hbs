@@ -1,28 +1,13 @@
-<div class="admin-tags">
+{{#if values}}
     <div class="admin-tag">
-        <div class="admin-tag__name">Цвет:</div>
-        <div class="admin-tag__value">
-            Черный
-            <a href="#" class="admin-tag__close"></a>
-        </div>
-        <div class="admin-tag__value">
-            Белый
-            <a href="#" class="admin-tag__close"></a>
-        </div>
+        <div class="admin-tag__name">{{label}}:</div>
+        {{#each values as |value|}}
+            <div class="admin-tag__value">
+                {{value.label}}
+                {{#if value.reset}}
+                    <a href="{{value.reset.href}}" class="admin-tag__close" aria-label="{{value.reset.label}}"></a>
+                {{/if}}
+            </div>
+        {{/each}}
     </div>
-    <div class="admin-tag">
-        <div class="admin-tag__name">Размер:</div>
-        <div class="admin-tag__value">
-            38
-            <a href="#" class="admin-tag__close"></a>
-        </div>
-        <div class="admin-tag__value">
-            40
-            <a href="#" class="admin-tag__close"></a>
-        </div>
-        <div class="admin-tag__value">
-            42
-            <a href="#" class="admin-tag__close"></a>
-        </div>
-    </div>
-</div>
+{{/if}}
