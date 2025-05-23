@@ -1,7 +1,7 @@
 use crate::app::controllers::web::{
     generate_pagination_array, get_context_data, get_template_context,
 };
-use crate::app::repositories::{UserFilter, UserPaginateParams};
+use crate::app::repositories::{UserFilter, UserPaginateParams, UserSort};
 use crate::app::validator::rules::length::MaxLengthString;
 use crate::{
     Alert, AppService, Config, Locale, LocaleService, Session, TemplateService, TranslatorService,
@@ -13,7 +13,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::cmp::{max, min};
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::Arc;
+use strum::{EnumMessage, IntoEnumIterator};
 
 static PAGE_URL: &str = "/users?";
 
@@ -25,6 +27,7 @@ pub struct IndexQuery {
     pub per_page: Option<i64>,
     pub search: Option<String>,
     pub locale: Option<String>,
+    pub sort: Option<String>,
 }
 
 pub async fn invoke(
@@ -52,8 +55,15 @@ pub async fn invoke(
     let search_str = translator_service.translate(lang, "Search");
     let reset_str = translator_service.translate(lang, "Reset");
     let locale_str = translator_service.translate(lang, "page.users.index.columns.locale");
+    let sort_str = translator_service.translate(lang, "Sort");
 
-    let mut form_errors: Vec<String> = query.prepare(translator_service, lang, &search_str, &locale_str);
+    let mut form_errors: Vec<String> = query.prepare(
+        translator_service,
+        lang,
+        &search_str,
+        &locale_str,
+        &sort_str,
+    );
 
     let page = query.page.unwrap();
     let per_page = query.per_page.unwrap();
@@ -64,11 +74,17 @@ pub async fn invoke(
         search: &query.search,
         locale: &query.locale,
     };
+    let mut sort = None;
+    if let Some(sort_) = &query.sort {
+        if let Ok(sort__) = UserSort::from_str(sort_) {
+            sort = Some(sort__);
+        }
+    }
     let pagination_params = UserPaginateParams {
         page,
         per_page,
         filter: Some(&pagination_filter),
-        sort: None,
+        sort: sort.as_ref(),
     };
     let users = user_service
         .paginate(&pagination_params)
@@ -129,13 +145,21 @@ pub async fn invoke(
         }));
     }
 
+    let mut sort_options: Vec<Value> = Vec::new();
+    for sort_enum in UserSort::iter() {
+        let label = sort_enum.get_message().unwrap();
+        let label = translator_service.translate(lang, &label);
+        let value = sort_enum.to_string();
+        sort_options.push(json!({ "label": label, "value": value }));
+    }
+
     let ctx = json!({
         "ctx": &layout_ctx,
         "heading": translator_service.translate(lang, "page.users.index.header"),
         "breadcrumbs": [
-            {"href": "/", "label": translator_service.translate(lang, "page.users.index.breadcrumbs.home")},
-            {"href": "/users", "label": translator_service.translate(lang, "page.users.index.breadcrumbs.users")},
-            {"label": translator_service.variables(lang, "page.users.index.breadcrumbs.index", &page_vars)},
+            {"href": "/", "label": translator_service.translate(lang, "page.home.header")},
+            {"href": "/users", "label": translator_service.translate(lang, "page.users.index.header")},
+            {"label": translator_service.variables(lang, "Page :page of :total_pages", &page_vars)},
         ],
         "create": {
             "href": "/users/create",
@@ -145,7 +169,9 @@ pub async fn invoke(
         "per_page_label": translator_service.translate(lang, "Number of entries per page"),
         "select_page": translator_service.translate(lang, "Select page"),
         "sort": {
-            "label": translator_service.translate(lang, "Sort")
+            "label": &sort_str,
+            "value": &query.sort,
+            "options": &sort_options
         },
         "selected": {
             "label": translator_service.translate(lang, "Selected"),
@@ -203,7 +229,14 @@ pub async fn invoke(
 }
 
 impl IndexQuery {
-    pub fn prepare(&mut self, translator_service: &TranslatorService, lang: &str, search_str: &str, locale_str: &str) -> Vec<String> {
+    pub fn prepare(
+        &mut self,
+        translator_service: &TranslatorService,
+        lang: &str,
+        search_str: &str,
+        locale_str: &str,
+        sort_str: &str,
+    ) -> Vec<String> {
         let query = self;
         let page = max(query.page.unwrap_or(1), 1);
         let per_page = min(query.per_page.unwrap_or(10), 100);
@@ -221,7 +254,7 @@ impl IndexQuery {
                 if errors_.len() != 0 {
                     errors.append(&mut errors_);
                     query.search = None;
-                } else if value.len() != value_original.len(){
+                } else if value.len() != value_original.len() {
                     query.search = Some(value.to_owned());
                 }
             }
@@ -236,10 +269,29 @@ impl IndexQuery {
                 if errors_.len() != 0 {
                     errors.append(&mut errors_);
                     query.locale = None;
-                } else if value.len() != value_original.len(){
+                } else if value.len() != value_original.len() {
                     query.locale = Some(value.to_owned());
                 }
             }
+        }
+        if let Some(value_original) = &query.sort {
+            let value = value_original.trim();
+            if value.len() == 0 {
+                query.sort = None;
+            } else {
+                let mut errors_: Vec<String> =
+                    MaxLengthString::validate(translator_service, lang, value, 255, sort_str);
+                if errors_.len() != 0 {
+                    errors.append(&mut errors_);
+                    query.sort = None;
+                } else if value.len() != value_original.len() {
+                    query.sort = Some(value.to_owned());
+                }
+            }
+        }
+
+        if query.sort.is_none() {
+            query.sort = Some(UserSort::IdDesc.to_string());
         }
 
         errors
@@ -262,6 +314,11 @@ impl IndexQuery {
     pub fn without_locale(&self) -> Self {
         let mut query = self.clone();
         query.locale = None;
+        query
+    }
+    pub fn without_sort(&self) -> Self {
+        let mut query = self.clone();
+        query.sort = None;
         query
     }
     pub fn to_url(&self) -> Result<String, Error> {

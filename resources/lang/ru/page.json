@@ -68,11 +68,6 @@
     "index": {
       "title": "Страница :page из :total_pages - {{page.users.index.header}} - {{app.name}}",
       "header": "Список пользователей",
-      "breadcrumbs": {
-        "home": "{{page.home.header}}",
-        "users": "{{page.users.index.header}}",
-        "index": "{{layout.index}}"
-      },
       "create": "Добавить пользователя",
       "columns": {
         "id": "ID",

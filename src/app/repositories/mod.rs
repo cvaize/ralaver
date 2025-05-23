@@ -32,7 +32,7 @@ impl<U> PaginationResult<U> {
 }
 
 
-pub fn make_pagination_mysql_query(columns: &str, table: &str, where_: &str) -> String {
+pub fn make_pagination_mysql_query(columns: &str, table: &str, where_: &str, order_: &str) -> String {
     let mut sql = "SELECT ".to_string();
     sql.push_str(columns);
     sql.push_str(", COUNT(*) OVER () as total_records FROM ");
@@ -40,6 +40,10 @@ pub fn make_pagination_mysql_query(columns: &str, table: &str, where_: &str) -> 
     if where_.len() > 0 {
         sql.push_str(" WHERE ");
         sql.push_str(where_);
+    }
+    if order_.len() > 0 {
+        sql.push_str(" ORDER BY ");
+        sql.push_str(order_);
     }
     sql.push_str(" LIMIT :per_page OFFSET :offset");
     sql

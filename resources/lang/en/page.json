@@ -68,11 +68,6 @@
     "index": {
       "title": "Page :page of :per_page - {{page.users.index.header}} - {{app.name}}",
       "header": "Users list",
-      "breadcrumbs": {
-        "home": "{{page.home.header}}",
-        "users": "{{page.users.index.header}}",
-        "index": "{{layout.index}}"
-      },
       "create": "Create user",
       "columns": {
         "id": "ID",

@@ -97,17 +97,20 @@
         </div>
 
         <div class="admin-list-page__sort">
-            <label class="admin-list-page__sort__field admin-field">
-                <span class="admin-list-page__sort__label admin-field__text">{{sort.label}}</span>
-                <select form="admin-list-page-search-form" name="sort" class="admin-field__input">
-                    <option>Фамилия А-Я</option>
-                    <option>Фамилия Я-А</option>
-                    <option>Имя А-Я</option>
-                    <option>Имя Я-А</option>
-                    <option>Количество посещений 0-9</option>
-                    <option>Количество посещений 9-0</option>
-                </select>
-            </label>
+            {{> components/field.hbs
+                    form="admin-list-page-search-form"
+                    field_class="admin-list-page__sort__field"
+                    label_class="admin-list-page__sort__label"
+                    input_class="js-submit-on-change"
+                    input_style="min-width: 10rem;"
+                    label=sort.label
+                    value=sort.value
+                    options=sort.options
+                    name="sort"
+                    type="select"
+                    option_value_key="value"
+                    option_label_key="label"
+            }}
         </div>
 
         <div class="admin-list-page__top-paginate">
@@ -116,25 +119,6 @@
                     pagination_nums=users.pagination_nums
                     pagination_link=users.pagination_link
             }}
-        </div>
-
-        <div class="admin-list-page__top-page-control">
-            <label class="admin-field" title="{{select_page}}">
-                <select form="admin-list-page-search-form" name="top-page" class="admin-field__input">
-                    <option>1</option>
-                    <option>5</option>
-                    <option selected>8</option>
-                    <option>10</option>
-                    <option>15</option>
-                    <option>20</option>
-                    <option>25</option>
-                    <option>30</option>
-                    <option>35</option>
-                    <option>40</option>
-                    <option>45</option>
-                    <option>50</option>
-                </select>
-            </label>
         </div>
 
         <div class="admin-list-page__data">
@@ -240,9 +224,9 @@
                     input_class="js-submit-on-change"
                     label=per_page_label
                     value=users.per_page
+                    options_values=per_pages
                     name="per_page"
                     type="select"
-                    options_values=per_pages
             }}
         </div>
 
@@ -252,25 +236,6 @@
                     pagination_nums=users.pagination_nums
                     pagination_link=users.pagination_link
             }}
-        </div>
-
-        <div class="admin-list-page__bottom-page-control">
-            <label class="admin-field" title="{{select_page}}">
-                <select form="admin-list-page-search-form" name="bottom-page" class="admin-field__input">
-                    <option>1</option>
-                    <option>5</option>
-                    <option selected>8</option>
-                    <option>10</option>
-                    <option>15</option>
-                    <option>20</option>
-                    <option>25</option>
-                    <option>30</option>
-                    <option>35</option>
-                    <option>40</option>
-                    <option>45</option>
-                    <option>50</option>
-                </select>
-            </label>
         </div>
     </div>
 {{/components/layout.hbs}}

@@ -8,7 +8,7 @@ use r2d2_mysql::mysql::prelude::Queryable;
 use r2d2_mysql::mysql::Value;
 use r2d2_mysql::mysql::{params, Error, Params, Row};
 use serde_derive::{Deserialize, Serialize};
-use strum_macros::{Display, EnumString};
+use strum_macros::{Display, EnumIter, EnumMessage, EnumString, VariantArray, VariantNames};
 
 static COLUMNS_QUERY: &str = "id, email, locale, surname, name, patronymic";
 
@@ -125,6 +125,7 @@ impl UserRepository {
         let offset = (page - 1) * per_page;
 
         let mut mysql_where: String = String::new();
+        let mut mysql_order: String = String::new();
         let mut mysql_params: Vec<(String, Value)> = vec![
             (String::from("per_page"), Value::Int(per_page)),
             (String::from("offset"), Value::Int(offset)),
@@ -135,7 +136,12 @@ impl UserRepository {
             filter.push_params_to_mysql_query(&mut mysql_where);
         }
 
-        let sql = make_pagination_mysql_query(COLUMNS_QUERY, "users", &mysql_where);
+        if let Some(sort) = params.sort {
+            sort.push_params_to_vec(&mut mysql_params);
+            sort.push_params_to_mysql_query(&mut mysql_order);
+        }
+
+        let sql = make_pagination_mysql_query(COLUMNS_QUERY, "users", &mysql_where, &mysql_order);
 
         // dbg!(&sql);
         // dbg!(&mysql_params);
@@ -350,10 +356,54 @@ impl UserFilter<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Display, EnumString, EnumIter, EnumMessage)]
+#[strum(serialize_all = "snake_case")]
 pub enum UserSort {
+    #[strum(message = "ID 0-9")]
     IdAsc,
+    #[strum(message = "ID 9-0")]
     IdDesc,
+    #[strum(message = "E-mail A-Z")]
+    EmailAsc,
+    #[strum(message = "E-mail Z-A")]
+    EmailDesc,
+    #[strum(message = "Surname A-Z")]
+    SurnameAsc,
+    #[strum(message = "Surname Z-A")]
+    SurnameDesc,
+    #[strum(message = "Name A-Z")]
+    NameAsc,
+    #[strum(message = "Name Z-A")]
+    NameDesc,
+    #[strum(message = "Patronymic A-Z")]
+    PatronymicAsc,
+    #[strum(message = "Patronymic Z-A")]
+    PatronymicDesc,
+    #[strum(message = "Full name A-Z")]
+    FullNameAsc,
+    #[strum(message = "Full name Z-A")]
+    FullNameDesc,
+}
+
+impl UserSort {
+    pub fn push_params_to_mysql_query(&self, query: &mut String) {
+        match self {
+            Self::IdAsc => query.push_str("id ASC"),
+            Self::IdDesc => query.push_str("id DESC"),
+            Self::EmailAsc => query.push_str("email ASC"),
+            Self::EmailDesc => query.push_str("email DESC"),
+            Self::SurnameAsc => query.push_str("surname ASC"),
+            Self::SurnameDesc => query.push_str("surname DESC"),
+            Self::NameAsc => query.push_str("name ASC"),
+            Self::NameDesc => query.push_str("name DESC"),
+            Self::PatronymicAsc => query.push_str("patronymic ASC"),
+            Self::PatronymicDesc => query.push_str("patronymic DESC"),
+            Self::FullNameAsc => query.push_str("surname ASC, name ASC, patronymic ASC"),
+            Self::FullNameDesc => query.push_str("surname DESC, name DESC, patronymic DESC"),
+        };
+    }
+
+    pub fn push_params_to_vec(&self, _: &mut Vec<(String, Value)>) {}
 }
 
 #[derive(Debug)]
@@ -619,7 +669,8 @@ mod tests {
 
         // Search exists
         let search = Some("paginate_with_filters".to_string());
-        let filter = UserFilter { search: &search };
+        let locale = None;
+        let filter = UserFilter { search: &search, locale: &locale };
         let mut params = UserPaginateParams::one();
         params.filter = Some(&filter);
 
@@ -628,7 +679,7 @@ mod tests {
 
         // Search not exists
         let search = Some("paginate_____filters".to_string());
-        let filter = UserFilter { search: &search };
+        let filter = UserFilter { search: &search, locale: &locale };
         let mut params = UserPaginateParams::one();
         params.filter = Some(&filter);
 
