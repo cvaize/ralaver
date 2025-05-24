@@ -69,6 +69,20 @@
       "title": "Страница :page из :total_pages - {{page.users.index.header}} - {{app.name}}",
       "header": "Список пользователей",
       "create": "Добавить пользователя",
+      "sort": {
+        "id_asc": "ID 0-9",
+        "id_desc": "ID 9-0",
+        "email_asc": "E-mail A-Z",
+        "email_desc": "E-mail Z-A",
+        "surname_asc": "Фамилия А-Я",
+        "surname_desc": "Фамилия Я-А",
+        "name_asc": "Имя А-Я",
+        "name_desc": "Имя Я-А",
+        "patronymic_asc": "Отчество А-Я",
+        "patronymic_desc": "Отчество Я-А",
+        "full_name_asc": "ФИО А-Я",
+        "full_name_desc": "ФИО Я-А"
+      },
       "columns": {
         "id": "ID",
         "email": "E-mail",

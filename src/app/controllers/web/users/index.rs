@@ -70,22 +70,22 @@ pub async fn invoke(
 
     let page_str = page.to_string();
 
-    let pagination_filter = UserFilter {
-        search: &query.search,
-        locale: &query.locale,
-    };
+    let mut filters: Vec<UserFilter> = Vec::new();
+
+    if let Some(value) = &query.search {
+        filters.push(UserFilter::Search(value));
+    }
+    if let Some(value) = &query.locale {
+        filters.push(UserFilter::Locale(value));
+    }
+
     let mut sort = None;
     if let Some(sort_) = &query.sort {
         if let Ok(sort__) = UserSort::from_str(sort_) {
             sort = Some(sort__);
         }
     }
-    let pagination_params = UserPaginateParams {
-        page,
-        per_page,
-        filter: Some(&pagination_filter),
-        sort: sort.as_ref(),
-    };
+    let pagination_params = UserPaginateParams::new(page, per_page, filters, sort);
     let users = user_service
         .paginate(&pagination_params)
         .map_err(|e| error::ErrorInternalServerError(""))?;
@@ -147,8 +147,10 @@ pub async fn invoke(
 
     let mut sort_options: Vec<Value> = Vec::new();
     for sort_enum in UserSort::iter() {
-        let label = sort_enum.get_message().unwrap();
-        let label = translator_service.translate(lang, &label);
+        let value = sort_enum.to_string();
+        let mut key = String::from("page.users.index.sort.");
+        key.push_str(&value);
+        let label = translator_service.translate(lang, &key);
         let value = sort_enum.to_string();
         sort_options.push(json!({ "label": label, "value": value }));
     }

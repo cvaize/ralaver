@@ -69,6 +69,20 @@
       "title": "Page :page of :per_page - {{page.users.index.header}} - {{app.name}}",
       "header": "Users list",
       "create": "Create user",
+      "sort": {
+        "id_asc": "ID 0-9",
+        "id_desc": "ID 9-0",
+        "email_asc": "E-mail A-Z",
+        "email_desc": "E-mail Z-A",
+        "surname_asc": "Surname A-Z",
+        "surname_desc": "Surname Z-A",
+        "name_asc": "Name A-Z",
+        "name_desc": "Name Z-A",
+        "patronymic_asc": "Patronymic A-Z",
+        "patronymic_desc": "Patronymic Z-A",
+        "full_name_asc": "Full name A-Z",
+        "full_name_desc": "Full name Z-A"
+      },
       "columns": {
         "id": "ID",
         "email": "E-mail",

@@ -1,6 +1,7 @@
 use std::{fs, io};
 use std::path::{Path, PathBuf};
 use std::convert::TryInto;
+use crate::app::repositories::UserRepositoryError;
 
 #[allow(dead_code)]
 pub fn print_type_of<T>(_: &T) {
