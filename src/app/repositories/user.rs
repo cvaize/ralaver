@@ -1,5 +1,12 @@
-use crate::app::repositories::{make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query, make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query, FromDbRowError, FromMysqlDto, ToMysqlDto};
-use crate::{AuthServiceError, MysqlPool, MysqlPooledConnection, NewUserData, PaginationResult, CredentialsUserData, RandomService, User, UserServiceError};
+use crate::app::repositories::{
+    make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query,
+    make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query, FromDbRowError,
+    FromMysqlDto, ToMysqlDto,
+};
+use crate::{
+    AuthServiceError, CredentialsUserData, MysqlPool, MysqlPooledConnection, NewUserData,
+    PaginationResult, RandomService, User, UserServiceError,
+};
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;
 use r2d2_mysql::mysql::Value;
@@ -9,26 +16,13 @@ use strum_macros::{Display, EnumIter, EnumMessage, EnumString, VariantArray, Var
 
 pub struct UserRepository {
     table: String,
-    columns: String,
-    credentials_columns: String,
-    insert_columns: String,
     db_pool: Data<MysqlPool>,
 }
 
 impl UserRepository {
     pub fn new(db_pool: Data<MysqlPool>) -> Self {
         let table = "users".to_string();
-        let columns = "id, email, locale, surname, name, patronymic".to_string();
-        let credentials_columns = "id, email, password".to_string();
-        let insert_columns = "(email, password, locale, surname, name, patronymic) VALUES (:email, :password, :locale, :surname, :name, :patronymic)".to_string();
-        let update_columns = "password=:password".to_string();
-        Self {
-            table,
-            columns,
-            credentials_columns,
-            insert_columns,
-            db_pool,
-        }
+        Self { table, db_pool }
     }
 
     fn connection(&self) -> Result<MysqlPooledConnection, UserRepositoryError> {
@@ -38,11 +32,14 @@ impl UserRepository {
         })
     }
 
-    fn row_to_entity(&self, row: &Row) -> Result<User, UserRepositoryError> {
-        User::from_db_row(row).map_err(|_| UserRepositoryError::Fail)
+    fn row_to_entity(&self, row: &mut Row) -> Result<User, UserRepositoryError> {
+        User::take_from_db_row(row).map_err(|_| UserRepositoryError::Fail)
     }
 
-    fn try_row_to_entity(&self, row: &Option<Row>) -> Result<Option<User>, UserRepositoryError> {
+    fn try_row_to_entity(
+        &self,
+        row: &mut Option<Row>,
+    ) -> Result<Option<User>, UserRepositoryError> {
         if let Some(row) = row {
             return Ok(Some(self.row_to_entity(row)?));
         }
@@ -50,13 +47,16 @@ impl UserRepository {
         Ok(None)
     }
 
-    fn row_to_private_entity(&self, row: &Row) -> Result<CredentialsUserData, UserRepositoryError> {
-        CredentialsUserData::from_db_row(row).map_err(|_| UserRepositoryError::Fail)
+    fn row_to_private_entity(
+        &self,
+        row: &mut Row,
+    ) -> Result<CredentialsUserData, UserRepositoryError> {
+        CredentialsUserData::take_from_db_row(row).map_err(|_| UserRepositoryError::Fail)
     }
 
     fn try_row_to_private_entity(
         &self,
-        row: &Option<Row>,
+        row: &mut Option<Row>,
     ) -> Result<Option<CredentialsUserData>, UserRepositoryError> {
         if let Some(row) = row {
             return Ok(Some(self.row_to_private_entity(row)?));
@@ -74,37 +74,39 @@ impl UserRepository {
     }
 
     pub fn first_by_id(&self, id: u64) -> Result<Option<User>, UserRepositoryError> {
-        let query = make_select_mysql_query(&self.columns, &self.table, "id=:id", "");
+        let columns = User::db_select_columns();
+        let query = make_select_mysql_query(&self.table, &columns, "id=:id", "");
         let mut conn = self.connection()?;
-        let row: Option<Row> = conn
+        let mut row: Option<Row> = conn
             .exec_first(query, params! {"id" => id})
             .map_err(|_| UserRepositoryError::Fail)?;
 
-        self.try_row_to_entity(&row)
+        self.try_row_to_entity(&mut row)
     }
 
     pub fn first_by_email(&self, email: &str) -> Result<Option<User>, UserRepositoryError> {
-        let query = make_select_mysql_query(&self.columns, &self.table, "email=:email", "");
+        let columns = User::db_select_columns();
+        let query = make_select_mysql_query(&self.table, &columns, "email=:email", "");
         let mut conn = self.connection()?;
-        let row: Option<Row> = conn
+        let mut row: Option<Row> = conn
             .exec_first(query, params! {"email" => email})
             .map_err(|_| UserRepositoryError::Fail)?;
 
-        self.try_row_to_entity(&row)
+        self.try_row_to_entity(&mut row)
     }
 
     pub fn credentials_by_email(
         &self,
         email: &str,
     ) -> Result<Option<CredentialsUserData>, UserRepositoryError> {
-        let query =
-            make_select_mysql_query(&self.credentials_columns, &self.table, "email=:email", "");
+        let columns = CredentialsUserData::db_select_columns();
+        let query = make_select_mysql_query(&self.table, &columns, "email=:email", "");
         let mut conn = self.connection()?;
-        let row: Option<Row> = conn
+        let mut row: Option<Row> = conn
             .exec_first(query, params! { "email" => email })
             .map_err(|_| UserRepositoryError::Fail)?;
 
-        self.try_row_to_private_entity(&row)
+        self.try_row_to_private_entity(&mut row)
     }
 
     pub fn paginate(
@@ -138,9 +140,9 @@ impl UserRepository {
             sort.push_params_to_mysql_query(&mut mysql_order);
         }
 
-        let columns = &self.columns;
         let table = &self.table;
-        let query = make_pagination_mysql_query(columns, table, &mysql_where, &mysql_order);
+        let columns = User::db_select_columns();
+        let query = make_pagination_mysql_query(table, &columns, &mysql_where, &mysql_order);
 
         let rows = conn
             .exec_iter(&query, Params::from(mysql_params))
@@ -151,12 +153,12 @@ impl UserRepository {
 
         let mut records: Vec<User> = Vec::new();
         let mut total_records: i64 = 0;
-        for row in rows.into_iter() {
-            if let Ok(row) = row {
-                records.push(self.row_to_entity(&row)?);
+        for mut row in rows.into_iter() {
+            if let Ok(row) = &mut row {
                 if total_records == 0 {
-                    total_records = row.get("total_records").unwrap_or(total_records);
+                    total_records = row.take("total_records").unwrap_or(total_records);
                 }
+                records.push(self.row_to_entity(row)?);
             }
         }
 
@@ -181,7 +183,8 @@ impl UserRepository {
 
     pub fn insert(&self, users: &Vec<NewUserData>) -> Result<(), UserRepositoryError> {
         let mut conn = self.connection()?;
-        let query = make_insert_mysql_query(&self.table, &self.insert_columns);
+        let insert_columns = NewUserData::db_insert_columns();
+        let query = make_insert_mysql_query(&self.table, &insert_columns);
         conn.exec_batch(query, users.iter().map(|u| u.to_db_params()))
             .map_err(|e| match &e {
                 Error::MySqlError(e_) => {
@@ -251,6 +254,18 @@ impl UserRepository {
     //     Ok(())
     // }
 
+    pub fn update<'a>(&self, filters: Vec<UserFilter<'a>>) -> Result<(), UserRepositoryError> {
+        let mut conn = self.connection()?;
+        // let query = make_update_mysql_query(&self.table, "password=:password", "email=:email");
+        // conn.exec_drop(query, params! { "email" => email, "password" => password })
+        //     .map_err(|e| {
+        //         log::error!("UserRepository::update_password_by_email - {e}");
+        //         return UserRepositoryError::Fail;
+        //     })?;
+
+        Ok(())
+    }
+
     pub fn update_password_by_email(
         &self,
         email: &str,
@@ -278,6 +293,8 @@ pub enum UserRepositoryError {
 
 #[derive(Debug)]
 pub enum UserFilter<'a> {
+    Id(u64),
+    Email(&'a str),
     Search(&'a str),
     Locale(&'a str),
 }
@@ -285,6 +302,8 @@ pub enum UserFilter<'a> {
 impl UserFilter<'_> {
     pub fn push_params_to_mysql_query(&self, query: &mut String) {
         match self {
+            Self::Id(_) => query.push_str("id=:id"),
+            Self::Email(_) => query.push_str("email=:email"),
             Self::Search(_) => query.push_str("(email LIKE :search OR surname LIKE :search OR name LIKE :search OR patronymic LIKE :search)"),
             Self::Locale(_) => query.push_str("locale=:locale"),
         }
@@ -292,16 +311,25 @@ impl UserFilter<'_> {
 
     pub fn push_params_to_vec(&self, params: &mut Vec<(String, Value)>) {
         match self {
+            Self::Id(value) => {
+                params.push(("id".to_string(), Value::UInt(value.to_owned())));
+            }
+            Self::Email(value) => {
+                params.push((
+                    "email".to_string(),
+                    Value::Bytes(value.to_string().into_bytes()),
+                ));
+            }
             Self::Search(value) => {
                 let mut s = "%".to_string();
-                s.push_str(value.trim());
+                s.push_str(value);
                 s.push_str("%");
-                params.push((String::from("search"), Value::Bytes(s.into_bytes())));
+                params.push(("search".to_string(), Value::Bytes(s.into_bytes())));
             }
             Self::Locale(value) => {
                 params.push((
-                    String::from("locale"),
-                    Value::Bytes(value.trim().to_string().into_bytes()),
+                    "locale".to_string(),
+                    Value::Bytes(value.to_string().into_bytes()),
                 ));
             }
         }
@@ -399,17 +427,20 @@ impl ToMysqlDto for User {
             "patronymic" => &self.patronymic,
         }
     }
+    fn db_select_columns() -> String {
+        "id,email,locale,surname,name,patronymic".to_string()
+    }
 }
 
 impl FromMysqlDto for User {
-    fn from_db_row(row: &Row) -> Result<Self, FromDbRowError> {
+    fn take_from_db_row(row: &mut Row) -> Result<Self, FromDbRowError> {
         Ok(Self {
-            id: row.get("id").ok_or(FromDbRowError)?,
-            email: row.get("email").ok_or(FromDbRowError)?,
-            locale: row.get("locale").unwrap_or(None),
-            surname: row.get("surname").unwrap_or(None),
-            name: row.get("name").unwrap_or(None),
-            patronymic: row.get("patronymic").unwrap_or(None),
+            id: row.take("id").ok_or(FromDbRowError)?,
+            email: row.take("email").ok_or(FromDbRowError)?,
+            locale: row.take("locale").unwrap_or(None),
+            surname: row.take("surname").unwrap_or(None),
+            name: row.take("name").unwrap_or(None),
+            patronymic: row.take("patronymic").unwrap_or(None),
         })
     }
 }
@@ -422,20 +453,22 @@ impl ToMysqlDto for CredentialsUserData {
             "password" => &self.password,
         }
     }
+    fn db_select_columns() -> String {
+        "id,email,password".to_string()
+    }
 }
 
 impl FromMysqlDto for CredentialsUserData {
-    fn from_db_row(row: &Row) -> Result<Self, FromDbRowError> {
+    fn take_from_db_row(row: &mut Row) -> Result<Self, FromDbRowError> {
         Ok(Self {
-            id: row.get("id").ok_or(FromDbRowError)?,
-            email: row.get("email").ok_or(FromDbRowError)?,
-            password: row.get("password").unwrap_or(None),
+            id: row.take("id").ok_or(FromDbRowError)?,
+            email: row.take("email").ok_or(FromDbRowError)?,
+            password: row.take("password").unwrap_or(None),
         })
     }
 }
 
 impl ToMysqlDto for NewUserData {
-
     fn to_db_params(&self) -> Params {
         params! {
             "email" => &self.email,
@@ -446,14 +479,27 @@ impl ToMysqlDto for NewUserData {
             "patronymic" => &self.patronymic,
         }
     }
+    fn db_insert_columns() -> String {
+        "(email, password, locale, surname, name, patronymic) VALUES (:email, :password, :locale, :surname, :name, :patronymic)".to_string()
+    }
+    fn db_update_columns() -> String {
+        "email=:email,password=:password,locale=:locale,surname=:surname,name=:name,patronymic=:patronymic".to_string()
+    }
 }
-
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::preparation;
+    // use test::Bencher;
+    //
+    // #[bench]
+    // fn bench(b: &mut Bencher) {
+    //     // 0.23 ns/iter (+/- 0.00)
+    //     b.iter(|| {
+    //         let _ = "test".to_string();
+    //     });
+    // }
 
     #[test]
     fn test_first_by_id() {

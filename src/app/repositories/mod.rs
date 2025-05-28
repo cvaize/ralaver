@@ -29,13 +29,22 @@ pub struct FromDbRowError;
 
 pub trait ToMysqlDto {
     fn to_db_params(&self) -> Params;
+    fn db_select_columns() -> String {
+        "".to_string()
+    }
+    fn db_insert_columns() -> String {
+        "".to_string()
+    }
+    fn db_update_columns() -> String {
+        "".to_string()
+    }
 }
 
 pub trait FromMysqlDto {
-    fn from_db_row(row: &Row) -> Result<Self, FromDbRowError>;
+    fn take_from_db_row(row: &mut Row) -> Result<Self, FromDbRowError> where Self: Sized;
 }
 
-pub fn make_pagination_mysql_query(columns: &str, table: &str, where_: &str, order_: &str) -> String {
+pub fn make_pagination_mysql_query(table: &str, columns: &str, where_: &str, order_: &str) -> String {
     let mut sql = "SELECT ".to_string();
     sql.push_str(columns);
     sql.push_str(", COUNT(*) OVER () as total_records FROM ");
@@ -52,7 +61,7 @@ pub fn make_pagination_mysql_query(columns: &str, table: &str, where_: &str, ord
     sql
 }
 
-pub fn make_select_mysql_query(columns: &str, table: &str, where_: &str, order_: &str) -> String {
+pub fn make_select_mysql_query(table: &str, columns: &str, where_: &str, order_: &str) -> String {
     let mut sql = "SELECT ".to_string();
     sql.push_str(columns);
     sql.push_str(" FROM ");
