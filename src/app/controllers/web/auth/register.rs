@@ -4,7 +4,7 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{AlertVariant, RateLimitService, TranslatableError, WebHttpResponse};
+use crate::{prepare_value, AlertVariant, RateLimitService, TranslatableError, WebHttpResponse};
 use crate::{
     AppService, AuthService, AuthServiceError, Credentials, TemplateService, TranslatorService,
 };
@@ -279,4 +279,12 @@ async fn post(
         password_errors,
         confirm_password_errors,
     ))
+}
+
+impl RegisterData {
+    pub fn prepare(&mut self) {
+        prepare_value!(self.email);
+        prepare_value!(self.password);
+        prepare_value!(self.confirm_password);
+    }
 }

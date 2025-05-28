@@ -1,4 +1,5 @@
 use crate::app::controllers::web::{get_context_data, get_template_context};
+use crate::app::repositories::UserSort;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString};
@@ -15,6 +16,7 @@ use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
+use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -22,7 +24,7 @@ static RATE_LIMIT_MAX_ATTEMPTS: u64 = 10;
 static RATE_LIMIT_TTL: u64 = 60;
 static RATE_KEY: &str = "users_create_edit";
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Default, Debug)]
 pub struct PostData {
     pub _token: Option<String>,
     pub action: Option<String>,
@@ -50,17 +52,7 @@ pub async fn create(
     invoke(
         None,
         req,
-        Form(PostData {
-            _token: None,
-            action: None,
-            email: None,
-            password: None,
-            confirm_password: None,
-            locale: None,
-            surname: None,
-            name: None,
-            patronymic: None,
-        }),
+        Form(PostData::default()),
         user,
         session,
         translator_service,
@@ -71,7 +63,6 @@ pub async fn create(
         user_service,
         locale_service,
     )
-    .await
 }
 
 pub async fn store(
@@ -101,7 +92,6 @@ pub async fn store(
         user_service,
         locale_service,
     )
-    .await
 }
 
 pub async fn edit(
@@ -144,7 +134,6 @@ pub async fn edit(
         user_service,
         locale_service,
     )
-    .await
 }
 
 pub async fn update(
@@ -177,13 +166,12 @@ pub async fn update(
         user_service,
         locale_service,
     )
-    .await
 }
 
-pub async fn invoke(
+pub fn invoke(
     edit_user: Option<User>,
     req: HttpRequest,
-    data: Form<PostData>,
+    mut data: Form<PostData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
     translator_service: Data<TranslatorService>,
@@ -194,6 +182,7 @@ pub async fn invoke(
     user_service: Data<UserService>,
     locale_service: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
+    data.prepare();
     //
     let translator_service = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
@@ -255,30 +244,55 @@ pub async fn invoke(
             email_errors = Required::validated(translator_service, lang, &data.email, |value| {
                 Email::validate(translator_service, lang, value, &email_str)
             });
-            password_errors =
-                Required::validated(translator_service, lang, &data.password, |value| {
-                    MinMaxLengthString::validate(
+
+            if edit_user.is_none() {
+                password_errors =
+                    Required::validated(translator_service, lang, &data.password, |value| {
+                        MinMaxLengthString::validate(
+                            translator_service,
+                            lang,
+                            value,
+                            4,
+                            255,
+                            &password_str,
+                        )
+                    });
+            } else {
+                if let Some(password) = &data.password {
+                    password_errors = MinMaxLengthString::validate(
                         translator_service,
                         lang,
-                        value,
+                        password,
                         4,
                         255,
                         &password_str,
-                    )
-                });
-            confirm_password_errors =
-                Required::validated(translator_service, lang, &data.confirm_password, |value| {
-                    MinMaxLengthString::validate(
-                        translator_service,
-                        lang,
-                        value,
-                        4,
-                        255,
-                        &confirm_password_str,
-                    )
-                });
+                    );
+                }
+            }
 
-            if password_errors.len() == 0 && confirm_password_errors.len() == 0 {
+            if edit_user.is_none() || data.password.is_some() {
+                confirm_password_errors = Required::validated(
+                    translator_service,
+                    lang,
+                    &data.confirm_password,
+                    |value| {
+                        MinMaxLengthString::validate(
+                            translator_service,
+                            lang,
+                            value,
+                            4,
+                            255,
+                            &confirm_password_str,
+                        )
+                    },
+                );
+            }
+
+            if password_errors.len() == 0
+                && confirm_password_errors.len() == 0
+                && data.password.is_some()
+                && data.confirm_password.is_some()
+            {
                 let mut password_errors2: Vec<String> = Confirmed::validate(
                     translator_service,
                     lang,
@@ -546,4 +560,32 @@ pub async fn invoke(
         .clear_alerts()
         .content_type(mime::TEXT_HTML_UTF_8.as_ref())
         .body(s))
+}
+
+macro_rules! prepare_value {
+    ($t:expr) => {
+        if let Some(value) = &$t {
+            let value_ = value.trim();
+            if value_.len() == 0 {
+                $t = None;
+            } else if value_.len() != value.len() {
+                $t = Some(value_.to_owned());
+            }
+        }
+    }
+}
+
+impl PostData {
+    pub fn prepare(&mut self) {
+        prepare_value!(self._token);
+        prepare_value!(self.action);
+        prepare_value!(self.email);
+        prepare_value!(self.password);
+        prepare_value!(self.confirm_password);
+        prepare_value!(self.locale);
+        prepare_value!(self.surname);
+        prepare_value!(self.name);
+        prepare_value!(self.patronymic);
+
+    }
 }

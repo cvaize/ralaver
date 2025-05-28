@@ -3,7 +3,7 @@
     {{> components/breadcrumb.hbs }}
     {{> components/heading.hbs }}
 
-    <form action="{{form.action}}" method="{{form.method}}" autocomplete="off" style="display: block;">
+    <form id="admin-create-form" action="{{form.action}}" method="{{form.method}}" autocomplete="off" style="display: block;">
         <input type="hidden" name="_token" placeholder="_token" value="{{ctx.csrf}}">
         <div style="margin-bottom: 1rem;">
             <button type="submit" class="admin-btn admin-success" name="action" value="save">{{form.save}}</button>
@@ -29,6 +29,7 @@
                                 label=form.fields.email.label
                                 value=form.fields.email.value
                                 errors=form.fields.email.errors
+                                form="admin-create-form"
                                 name="email"
                                 type="email"
                                 required=true
@@ -41,9 +42,9 @@
                                 label=form.fields.password.label
                                 value=form.fields.password.value
                                 errors=form.fields.password.errors
+                                form="admin-create-form"
                                 name="password"
                                 type="password"
-                                required=true
                                 style="margin-bottom: 0.5rem;"
                                 autocomplete="new-password"
                             }}
@@ -51,9 +52,9 @@
                                 label=form.fields.confirm_password.label
                                 value=form.fields.confirm_password.value
                                 errors=form.fields.confirm_password.errors
+                                form="admin-create-form"
                                 name="confirm_password"
                                 type="password"
-                                required=true
                                 style="margin-bottom: 0.5rem;"
                                 autocomplete="new-password"
                             }}
@@ -63,6 +64,7 @@
                                 label=form.fields.surname.label
                                 value=form.fields.surname.value
                                 errors=form.fields.surname.errors
+                                form="admin-create-form"
                                 name="surname"
                                 type="text"
                                 style="margin-bottom: 0.5rem;"
@@ -71,6 +73,7 @@
                                 label=form.fields.name.label
                                 value=form.fields.name.value
                                 errors=form.fields.name.errors
+                                form="admin-create-form"
                                 name="name"
                                 type="text"
                                 style="margin-bottom: 0.5rem;"
@@ -79,6 +82,7 @@
                                 label=form.fields.patronymic.label
                                 value=form.fields.patronymic.value
                                 errors=form.fields.patronymic.errors
+                                form="admin-create-form"
                                 name="patronymic"
                                 type="text"
                                 style="margin-bottom: 0.5rem;"
@@ -93,6 +97,7 @@
                                 label=form.fields.locale.label
                                 value=form.fields.locale.value
                                 errors=form.fields.locale.errors
+                                form="admin-create-form"
                                 name="locale"
                                 type="select"
                                 style="margin-bottom: 0.5rem;"

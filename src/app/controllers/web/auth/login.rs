@@ -2,7 +2,7 @@ use crate::app::controllers::web::{get_public_context_data, get_public_template_
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{AlertVariant, RateLimitService, Session, WebAuthService, WebHttpResponse};
+use crate::{prepare_value, AlertVariant, RateLimitService, Session, WebAuthService, WebHttpResponse};
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::web::Data;
 use actix_web::web::Form;
@@ -234,4 +234,11 @@ async fn post(
     }
 
     Ok((is_done, email_errors, password_errors, form_errors, session))
+}
+
+impl LoginData {
+    pub fn prepare(&mut self) {
+        prepare_value!(self.email);
+        prepare_value!(self.password);
+    }
 }

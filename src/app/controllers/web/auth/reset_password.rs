@@ -1,9 +1,6 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
-use crate::{
-    Alert, AppService, AuthService, EmailAddress, EmailMessage, MailService, RandomService,
-    TemplateService, TranslatorService, WebHttpResponse,
-};
+use crate::{prepare_value, Alert, AppService, AuthService, EmailAddress, EmailMessage, MailService, RandomService, TemplateService, TranslatorService, WebHttpResponse};
 use crate::{RateLimitService, WebHttpRequest};
 use actix_web::web::{Data, Form};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -255,4 +252,11 @@ async fn post(
     }
 
     Ok((is_done, form_errors, email_errors))
+}
+
+
+impl ResetPasswordData {
+    pub fn prepare(&mut self) {
+        prepare_value!(self.email);
+    }
 }

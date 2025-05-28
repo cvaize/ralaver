@@ -307,6 +307,20 @@ pub fn generate_pagination_array(page: i64, total_pages: i64) -> [i64; 7] {
     result
 }
 
+#[macro_export]
+macro_rules! prepare_value {
+    ($t:expr) => {
+        if let Some(value) = &$t {
+            let value_ = value.trim();
+            if value_.len() == 0 {
+                $t = None;
+            } else if value_.len() != value.len() {
+                $t = Some(value_.to_owned());
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

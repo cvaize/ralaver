@@ -5,7 +5,7 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{AlertVariant, RateLimitService, WebHttpResponse};
+use crate::{prepare_value, AlertVariant, RateLimitService, WebHttpResponse};
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::web::{Data, Form, Query};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -354,4 +354,20 @@ async fn post(
         confirm_password_errors,
         code_errors,
     ))
+}
+
+impl ResetPasswordConfirmData {
+    pub fn prepare(&mut self) {
+        prepare_value!(self.email);
+        prepare_value!(self.code);
+        prepare_value!(self.password);
+        prepare_value!(self.confirm_password);
+    }
+}
+
+impl ResetPasswordConfirmQuery {
+    pub fn prepare(&mut self) {
+        prepare_value!(self.email);
+        prepare_value!(self.code);
+    }
 }
