@@ -4,8 +4,8 @@ use crate::app::repositories::{
     FromMysqlDto, ToMysqlDto,
 };
 use crate::{
-    AuthServiceError, CredentialsUserData, MysqlPool, MysqlPooledConnection, PaginationResult,
-    RandomService, User, UserData, UserServiceError,
+    AuthServiceError, MysqlPool, MysqlPooledConnection, PaginationResult,
+    RandomService, User, UserServiceError,
 };
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;
@@ -47,24 +47,6 @@ impl UserRepository {
         Ok(None)
     }
 
-    fn row_to_private_entity(
-        &self,
-        row: &mut Row,
-    ) -> Result<CredentialsUserData, UserRepositoryError> {
-        CredentialsUserData::take_from_db_row(row).map_err(|_| UserRepositoryError::Fail)
-    }
-
-    fn try_row_to_private_entity(
-        &self,
-        row: &mut Option<Row>,
-    ) -> Result<Option<CredentialsUserData>, UserRepositoryError> {
-        if let Some(row) = row {
-            return Ok(Some(self.row_to_private_entity(row)?));
-        }
-
-        Ok(None)
-    }
-
     fn try_row_is_exists(&self, row: &Option<Row>) -> Result<bool, UserRepositoryError> {
         if let Some(row) = row {
             return Ok(row.get("is_exists").unwrap_or(false));
@@ -93,20 +75,6 @@ impl UserRepository {
             .map_err(|_| UserRepositoryError::Fail)?;
 
         self.try_row_to_entity(&mut row)
-    }
-
-    pub fn credentials_by_email(
-        &self,
-        email: &str,
-    ) -> Result<Option<CredentialsUserData>, UserRepositoryError> {
-        let columns = CredentialsUserData::db_select_columns();
-        let query = make_select_mysql_query(&self.table, &columns, "email=:email", "");
-        let mut conn = self.connection()?;
-        let mut row: Option<Row> = conn
-            .exec_first(query, params! { "email" => email })
-            .map_err(|_| UserRepositoryError::Fail)?;
-
-        self.try_row_to_private_entity(&mut row)
     }
 
     pub fn paginate(
@@ -181,11 +149,12 @@ impl UserRepository {
         self.try_row_is_exists(&row)
     }
 
-    pub fn insert(&self, user: &UserData) -> Result<(), UserRepositoryError> {
+    pub fn insert(&self, data: &User) -> Result<(), UserRepositoryError> {
         let mut conn = self.connection()?;
-        let insert_columns = UserData::db_insert_columns();
-        let query = make_insert_mysql_query(&self.table, &insert_columns);
-        conn.exec_drop(query, user.to_db_params())
+        let columns = User::db_insert_columns();
+        let params = data.to_insert_db_params();
+        let query = make_insert_mysql_query(&self.table, &columns);
+        conn.exec_drop(query, params)
             .map_err(|e| match &e {
                 Error::MySqlError(e_) => {
                     if e_.code == 1062 {
@@ -226,18 +195,13 @@ impl UserRepository {
         Ok(())
     }
 
-    pub fn update<'a>(&self, id: u64, data: &UserData) -> Result<(), UserRepositoryError> {
+    pub fn update<'a>(&self, data: &User) -> Result<(), UserRepositoryError> {
         let mut conn = self.connection()?;
-        let mysql_columns = UserData::db_update_columns();
-        let mut mysql_params = data.to_db_params();
+        let columns = User::db_update_columns();
+        let params = data.to_update_db_params();
 
-        if let Params::Named(ref mut map) = mysql_params {
-            map.insert("id".to_string().into_bytes(), Value::UInt(id));
-        } else {
-            return Err(UserRepositoryError::Fail);
-        }
-        let query = make_update_mysql_query(&self.table, &mysql_columns, "id=:id");
-        conn.exec_drop(query, mysql_params).map_err(|e| {
+        let query = make_update_mysql_query(&self.table, &columns, "id=:id");
+        conn.exec_drop(query, params).map_err(|e| {
             log::error!("UserRepository::update - {e}");
             return UserRepositoryError::Fail;
         })?;
@@ -396,18 +360,35 @@ impl<'a> UserPaginateParams<'a> {
 }
 
 impl ToMysqlDto for User {
-    fn to_db_params(&self) -> Params {
+    fn db_select_columns() -> String {
+        "id,email,password,locale,surname,name,patronymic".to_string()
+    }
+    fn db_insert_columns() -> String {
+        "(email, password, locale, surname, name, patronymic) VALUES (:email, :password, :locale, :surname, :name, :patronymic)".to_string()
+    }
+    fn to_insert_db_params(&self) -> Params {
         params! {
-            "id" => &self.id,
             "email" => &self.email,
+            "password" => &self.password,
             "locale" => &self.locale,
             "surname" => &self.surname,
             "name" => &self.name,
             "patronymic" => &self.patronymic,
         }
     }
-    fn db_select_columns() -> String {
-        "id,email,locale,surname,name,patronymic".to_string()
+    fn db_update_columns() -> String {
+        "email=:email, password=:password, locale=:locale, surname=:surname, name=:name, patronymic=:patronymic".to_string()
+    }
+    fn to_update_db_params(&self) -> Params {
+        params! {
+            "id" => &self.id,
+            "email" => &self.email,
+            "password" => &self.password,
+            "locale" => &self.locale,
+            "surname" => &self.surname,
+            "name" => &self.name,
+            "patronymic" => &self.patronymic,
+        }
     }
 }
 
@@ -415,54 +396,13 @@ impl FromMysqlDto for User {
     fn take_from_db_row(row: &mut Row) -> Result<Self, FromDbRowError> {
         Ok(Self {
             id: row.take("id").ok_or(FromDbRowError)?,
+            password: row.take("password").ok_or(FromDbRowError)?,
             email: row.take("email").ok_or(FromDbRowError)?,
             locale: row.take("locale").unwrap_or(None),
             surname: row.take("surname").unwrap_or(None),
             name: row.take("name").unwrap_or(None),
             patronymic: row.take("patronymic").unwrap_or(None),
         })
-    }
-}
-
-impl ToMysqlDto for CredentialsUserData {
-    fn to_db_params(&self) -> Params {
-        params! {
-            "id" => &self.id,
-            "email" => &self.email,
-            "password" => &self.password,
-        }
-    }
-    fn db_select_columns() -> String {
-        "id,email,password".to_string()
-    }
-}
-
-impl FromMysqlDto for CredentialsUserData {
-    fn take_from_db_row(row: &mut Row) -> Result<Self, FromDbRowError> {
-        Ok(Self {
-            id: row.take("id").ok_or(FromDbRowError)?,
-            email: row.take("email").ok_or(FromDbRowError)?,
-            password: row.take("password").unwrap_or(None),
-        })
-    }
-}
-
-impl ToMysqlDto for UserData {
-    fn to_db_params(&self) -> Params {
-        params! {
-            "email" => &self.email,
-            "password" => &self.password,
-            "locale" => &self.locale,
-            "surname" => &self.surname,
-            "name" => &self.name,
-            "patronymic" => &self.patronymic,
-        }
-    }
-    fn db_insert_columns() -> String {
-        "(email, password, locale, surname, name, patronymic) VALUES (:email, :password, :locale, :surname, :name, :patronymic)".to_string()
-    }
-    fn db_update_columns() -> String {
-        "email=:email,password=:password,locale=:locale,surname=:surname,name=:name,patronymic=:patronymic".to_string()
     }
 }
 
@@ -480,7 +420,7 @@ mod tests {
 
         user_rep.delete_by_email(email).unwrap();
 
-        let user = UserData::empty(email.to_string());
+        let user = User::empty(email.to_string());
         user_rep.insert(&user).unwrap();
 
         let user = user_rep.first_by_email(email).unwrap().unwrap();
@@ -502,7 +442,7 @@ mod tests {
 
         user_rep.delete_by_email(email).unwrap();
 
-        let user = UserData::empty(email.to_string());
+        let user = User::empty(email.to_string());
         user_rep.insert(&user).unwrap();
 
         let user = user_rep.first_by_email(email).unwrap().unwrap();
@@ -526,10 +466,10 @@ mod tests {
         let user_rep = all_services.user_rep.get_ref();
         let emails = ["admin_insert1@admin.example", "admin_insert2@admin.example"];
 
-        let mut users: Vec<UserData> = Vec::new();
+        let mut users: Vec<User> = Vec::new();
 
         for email in emails {
-            users.push(UserData::empty(email.to_string()));
+            users.push(User::empty(email.to_string()));
             user_rep.delete_by_email(email).unwrap();
         }
 
@@ -562,7 +502,7 @@ mod tests {
         for email in emails {
             user_rep.delete_by_email(email).unwrap();
 
-            let user = UserData::empty(email.to_string());
+            let user = User::empty(email.to_string());
             user_rep.insert(&user).unwrap();
 
             let user = user_rep.first_by_email(email);
@@ -595,10 +535,10 @@ mod tests {
 
         user_rep.delete_by_email(email).unwrap();
 
-        let user = UserData::empty(email.to_string());
+        let user = User::empty(email.to_string());
         user_rep.insert(&user).unwrap();
 
-        let user = user_rep.credentials_by_email(email);
+        let user = user_rep.first_by_email(email);
         let mut is_exists = false;
         if let Ok(user) = user {
             if let Some(user) = user {
@@ -610,7 +550,7 @@ mod tests {
 
         user_rep.update_password_by_email(email, email).unwrap();
 
-        let user = user_rep.credentials_by_email(email);
+        let user = user_rep.first_by_email(email);
         let mut is_exists = false;
         if let Ok(user) = user {
             if let Some(user) = user {
@@ -634,7 +574,7 @@ mod tests {
 
         assert_eq!(user_rep.exists_by_email(email).unwrap(), false);
 
-        let user = UserData::empty(email.to_string());
+        let user = User::empty(email.to_string());
         user_rep.insert(&user).unwrap();
 
         assert!(user_rep.exists_by_email(email).unwrap());
@@ -652,7 +592,7 @@ mod tests {
         user_rep.delete_by_email(email).unwrap();
 
         // Create temp data
-        let user = UserData::empty(email.to_string());
+        let user = User::empty(email.to_string());
         user_rep.insert(&user).unwrap();
 
         // Search exists
@@ -689,15 +629,15 @@ mod tests {
             user_rep.delete_by_email(email).unwrap();
         }
 
-        let mut user_data = UserData::empty(emails[0].to_string());
+        let user_data = User::empty(emails[0].to_string());
         user_rep.insert(&user_data).unwrap();
 
-        let user = user_rep.first_by_email(emails[0]).unwrap().unwrap();
+        let mut user = user_rep.first_by_email(emails[0]).unwrap().unwrap();
         assert_eq!(emails[0].to_string(), user.email);
 
-        user_data.email = emails[1].to_string();
+        user.email = emails[1].to_string();
 
-        user_rep.update(user.id, &user_data).unwrap();
+        user_rep.update(&user).unwrap();
 
         let user = user_rep.first_by_id(user.id).unwrap().unwrap();
         assert_eq!(emails[1].to_string(), user.email);

@@ -4,22 +4,6 @@ use serde::{Deserialize, Serialize};
 pub struct User {
     pub id: u64,
     pub email: String,
-    pub locale: Option<String>,
-    pub surname: Option<String>,
-    pub name: Option<String>,
-    pub patronymic: Option<String>,
-}
-
-#[derive(Debug, Default, Serialize)]
-pub struct CredentialsUserData {
-    pub id: u64,
-    pub email: String,
-    pub password: Option<String>,
-}
-
-#[derive(Debug, Default, Serialize)]
-pub struct UserData {
-    pub email: String,
     pub password: Option<String>,
     pub locale: Option<String>,
     pub surname: Option<String>,
@@ -63,7 +47,7 @@ impl User {
     }
 }
 
-impl UserData {
+impl User {
     pub fn empty(email: String) -> Self {
         let mut entity = Self::default();
         entity.email = email;

@@ -16,5 +16,7 @@
   "Requested application data is not configured correctly. View/enable debug logs for more details.": "Запрошенные данные приложения настроены неправильно. Просмотрите/включите журналы отладки для получения более подробной информации.",
   "Filters": "Фильтры",
   "Close": "Закрыть",
-  "Apply": "Применить"
+  "Apply": "Применить",
+  "Save": "Сохранить",
+  "Save and close": "Сохранить и закрыть"
 }

@@ -28,15 +28,20 @@ impl<U> PaginationResult<U> {
 pub struct FromDbRowError;
 
 pub trait ToMysqlDto {
-    fn to_db_params(&self) -> Params;
     fn db_select_columns() -> String {
         "".to_string()
     }
     fn db_insert_columns() -> String {
         "".to_string()
     }
+    fn to_insert_db_params(&self) -> Params {
+        Params::Empty
+    }
     fn db_update_columns() -> String {
         "".to_string()
+    }
+    fn to_update_db_params(&self) -> Params {
+        Params::Empty
     }
 }
 

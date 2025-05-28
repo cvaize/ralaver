@@ -6,15 +6,13 @@ pub mod profile;
 pub mod users;
 
 use crate::{
-    Alert, AlertVariant, AppService, Locale, RandomService, Session, TranslatorService, User,
+    Alert, AlertVariant, AppService, Locale, Session, TranslatorService, User,
     WebAuthService, ALERTS_KEY,
 };
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
 use actix_web::{HttpRequest, HttpResponseBuilder};
-use rand::distr::Alphanumeric;
 use rand::Rng;
-use serde_derive::Deserialize;
 use serde_json::{json, Value};
 use std::str::FromStr;
 

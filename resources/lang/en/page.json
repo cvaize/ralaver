@@ -105,22 +105,14 @@
         "patronymic": "{{validation.attributes.patronymic}}",
         "locale": "{{validation.attributes.locale}}"
       },
-      "save": "Save",
-      "save_and_close": "Save and close",
-      "close": "Close",
       "tabs": {
         "main": "Main",
         "extended": "Extended"
-      },
-      "breadcrumbs": {
-        "home": "{{page.home.header}}",
-        "users": "{{page.users.index.header}}",
-        "create": "{{page.users.create.header}}"
       }
     },
     "edit": {
-      "title": "{{page.users.edit.header}} :user_name - {{app.name}}",
-      "header": "Edit user"
+      "title": "{{page.users.edit.header}} - {{app.name}}",
+      "header": "Edit user \":user_name\""
     }
   }
 }

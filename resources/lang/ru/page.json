@@ -105,22 +105,14 @@
         "patronymic": "{{validation.attributes.patronymic}}",
         "locale": "{{validation.attributes.locale}}"
       },
-      "save": "Сохранить",
-      "save_and_close": "Сохранить и закрыть",
-      "close": "Закрыть",
       "tabs": {
         "main": "Основные",
         "extended": "Расширенные"
-      },
-      "breadcrumbs": {
-        "home": "{{page.home.header}}",
-        "users": "{{page.users.index.header}}",
-        "create": "{{page.users.create.header}}"
       }
     },
     "edit": {
-      "title": "{{page.users.edit.header}} :user_name - {{app.name}}",
-      "header": "Редактирование пользователя"
+      "title": "{{page.users.edit.header}} - {{app.name}}",
+      "header": "Редактирование пользователя \":user_name\""
     }
   }
 }

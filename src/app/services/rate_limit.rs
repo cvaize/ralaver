@@ -1,6 +1,6 @@
 use crate::{KeyValueConnection, KeyValueService, TranslatorService};
 use actix_web::web::Data;
-use actix_web::HttpRequest;
+use actix_web::{error, Error, HttpRequest};
 use std::collections::HashMap;
 use strum_macros::{Display, EnumString};
 
@@ -27,6 +27,15 @@ impl RateLimitService {
         Err(RateLimitServiceError::Fail)
     }
 
+    pub fn make_key_from_request_throw_http(
+        &self,
+        req: &HttpRequest,
+        key: &str,
+    ) -> Result<String, Error> {
+        self.make_key_from_request(req, key)
+            .map_err(|_| error::ErrorInternalServerError(""))
+    }
+
     fn make_store_key(&self, key: &str) -> String {
         let mut value: String = "rate_limit:".to_string();
         value.push_str(key);
@@ -51,6 +60,11 @@ impl RateLimitService {
                 log::error!("RateLimitService::clear - {e}");
                 RateLimitServiceError::Fail
             })
+    }
+
+    pub fn clear_throw_http(&self, key: &str) -> Result<(), Error> {
+        self.clear(key)
+            .map_err(|_| error::ErrorInternalServerError(""))
     }
 
     fn ttl_(
@@ -90,6 +104,16 @@ impl RateLimitService {
         let message = translator_service.variables(&lang, "validation.rate_limit", &vars);
 
         Ok(message)
+    }
+
+    pub fn ttl_message_throw_http(
+        &self,
+        translator_service: &TranslatorService,
+        lang: &str,
+        key: &str,
+    ) -> Result<String, Error> {
+        self.ttl_message(translator_service, lang, key)
+            .map_err(|_| error::ErrorInternalServerError(""))
     }
 
     fn get_(
@@ -203,6 +227,16 @@ impl RateLimitService {
             return Ok(false);
         }
         Ok(self.incr_(&mut connection, key, 1, ttl)? <= max_attempts)
+    }
+
+    pub fn attempt_throw_http(
+        &self,
+        key: &str,
+        max_attempts: u64,
+        ttl: u64,
+    ) -> Result<bool, Error> {
+        self.attempt(key, max_attempts, ttl)
+            .map_err(|_| error::ErrorInternalServerError(""))
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::app::repositories::{UserPaginateParams, UserRepository, UserRepositoryError};
-use crate::{HashService, MysqlPool, UserData, PaginationResult, RandomService, User};
+use crate::{HashService, MysqlPool, PaginationResult, RandomService, User};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use serde_derive::{Deserialize, Serialize};
@@ -36,21 +36,75 @@ impl UserService {
         self.user_repository.get_ref().first_by_email(email)
     }
 
-    pub fn create(&self, mut new_user: UserData) -> Result<(), UserServiceError> {
-        let hash_service = self.hash_service.get_ref();
-        let user_repository = self.user_repository.get_ref();
-
-        if let Some(password) = &new_user.password {
-            new_user.password = Some(hash_service.hash_password(password).map_err(|e| {
-                log::error!("UserService::insert - {e}");
-                UserServiceError::PasswordHashFail
-            })?);
+    pub fn user_data_hash_password_(
+        &self,
+        data: &mut User,
+        is_need_hash_password: bool,
+    ) -> Result<(), UserServiceError> {
+        if is_need_hash_password {
+            let hash_service = self.hash_service.get_ref();
+            if let Some(password) = &data.password {
+                data.password = Some(hash_service.hash_password(password).map_err(|e| {
+                    log::error!("UserService::user_data_hash_password_ - {e}");
+                    UserServiceError::PasswordHashFail
+                })?);
+            }
         }
 
-        user_repository.insert(&new_user).map_err(|e| match e {
+        Ok(())
+    }
+
+    fn match_error(&self, e: UserRepositoryError) -> UserServiceError {
+        match e {
             UserRepositoryError::DuplicateEmail => UserServiceError::DuplicateEmail,
             _ => UserServiceError::Fail,
-        })
+        }
+    }
+
+    pub fn create(
+        &self,
+        data: &mut User,
+        is_need_hash_password: bool,
+    ) -> Result<(), UserServiceError> {
+        self.user_data_hash_password_(data, is_need_hash_password)?;
+
+        self.user_repository
+            .get_ref()
+            .insert(data)
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn update(
+        &self,
+        data: &mut User,
+        is_need_hash_password: bool,
+    ) -> Result<(), UserServiceError> {
+        self.user_data_hash_password_(data, is_need_hash_password)?;
+
+        self.user_repository
+            .get_ref()
+            .update(data)
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn upsert(
+        &self,
+        data: &mut User,
+        is_need_hash_password: bool,
+    ) -> Result<(), UserServiceError> {
+        self.user_data_hash_password_(data, is_need_hash_password)?;
+
+        if data.id == 0 {
+            self.user_repository
+                .get_ref()
+                .insert(data)
+                .map_err(|e| self.match_error(e))
+        } else {
+            self.user_repository
+                .get_ref()
+                .update(data)
+                .map_err(|e| self.match_error(e))
+        }
     }
 
     pub fn paginate(

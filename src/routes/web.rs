@@ -51,7 +51,7 @@ pub fn register(cfg: &mut web::ServiceConfig) {
             .route(web::post().to(controllers::web::users::create_edit::store)),
     );
     cfg.service(
-        web::resource("/users/{user_id}/edit")
+        web::resource("/users/{user_id}")
             .wrap(WebAuthMiddleware)
             .route(web::get().to(controllers::web::users::create_edit::edit))
             .route(web::post().to(controllers::web::users::create_edit::update)),
