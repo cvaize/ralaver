@@ -18,7 +18,7 @@ pub struct CredentialsUserData {
 }
 
 #[derive(Debug, Default, Serialize)]
-pub struct NewUserData {
+pub struct UserData {
     pub email: String,
     pub password: Option<String>,
     pub locale: Option<String>,
@@ -63,7 +63,7 @@ impl User {
     }
 }
 
-impl NewUserData {
+impl UserData {
     pub fn empty(email: String) -> Self {
         let mut entity = Self::default();
         entity.email = email;

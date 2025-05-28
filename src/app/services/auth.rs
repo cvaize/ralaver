@@ -2,7 +2,7 @@ use crate::app::repositories::UserRepository;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::{HashService, UserService, UserServiceError};
-use crate::{KeyValueService, KeyValueServiceError, NewUserData, CredentialsUserData};
+use crate::{KeyValueService, KeyValueServiceError, UserData, CredentialsUserData};
 use actix_web::web::Data;
 use serde_derive::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
@@ -70,7 +70,7 @@ impl AuthService {
         }
         let user_service = self.user_service.get_ref();
 
-        let mut new_user = NewUserData::empty(data.email.to_owned());
+        let mut new_user = UserData::empty(data.email.to_owned());
         new_user.password = Some(data.password.to_owned());
 
         user_service.create(new_user).map_err(|e| {

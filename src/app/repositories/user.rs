@@ -4,8 +4,8 @@ use crate::app::repositories::{
     FromMysqlDto, ToMysqlDto,
 };
 use crate::{
-    AuthServiceError, CredentialsUserData, MysqlPool, MysqlPooledConnection, NewUserData,
-    PaginationResult, RandomService, User, UserServiceError,
+    AuthServiceError, CredentialsUserData, MysqlPool, MysqlPooledConnection, PaginationResult,
+    RandomService, User, UserData, UserServiceError,
 };
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;
@@ -181,11 +181,11 @@ impl UserRepository {
         self.try_row_is_exists(&row)
     }
 
-    pub fn insert(&self, users: &Vec<NewUserData>) -> Result<(), UserRepositoryError> {
+    pub fn insert(&self, user: &UserData) -> Result<(), UserRepositoryError> {
         let mut conn = self.connection()?;
-        let insert_columns = NewUserData::db_insert_columns();
+        let insert_columns = UserData::db_insert_columns();
         let query = make_insert_mysql_query(&self.table, &insert_columns);
-        conn.exec_batch(query, users.iter().map(|u| u.to_db_params()))
+        conn.exec_drop(query, user.to_db_params())
             .map_err(|e| match &e {
                 Error::MySqlError(e_) => {
                     if e_.code == 1062 {
@@ -215,53 +215,32 @@ impl UserRepository {
         Ok(())
     }
 
-    // pub fn update(
-    //     &self,
-    //     id: u64,
-    //     params: &UpdateUser,
-    // ) -> Result<(), UserRepositoryError> {
-    //     let query_params = {};
-    //     let mut query = UPDATE_BY_EMAIL_QUERY[0].to_owned();
-    //
-    //     let is_not_empty_params = true;
-    //
-    //     // if let Some(v) = &params.email {
-    //     //
-    //     // }
-    //     // email: Option<Value<String>>,
-    //     // password: Option<Value<String>>,
-    //     // locale: Option<Value<String>>,
-    //     // surname: Option<Value<String>>,
-    //     // name: Option<Value<String>>,
-    //     // patronymic: Option<Value<String>>,
-    //
-    //     if is_not_empty_params {
-    //         return Ok(());
-    //     }
-    //     query.push_str(UPDATE_BY_EMAIL_QUERY[1]);
-    //
-    //     let mut conn = self.db_pool.get_ref().get().map_err(|e| {
-    //         log::error!("UserRepository::update_by_email - {e}");
-    //         return UserRepositoryError::DbConnectionFail;
-    //     })?;
-    //
-    //     conn.exec_drop(query, query_params)
-    //         .map_err(|e| {
-    //             log::error!("UserRepository::update_by_email - {e}");
-    //             return UserRepositoryError::Fail;
-    //         })?;
-    //
-    //     Ok(())
-    // }
-
-    pub fn update<'a>(&self, filters: Vec<UserFilter<'a>>) -> Result<(), UserRepositoryError> {
+    pub fn delete_by_email(&self, email: &str) -> Result<(), UserRepositoryError> {
         let mut conn = self.connection()?;
-        // let query = make_update_mysql_query(&self.table, "password=:password", "email=:email");
-        // conn.exec_drop(query, params! { "email" => email, "password" => password })
-        //     .map_err(|e| {
-        //         log::error!("UserRepository::update_password_by_email - {e}");
-        //         return UserRepositoryError::Fail;
-        //     })?;
+        let query = make_delete_mysql_query(&self.table, "email=:email");
+        conn.exec_drop(query, params! { "email" => email }).map_err(|e| {
+            log::error!("UserRepository::delete_by_email - {e}");
+            return UserRepositoryError::Fail;
+        })?;
+
+        Ok(())
+    }
+
+    pub fn update<'a>(&self, id: u64, data: &UserData) -> Result<(), UserRepositoryError> {
+        let mut conn = self.connection()?;
+        let mysql_columns = UserData::db_update_columns();
+        let mut mysql_params = data.to_db_params();
+
+        if let Params::Named(ref mut map) = mysql_params {
+            map.insert("id".to_string().into_bytes(), Value::UInt(id));
+        } else {
+            return Err(UserRepositoryError::Fail);
+        }
+        let query = make_update_mysql_query(&self.table, &mysql_columns, "id=:id");
+        conn.exec_drop(query, mysql_params).map_err(|e| {
+            log::error!("UserRepository::update - {e}");
+            return UserRepositoryError::Fail;
+        })?;
 
         Ok(())
     }
@@ -468,7 +447,7 @@ impl FromMysqlDto for CredentialsUserData {
     }
 }
 
-impl ToMysqlDto for NewUserData {
+impl ToMysqlDto for UserData {
     fn to_db_params(&self) -> Params {
         params! {
             "email" => &self.email,
@@ -491,22 +470,27 @@ impl ToMysqlDto for NewUserData {
 mod tests {
     use super::*;
     use crate::preparation;
-    // use test::Bencher;
-    //
-    // #[bench]
-    // fn bench(b: &mut Bencher) {
-    //     // 0.23 ns/iter (+/- 0.00)
-    //     b.iter(|| {
-    //         let _ = "test".to_string();
-    //     });
-    // }
 
     #[test]
     fn test_first_by_id() {
         let (_, all_services) = preparation();
         let user_rep = all_services.user_rep.get_ref();
 
-        assert_eq!(user_rep.first_by_id(1).unwrap().unwrap().id, 1);
+        let email = "admin_first_by_id@admin.example";
+
+        user_rep.delete_by_email(email).unwrap();
+
+        let user = UserData::empty(email.to_string());
+        user_rep.insert(&user).unwrap();
+
+        let user = user_rep.first_by_email(email).unwrap().unwrap();
+        assert_eq!(user.email, email);
+        let id = user.id;
+
+        let user = user_rep.first_by_id(id).unwrap().unwrap();
+        assert_eq!(user.id, id);
+
+        user_rep.delete_by_email(email).unwrap();
     }
 
     #[test]
@@ -516,25 +500,15 @@ mod tests {
 
         let email = "admin_first_by_email@admin.example";
 
-        let user = user_rep.first_by_email(email);
-        if let Ok(user) = user {
-            if let Some(user) = user {
-                user_rep.delete_by_id(user.id).unwrap();
-            }
-        }
+        user_rep.delete_by_email(email).unwrap();
 
-        let users = vec![NewUserData::empty(email.to_string())];
-        user_rep.insert(&users).unwrap();
+        let user = UserData::empty(email.to_string());
+        user_rep.insert(&user).unwrap();
 
-        let user = user_rep.first_by_email(email);
-        assert_eq!(user.unwrap().unwrap().email, email);
+        let user = user_rep.first_by_email(email).unwrap().unwrap();
+        assert_eq!(user.email, email);
 
-        let user = user_rep.first_by_email(email);
-        if let Ok(user) = user {
-            if let Some(user) = user {
-                user_rep.delete_by_id(user.id).unwrap();
-            }
-        }
+        user_rep.delete_by_email(email).unwrap();
     }
 
     #[test]
@@ -544,7 +518,6 @@ mod tests {
 
         let users = user_rep.paginate(&UserPaginateParams::one()).unwrap();
         assert_eq!(users.page, 1);
-        assert_eq!(users.records[0].id, 1);
     }
 
     #[test]
@@ -553,19 +526,16 @@ mod tests {
         let user_rep = all_services.user_rep.get_ref();
         let emails = ["admin_insert1@admin.example", "admin_insert2@admin.example"];
 
-        let mut users: Vec<NewUserData> = Vec::new();
+        let mut users: Vec<UserData> = Vec::new();
 
         for email in emails {
-            users.push(NewUserData::empty(email.to_string()));
-            let user = user_rep.first_by_email(email);
-            if let Ok(user) = user {
-                if let Some(user) = user {
-                    user_rep.delete_by_id(user.id).unwrap();
-                }
-            }
+            users.push(UserData::empty(email.to_string()));
+            user_rep.delete_by_email(email).unwrap();
         }
 
-        user_rep.insert(&users).unwrap();
+        for user in users {
+            user_rep.insert(&user).unwrap();
+        }
 
         for email in emails {
             let user = user_rep.first_by_email(email);
@@ -590,15 +560,10 @@ mod tests {
         ];
 
         for email in emails {
-            let user = user_rep.first_by_email(email);
-            if let Ok(user) = user {
-                if let Some(user) = user {
-                    user_rep.delete_by_id(user.id).unwrap();
-                }
-            }
+            user_rep.delete_by_email(email).unwrap();
 
-            let users = vec![NewUserData::empty(email.to_string())];
-            user_rep.insert(&users).unwrap();
+            let user = UserData::empty(email.to_string());
+            user_rep.insert(&user).unwrap();
 
             let user = user_rep.first_by_email(email);
             let mut is_exists = false;
@@ -628,15 +593,10 @@ mod tests {
 
         let email = "admin_update_password_by_email@admin.example";
 
-        let user = user_rep.first_by_email(email);
-        if let Ok(user) = user {
-            if let Some(user) = user {
-                user_rep.delete_by_id(user.id).unwrap();
-            }
-        }
+        user_rep.delete_by_email(email).unwrap();
 
-        let users = vec![NewUserData::empty(email.to_string())];
-        user_rep.insert(&users).unwrap();
+        let user = UserData::empty(email.to_string());
+        user_rep.insert(&user).unwrap();
 
         let user = user_rep.credentials_by_email(email);
         let mut is_exists = false;
@@ -660,12 +620,7 @@ mod tests {
         }
         assert!(is_exists);
 
-        let user = user_rep.first_by_email(email);
-        if let Ok(user) = user {
-            if let Some(user) = user {
-                user_rep.delete_by_id(user.id).unwrap();
-            }
-        }
+        user_rep.delete_by_email(email).unwrap();
     }
 
     #[test]
@@ -675,26 +630,16 @@ mod tests {
 
         let email = "admin_exists_by_email@admin.example";
 
-        let user = user_rep.first_by_email(email);
-        if let Ok(user) = user {
-            if let Some(user) = user {
-                user_rep.delete_by_id(user.id).unwrap();
-            }
-        }
+        user_rep.delete_by_email(email).unwrap();
 
         assert_eq!(user_rep.exists_by_email(email).unwrap(), false);
 
-        let users = vec![NewUserData::empty(email.to_string())];
-        user_rep.insert(&users).unwrap();
+        let user = UserData::empty(email.to_string());
+        user_rep.insert(&user).unwrap();
 
         assert!(user_rep.exists_by_email(email).unwrap());
 
-        let user = user_rep.first_by_email(email);
-        if let Ok(user) = user {
-            if let Some(user) = user {
-                user_rep.delete_by_id(user.id).unwrap();
-            }
-        }
+        user_rep.delete_by_email(email).unwrap();
     }
 
     #[test]
@@ -704,16 +649,11 @@ mod tests {
 
         let email = "admin_paginate_with_filters@admin.example";
 
-        let user = user_rep.first_by_email(email);
-        if let Ok(user) = user {
-            if let Some(user) = user {
-                user_rep.delete_by_id(user.id).unwrap();
-            }
-        }
+        user_rep.delete_by_email(email).unwrap();
 
         // Create temp data
-        let users = vec![NewUserData::empty(email.to_string())];
-        user_rep.insert(&users).unwrap();
+        let user = UserData::empty(email.to_string());
+        user_rep.insert(&user).unwrap();
 
         // Search exists
         let search = "paginate_with_filters";
@@ -732,11 +672,38 @@ mod tests {
         assert_eq!(users.records.len(), 0);
 
         // Delete temp data
-        let user = user_rep.first_by_email(email);
-        if let Ok(user) = user {
-            if let Some(user) = user {
-                user_rep.delete_by_id(user.id).unwrap();
-            }
+        user_rep.delete_by_email(email).unwrap();
+    }
+
+    #[test]
+    fn test_update() {
+        let (_, all_services) = preparation();
+        let user_rep = all_services.user_rep.get_ref();
+
+        let emails = [
+            "admin_update1@admin.example",
+            "admin_update2@admin.example",
+        ];
+
+        for email in emails {
+            user_rep.delete_by_email(email).unwrap();
+        }
+
+        let mut user_data = UserData::empty(emails[0].to_string());
+        user_rep.insert(&user_data).unwrap();
+
+        let user = user_rep.first_by_email(emails[0]).unwrap().unwrap();
+        assert_eq!(emails[0].to_string(), user.email);
+
+        user_data.email = emails[1].to_string();
+
+        user_rep.update(user.id, &user_data).unwrap();
+
+        let user = user_rep.first_by_id(user.id).unwrap().unwrap();
+        assert_eq!(emails[1].to_string(), user.email);
+
+        for email in emails {
+            user_rep.delete_by_email(email).unwrap();
         }
     }
 }

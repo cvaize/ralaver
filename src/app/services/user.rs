@@ -1,5 +1,5 @@
 use crate::app::repositories::{UserPaginateParams, UserRepository, UserRepositoryError};
-use crate::{HashService, MysqlPool, NewUserData, PaginationResult, RandomService, User};
+use crate::{HashService, MysqlPool, UserData, PaginationResult, RandomService, User};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use serde_derive::{Deserialize, Serialize};
@@ -36,7 +36,7 @@ impl UserService {
         self.user_repository.get_ref().first_by_email(email)
     }
 
-    pub fn create(&self, mut new_user: NewUserData) -> Result<(), UserServiceError> {
+    pub fn create(&self, mut new_user: UserData) -> Result<(), UserServiceError> {
         let hash_service = self.hash_service.get_ref();
         let user_repository = self.user_repository.get_ref();
 
@@ -47,8 +47,7 @@ impl UserService {
             })?);
         }
 
-        let users = vec![new_user];
-        user_repository.insert(&users).map_err(|e| match e {
+        user_repository.insert(&new_user).map_err(|e| match e {
             UserRepositoryError::DuplicateEmail => UserServiceError::DuplicateEmail,
             _ => UserServiceError::Fail,
         })

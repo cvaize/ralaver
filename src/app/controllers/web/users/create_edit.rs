@@ -5,7 +5,7 @@ use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString};
 use crate::app::validator::rules::required::Required;
 use crate::helpers::none_if_empty;
 use crate::{
-    Alert, AppService, Locale, LocaleService, NewUserData, RateLimitService, Session, TemplateService,
+    Alert, AppService, Locale, LocaleService, UserData, RateLimitService, Session, TemplateService,
     TranslatableError, TranslatorService, User, UserService, UserServiceError, WebAuthService,
     WebHttpResponse,
 };
@@ -513,7 +513,7 @@ async fn post(
                 && patronymic_errors.len() == 0
                 && locale_errors.len() == 0
             {
-                let new_user = NewUserData {
+                let new_user = UserData {
                     email: data.email.clone().unwrap(),
                     password: none_if_empty(&data.password),
                     locale: none_if_empty(&data.locale),
