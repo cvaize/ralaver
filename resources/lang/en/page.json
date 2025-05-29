@@ -68,7 +68,6 @@
     "index": {
       "title": "Page :page of :per_page - {{page.users.index.header}} - {{app.name}}",
       "header": "Users list",
-      "create": "Create user",
       "sort": {
         "id_asc": "ID 0-9",
         "id_desc": "ID 9-0",

@@ -5,11 +5,7 @@ use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString};
 use crate::app::validator::rules::required::Required;
 use crate::helpers::none_if_empty;
-use crate::{
-    Alert, AppService, Locale, LocaleService, RateLimitService, Session, TemplateService,
-    TranslatableError, TranslatorService, User, UserService, UserServiceError, WebAuthService,
-    WebHttpResponse,
-};
+use crate::{prepare_value, Alert, AppService, Locale, LocaleService, RateLimitService, Session, TemplateService, TranslatableError, TranslatorService, User, UserService, UserServiceError, WebAuthService, WebHttpResponse};
 use actix_web::web::Path;
 use actix_web::web::{Data, Form, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
@@ -560,19 +556,6 @@ pub fn invoke(
         .clear_alerts()
         .content_type(mime::TEXT_HTML_UTF_8.as_ref())
         .body(s))
-}
-
-macro_rules! prepare_value {
-    ($t:expr) => {
-        if let Some(value) = &$t {
-            let value_ = value.trim();
-            if value_.len() == 0 {
-                $t = None;
-            } else if value_.len() != value.len() {
-                $t = Some(value_.to_owned());
-            }
-        }
-    }
 }
 
 impl PostData {

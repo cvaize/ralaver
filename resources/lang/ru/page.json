@@ -68,7 +68,6 @@
     "index": {
       "title": "Страница :page из :total_pages - {{page.users.index.header}} - {{app.name}}",
       "header": "Список пользователей",
-      "create": "Добавить пользователя",
       "sort": {
         "id_asc": "ID 0-9",
         "id_desc": "ID 9-0",

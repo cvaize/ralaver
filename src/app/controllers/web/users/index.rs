@@ -4,8 +4,9 @@ use crate::app::controllers::web::{
 use crate::app::repositories::{UserFilter, UserPaginateParams, UserSort};
 use crate::app::validator::rules::length::MaxLengthString;
 use crate::{
-    Alert, AppService, Config, Locale, LocaleService, Session, TemplateService, TranslatorService,
-    User, UserService, WebAuthService, WebHttpResponse,
+    prepare_paginate, prepare_value, validation_max_length, Alert, AppService, Config, Locale,
+    LocaleService, Session, TemplateService, TranslatorService, User, UserService, WebAuthService,
+    WebHttpResponse,
 };
 use actix_web::web::{Data, Form, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -42,7 +43,9 @@ pub async fn invoke(
     user_service: Data<UserService>,
     locale_service: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
-    let translator_service = translator_service.get_ref();
+    query.prepare();
+
+    let t_s = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
     let web_auth_service = web_auth_service.get_ref();
@@ -52,62 +55,30 @@ pub async fn invoke(
     let lang: String = locale_service.get_locale_code(Some(&req), Some(&user));
     let lang = &lang;
 
-    let search_str = translator_service.translate(lang, "Search");
-    let reset_str = translator_service.translate(lang, "Reset");
-    let locale_str = translator_service.translate(lang, "page.users.index.columns.locale");
-    let sort_str = translator_service.translate(lang, "Sort");
+    let search_str = t_s.translate(lang, "Search");
+    let reset_str = t_s.translate(lang, "Reset");
+    let locale_str = t_s.translate(lang, "page.users.index.columns.locale");
+    let sort_str = t_s.translate(lang, "Sort");
 
-    let mut form_errors: Vec<String> = query.prepare(
-        translator_service,
-        lang,
-        &search_str,
-        &locale_str,
-        &sort_str,
-    );
+    let mut form_errors: Vec<String> =
+        query.validate(t_s, lang, &search_str, &locale_str, &sort_str);
 
     let page = query.page.unwrap();
     let per_page = query.per_page.unwrap();
-
     let page_str = page.to_string();
-
-    let mut filters: Vec<UserFilter> = Vec::new();
-
-    if let Some(value) = &query.search {
-        filters.push(UserFilter::Search(value));
-    }
-    if let Some(value) = &query.locale {
-        filters.push(UserFilter::Locale(value));
-    }
-
-    let mut sort = None;
-    if let Some(sort_) = &query.sort {
-        if let Ok(sort__) = UserSort::from_str(sort_) {
-            sort = Some(sort__);
-        }
-    }
+    let filters: Vec<UserFilter> = query.get_filters();
+    let sort = query.get_sort();
     let pagination_params = UserPaginateParams::new(page, per_page, filters, sort);
-    let users = user_service
-        .paginate(&pagination_params)
-        .map_err(|e| error::ErrorInternalServerError(""))?;
-    let total_pages = if users.total_pages <= 0 {
-        1
-    } else {
-        users.total_pages
-    };
+    let users = user_service.paginate_throw_http(&pagination_params)?;
+    let total_pages = max(users.total_pages, 1);
     let total_pages_str = total_pages.to_string();
 
-    let mut context_data = get_context_data(
-        &req,
-        user,
-        &session,
-        translator_service,
-        app_service,
-        web_auth_service,
-    );
+    let mut context_data =
+        get_context_data(&req, user, &session, t_s, app_service, web_auth_service);
     let mut page_vars: HashMap<&str, &str> = HashMap::new();
     page_vars.insert("page", &page_str);
     page_vars.insert("total_pages", &total_pages_str);
-    context_data.title = translator_service.variables(lang, "page.users.index.title", &page_vars);
+    context_data.title = t_s.variables(lang, "page.users.index.title", &page_vars);
 
     for form_error in form_errors {
         context_data.alerts.push(Alert::error(form_error));
@@ -148,46 +119,48 @@ pub async fn invoke(
     let mut sort_options: Vec<Value> = Vec::new();
     for sort_enum in UserSort::iter() {
         let value = sort_enum.to_string();
-        let mut key = String::from("page.users.index.sort.");
+        let mut key = "page.users.index.sort.".to_string();
         key.push_str(&value);
-        let label = translator_service.translate(lang, &key);
+        let label = t_s.translate(lang, &key);
         let value = sort_enum.to_string();
         sort_options.push(json!({ "label": label, "value": value }));
     }
 
     let ctx = json!({
         "ctx": &layout_ctx,
-        "heading": translator_service.translate(lang, "page.users.index.header"),
+        "heading": t_s.translate(lang, "page.users.index.header"),
         "breadcrumbs": [
-            {"href": "/", "label": translator_service.translate(lang, "page.home.header")},
-            {"href": "/users", "label": translator_service.translate(lang, "page.users.index.header")},
-            {"label": translator_service.variables(lang, "Page :page of :total_pages", &page_vars)},
+            {"href": "/", "label": t_s.translate(lang, "page.home.header")},
+            {"href": "/users", "label": t_s.translate(lang, "page.users.index.header")},
+            {"label": t_s.variables(lang, "Page :page of :total_pages", &page_vars)},
         ],
         "create": {
-            "href": "/users/create",
-            "label": translator_service.translate(lang, "page.users.index.create")
+            "label": t_s.translate(lang, "Create user")
         },
-        "page_per_page": translator_service.variables(lang, "Page :page of :total_pages", &page_vars),
-        "per_page_label": translator_service.translate(lang, "Number of entries per page"),
-        "select_page": translator_service.translate(lang, "Select page"),
+        "edit": {
+            "label": t_s.translate(lang, "Edit user")
+        },
+        "page_per_page": t_s.variables(lang, "Page :page of :total_pages", &page_vars),
+        "per_page_label": t_s.translate(lang, "Number of entries per page"),
+        "select_page": t_s.translate(lang, "Select page"),
         "sort": {
             "label": &sort_str,
             "value": &query.sort,
             "options": &sort_options
         },
         "selected": {
-            "label": translator_service.translate(lang, "Selected"),
-            "delete": translator_service.translate(lang, "Delete selected"),
-            "delete_q": translator_service.translate(lang, "Delete selected?"),
+            "label": t_s.translate(lang, "Selected"),
+            "delete": t_s.translate(lang, "Delete selected"),
+            "delete_q": t_s.translate(lang, "Delete selected?"),
         },
         "columns": {
-            "id": translator_service.translate(lang, "page.users.index.columns.id"),
-            "email": translator_service.translate(lang, "page.users.index.columns.email"),
-            "surname": translator_service.translate(lang, "page.users.index.columns.surname"),
-            "name": translator_service.translate(lang, "page.users.index.columns.name"),
-            "patronymic": translator_service.translate(lang, "page.users.index.columns.patronymic"),
+            "id": t_s.translate(lang, "page.users.index.columns.id"),
+            "email": t_s.translate(lang, "page.users.index.columns.email"),
+            "surname": t_s.translate(lang, "page.users.index.columns.surname"),
+            "name": t_s.translate(lang, "page.users.index.columns.name"),
+            "patronymic": t_s.translate(lang, "page.users.index.columns.patronymic"),
             "locale": locale_str,
-            "actions": translator_service.translate(lang, "page.users.index.columns.actions")
+            "actions": t_s.translate(lang, "page.users.index.columns.actions")
         },
         "users": {
             "page": users.page,
@@ -199,9 +172,9 @@ pub async fn invoke(
             "pagination_link": pagination_link
         },
         "per_pages": &PER_PAGES,
-        "filter_label": translator_service.translate(lang, "Filters"),
-        "close_label": translator_service.translate(lang, "Close"),
-        "apply_label": translator_service.translate(lang, "Apply"),
+        "filter_label": t_s.translate(lang, "Filters"),
+        "close_label": t_s.translate(lang, "Close"),
+        "apply_label": t_s.translate(lang, "Apply"),
         "filter": {
             "search": {
                 "label": search_str,
@@ -216,7 +189,7 @@ pub async fn invoke(
                 "label": locale_str,
                 "values": locale_values,
                 "value": &query.locale,
-                "placeholder": translator_service.translate(lang, "Not selected..."),
+                "placeholder": t_s.translate(lang, "Not selected..."),
                 "options": layout_ctx.get("locales"),
                 "reset": {
                     "href": &link_without_locale,
@@ -234,70 +207,28 @@ pub async fn invoke(
 }
 
 impl IndexQuery {
-    pub fn prepare(
+    pub fn prepare(&mut self) {
+        prepare_paginate!(self.page, self.per_page);
+        prepare_value!(self.search);
+        prepare_value!(self.locale);
+        prepare_value!(self.sort);
+        if self.sort.is_none() {
+            self.sort = Some(UserSort::IdDesc.to_string());
+        }
+    }
+    pub fn validate(
         &mut self,
-        translator_service: &TranslatorService,
+        t_s: &TranslatorService,
         lang: &str,
         search_str: &str,
         locale_str: &str,
         sort_str: &str,
     ) -> Vec<String> {
-        let query = self;
-        let page = max(query.page.unwrap_or(1), 1);
-        let per_page = min(query.per_page.unwrap_or(10), 100);
-        query.page = Some(page);
-        query.per_page = Some(per_page);
-
         let mut errors: Vec<String> = Vec::new();
-        if let Some(value_original) = &query.search {
-            let value = value_original.trim();
-            if value.len() == 0 {
-                query.search = None;
-            } else {
-                let mut errors_: Vec<String> =
-                    MaxLengthString::validate(translator_service, lang, value, 255, search_str);
-                if errors_.len() != 0 {
-                    errors.append(&mut errors_);
-                    query.search = None;
-                } else if value.len() != value_original.len() {
-                    query.search = Some(value.to_owned());
-                }
-            }
-        }
-        if let Some(value_original) = &query.locale {
-            let value = value_original.trim();
-            if value.len() == 0 {
-                query.locale = None;
-            } else {
-                let mut errors_: Vec<String> =
-                    MaxLengthString::validate(translator_service, lang, value, 6, locale_str);
-                if errors_.len() != 0 {
-                    errors.append(&mut errors_);
-                    query.locale = None;
-                } else if value.len() != value_original.len() {
-                    query.locale = Some(value.to_owned());
-                }
-            }
-        }
-        if let Some(value_original) = &query.sort {
-            let value = value_original.trim();
-            if value.len() == 0 {
-                query.sort = None;
-            } else {
-                let mut errors_: Vec<String> =
-                    MaxLengthString::validate(translator_service, lang, value, 255, sort_str);
-                if errors_.len() != 0 {
-                    errors.append(&mut errors_);
-                    query.sort = None;
-                } else if value.len() != value_original.len() {
-                    query.sort = Some(value.to_owned());
-                }
-            }
-        }
 
-        if query.sort.is_none() {
-            query.sort = Some(UserSort::IdDesc.to_string());
-        }
+        validation_max_length!(errors, self.search, search_str, 255, t_s, lang);
+        validation_max_length!(errors, self.locale, locale_str, 6, t_s, lang);
+        validation_max_length!(errors, self.sort, sort_str, 255, t_s, lang);
 
         errors
     }
@@ -331,8 +262,28 @@ impl IndexQuery {
             log::error!("app::controllers::web::users::index::IndexQuery::to_url - {e}");
             error::ErrorInternalServerError("")
         })?;
-        let mut result = String::from(PAGE_URL);
+        let mut result = PAGE_URL.to_string();
         result.push_str(&url);
         Ok(result)
+    }
+    pub fn get_filters(&self) -> Vec<UserFilter> {
+        let mut filters: Vec<UserFilter> = Vec::new();
+
+        if let Some(value) = &self.search {
+            filters.push(UserFilter::Search(value));
+        }
+        if let Some(value) = &self.locale {
+            filters.push(UserFilter::Locale(value));
+        }
+        filters
+    }
+    pub fn get_sort(&self) -> Option<UserSort> {
+        let mut sort = None;
+        if let Some(sort_) = &self.sort {
+            if let Ok(sort__) = UserSort::from_str(sort_) {
+                sort = Some(sort__);
+            }
+        }
+        sort
     }
 }

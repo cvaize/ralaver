@@ -113,6 +113,13 @@ impl UserService {
     ) -> Result<PaginationResult<User>, UserRepositoryError> {
         self.user_repository.get_ref().paginate(params)
     }
+
+    pub fn paginate_throw_http(
+        &self,
+        params: &UserPaginateParams,
+    ) -> Result<PaginationResult<User>, Error> {
+        self.paginate(params).map_err(|e| error::ErrorInternalServerError(""))
+    }
 }
 
 #[derive(Debug, Clone, Copy, Display, EnumString)]

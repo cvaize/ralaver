@@ -321,6 +321,30 @@ macro_rules! prepare_value {
     }
 }
 
+#[macro_export]
+macro_rules! prepare_paginate {
+    ($page:expr, $per_page:expr) => {
+        let page = std::cmp::max($page.unwrap_or(1), 1);
+        let per_page = std::cmp::min($per_page.unwrap_or(10), 100);
+        $page = Some(page);
+        $per_page = Some(per_page);
+    }
+}
+
+#[macro_export]
+macro_rules! validation_max_length {
+    ($errors:expr, $field:expr, $field_name:expr, $max_size:expr, $translator_service:expr, $lang:expr) => {
+        if let Some(value) = &$field {
+            let mut errors_: Vec<String> =
+                crate::app::validator::rules::length::MaxLengthString::validate($translator_service, $lang, value, $max_size, $field_name);
+            if errors_.len() != 0 {
+                $errors.append(&mut errors_);
+                $field = None;
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
