@@ -4,9 +4,9 @@ use crate::app::controllers::web::{
 use crate::app::repositories::{UserFilter, UserPaginateParams, UserSort};
 use crate::app::validator::rules::length::MaxLengthString;
 use crate::{
-    prepare_paginate, prepare_value, validation_max_length, Alert, AppService, Config, Locale,
-    LocaleService, Session, TemplateService, TranslatorService, User, UserService, WebAuthService,
-    WebHttpResponse,
+    prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService, Config,
+    Locale, LocaleService, Session, TemplateService, TranslatorService, User, UserService,
+    WebAuthService, WebHttpResponse,
 };
 use actix_web::web::{Data, Form, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -226,9 +226,9 @@ impl IndexQuery {
     ) -> Vec<String> {
         let mut errors: Vec<String> = Vec::new();
 
-        validation_max_length!(errors, self.search, search_str, 255, t_s, lang);
-        validation_max_length!(errors, self.locale, locale_str, 6, t_s, lang);
-        validation_max_length!(errors, self.sort, sort_str, 255, t_s, lang);
+        validation_query_max_length_string!(errors, self.search, search_str, 255, t_s, lang);
+        validation_query_max_length_string!(errors, self.locale, locale_str, 6, t_s, lang);
+        validation_query_max_length_string!(errors, self.sort, sort_str, 255, t_s, lang);
 
         errors
     }

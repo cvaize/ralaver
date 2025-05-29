@@ -1,18 +1,21 @@
 use crate::app::controllers::web::{get_context_data, get_template_context};
-use crate::app::repositories::UserSort;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString};
 use crate::app::validator::rules::required::Required;
 use crate::helpers::none_if_empty;
-use crate::{prepare_value, Alert, AppService, Locale, LocaleService, RateLimitService, Session, TemplateService, TranslatableError, TranslatorService, User, UserService, UserServiceError, WebAuthService, WebHttpResponse};
+use crate::{
+    prepare_value, Alert,
+    AppService, Locale, LocaleService, RateLimitService, Session, TemplateService,
+    TranslatableError, TranslatorService, User, UserService, UserServiceError, WebAuthService,
+    WebHttpResponse,
+};
 use actix_web::web::Path;
 use actix_web::web::{Data, Form, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
-use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -31,6 +34,18 @@ pub struct PostData {
     pub surname: Option<String>,
     pub name: Option<String>,
     pub patronymic: Option<String>,
+}
+
+#[derive(Deserialize, Default, Debug)]
+struct ErrorMessages {
+    pub form: Vec<String>,
+    pub email: Vec<String>,
+    pub password: Vec<String>,
+    pub confirm_password: Vec<String>,
+    pub locale: Vec<String>,
+    pub surname: Vec<String>,
+    pub name: Vec<String>,
+    pub patronymic: Vec<String>,
 }
 
 pub async fn create(
@@ -180,7 +195,7 @@ pub fn invoke(
 ) -> Result<HttpResponse, Error> {
     data.prepare();
     //
-    let translator_service = translator_service.get_ref();
+    let t_s = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
     let web_auth_service = web_auth_service.get_ref();
@@ -191,39 +206,25 @@ pub fn invoke(
     //
     let user = user.as_ref();
 
-    let mut context_data = get_context_data(
-        &req,
-        user,
-        &session,
-        translator_service,
-        app_service,
-        web_auth_service,
-    );
+    let mut context_data =
+        get_context_data(&req, user, &session, t_s, app_service, web_auth_service);
 
     let lang = &context_data.lang;
 
-    let email_str = translator_service.translate(lang, "page.users.create.fields.email");
-    let password_str = translator_service.translate(lang, "page.users.create.fields.password");
-    let confirm_password_str =
-        translator_service.translate(lang, "page.users.create.fields.confirm_password");
-    let surname_str = translator_service.translate(lang, "page.users.create.fields.surname");
-    let name_str = translator_service.translate(lang, "page.users.create.fields.name");
-    let patronymic_str = translator_service.translate(lang, "page.users.create.fields.patronymic");
-    let locale_str = translator_service.translate(lang, "page.users.create.fields.locale");
+    let email_str = t_s.translate(lang, "page.users.create.fields.email");
+    let password_str = t_s.translate(lang, "page.users.create.fields.password");
+    let confirm_password_str = t_s.translate(lang, "page.users.create.fields.confirm_password");
+    let surname_str = t_s.translate(lang, "page.users.create.fields.surname");
+    let name_str = t_s.translate(lang, "page.users.create.fields.name");
+    let patronymic_str = t_s.translate(lang, "page.users.create.fields.patronymic");
+    let locale_str = t_s.translate(lang, "page.users.create.fields.locale");
 
-    context_data.title = translator_service.translate(lang, "page.users.create.title");
+    context_data.title = t_s.translate(lang, "page.users.create.title");
 
     //
     let is_post = req.method().eq(&Method::POST);
     let mut is_done = false;
-    let mut form_errors: Vec<String> = Vec::new();
-    let mut email_errors: Vec<String> = Vec::new();
-    let mut password_errors: Vec<String> = Vec::new();
-    let mut confirm_password_errors: Vec<String> = Vec::new();
-    let mut surname_errors: Vec<String> = Vec::new();
-    let mut name_errors: Vec<String> = Vec::new();
-    let mut patronymic_errors: Vec<String> = Vec::new();
-    let mut locale_errors: Vec<String> = Vec::new();
+    let mut errors = ErrorMessages::default();
 
     if is_post {
         web_auth_service.check_csrf_throw_http(&session, &data._token)?;
@@ -237,98 +238,65 @@ pub fn invoke(
         )?;
 
         if executed {
-            email_errors = Required::validated(translator_service, lang, &data.email, |value| {
-                Email::validate(translator_service, lang, value, &email_str)
+            errors.email = Required::validated(t_s, lang, &data.email, |value| {
+                Email::validate(t_s, lang, value, &email_str)
             });
 
             if edit_user.is_none() {
-                password_errors =
-                    Required::validated(translator_service, lang, &data.password, |value| {
-                        MinMaxLengthString::validate(
-                            translator_service,
-                            lang,
-                            value,
-                            4,
-                            255,
-                            &password_str,
-                        )
-                    });
+                errors.password = Required::validated(t_s, lang, &data.password, |value| {
+                    MinMaxLengthString::validate(t_s, lang, value, 4, 255, &password_str)
+                });
             } else {
                 if let Some(password) = &data.password {
-                    password_errors = MinMaxLengthString::validate(
-                        translator_service,
-                        lang,
-                        password,
-                        4,
-                        255,
-                        &password_str,
-                    );
+                    errors.password =
+                        MinMaxLengthString::validate(t_s, lang, password, 4, 255, &password_str);
                 }
             }
 
             if edit_user.is_none() || data.password.is_some() {
-                confirm_password_errors = Required::validated(
-                    translator_service,
-                    lang,
-                    &data.confirm_password,
-                    |value| {
+                errors.confirm_password =
+                    Required::validated(t_s, lang, &data.confirm_password, |value| {
                         MinMaxLengthString::validate(
-                            translator_service,
+                            t_s,
                             lang,
                             value,
                             4,
                             255,
                             &confirm_password_str,
                         )
-                    },
-                );
+                    });
             }
 
-            if password_errors.len() == 0
-                && confirm_password_errors.len() == 0
+            if errors.password.len() == 0
+                && errors.confirm_password.len() == 0
                 && data.password.is_some()
                 && data.confirm_password.is_some()
             {
                 let mut password_errors2: Vec<String> = Confirmed::validate(
-                    translator_service,
+                    t_s,
                     lang,
                     data.password.as_ref().unwrap(),
                     data.confirm_password.as_ref().unwrap(),
                     &password_str,
                 );
-                confirm_password_errors.append(&mut password_errors2);
+                errors.confirm_password.append(&mut password_errors2);
             }
 
             if let Some(surname) = &data.surname {
-                surname_errors =
-                    MaxLengthString::validate(translator_service, lang, surname, 255, &surname_str);
+                errors.surname = MaxLengthString::validate(t_s, lang, surname, 255, &surname_str);
             }
             if let Some(name) = &data.name {
-                name_errors =
-                    MaxLengthString::validate(translator_service, lang, name, 255, &name_str);
+                errors.name = MaxLengthString::validate(t_s, lang, name, 255, &name_str);
             }
             if let Some(patronymic) = &data.patronymic {
-                patronymic_errors = MaxLengthString::validate(
-                    translator_service,
-                    lang,
-                    patronymic,
-                    255,
-                    &patronymic_str,
-                );
+                errors.patronymic =
+                    MaxLengthString::validate(t_s, lang, patronymic, 255, &patronymic_str);
             }
             if let Some(locale) = &data.locale {
-                locale_errors =
-                    MaxLengthString::validate(translator_service, lang, locale, 255, &locale_str);
+                errors.locale = MaxLengthString::validate(t_s, lang, locale, 255, &locale_str);
             }
 
-            is_done = if email_errors.len() == 0
-                && password_errors.len() == 0
-                && confirm_password_errors.len() == 0
-                && surname_errors.len() == 0
-                && name_errors.len() == 0
-                && patronymic_errors.len() == 0
-                && locale_errors.len() == 0
-            {
+            if errors.is_empty() {
                 let mut password = none_if_empty(&data.password);
                 let mut is_need_hash_password = true;
                 let id = if let Some(edit_user) = &edit_user {
@@ -354,29 +322,23 @@ pub fn invoke(
                 if let Err(error) = result {
                     match error {
                         UserServiceError::DuplicateEmail => {
-                            email_errors.push(error.translate(lang, translator_service));
+                            errors.email.push(error.translate(lang, t_s));
                         }
                         UserServiceError::PasswordHashFail => {
-                            password_errors.push(error.translate(lang, translator_service));
+                            errors.password.push(error.translate(lang, t_s));
                         }
                         _ => {
-                            form_errors.push(error.translate(lang, translator_service));
+                            errors.form.push(error.translate(lang, t_s));
                         }
                     }
-                    false
                 } else {
-                    true
+                    is_done = true;
                 }
-            } else {
-                false
-            };
+            }
         } else {
-            let ttl_message = rate_limit_service.ttl_message_throw_http(
-                translator_service,
-                lang,
-                &rate_limit_key,
-            )?;
-            form_errors.push(ttl_message)
+            let ttl_message =
+                rate_limit_service.ttl_message_throw_http(t_s, lang, &rate_limit_key)?;
+            errors.form.push(ttl_message)
         }
 
         if is_done {
@@ -385,7 +347,7 @@ pub fn invoke(
     }
 
     //
-    for form_error in form_errors {
+    for form_error in errors.form {
         context_data.alerts.push(Alert::error(form_error));
     }
 
@@ -418,26 +380,22 @@ pub fn invoke(
                     let mut vars: HashMap<&str, &str> = HashMap::new();
                     let name_ = user_.get_full_name_with_id_and_email();
                     vars.insert("name", &name_);
-                    context_data
-                        .alerts
-                        .push(Alert::success(translator_service.variables(
-                            lang,
-                            "alert.users.create.success",
-                            &vars,
-                        )));
+                    context_data.alerts.push(Alert::success(t_s.variables(
+                        lang,
+                        "alert.users.create.success",
+                        &vars,
+                    )));
                 }
             }
 
             if is_not_found {
                 let mut vars: HashMap<&str, &str> = HashMap::new();
                 vars.insert("email", email_);
-                context_data
-                    .alerts
-                    .push(Alert::success(translator_service.variables(
-                        lang,
-                        "alert.users.create.success_and_not_found",
-                        &vars,
-                    )));
+                context_data.alerts.push(Alert::success(t_s.variables(
+                    lang,
+                    "alert.users.create.success_and_not_found",
+                    &vars,
+                )));
             }
         }
     }
@@ -454,42 +412,13 @@ pub fn invoke(
     let layout_ctx = get_template_context(&context_data);
 
     let fields = json!({
-        "email": {
-            "label": email_str,
-            "value": &data.email,
-            "errors": email_errors,
-        },
-        "password": {
-            "label": password_str,
-            "value": &data.password,
-            "errors": password_errors,
-        },
-        "confirm_password": {
-            "label": confirm_password_str,
-            "value": &data.confirm_password,
-            "errors": confirm_password_errors,
-        },
-        "surname": {
-            "label": surname_str,
-            "value": &data.surname,
-            "errors": surname_errors,
-        },
-        "name": {
-            "label": name_str,
-            "value": &data.name,
-            "errors": name_errors,
-        },
-        "patronymic": {
-            "label": patronymic_str,
-            "value": &data.patronymic,
-            "errors": patronymic_errors,
-        },
-        "locale": {
-            "label": locale_str,
-            "value": &data.locale,
-            "errors": locale_errors,
-            "locales": locales_
-        }
+        "email": { "label": email_str, "value": &data.email, "errors": errors.email },
+        "password": { "label": password_str, "value": &data.password, "errors": errors.password },
+        "confirm_password": { "label": confirm_password_str, "value": &data.confirm_password, "errors": errors.confirm_password },
+        "surname": { "label": surname_str, "value": &data.surname, "errors": errors.surname },
+        "name": { "label": name_str, "value": &data.name, "errors": errors.name },
+        "patronymic": { "label": patronymic_str, "value": &data.patronymic, "errors": errors.patronymic },
+        "locale": { "label": locale_str, "value": &data.locale, "errors": errors.locale, "options": locales_ }
     });
 
     let ctx = if let Some(edit_user) = &edit_user {
@@ -500,27 +429,27 @@ pub fn invoke(
         let mut vars: HashMap<&str, &str> = HashMap::new();
         vars.insert("user_name", &full_name);
 
-        let heading = translator_service.variables(lang, "page.users.edit.header", &vars);
+        let heading = t_s.variables(lang, "page.users.edit.header", &vars);
         json!({
             "ctx": layout_ctx,
             "heading": &heading,
             "tabs": {
-                "main": translator_service.translate(lang, "page.users.create.tabs.main"),
-                "extended": translator_service.translate(lang, "page.users.create.tabs.extended"),
+                "main": t_s.translate(lang, "page.users.create.tabs.main"),
+                "extended": t_s.translate(lang, "page.users.create.tabs.extended"),
             },
             "breadcrumbs": [
-                {"href": "/", "label": translator_service.translate(lang, "page.home.header")},
-                {"href": "/users", "label": translator_service.translate(lang, "page.users.index.header")},
+                {"href": "/", "label": t_s.translate(lang, "page.home.header")},
+                {"href": "/users", "label": t_s.translate(lang, "page.users.index.header")},
                 {"label": &heading},
             ],
             "form": {
                 "action": action,
                 "method": "post",
                 "fields": fields,
-                "save": translator_service.translate(lang, "Save"),
-                "save_and_close": translator_service.translate(lang, "Save and close"),
+                "save": t_s.translate(lang, "Save"),
+                "save_and_close": t_s.translate(lang, "Save and close"),
                 "close": {
-                    "label": translator_service.translate(lang, "Close"),
+                    "label": t_s.translate(lang, "Close"),
                     "href": "/users"
                 },
             },
@@ -528,24 +457,25 @@ pub fn invoke(
     } else {
         json!({
             "ctx": layout_ctx,
-            "heading": translator_service.translate(lang, "page.users.create.header"),
+            "heading": t_s.translate(lang, "page.users.create.header"),
             "tabs": {
-                "main": translator_service.translate(lang, "page.users.create.tabs.main"),
-                "extended": translator_service.translate(lang, "page.users.create.tabs.extended"),
+                "main": t_s.translate(lang, "page.users.create.tabs.main"),
+                "extended": t_s.translate(lang, "page.users.create.tabs.extended"),
             },
             "breadcrumbs": [
-                {"href": "/", "label": translator_service.translate(lang, "page.home.header")},
-                {"href": "/users", "label": translator_service.translate(lang, "page.users.index.header")},
-                {"label": translator_service.translate(lang, "page.users.create.header")},
+                {"href": "/", "label": t_s.translate(lang, "page.home.header")},
+                {"href": "/users", "label": t_s.translate(lang, "page.users.index.header")},
+                {"label": t_s.translate(lang, "page.users.create.header")},
             ],
             "form": {
                 "action": "/users/create",
                 "method": "post",
                 "fields": fields,
-                "save": translator_service.translate(lang, "Save"),
-                "save_and_close": translator_service.translate(lang, "Save and close"),
+                "locales": locales_,
+                "save": t_s.translate(lang, "Save"),
+                "save_and_close": t_s.translate(lang, "Save and close"),
                 "close": {
-                    "label": translator_service.translate(lang, "Close"),
+                    "label": t_s.translate(lang, "Close"),
                     "href": "/users"
                 },
             },
@@ -569,6 +499,18 @@ impl PostData {
         prepare_value!(self.surname);
         prepare_value!(self.name);
         prepare_value!(self.patronymic);
+    }
+}
 
+impl ErrorMessages {
+    pub fn is_empty(&self) -> bool {
+        self.form.len() == 0
+            && self.email.len() == 0
+            && self.password.len() == 0
+            && self.confirm_password.len() == 0
+            && self.surname.len() == 0
+            && self.name.len() == 0
+            && self.patronymic.len() == 0
+            && self.locale.len() == 0
     }
 }

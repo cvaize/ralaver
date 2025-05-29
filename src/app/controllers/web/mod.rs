@@ -332,7 +332,7 @@ macro_rules! prepare_paginate {
 }
 
 #[macro_export]
-macro_rules! validation_max_length {
+macro_rules! validation_query_max_length_string {
     ($errors:expr, $field:expr, $field_name:expr, $max_size:expr, $translator_service:expr, $lang:expr) => {
         if let Some(value) = &$field {
             let mut errors_: Vec<String> =
