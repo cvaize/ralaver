@@ -425,7 +425,7 @@ mod tests {
     #[test]
     fn encrypt_session() {
         let (_, all_services) = preparation();
-        let auth = all_services.web_auth.get_ref();
+        let auth = all_services.web_auth_service.get_ref();
 
         let session = Session::new(5, 6, "test".to_string(), 100, None);
         auth.encrypt_session(&session).unwrap();
@@ -434,7 +434,7 @@ mod tests {
     #[test]
     fn decrypt_session() {
         let (_, all_services) = preparation();
-        let auth = all_services.web_auth.get_ref();
+        let auth = all_services.web_auth_service.get_ref();
 
         let session = Session::new(5, 6, "test".to_string(), 100, None);
         let s: String = auth.encrypt_session(&session).unwrap();
@@ -448,7 +448,7 @@ mod tests {
     #[test]
     fn save_session() {
         let (_, all_services) = preparation();
-        let auth = all_services.web_auth.get_ref();
+        let auth = all_services.web_auth_service.get_ref();
 
         let session = auth.generate_session(1);
         auth.save_session(&session).unwrap();
@@ -457,7 +457,7 @@ mod tests {
     #[bench]
     fn bench_save_session(b: &mut Bencher) {
         let (_, all_services) = preparation();
-        let auth = all_services.web_auth.get_ref();
+        let auth = all_services.web_auth_service.get_ref();
         let session = auth.generate_session(1);
 
         b.iter(|| {
@@ -468,7 +468,7 @@ mod tests {
     #[bench]
     fn bench_expire_session(b: &mut Bencher) {
         let (_, all_services) = preparation();
-        let auth = all_services.web_auth.get_ref();
+        let auth = all_services.web_auth_service.get_ref();
         let session = auth.generate_session(1);
         auth.save_session(&session).unwrap();
 
@@ -480,7 +480,7 @@ mod tests {
     #[bench]
     fn bench_login_by_session(b: &mut Bencher) {
         let (_, all_services) = preparation();
-        let auth = all_services.web_auth.get_ref();
+        let auth = all_services.web_auth_service.get_ref();
         let session = auth.generate_session(1);
         auth.save_session(&session).unwrap();
 

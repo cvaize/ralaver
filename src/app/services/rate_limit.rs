@@ -258,7 +258,7 @@ mod tests {
     #[test]
     fn test() {
         let (_, all_services) = preparation();
-        let rate_limit_service = all_services.rate_limit.get_ref();
+        let rate_limit_service = all_services.rate_limit_service.get_ref();
 
         rate_limit_service.clear(KEY).unwrap();
         for i in 0..MAX_ATTEMPTS {
@@ -278,7 +278,7 @@ mod tests {
     #[bench]
     fn bench_test(b: &mut Bencher) {
         let (_, all_services) = preparation();
-        let rate_limit_service = all_services.rate_limit.get_ref();
+        let rate_limit_service = all_services.rate_limit_service.get_ref();
 
         b.iter(|| {
             rate_limit_service.clear(KEY).unwrap();

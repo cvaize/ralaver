@@ -195,14 +195,14 @@ mod tests {
         assert_eq!(
             false,
             all_services
-                .auth
+                .auth_service
                 .exists_user_by_email("null@null.null")
                 .unwrap()
         );
         assert_eq!(
             true,
             all_services
-                .auth
+                .auth_service
                 .exists_user_by_email("admin@admin.example")
                 .unwrap()
         );
@@ -213,14 +213,14 @@ mod tests {
         let (_, all_services) = preparation();
 
         let email = "admin@admin.example";
-        let code = all_services.rand.get_ref().str(64);
+        let code = all_services.rand_service.get_ref().str(64);
         all_services
-            .auth
+            .auth_service
             .save_reset_password_code(email, &code)
             .unwrap();
 
         let saved_code = all_services
-            .auth
+            .auth_service
             .get_reset_password_code(email)
             .unwrap()
             .unwrap();
@@ -228,15 +228,15 @@ mod tests {
         assert_eq!(
             true,
             all_services
-                .auth
+                .auth_service
                 .is_equal_reset_password_code(email, &code)
                 .unwrap()
         );
-        let code = all_services.rand.get_ref().str(64);
+        let code = all_services.rand_service.get_ref().str(64);
         assert_eq!(
             false,
             all_services
-                .auth
+                .auth_service
                 .is_equal_reset_password_code(email, &code)
                 .unwrap()
         );

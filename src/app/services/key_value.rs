@@ -218,7 +218,7 @@ mod tests {
     #[test]
     fn test() {
         let (_, all_services) = preparation();
-        let key_value_service = all_services.key_value.get_ref();
+        let key_value_service = all_services.key_value_service.get_ref();
         let key = "app::services::key_value::tests::get_and_set_and_del";
         let v: u64 = 123;
         key_value_service.del(key).unwrap();

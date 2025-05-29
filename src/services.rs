@@ -1,7 +1,11 @@
-use crate::connections::Connections;
-use crate::{AppService, AuthService, Config, CryptService, HashService, KeyValueService, LocaleService, MailService, RandomService, RateLimitService, TemplateService, TranslatorService, UserService, WebAuthService};
-use actix_web::web::Data;
 use crate::app::repositories::UserRepository;
+use crate::connections::Connections;
+use crate::{
+    AppService, AuthService, Config, CryptService, HashService, KeyValueService, LocaleService,
+    MailService, RandomService, RateLimitService, TemplateService, TranslatorService, UserService,
+    WebAuthService,
+};
+use actix_web::web::Data;
 
 pub struct BaseServices {
     pub config: Data<Config>,
@@ -14,114 +18,117 @@ pub fn base(config: Config) -> BaseServices {
 }
 
 pub struct AdvancedServices {
-    pub key_value: Data<KeyValueService>,
-    pub translator: Data<TranslatorService>,
-    pub template: Data<TemplateService>,
-    pub crypt: Data<CryptService>,
-    pub hash: Data<HashService>,
-    pub web_auth: Data<WebAuthService>,
-    pub auth: Data<AuthService>,
-    pub locale: Data<LocaleService>,
-    pub app: Data<AppService>,
-    pub mail: Data<MailService>,
-    pub rand: Data<RandomService>,
-    pub rate_limit: Data<RateLimitService>,
-    pub user: Data<UserService>,
-    pub user_rep: Data<UserRepository>,
+    pub key_value_service: Data<KeyValueService>,
+    pub translator_service: Data<TranslatorService>,
+    pub template_service: Data<TemplateService>,
+    pub crypt_service: Data<CryptService>,
+    pub hash_service: Data<HashService>,
+    pub web_auth_service: Data<WebAuthService>,
+    pub auth_service: Data<AuthService>,
+    pub locale_service: Data<LocaleService>,
+    pub app_service: Data<AppService>,
+    pub mail_service: Data<MailService>,
+    pub rand_service: Data<RandomService>,
+    pub rate_limit_service: Data<RateLimitService>,
+    pub user_service: Data<UserService>,
+    pub user_repository: Data<UserRepository>,
 }
 
 pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
-    let key_value = Data::new(KeyValueService::new(c.redis.clone()));
-    let translator = Data::new(
+    let key_value_service = Data::new(KeyValueService::new(c.redis.clone()));
+    let translator_service = Data::new(
         TranslatorService::new_from_files(s.config.clone())
             .expect("Fail init TranslatorService::new_from_files"),
     );
-    let template = Data::new(
+    let template_service = Data::new(
         TemplateService::new_from_files(s.config.clone())
             .expect("Fail init TemplateService::new_from_files"),
     );
-    let rand = Data::new(RandomService::new());
+    let rand_service = Data::new(RandomService::new());
 
-    let hash = Data::new(HashService::new(s.config.clone()));
-    let user_rep = Data::new(UserRepository::new(c.mysql.clone()));
-    let user = Data::new(UserService::new(hash.clone(), user_rep.clone()));
+    let hash_service = Data::new(HashService::new(s.config.clone()));
+    let user_repository = Data::new(UserRepository::new(c.mysql.clone()));
+    let user_service = Data::new(UserService::new(
+        hash_service.clone(),
+        user_repository.clone(),
+    ));
 
-    let crypt = Data::new(CryptService::new(
+    let crypt_service = Data::new(CryptService::new(
         s.config.clone(),
-        rand.clone(),
-        hash.clone(),
+        rand_service.clone(),
+        hash_service.clone(),
     ));
-    let auth = Data::new(AuthService::new(
-        key_value.clone(),
-        hash.clone(),
-        user.clone(),
-        user_rep.clone(),
+    let auth_service = Data::new(AuthService::new(
+        key_value_service.clone(),
+        hash_service.clone(),
+        user_service.clone(),
+        user_repository.clone(),
     ));
-    let locale = Data::new(LocaleService::new(s.config.clone()));
-    let app = Data::new(AppService::new(s.config.clone(), locale.clone()));
-    let mail = Data::new(MailService::new(s.config.clone(), c.smtp.clone()));
-    let rate_limit = Data::new(RateLimitService::new(key_value.clone()));
-    let web_auth = Data::new(WebAuthService::new(
+    let locale_service = Data::new(LocaleService::new(s.config.clone()));
+    let app_service = Data::new(AppService::new(s.config.clone(), locale_service.clone()));
+    let mail_service = Data::new(MailService::new(s.config.clone(), c.smtp.clone()));
+    let rate_limit_service = Data::new(RateLimitService::new(key_value_service.clone()));
+    let web_auth_service = Data::new(WebAuthService::new(
         s.config.clone(),
-        crypt.clone(),
-        rand.clone(),
-        key_value.clone(),
-        hash.clone(),
-        user.clone(),
+        crypt_service.clone(),
+        rand_service.clone(),
+        key_value_service.clone(),
+        hash_service.clone(),
+        user_service.clone(),
     ));
 
     AdvancedServices {
-        key_value,
-        translator,
-        template,
-        hash,
-        crypt,
-        web_auth,
-        auth,
-        locale,
-        app,
-        mail,
-        rand,
-        rate_limit,
-        user,
-        user_rep,
+        key_value_service,
+        translator_service,
+        template_service,
+        hash_service,
+        crypt_service,
+        web_auth_service,
+        auth_service,
+        locale_service,
+        app_service,
+        mail_service,
+        rand_service,
+        rate_limit_service,
+        user_service,
+        user_repository,
     }
 }
 
 pub struct Services {
     pub config: Data<Config>,
-    pub key_value: Data<KeyValueService>,
-    pub translator: Data<TranslatorService>,
-    pub template: Data<TemplateService>,
-    pub hash: Data<HashService>,
-    pub web_auth: Data<WebAuthService>,
-    pub auth: Data<AuthService>,
-    pub crypt: Data<CryptService>,
-    pub locale: Data<LocaleService>,
-    pub app: Data<AppService>,
-    pub mail: Data<MailService>,
-    pub rand: Data<RandomService>,
-    pub rate_limit: Data<RateLimitService>,
-    pub user: Data<UserService>,
-    pub user_rep: Data<UserRepository>,
+    pub key_value_service: Data<KeyValueService>,
+    pub translator_service: Data<TranslatorService>,
+    pub template_service: Data<TemplateService>,
+    pub hash_service: Data<HashService>,
+    pub web_auth_service: Data<WebAuthService>,
+    pub auth_service: Data<AuthService>,
+    pub crypt_service: Data<CryptService>,
+    pub locale_service: Data<LocaleService>,
+    pub app_service: Data<AppService>,
+    pub mail_service: Data<MailService>,
+    pub rand_service: Data<RandomService>,
+    pub rate_limit_service: Data<RateLimitService>,
+    pub user_service: Data<UserService>,
+    pub user_repository: Data<UserRepository>,
 }
 
 pub fn join_to_all(base: BaseServices, advanced: AdvancedServices) -> Services {
     Services {
         config: base.config,
-        key_value: advanced.key_value,
-        translator: advanced.translator,
-        template: advanced.template,
-        hash: advanced.hash,
-        web_auth: advanced.web_auth,
-        auth: advanced.auth,
-        crypt: advanced.crypt,
-        locale: advanced.locale,
-        app: advanced.app,
-        mail: advanced.mail,
-        rand: advanced.rand,
-        rate_limit: advanced.rate_limit,
-        user: advanced.user,
-        user_rep: advanced.user_rep,
+        key_value_service: advanced.key_value_service,
+        translator_service: advanced.translator_service,
+        template_service: advanced.template_service,
+        hash_service: advanced.hash_service,
+        web_auth_service: advanced.web_auth_service,
+        auth_service: advanced.auth_service,
+        crypt_service: advanced.crypt_service,
+        locale_service: advanced.locale_service,
+        app_service: advanced.app_service,
+        mail_service: advanced.mail_service,
+        rand_service: advanced.rand_service,
+        rate_limit_service: advanced.rate_limit_service,
+        user_service: advanced.user_service,
+        user_repository: advanced.user_repository,
     }
 }

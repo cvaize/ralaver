@@ -46,7 +46,7 @@ impl WebHttpResponse for HttpResponseBuilder {
         )
     }
     fn set_alerts(&mut self, alerts: Vec<AlertVariant>) -> &mut Self {
-        let cookie: Vec<String> = alerts.into_iter().map(|a| a.to_string()).collect();
+        let cookie: Vec<String> = alerts.into_iter().map(|a| a.to_string().replace(",", "%2C")).collect();
 
         self.cookie(
             Cookie::build(ALERTS_KEY, cookie.join(","))
@@ -62,7 +62,8 @@ impl WebHttpResponse for HttpResponseBuilder {
 fn string_to_alerts(s: &str, translator_service: &TranslatorService, lang: &str) -> Vec<Alert> {
     let mut alerts = Vec::new();
     for item in s.split(",") {
-        let result = AlertVariant::from_str(item.trim());
+        let str = item.trim().replace("%2C", ",");
+        let result = AlertVariant::from_string(&str);
         if let Ok(variant) = result {
             alerts.push(Alert::from_variant(translator_service, lang, &variant));
         }
@@ -244,7 +245,7 @@ pub fn generate_pagination_vec(page: i64, total_pages: i64, offset: i64) -> Vec<
 }
 
 #[allow(dead_code)]
-pub fn generate_pagination_array(page: i64, total_pages: i64) -> [i64; 7] {
+pub fn generate_1_offset_pagination_array(page: i64, total_pages: i64) -> [i64; 7] {
     let mut result: [i64; 7] = [-1; 7];
 
     let result_length = 7;
@@ -276,6 +277,70 @@ pub fn generate_pagination_array(page: i64, total_pages: i64) -> [i64; 7] {
     if end >= total_pages - 2 {
         if is_start_dot {
             start = total_pages - 4;
+        }
+
+        end = total_pages - 1;
+        is_end_dot = false;
+    }
+
+    if start <= 3 {
+        start = 2;
+        is_start_dot = false;
+    }
+
+    if is_start_dot {
+        result[i] = 0;
+        i += 1;
+    }
+
+    for j in start..=end {
+        result[i] = j;
+        i += 1;
+    }
+
+    if is_end_dot {
+        result[i] = 0;
+        i += 1;
+    }
+
+    result[i] = total_pages;
+
+    result
+}
+
+#[allow(dead_code)]
+pub fn generate_2_offset_pagination_array(page: i64, total_pages: i64) -> [i64; 9] {
+    let mut result: [i64; 9] = [-1; 9];
+
+    let result_length = 9;
+
+    if result_length >= total_pages {
+        for j in 0..total_pages {
+            result[j as usize] = j + 1;
+        }
+
+        return result;
+    }
+
+    let mut i: usize = 0;
+
+    result[i] = 1;
+    i += 1;
+
+    let mut start = page - 2;
+    let mut end = page + 2;
+    let mut is_start_dot = true;
+    let mut is_end_dot = true;
+
+    if start <= 3 {
+        start = 2;
+        end = 7;
+        is_start_dot = false;
+    }
+
+    if end >= total_pages - 2 {
+        if is_start_dot {
+            start = total_pages - 6;
         }
 
         end = total_pages - 1;
@@ -348,7 +413,7 @@ macro_rules! validation_query_max_length_string {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use generate_pagination_array as ga;
+    use generate_1_offset_pagination_array as ga;
     use generate_pagination_vec as gv;
     use test::Bencher;
 

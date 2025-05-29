@@ -1,17 +1,18 @@
 use crate::app::controllers::web::{get_context_data, get_template_context};
+use crate::app::repositories::UserRepositoryError;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString as MMLS};
 use crate::app::validator::rules::required::Required;
 use crate::helpers::none_if_empty;
 use crate::{
-    prepare_value, Alert, AppService, Locale, LocaleService, RateLimitService, Session,
-    TemplateService, TranslatableError, TranslatorService, User, UserService, UserServiceError,
-    WebAuthService, WebHttpResponse,
+    prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, RateLimitService,
+    Session, TemplateService, TranslatableError, TranslatorService, User, UserService,
+    UserServiceError, WebAuthService, WebHttpResponse,
 };
 use actix_web::web::Path;
 use actix_web::web::{Data, Form, ReqData};
-use actix_web::{Error, HttpRequest, HttpResponse, Result};
+use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
@@ -164,6 +165,7 @@ pub fn invoke(
     //
     let user = user.as_ref();
 
+    let mut alert_variants: Vec<AlertVariant> = Vec::new();
     let mut context_data = get_context_data(&req, user, &session, tr_s, ap_s, wa_s);
 
     let lang = &context_data.lang;
@@ -176,7 +178,25 @@ pub fn invoke(
     let patronymic_str = tr_s.translate(lang, "page.users.create.fields.patronymic");
     let locale_str = tr_s.translate(lang, "page.users.create.fields.locale");
 
-    context_data.title = tr_s.translate(lang, "page.users.create.title");
+    let (title, heading, action) = if let Some(edit_user) = &edit_user {
+        let mut vars: HashMap<&str, &str> = HashMap::new();
+        let user_name = edit_user.get_full_name_with_id_and_email();
+        vars.insert("user_name", &user_name);
+
+        (
+            tr_s.variables(lang, "page.users.edit.title", &vars),
+            tr_s.variables(lang, "page.users.edit.header", &vars),
+            get_edit_url(edit_user.id.to_string().as_str()),
+        )
+    } else {
+        (
+            tr_s.translate(lang, "page.users.create.title"),
+            tr_s.translate(lang, "page.users.create.header"),
+            get_create_url(),
+        )
+    };
+
+    context_data.title = title;
 
     //
     let is_post = req.method().eq(&Method::POST);
@@ -293,52 +313,47 @@ pub fn invoke(
     }
 
     if is_done {
-        if let Some(email_) = &data.email {
-            let user_ = u_s.first_by_email(email_);
-            let mut is_not_found = false;
-            if let Ok(user_) = user_ {
-                if let Some(user_) = user_ {
-                    is_not_found = true;
-                    // TODO: Save alerts
-                    if let Some(action) = &data.action {
-                        let header_value_back = http::HeaderValue::from_static("/users");
-                        if action.eq("save") {
-                            let mut src = "/users/".to_string();
-                            src.push_str(&user_.id.to_string());
-                            return Ok(HttpResponse::SeeOther()
-                                .insert_header((
-                                    http::header::LOCATION,
-                                    http::HeaderValue::from_str(&src).unwrap_or(header_value_back),
-                                ))
-                                .finish());
-                        } else if action.eq("save_and_close") {
-                            return Ok(HttpResponse::SeeOther()
-                                .insert_header((http::header::LOCATION, header_value_back))
-                                .finish());
-                        }
-                    }
+        let mut id: String = "".to_string();
 
-                    let mut vars: HashMap<&str, &str> = HashMap::new();
-                    let name_ = user_.get_full_name_with_id_and_email();
-                    vars.insert("name", &name_);
-                    context_data.alerts.push(Alert::success(tr_s.variables(
-                        lang,
-                        "alert.users.create.success",
-                        &vars,
-                    )));
-                }
-            }
+        if let Some(edit_user) = &edit_user {
+            let user = u_s.first_by_id_throw_http(edit_user.id)?;
+            id = user.id.to_string();
+            let name_ = user.get_full_name_with_id_and_email();
+            alert_variants.push(AlertVariant::UsersUpdateSuccess(name_))
+        } else if let Some(email_) = &data.email {
+            let user = u_s.first_by_email_throw_http(email_)?;
+            id = user.id.to_string();
+            let name_ = user.get_full_name_with_id_and_email();
+            alert_variants.push(AlertVariant::UsersCreateSuccess(name_))
+        }
 
-            if is_not_found {
-                let mut vars: HashMap<&str, &str> = HashMap::new();
-                vars.insert("email", email_);
-                context_data.alerts.push(Alert::success(tr_s.variables(
-                    lang,
-                    "alert.users.create.success_and_not_found",
-                    &vars,
-                )));
+        if let Some(action) = &data.action {
+            if action.eq("save") {
+                let url_ = get_edit_url(&id);
+                return Ok(HttpResponse::SeeOther()
+                    .set_alerts(alert_variants)
+                    .insert_header((
+                        http::header::LOCATION,
+                        http::HeaderValue::from_str(&url_)
+                            .map_err(|_| error::ErrorInternalServerError(""))?,
+                    ))
+                    .finish());
+            } else if action.eq("save_and_close") {
+                return Ok(HttpResponse::SeeOther()
+                    .set_alerts(alert_variants)
+                    .insert_header((
+                        http::header::LOCATION,
+                        http::HeaderValue::from_static("/users"),
+                    ))
+                    .finish());
             }
         }
+    }
+
+    for variant in &alert_variants {
+        context_data
+            .alerts
+            .push(Alert::from_variant(tr_s, lang, variant));
     }
 
     let default_locale = l_s.get_default_ref();
@@ -359,74 +374,48 @@ pub fn invoke(
         "surname": { "label": surname_str, "value": &data.surname, "errors": errors.surname },
         "name": { "label": name_str, "value": &data.name, "errors": errors.name },
         "patronymic": { "label": patronymic_str, "value": &data.patronymic, "errors": errors.patronymic },
-        "locale": { "label": locale_str, "value": &data.locale, "errors": errors.locale, "options": locales_ }
+        "locale": { "label": locale_str, "value": &data.locale, "errors": errors.locale, "options": locales_, "placeholder": tr_s.translate(lang, "Not selected..."), }
     });
 
-    let ctx = if let Some(edit_user) = &edit_user {
-        let mut action = "/users/".to_string();
-        action.push_str(edit_user.id.to_string().as_str());
-
-        let full_name = edit_user.get_full_name_with_id_and_email();
-        let mut vars: HashMap<&str, &str> = HashMap::new();
-        vars.insert("user_name", &full_name);
-
-        let heading = tr_s.variables(lang, "page.users.edit.header", &vars);
-        json!({
-            "ctx": layout_ctx,
-            "heading": &heading,
-            "tabs": {
-                "main": tr_s.translate(lang, "page.users.create.tabs.main"),
-                "extended": tr_s.translate(lang, "page.users.create.tabs.extended"),
+    let ctx = json!({
+        "ctx": layout_ctx,
+        "heading": &heading,
+        "tabs": {
+            "main": tr_s.translate(lang, "page.users.create.tabs.main"),
+            "extended": tr_s.translate(lang, "page.users.create.tabs.extended"),
+        },
+        "breadcrumbs": [
+            {"href": "/", "label": tr_s.translate(lang, "page.home.header")},
+            {"href": "/users", "label": tr_s.translate(lang, "page.users.index.header")},
+            {"label": &heading},
+        ],
+        "form": {
+            "action": &action,
+            "method": "post",
+            "fields": fields,
+            "save": tr_s.translate(lang, "Save"),
+            "save_and_close": tr_s.translate(lang, "Save and close"),
+            "close": {
+                "label": tr_s.translate(lang, "Close"),
+                "href": "/users"
             },
-            "breadcrumbs": [
-                {"href": "/", "label": tr_s.translate(lang, "page.home.header")},
-                {"href": "/users", "label": tr_s.translate(lang, "page.users.index.header")},
-                {"label": &heading},
-            ],
-            "form": {
-                "action": action,
-                "method": "post",
-                "fields": fields,
-                "save": tr_s.translate(lang, "Save"),
-                "save_and_close": tr_s.translate(lang, "Save and close"),
-                "close": {
-                    "label": tr_s.translate(lang, "Close"),
-                    "href": "/users"
-                },
-            },
-        })
-    } else {
-        json!({
-            "ctx": layout_ctx,
-            "heading": tr_s.translate(lang, "page.users.create.header"),
-            "tabs": {
-                "main": tr_s.translate(lang, "page.users.create.tabs.main"),
-                "extended": tr_s.translate(lang, "page.users.create.tabs.extended"),
-            },
-            "breadcrumbs": [
-                {"href": "/", "label": tr_s.translate(lang, "page.home.header")},
-                {"href": "/users", "label": tr_s.translate(lang, "page.users.index.header")},
-                {"label": tr_s.translate(lang, "page.users.create.header")},
-            ],
-            "form": {
-                "action": "/users/create",
-                "method": "post",
-                "fields": fields,
-                "locales": locales_,
-                "save": tr_s.translate(lang, "Save"),
-                "save_and_close": tr_s.translate(lang, "Save and close"),
-                "close": {
-                    "label": tr_s.translate(lang, "Close"),
-                    "href": "/users"
-                },
-            },
-        })
-    };
+        },
+    });
     let s = tm_s.render_throw_http("pages/users/create-edit.hbs", &ctx)?;
     Ok(HttpResponse::Ok()
         .clear_alerts()
         .content_type(mime::TEXT_HTML_UTF_8.as_ref())
         .body(s))
+}
+
+pub fn get_create_url() -> String {
+    "/users/create".to_string()
+}
+
+pub fn get_edit_url(id: &str) -> String {
+    let mut str_ = "/users/".to_string();
+    str_.push_str(id);
+    str_
 }
 
 impl PostData {

@@ -24,8 +24,10 @@
   },
   "users": {
     "create": {
-      "success": "User \":name\" has been successfully registered.",
-      "success_and_not_found": "The user was successfully saved, but for some reason it was found by E-mail: :email"
+      "success": "User \":name\" has been successfully registered."
+    },
+    "update": {
+      "success": "User \":name\" has been successfully updated."
     }
   }
 }

@@ -196,7 +196,7 @@ mod tests {
     #[test]
     fn encrypt_string() {
         let (_, all_services) = preparation();
-        let crypt = all_services.crypt.get_ref();
+        let crypt = all_services.crypt_service.get_ref();
 
         let encoded = crypt.encrypt_string(DATA).unwrap();
         assert!(encoded.len() > 1);
@@ -205,7 +205,7 @@ mod tests {
     #[bench]
     fn bench_encrypt_string(b: &mut Bencher) {
         let (_, all_services) = preparation();
-        let crypt = all_services.crypt.get_ref();
+        let crypt = all_services.crypt_service.get_ref();
 
         b.iter(|| {
             let _ = crypt.encrypt_string(DATA).unwrap();
@@ -215,7 +215,7 @@ mod tests {
     #[test]
     fn decrypt_string() {
         let (_, all_services) = preparation();
-        let crypt = all_services.crypt.get_ref();
+        let crypt = all_services.crypt_service.get_ref();
 
         let encoded: String = crypt.encrypt_string(DATA).unwrap();
 
@@ -226,7 +226,7 @@ mod tests {
     #[bench]
     fn bench_decrypt_string(b: &mut Bencher) {
         let (_, all_services) = preparation();
-        let crypt = all_services.crypt.get_ref();
+        let crypt = all_services.crypt_service.get_ref();
         let encoded = crypt.encrypt_string(DATA).unwrap();
 
         b.iter(|| {
@@ -237,7 +237,7 @@ mod tests {
     #[bench]
     fn bench_encrypt_and_decrypt_string(b: &mut Bencher) {
         let (_, all_services) = preparation();
-        let crypt = all_services.crypt.get_ref();
+        let crypt = all_services.crypt_service.get_ref();
 
         b.iter(|| {
             let encoded = crypt.encrypt_string(DATA).unwrap();

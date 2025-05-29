@@ -127,7 +127,7 @@ mod tests {
     #[test]
     fn hash_password() {
         let (_, all_services) = preparation();
-        let hash = all_services.hash.get_ref();
+        let hash = all_services.hash_service.get_ref();
 
         let password1 = "password123".to_string();
         let password2 = "password123".to_string();
@@ -140,7 +140,7 @@ mod tests {
     fn bench_hash_password(b: &mut Bencher) {
         // 67,343,054.50 ns/iter (+/- 19,188,343.94)
         let (_, all_services) = preparation();
-        let hash = all_services.hash.get_ref();
+        let hash = all_services.hash_service.get_ref();
 
         let value = "password123".to_string();
         b.iter(|| hash.hash_password(&value));
@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn verify_password() {
         let (_, all_services) = preparation();
-        let hash = all_services.hash.get_ref();
+        let hash = all_services.hash_service.get_ref();
 
         let password = "password123".to_string();
         let password2 = "password".to_string();
@@ -163,7 +163,7 @@ mod tests {
     fn bench_verify_password(b: &mut Bencher) {
         // 65,405,926.30 ns/iter (+/- 3,679,559.61)
         let (_, all_services) = preparation();
-        let hash = all_services.hash.get_ref();
+        let hash = all_services.hash_service.get_ref();
 
         let password = "password123".to_string();
         let password_hash = hash.hash_password(&password).unwrap();
@@ -174,7 +174,7 @@ mod tests {
     fn bench_hex_hash(b: &mut Bencher) {
         // 246.71 ns/iter (+/- 3.59)
         let (_, all_services) = preparation();
-        let hash = all_services.hash.get_ref();
+        let hash = all_services.hash_service.get_ref();
 
         let value = "password123".to_string();
         b.iter(|| hash.hex_hash(&value));
@@ -184,7 +184,7 @@ mod tests {
     fn bench_base64_hash(b: &mut Bencher) {
         // 257.92 ns/iter (+/- 9.32)
         let (_, all_services) = preparation();
-        let hash = all_services.hash.get_ref();
+        let hash = all_services.hash_service.get_ref();
 
         let value = "password123".to_string();
         b.iter(|| hash.base64_hash(&value));

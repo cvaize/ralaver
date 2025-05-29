@@ -36,6 +36,16 @@ impl UserService {
         self.user_repository.get_ref().first_by_email(email)
     }
 
+    pub fn first_by_email_throw_http(&self, email: &str) -> Result<User, Error> {
+        let user = self
+            .first_by_email(email)
+            .map_err(|e| error::ErrorInternalServerError(""))?;
+        if let Some(user) = user {
+            return Ok(user);
+        }
+        Err(error::ErrorNotFound(""))
+    }
+
     pub fn user_data_hash_password_(
         &self,
         data: &mut User,

@@ -1,4 +1,4 @@
-mod user;
+pub mod user;
 
 use r2d2_mysql::mysql::{Params, Row};
 pub use self::user::*;

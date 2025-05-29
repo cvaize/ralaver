@@ -3,6 +3,7 @@
 
     <div class="admin-list-page">
         <form id="admin-list-page-search-form" action="/users" method="get"></form>
+        <form id="admin-list-page-mass-actions-form" action="/users" method="post"></form>
         <div class="admin-list-page__breadcrumb">
             {{> components/breadcrumb.hbs }}
         </div>
@@ -120,7 +121,6 @@
         </div>
 
         <div class="admin-list-page__data">
-            <form id="admin-list-page-mass-actions-form" action="/users" method="get"></form>
             <div class="admin-table__responsive" style="padding: 0.25rem 0 0 0.25rem; margin: -0.25rem 0 0 -0.25rem">
                 <div class="admin-list-page__actions-dropdown admin-dropdown" tabindex="-1"
                      style="white-space: nowrap; opacity: 0; pointer-events: none;">
