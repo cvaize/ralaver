@@ -122,7 +122,7 @@ impl UserService {
     }
 }
 
-#[derive(Debug, Clone, Copy, Display, EnumString)]
+#[derive(Debug, Clone, Copy, Display, EnumString, PartialEq, Eq)]
 pub enum UserServiceError {
     DbConnectionFail,
     DuplicateEmail,
