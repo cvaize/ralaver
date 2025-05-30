@@ -194,7 +194,7 @@
                                     </svg>
                                 </a>
                                 <form action="/users/{{record.id}}/delete" method="post" style="display: inline-block">
-                                    <input type="hidden" name="_token" value="{{ctx.csrf}}">
+                                    <input type="hidden" name="_token" value="{{../ctx.csrf}}">
                                     <button type="submit" class="admin-btn admin-btn--square admin-danger"
                                             title="Удалить"
                                             onclick="return confirm('Удалить пользователя(ID:{{record.id}})?');">

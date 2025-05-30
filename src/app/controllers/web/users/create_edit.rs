@@ -18,9 +18,9 @@ use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-static RATE_LIMIT_MAX_ATTEMPTS: u64 = 10;
-static RATE_LIMIT_TTL: u64 = 60;
-static RATE_KEY: &str = "users_create_update";
+static RL_MAX_ATTEMPTS: u64 = 10;
+static RL_TTL: u64 = 60;
+static RL_KEY: &str = "users_create_update";
 
 #[derive(Deserialize, Default, Debug)]
 pub struct PostData {
@@ -205,10 +205,9 @@ pub fn invoke(
     if is_post {
         wa_s.check_csrf_throw_http(&session, &data._token)?;
 
-        let rate_limit_key = rl_s.make_key_from_request_throw_http(&req, RATE_KEY)?;
+        let rate_limit_key = rl_s.make_key_from_request_throw_http(&req, RL_KEY)?;
 
-        let executed =
-            rl_s.attempt_throw_http(&rate_limit_key, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_TTL)?;
+        let executed = rl_s.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
 
         if executed {
             errors.email = Required::validated(tr_s, lang, &data.email, |value| {

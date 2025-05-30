@@ -4,7 +4,7 @@
     {{> components/heading.hbs }}
 
     <form id="admin-create-form" action="{{form.action}}" method="{{form.method}}" autocomplete="off" style="display: block;">
-        <input type="hidden" name="_token" placeholder="_token" value="{{ctx.csrf}}">
+        <input type="hidden" name="_token" value="{{ctx.csrf}}">
         <div style="margin-bottom: 1rem;">
             <button type="submit" class="admin-btn admin-success" name="action" value="save">{{form.save}}</button>
             <button type="submit" class="admin-btn admin-success" name="action" value="save_and_close">{{form.save_and_close}}</button>

@@ -56,4 +56,9 @@ pub fn register(cfg: &mut web::ServiceConfig) {
             .route(web::get().to(controllers::web::users::create_edit::edit))
             .route(web::post().to(controllers::web::users::create_edit::update)),
     );
+    cfg.service(
+        web::resource("/users/{user_id}/delete")
+            .wrap(WebAuthMiddleware)
+            .route(web::post().to(controllers::web::users::delete::invoke)),
+    );
 }

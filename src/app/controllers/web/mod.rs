@@ -59,6 +59,9 @@ impl WebHttpResponse for HttpResponseBuilder {
 
 fn string_to_alerts(s: &str, translator_service: &TranslatorService, lang: &str) -> Vec<Alert> {
     let mut alerts = Vec::new();
+    if s.len() > 4000 {
+        return alerts;
+    }
     for item in s.split(",") {
         let str = item.trim().replace("%2C", ",");
         let result = AlertVariant::from_string(&str);

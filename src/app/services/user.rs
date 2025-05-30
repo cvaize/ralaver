@@ -17,8 +17,8 @@ impl UserService {
         }
     }
 
-    pub fn first_by_id(&self, user_id: u64) -> Result<Option<User>, UserRepositoryError> {
-        self.user_repository.get_ref().first_by_id(user_id)
+    pub fn first_by_id(&self, user_id: u64) -> Result<Option<User>, UserServiceError> {
+        self.user_repository.get_ref().first_by_id(user_id).map_err(|e| self.match_error(e))
     }
 
     pub fn first_by_id_throw_http(&self, user_id: u64) -> Result<User, Error> {
@@ -31,8 +31,8 @@ impl UserService {
         Err(error::ErrorNotFound(""))
     }
 
-    pub fn first_by_email(&self, email: &str) -> Result<Option<User>, UserRepositoryError> {
-        self.user_repository.get_ref().first_by_email(email)
+    pub fn first_by_email(&self, email: &str) -> Result<Option<User>, UserServiceError> {
+        self.user_repository.get_ref().first_by_email(email).map_err(|e| self.match_error(e))
     }
 
     pub fn first_by_email_throw_http(&self, email: &str) -> Result<User, Error> {
@@ -116,18 +116,34 @@ impl UserService {
         }
     }
 
+    pub fn delete_by_id(&self, id: u64) -> Result<(), UserServiceError> {
+        self.user_repository
+            .get_ref()
+            .delete_by_id(id)
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn delete_by_id_throw_http(&self, id: u64) -> Result<(), Error> {
+        self.delete_by_id(id)
+            .map_err(|_| error::ErrorInternalServerError(""))
+    }
+
     pub fn paginate(
         &self,
         params: &UserPaginateParams,
-    ) -> Result<PaginationResult<User>, UserRepositoryError> {
-        self.user_repository.get_ref().paginate(params)
+    ) -> Result<PaginationResult<User>, UserServiceError> {
+        self.user_repository
+            .get_ref()
+            .paginate(params)
+            .map_err(|e| self.match_error(e))
     }
 
     pub fn paginate_throw_http(
         &self,
         params: &UserPaginateParams,
     ) -> Result<PaginationResult<User>, Error> {
-        self.paginate(params).map_err(|_| error::ErrorInternalServerError(""))
+        self.paginate(params)
+            .map_err(|_| error::ErrorInternalServerError(""))
     }
 }
 

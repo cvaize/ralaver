@@ -28,6 +28,9 @@
     },
     "update": {
       "success": "User \":name\" has been successfully updated."
+    },
+    "delete": {
+      "success": "User \":name\" has been successfully deleted."
     }
   }
 }

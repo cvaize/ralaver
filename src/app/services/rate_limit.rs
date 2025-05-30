@@ -1,4 +1,4 @@
-use crate::{KeyValueConnection, KeyValueService, TranslatorService};
+use crate::{AlertVariant, KeyValueConnection, KeyValueService, TranslatorService};
 use actix_web::web::Data;
 use actix_web::{error, Error, HttpRequest};
 use std::collections::HashMap;
@@ -113,6 +113,29 @@ impl RateLimitService {
         key: &str,
     ) -> Result<String, Error> {
         self.ttl_message(translator_service, lang, key)
+            .map_err(|_| error::ErrorInternalServerError(""))
+    }
+
+    pub fn alert_variant(
+        &self,
+        translator_service: &TranslatorService,
+        lang: &str,
+        key: &str,
+    ) -> Result<AlertVariant, RateLimitServiceError> {
+        let ttl = self.ttl(key)?;
+        let unit = translator_service.choices(&lang, "unit.after_seconds", ttl as i64, None);
+
+        let seconds = ttl.to_string();
+        Ok(AlertVariant::ValidationRateLimitError(seconds, unit))
+    }
+
+    pub fn alert_variant_throw_http(
+        &self,
+        translator_service: &TranslatorService,
+        lang: &str,
+        key: &str,
+    ) -> Result<AlertVariant, Error> {
+        self.alert_variant(translator_service, lang, key)
             .map_err(|_| error::ErrorInternalServerError(""))
     }
 

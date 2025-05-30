@@ -1,7 +1,7 @@
-use std::collections::HashMap;
 use crate::{model_redis_impl, TranslatorService};
 use serde_bare;
 use serde_derive::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 pub static ALERTS_KEY: &str = "alerts";
 
@@ -12,13 +12,20 @@ pub struct Alert {
 }
 
 macro_rules! one_variables {
-    ($name:expr, $value:expr) => {
-        {
-            let mut vars: HashMap<&str, &str> = HashMap::new();
-            vars.insert($name, $value);
-            vars
-        }
-    }
+    ($name:expr, $value:expr) => {{
+        let mut vars: HashMap<&str, &str> = HashMap::new();
+        vars.insert($name, $value);
+        vars
+    }};
+}
+
+macro_rules! two_variables {
+    ($name1:expr, $value1:expr, $name2:expr, $value2:expr) => {{
+        let mut vars: HashMap<&str, &str> = HashMap::new();
+        vars.insert($name1, $value1);
+        vars.insert($name2, $value2);
+        vars
+    }};
 }
 
 impl Alert {
@@ -62,10 +69,17 @@ impl Alert {
                 let vars = one_variables!("name", name);
                 Self::success(t_s.variables(&lang, "alert.users.update.success", &vars))
             }
+            AlertVariant::UsersDeleteSuccess(name) => {
+                let vars = one_variables!("name", name);
+                Self::success(t_s.variables(&lang, "alert.users.delete.success", &vars))
+            }
+            AlertVariant::ValidationRateLimitError(seconds, unit) => {
+                let vars = two_variables!("seconds", seconds, "unit", unit);
+                Self::success(t_s.variables(&lang, "validation.rate_limit", &vars))
+            }
         }
     }
 }
-
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum AlertVariant {
@@ -75,7 +89,9 @@ pub enum AlertVariant {
     ResetPasswordConfirmSuccess,
     ResetPasswordConfirmCodeNotEqual,
     UsersCreateSuccess(String),
-    UsersUpdateSuccess(String)
+    UsersUpdateSuccess(String),
+    UsersDeleteSuccess(String),
+    ValidationRateLimitError(String, String),
 }
 
 impl AlertVariant {
@@ -86,7 +102,9 @@ impl AlertVariant {
             Self::LogoutSuccess => "logout_success".to_string(),
             Self::RegisterSuccess => "register_success".to_string(),
             Self::ResetPasswordConfirmSuccess => "reset_password_confirm_success".to_string(),
-            Self::ResetPasswordConfirmCodeNotEqual => "reset_password_confirm_code_not_equal".to_string(),
+            Self::ResetPasswordConfirmCodeNotEqual => {
+                "reset_password_confirm_code_not_equal".to_string()
+            }
             Self::UsersCreateSuccess(name) => {
                 let mut str = "users_create_success::".to_string();
                 str.push_str(name);
@@ -95,6 +113,18 @@ impl AlertVariant {
             Self::UsersUpdateSuccess(name) => {
                 let mut str = "users_update_success::".to_string();
                 str.push_str(name);
+                str
+            }
+            Self::UsersDeleteSuccess(name) => {
+                let mut str = "users_delete_success::".to_string();
+                str.push_str(name);
+                str
+            }
+            Self::ValidationRateLimitError(seconds, unit) => {
+                let mut str = "validation_rate_limit_error::".to_string();
+                str.push_str(seconds);
+                str.push_str("::");
+                str.push_str(unit);
                 str
             }
         }
@@ -114,12 +144,21 @@ impl AlertVariant {
             "users_create_success" => {
                 let p = string.get(1).ok_or(ParseAlertVariantError)?;
                 Ok(Self::UsersCreateSuccess(p.to_string()))
-            },
+            }
             "users_update_success" => {
                 let p = string.get(1).ok_or(ParseAlertVariantError)?;
                 Ok(Self::UsersUpdateSuccess(p.to_string()))
-            },
-            _ => Err(ParseAlertVariantError)
+            }
+            "users_delete_success" => {
+                let p = string.get(1).ok_or(ParseAlertVariantError)?;
+                Ok(Self::UsersDeleteSuccess(p.to_string()))
+            }
+            "validation_rate_limit_error" => {
+                let p1 = string.get(1).ok_or(ParseAlertVariantError)?;
+                let p2 = string.get(2).ok_or(ParseAlertVariantError)?;
+                Ok(Self::ValidationRateLimitError(p1.to_string(), p2.to_string()))
+            }
+            _ => Err(ParseAlertVariantError),
         }
     }
 }
@@ -136,7 +175,8 @@ mod tests {
 
     #[test]
     fn test_alert_variant_to_string() {
-        let v: String = AlertVariant::UsersCreateSuccess("Test,test,test.:test.".to_string()).to_string();
+        let v: String =
+            AlertVariant::UsersCreateSuccess("Test,test,test.:test.".to_string()).to_string();
         assert_eq!("users_create_success::Test,test,test.:test.".to_string(), v);
     }
 
@@ -151,7 +191,8 @@ mod tests {
     fn bench_alert_variant_to_string(b: &mut Bencher) {
         // 120.32 ns/iter (+/- 2.26)
         b.iter(|| {
-            let _ = AlertVariant::UsersCreateSuccess("Test,test,test.:test.".to_string()).to_string();
+            let _ =
+                AlertVariant::UsersCreateSuccess("Test,test,test.:test.".to_string()).to_string();
         });
     }
 
@@ -159,7 +200,8 @@ mod tests {
     fn bench_alert_variant_from_string(b: &mut Bencher) {
         // 155.49 ns/iter (+/- 2.36)
         b.iter(|| {
-            let _ = AlertVariant::from_string("users_create_success::Test,test,test.:test.").unwrap();
+            let _ =
+                AlertVariant::from_string("users_create_success::Test,test,test.:test.").unwrap();
         });
     }
 }
