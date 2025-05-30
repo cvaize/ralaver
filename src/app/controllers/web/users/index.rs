@@ -86,7 +86,7 @@ pub async fn invoke(
     let layout_ctx = get_template_context(&context_data);
 
     let mut pagination_link = query.clone().remove_page().to_url()?;
-    pagination_link.push_str("&page=");
+    pagination_link.push_str("&page=:page");
     let pagination_nums = generate_2_offset_pagination_array(users.page, total_pages);
 
     let link_without_search = query.clone().remove_page().remove_search().to_url()?;
@@ -134,10 +134,18 @@ pub async fn invoke(
             {"label": tr_s.variables(lang, "Page :page of :total_pages", &page_vars)},
         ],
         "create": {
-            "label": tr_s.translate(lang, "Create user")
+            "label": tr_s.translate(lang, "Create user"),
+            "href": "/users/create"
         },
         "edit": {
-            "label": tr_s.translate(lang, "Edit user")
+            "label": tr_s.translate(lang, "Edit user"),
+            "href": "/users/:id"
+        },
+        "delete": {
+            "action": "/users/:id/delete",
+            "method": "post",
+            "label": tr_s.translate(lang, "Delete user"),
+            "confirm": tr_s.translate(lang, "Delete user(ID: :id)?"),
         },
         "page_per_page": tr_s.variables(lang, "Page :page of :total_pages", &page_vars),
         "per_page_label": tr_s.translate(lang, "Number of entries per page"),
@@ -150,7 +158,7 @@ pub async fn invoke(
         "selected": {
             "label": tr_s.translate(lang, "Selected"),
             "delete": tr_s.translate(lang, "Delete selected"),
-            "delete_q": tr_s.translate(lang, "Delete selected?"),
+            "delete_confirm": tr_s.translate(lang, "Delete selected?"),
         },
         "columns": {
             "id": tr_s.translate(lang, "page.users.index.columns.id"),
@@ -174,11 +182,17 @@ pub async fn invoke(
         "filter_label": tr_s.translate(lang, "Filters"),
         "close_label": tr_s.translate(lang, "Close"),
         "apply_label": tr_s.translate(lang, "Apply"),
+        "mass_actions": {
+            "action": "/users",
+            "method": "post",
+        },
         "filter": {
             "search": {
                 "label": search_str,
                 "values": search_values,
                 "value": &query.search,
+                "action": "/users",
+                "method": "get",
                 "reset": {
                     "href": &link_without_search,
                     "label": &reset_str

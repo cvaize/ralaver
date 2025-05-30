@@ -1,4 +1,4 @@
-use crate::helpers::collect_files_from_dir;
+use crate::helpers::{collect_files_from_dir};
 use crate::Config;
 use actix_web::web::Data;
 use actix_web::{error, Error};
@@ -63,6 +63,7 @@ impl TemplateService {
 
         handlebars.register_helper("eq", Box::new(eq));
         handlebars.register_helper("ne", Box::new(ne));
+        handlebars.register_helper("replace", Box::new(replace));
 
         Ok(TemplateService { config, handlebars })
     }
@@ -95,3 +96,9 @@ impl TemplateService {
 
 handlebars_helper!(eq: |*args| args[0].eq(args[1]));
 handlebars_helper!(ne: |*args| args[0].ne(args[1]));
+handlebars_helper!(replace: |*args| {
+    let v0 = args[0].to_string().replace("\"", "");
+    let v1 = args[1].to_string().replace("\"", "");
+    let v2 = args[2].to_string().replace("\"", "");
+    v0.replace(&v1, &v2)
+});

@@ -6,7 +6,7 @@
                     <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
                 {{else}}
                     <li class="admin-pagination__item">
-                        <a href="{{../pagination_link}}{{num}}"
+                        <a href="{{ (replace ../pagination_link ":page" num) }}"
                            class="admin-pagination__link{{#if (eq num ../page)}} admin-active{{/if}}"
                         >
                             {{num}}
