@@ -1,5 +1,4 @@
 use crate::app::controllers::web::{get_context_data, get_template_context};
-use crate::app::repositories::UserRepositoryError;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString as MMLS};
@@ -21,7 +20,7 @@ use std::sync::Arc;
 
 static RATE_LIMIT_MAX_ATTEMPTS: u64 = 10;
 static RATE_LIMIT_TTL: u64 = 60;
-static RATE_KEY: &str = "users_create_edit";
+static RATE_KEY: &str = "users_create_update";
 
 #[derive(Deserialize, Default, Debug)]
 pub struct PostData {

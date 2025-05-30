@@ -25,7 +25,7 @@ impl UserService {
     pub fn first_by_id_throw_http(&self, user_id: u64) -> Result<User, Error> {
         let user = self
             .first_by_id(user_id)
-            .map_err(|e| error::ErrorInternalServerError(""))?;
+            .map_err(|_| error::ErrorInternalServerError(""))?;
         if let Some(user) = user {
             return Ok(user);
         }
@@ -39,7 +39,7 @@ impl UserService {
     pub fn first_by_email_throw_http(&self, email: &str) -> Result<User, Error> {
         let user = self
             .first_by_email(email)
-            .map_err(|e| error::ErrorInternalServerError(""))?;
+            .map_err(|_| error::ErrorInternalServerError(""))?;
         if let Some(user) = user {
             return Ok(user);
         }
@@ -128,7 +128,7 @@ impl UserService {
         &self,
         params: &UserPaginateParams,
     ) -> Result<PaginationResult<User>, Error> {
-        self.paginate(params).map_err(|e| error::ErrorInternalServerError(""))
+        self.paginate(params).map_err(|_| error::ErrorInternalServerError(""))
     }
 }
 

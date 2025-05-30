@@ -158,7 +158,7 @@ impl AuthService {
         self.user_repository
             .get_ref()
             .exists_by_email(email)
-            .map_err(|e| AuthServiceError::Fail)
+            .map_err(|_| AuthServiceError::Fail)
     }
 }
 
