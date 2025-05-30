@@ -36,6 +36,15 @@ serde_urlencoded = "0.7.1"
 url = "2.5.4"
 tokio = { version = "1.45.0", features = ["full"] }
 r2d2_mysql = "25.0.0"
+chrono = "0.4.41"
+serde_qs = "0.15.0"
+actix-http = "3.11.0"
+bytes = "1.10.1"
+encoding_rs = "0.8.35"
+futures-core = "0.3.31"
+futures-util = "0.3.31"
+cfg-if = "1.0.0"
+actix-rt = "2.10.0"
 
 [[bin]]
 name = "migrate"

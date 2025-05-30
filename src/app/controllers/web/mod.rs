@@ -44,7 +44,7 @@ impl WebHttpResponse for HttpResponseBuilder {
         )
     }
     fn set_alerts(&mut self, alerts: Vec<AlertVariant>) -> &mut Self {
-        let cookie: Vec<String> = alerts.into_iter().map(|a| a.to_string().replace(",", "%2C")).collect();
+        let cookie: Vec<String> = alerts.into_iter().map(|a| a.to_string().replace(",", "=-=")).collect();
 
         self.cookie(
             Cookie::build(ALERTS_KEY, cookie.join(","))
@@ -63,7 +63,7 @@ fn string_to_alerts(s: &str, translator_service: &TranslatorService, lang: &str)
         return alerts;
     }
     for item in s.split(",") {
-        let str = item.trim().replace("%2C", ",");
+        let str = item.trim().replace("=-=", ",");
         let result = AlertVariant::from_string(&str);
         if let Ok(variant) = result {
             alerts.push(Alert::from_variant(translator_service, lang, &variant));

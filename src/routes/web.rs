@@ -42,7 +42,8 @@ pub fn register(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/users")
             .wrap(WebAuthMiddleware)
-            .route(web::get().to(controllers::web::users::index::invoke)),
+            .route(web::get().to(controllers::web::users::index::invoke))
+            .route(web::post().to(controllers::web::users::mass_actions::invoke)),
     );
     cfg.service(
         web::resource("/users/create")

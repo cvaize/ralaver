@@ -3,7 +3,9 @@
 
     <div class="admin-list-page">
         <form id="admin-list-page-search-form" action="/users" method="get"></form>
-        <form id="admin-list-page-mass-actions-form" action="/users" method="post"></form>
+        <form id="admin-list-page-mass-actions-form" action="/users" method="post">
+            <input type="hidden" name="_token" value="{{ctx.csrf}}">
+        </form>
         <div class="admin-list-page__breadcrumb">
             {{> components/breadcrumb.hbs }}
         </div>
@@ -133,7 +135,7 @@
                         <li>
                             <button type="submit" class="admin-dropdown__item"
                                     form="admin-list-page-mass-actions-form"
-                                    name="action" value="selected-delete"
+                                    name="action" value="delete"
                                     onclick="return confirm('{{selected.delete_q}}');">
                                 {{selected.delete}}
                             </button>

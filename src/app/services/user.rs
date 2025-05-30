@@ -128,6 +128,18 @@ impl UserService {
             .map_err(|_| error::ErrorInternalServerError(""))
     }
 
+    pub fn delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), UserServiceError> {
+        self.user_repository
+            .get_ref()
+            .delete_by_ids(ids)
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn delete_by_ids_throw_http(&self, ids: &Vec<u64>) -> Result<(), Error> {
+        self.delete_by_ids(ids)
+            .map_err(|_| error::ErrorInternalServerError(""))
+    }
+
     pub fn paginate(
         &self,
         params: &UserPaginateParams,

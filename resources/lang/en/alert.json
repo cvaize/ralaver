@@ -31,6 +31,9 @@
     },
     "delete": {
       "success": "User \":name\" has been successfully deleted."
+    },
+    "mass_delete": {
+      "success": "User IDs:\":ids\" has been successfully deleted."
     }
   }
 }

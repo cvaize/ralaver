@@ -182,6 +182,18 @@ impl UserRepository {
         Ok(())
     }
 
+    pub fn delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), UserRepositoryError> {
+        let mut conn = self.connection()?;
+        let query = make_delete_mysql_query(&self.table, "id IN (:id)");
+        let params = ids.iter().map(|id| params! { "id" => id });
+        conn.exec_batch(query, params).map_err(|e| {
+            log::error!("UserRepository::delete_by_ids - {e}");
+            return UserRepositoryError::Fail;
+        })?;
+
+        Ok(())
+    }
+
     pub fn delete_by_email(&self, email: &str) -> Result<(), UserRepositoryError> {
         let mut conn = self.connection()?;
         let query = make_delete_mysql_query(&self.table, "email=:email");
@@ -513,6 +525,46 @@ mod tests {
             }
             assert!(is_exists);
 
+            let user = user_rep.first_by_email(email);
+            let mut is_not_exists = true;
+            if let Ok(user) = user {
+                if let Some(user) = user {
+                    is_not_exists = false;
+                }
+            }
+            assert!(is_not_exists);
+        }
+    }
+
+    #[test]
+    fn test_delete_by_ids() {
+        let (_, all_services) = preparation();
+        let user_rep = all_services.user_repository.get_ref();
+        let emails = [
+            "admin_delete_by_ids1@admin.example",
+            "admin_delete_by_ids2@admin.example",
+        ];
+
+        let mut ids: Vec<u64> = Vec::new();
+        for email in emails {
+            user_rep.delete_by_email(email).unwrap();
+
+            let user = User::empty(email.to_string());
+            user_rep.insert(&user).unwrap();
+
+            let user = user_rep.first_by_email(email);
+            let mut is_exists = false;
+            if let Ok(user) = user {
+                if let Some(user) = user {
+                    is_exists = true;
+                    ids.push(user.id);
+                }
+            }
+            assert!(is_exists);
+        }
+        user_rep.delete_by_ids(&ids).unwrap();
+
+        for email in emails {
             let user = user_rep.first_by_email(email);
             let mut is_not_exists = true;
             if let Ok(user) = user {

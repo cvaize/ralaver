@@ -73,6 +73,10 @@ impl Alert {
                 let vars = one_variables!("name", name);
                 Self::success(t_s.variables(&lang, "alert.users.delete.success", &vars))
             }
+            AlertVariant::UsersMassDeleteSuccess(ids) => {
+                let vars = one_variables!("ids", ids);
+                Self::success(t_s.variables(&lang, "alert.users.mass_delete.success", &vars))
+            }
             AlertVariant::ValidationRateLimitError(seconds, unit) => {
                 let vars = two_variables!("seconds", seconds, "unit", unit);
                 Self::success(t_s.variables(&lang, "validation.rate_limit", &vars))
@@ -91,6 +95,7 @@ pub enum AlertVariant {
     UsersCreateSuccess(String),
     UsersUpdateSuccess(String),
     UsersDeleteSuccess(String),
+    UsersMassDeleteSuccess(String),
     ValidationRateLimitError(String, String),
 }
 
@@ -118,6 +123,11 @@ impl AlertVariant {
             Self::UsersDeleteSuccess(name) => {
                 let mut str = "users_delete_success::".to_string();
                 str.push_str(name);
+                str
+            }
+            Self::UsersMassDeleteSuccess(ids) => {
+                let mut str = "users_mass_delete_success::".to_string();
+                str.push_str(ids);
                 str
             }
             Self::ValidationRateLimitError(seconds, unit) => {
@@ -152,6 +162,10 @@ impl AlertVariant {
             "users_delete_success" => {
                 let p = string.get(1).ok_or(ParseAlertVariantError)?;
                 Ok(Self::UsersDeleteSuccess(p.to_string()))
+            }
+            "users_mass_delete_success" => {
+                let p = string.get(1).ok_or(ParseAlertVariantError)?;
+                Ok(Self::UsersMassDeleteSuccess(p.to_string()))
             }
             "validation_rate_limit_error" => {
                 let p1 = string.get(1).ok_or(ParseAlertVariantError)?;
