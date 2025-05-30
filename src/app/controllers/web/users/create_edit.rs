@@ -96,7 +96,7 @@ pub async fn edit(
     u_s: Data<UserService>,
     l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
-    let (user_id) = path.into_inner();
+    let user_id = path.into_inner();
     let edit_user = u_s.get_ref().first_by_id_throw_http(user_id)?;
     let post_data = PostData {
         _token: None,
@@ -130,7 +130,7 @@ pub async fn update(
     u_s: Data<UserService>,
     l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
-    let (user_id) = path.into_inner();
+    let user_id = path.into_inner();
     let edit_user = Some(u_s.get_ref().first_by_id_throw_http(user_id)?);
     invoke(
         edit_user, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s,

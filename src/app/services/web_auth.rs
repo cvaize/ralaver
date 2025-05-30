@@ -1,4 +1,3 @@
-use crate::app::repositories::UserRepository;
 use crate::{Config, CryptService, HashService, KeyValueService, RandomService, User, UserService};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;

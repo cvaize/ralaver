@@ -1,5 +1,5 @@
 use crate::config::MysqlDbConfig;
-use r2d2_mysql::mysql::{OptsBuilder, QueryResult, from_row, Opts};
+use r2d2_mysql::mysql::{OptsBuilder, Opts};
 use r2d2::{Pool, PooledConnection};
 use r2d2_mysql::MySqlConnectionManager;
 

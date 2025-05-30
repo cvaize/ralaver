@@ -1,25 +1,24 @@
-use crate::app::controllers::web::{generate_1_offset_pagination_array, generate_2_offset_pagination_array, get_context_data, get_template_context};
+use crate::app::controllers::web::{generate_2_offset_pagination_array, get_context_data, get_template_context};
 use crate::app::repositories::{UserFilter, UserPaginateParams, UserSort};
-use crate::app::validator::rules::length::MaxLengthString;
 use crate::{
-    prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService, Config,
-    Locale, LocaleService, Session, TemplateService, TranslatorService, User, UserService,
+    prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService, LocaleService, Session, TemplateService, TranslatorService, User, UserService,
     WebAuthService, WebHttpResponse,
 };
-use actix_web::web::{Data, Form, Query, ReqData};
+use actix_web::web::{Data, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::cmp::{max, min};
+use std::cmp::max;
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::str::FromStr;
 use std::sync::Arc;
-use strum::{EnumMessage, IntoEnumIterator};
+use strum::IntoEnumIterator;
 
 static PAGE_URL: &str = "/users?";
 
-pub const PER_PAGES: [i64; 6] = [10, 20, 30, 40, 50, 100];
+pub const DEFAULT_PER_PAGE: i64 = 15;
+pub const MAX_PER_PAGE: i64 = 100;
+pub const PER_PAGES: [i64; 7] = [10, 15, 20, 30, 40, 50, 100];
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct IndexQuery {
@@ -60,7 +59,7 @@ pub async fn invoke(
     let locale_str = tr_s.translate(lang, "page.users.index.columns.locale");
     let sort_str = tr_s.translate(lang, "Sort");
 
-    let mut form_errors: Vec<String> =
+    let form_errors: Vec<String> =
         query.validate(tr_s, lang, &search_str, &locale_str, &sort_str);
 
     let page = query.page.unwrap();
@@ -208,7 +207,7 @@ pub async fn invoke(
 
 impl IndexQuery {
     pub fn prepare(&mut self) {
-        prepare_paginate!(self.page, self.per_page);
+        prepare_paginate!(self.page, self.per_page, DEFAULT_PER_PAGE, MAX_PER_PAGE);
         prepare_value!(self.search);
         prepare_value!(self.locale);
         prepare_value!(self.sort);

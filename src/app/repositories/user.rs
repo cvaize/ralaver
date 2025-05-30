@@ -4,15 +4,13 @@ use crate::app::repositories::{
     FromMysqlDto, ToMysqlDto,
 };
 use crate::{
-    AuthServiceError, MysqlPool, MysqlPooledConnection, PaginationResult,
-    RandomService, User, UserServiceError,
+    MysqlPool, MysqlPooledConnection, PaginationResult, User,
 };
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;
 use r2d2_mysql::mysql::Value;
 use r2d2_mysql::mysql::{params, Error, Params, Row};
-use serde_derive::{Deserialize, Serialize};
-use strum_macros::{Display, EnumIter, EnumMessage, EnumString, VariantArray, VariantNames};
+use strum_macros::{Display, EnumIter, EnumString};
 
 pub struct UserRepository {
     table: String,

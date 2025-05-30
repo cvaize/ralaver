@@ -1,8 +1,7 @@
 use crate::app::repositories::{UserPaginateParams, UserRepository, UserRepositoryError};
-use crate::{HashService, MysqlPool, PaginationResult, RandomService, User};
+use crate::{HashService, PaginationResult, User};
 use actix_web::web::Data;
 use actix_web::{error, Error};
-use serde_derive::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 
 pub struct UserService {

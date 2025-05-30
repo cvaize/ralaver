@@ -11,7 +11,6 @@ use r2d2_mysql::mysql::prelude::Queryable;
 use r2d2_mysql::mysql::{params, Row};
 use std::collections::HashMap;
 use std::env;
-use env_logger::Logger;
 
 static MIGRATIONS_TABLE: &str = "__migrations";
 

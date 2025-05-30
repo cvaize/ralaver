@@ -12,9 +12,7 @@ use crate::{
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
 use actix_web::{HttpRequest, HttpResponseBuilder};
-use rand::Rng;
 use serde_json::{json, Value};
-use std::str::FromStr;
 
 pub trait WebHttpRequest {
     fn get_alerts(&self, translator_service: &TranslatorService, lang: &str) -> Vec<Alert>;
@@ -388,9 +386,9 @@ macro_rules! prepare_value {
 
 #[macro_export]
 macro_rules! prepare_paginate {
-    ($page:expr, $per_page:expr) => {
+    ($page:expr, $per_page:expr, $default_per_page:expr, $max_per_page:expr) => {
         let page = std::cmp::max($page.unwrap_or(1), 1);
-        let per_page = std::cmp::min($per_page.unwrap_or(10), 100);
+        let per_page = std::cmp::min($per_page.unwrap_or($default_per_page), $max_per_page);
         $page = Some(page);
         $per_page = Some(per_page);
     }
