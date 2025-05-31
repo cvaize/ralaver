@@ -404,14 +404,14 @@ impl FromMysqlDto for User {
     fn take_from_db_row(row: &mut Row) -> Result<Self, FromDbRowError> {
         Ok(Self {
             id: row.take("id").ok_or(FromDbRowError)?,
-            password: row.take("password").ok_or(FromDbRowError)?,
             email: row.take("email").ok_or(FromDbRowError)?,
+            password: row.take("password").unwrap_or(None),
             locale: row.take("locale").unwrap_or(None),
             surname: row.take("surname").unwrap_or(None),
             name: row.take("name").unwrap_or(None),
             patronymic: row.take("patronymic").unwrap_or(None),
             is_super_admin: row.take("is_super_admin").unwrap_or(false),
-            roles: Vec::new()
+            roles: None
         })
     }
 }

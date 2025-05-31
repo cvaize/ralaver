@@ -11,7 +11,7 @@ pub struct User {
     pub name: Option<String>,
     pub patronymic: Option<String>,
     pub is_super_admin: bool,
-    pub roles: Vec<Role>,
+    pub roles: Option<Vec<Role>>,
 }
 
 impl User {
