@@ -3,7 +3,6 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString as MMLS};
 use crate::app::validator::rules::required::Required;
-use crate::helpers::none_if_empty;
 use crate::{
     prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, RateLimitService,
     Session, TemplateService, TranslatableError, TranslatorService, User, UserService,
@@ -261,7 +260,7 @@ pub fn invoke(
             }
 
             if errors.is_empty() {
-                let mut password = none_if_empty(&data.password);
+                let mut password = data.password.to_owned();
                 let mut is_need_hash_password = true;
                 let id = if let Some(edit_user) = &edit_user {
                     if password.is_none() {
@@ -272,15 +271,14 @@ pub fn invoke(
                 } else {
                     0
                 };
-                let mut user_data = User {
-                    id,
-                    email: data.email.clone().unwrap(),
-                    password,
-                    locale: none_if_empty(&data.locale),
-                    surname: none_if_empty(&data.surname),
-                    name: none_if_empty(&data.name),
-                    patronymic: none_if_empty(&data.patronymic),
-                };
+                let mut user_data = User::default();
+                user_data.id = id;
+                user_data.email = data.email.clone().unwrap();
+                user_data.password = password;
+                user_data.locale = data.locale.to_owned();
+                user_data.surname = data.surname.to_owned();
+                user_data.name = data.name.to_owned();
+                user_data.patronymic = data.patronymic.to_owned();
                 let result = u_s.upsert(&mut user_data, is_need_hash_password);
 
                 if let Err(error) = result {

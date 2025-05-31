@@ -369,7 +369,7 @@ impl<'a> UserPaginateParams<'a> {
 
 impl ToMysqlDto for User {
     fn db_select_columns() -> String {
-        "id,email,password,locale,surname,name,patronymic".to_string()
+        "id,email,password,locale,surname,name,patronymic,is_super_admin".to_string()
     }
     fn db_insert_columns() -> String {
         "(email, password, locale, surname, name, patronymic) VALUES (:email, :password, :locale, :surname, :name, :patronymic)".to_string()
@@ -410,6 +410,8 @@ impl FromMysqlDto for User {
             surname: row.take("surname").unwrap_or(None),
             name: row.take("name").unwrap_or(None),
             patronymic: row.take("patronymic").unwrap_or(None),
+            is_super_admin: row.take("is_super_admin").unwrap_or(false),
+            roles: Vec::new()
         })
     }
 }

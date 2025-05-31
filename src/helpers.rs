@@ -1,12 +1,12 @@
+#![allow(dead_code)]
+
 use std::{fs, io};
 use std::path::{Path, PathBuf};
 use std::convert::TryInto;
 
-#[allow(dead_code)]
 pub fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>());
 }
-#[allow(dead_code)]
 pub fn dbg_type_of<T>(_: &T) {
     dbg!(std::any::type_name::<T>());
 }

@@ -14,14 +14,6 @@ use std::env;
 
 static MIGRATIONS_TABLE: &str = "__migrations";
 
-// fn get_migrations() -> HashMap<String, [fn(&mut MysqlPooledConnection); 2]> {
-//     let mut items: HashMap<String, [fn(&mut MysqlPooledConnection); 2]> = HashMap::new();
-//
-//     items.insert("users".to_string(), [migrations::users::up, migrations::users::down]);
-//
-//     items
-// }
-
 fn main() {
     dotenv::dotenv().ok();
     let _ = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -89,7 +81,13 @@ fn down(config: &Config, mysql_connection: &mut MysqlPooledConnection) -> () {
     let name = &migration.name;
 
     let items = migrations::get_migrations();
-    let item = items.get(name);
+    let mut item: Option<[fn(&Config, &mut MysqlPooledConnection); 2]> = None;
+
+    for (name_, item_) in items {
+        if name_.eq(name) {
+            item = Some(item_.clone());
+        }
+    }
 
     if let Some([_, down]) = item {
         log::info!("Down migrating - {}", name);

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use crate::Role;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct User {
@@ -9,6 +10,8 @@ pub struct User {
     pub surname: Option<String>,
     pub name: Option<String>,
     pub patronymic: Option<String>,
+    pub is_super_admin: bool,
+    pub roles: Vec<Role>,
 }
 
 impl User {
