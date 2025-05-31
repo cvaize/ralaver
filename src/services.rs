@@ -1,9 +1,8 @@
-use crate::app::repositories::UserRepository;
 use crate::connections::Connections;
 use crate::{
     AppService, AuthService, Config, CryptService, HashService, KeyValueService, LocaleService,
     MailService, RandomService, RateLimitService, TemplateService, TranslatorService, UserService,
-    WebAuthService,
+    WebAuthService, UserRepository
 };
 use actix_web::web::Data;
 

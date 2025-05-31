@@ -1,10 +1,8 @@
-use crate::app::repositories::{
+use crate::{
+    MysqlPool, MysqlPooledConnection, PaginationResult, User,
     make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query,
     make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query, FromDbRowError,
     FromMysqlDto, ToMysqlDto,
-};
-use crate::{
-    MysqlPool, MysqlPooledConnection, PaginationResult, User,
 };
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;

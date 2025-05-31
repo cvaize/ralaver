@@ -1,8 +1,9 @@
-use crate::app::repositories::UserRepository;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
-use crate::{HashService, User, UserService, UserServiceError};
-use crate::{KeyValueService, KeyValueServiceError};
+use crate::{
+    HashService, KeyValueService, KeyValueServiceError, User, UserRepository, UserService,
+    UserServiceError,
+};
 use actix_web::web::Data;
 use serde_derive::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};

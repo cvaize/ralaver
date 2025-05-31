@@ -1,5 +1,4 @@
-use crate::app::repositories::{UserPaginateParams, UserRepository, UserRepositoryError};
-use crate::{HashService, PaginationResult, User};
+use crate::{HashService, PaginationResult, User, UserPaginateParams, UserRepository, UserRepositoryError};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use strum_macros::{Display, EnumString};

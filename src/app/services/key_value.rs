@@ -10,6 +10,7 @@ pub struct KeyValueService {
 }
 
 // TODO: Мысль: а что если redis будет внутри приложения и обращения к нему будут через память, а не через сетевой интерфейс.
+// TODO: Создать KeyValueRedisRepository и KeyValueMemoryRepository
 impl KeyValueService {
     pub fn new(pool: Data<RedisPool>) -> Self {
         Self { pool }

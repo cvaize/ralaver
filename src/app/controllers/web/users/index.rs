@@ -1,8 +1,7 @@
 use crate::app::controllers::web::{generate_2_offset_pagination_array, get_context_data, get_template_context};
-use crate::app::repositories::{UserFilter, UserPaginateParams, UserSort};
 use crate::{
     prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService, LocaleService, Session, TemplateService, TranslatorService, User, UserService,
-    WebAuthService, WebHttpResponse,
+    WebAuthService, WebHttpResponse, UserFilter, UserPaginateParams, UserSort
 };
 use actix_web::web::{Data, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
