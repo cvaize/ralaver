@@ -10,9 +10,9 @@ use http::HeaderValue;
 use serde_derive::Deserialize;
 use std::sync::Arc;
 
-static RL_MAX_ATTEMPTS: u64 = 30;
-static RL_TTL: u64 = 60;
-static RL_KEY: &str = "users_mass_actions";
+const RL_MAX_ATTEMPTS: u64 = 30;
+const RL_TTL: u64 = 60;
+const RL_KEY: &'static str = "users_mass_actions";
 
 #[derive(Deserialize, Default, Debug)]
 pub struct MassActionsData {

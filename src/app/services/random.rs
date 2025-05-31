@@ -84,7 +84,7 @@ mod tests {
     use test::Bencher;
     use actix_web::web::Data;
 
-    static CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
+    const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                             abcdefghijklmnopqrstuvwxyz\
                             0123456789";
     #[test]

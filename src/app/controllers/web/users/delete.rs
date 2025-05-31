@@ -6,9 +6,9 @@ use std::sync::Arc;
 use http::header::{ORIGIN, REFERER};
 use http::HeaderValue;
 
-static RL_MAX_ATTEMPTS: u64 = 60;
-static RL_TTL: u64 = 60;
-static RL_KEY: &str = "users_delete";
+const RL_MAX_ATTEMPTS: u64 = 60;
+const RL_TTL: u64 = 60;
+const RL_KEY: &'static str = "users_delete";
 
 #[derive(Deserialize, Default, Debug)]
 pub struct DeleteData {

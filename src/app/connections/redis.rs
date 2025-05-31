@@ -62,7 +62,7 @@ pub fn make_redis_error(v: &Value, m: &str) -> RedisError {
     ))
 }
 
-pub static REDIS_ERROR_MESSAGE: &str = "Response type not model compatible.";
+pub const REDIS_ERROR_MESSAGE: &'static str = "Response type not model compatible.";
 
 #[macro_export]
 macro_rules! model_redis_impl {

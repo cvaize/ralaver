@@ -7,7 +7,7 @@ use actix_web::web::Data;
 use serde_derive::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 
-static RESET_PASSWORD_CODE_KEY: &str = "reset_password.code";
+const RESET_PASSWORD_CODE_KEY: &'static str = "reset_password.code";
 
 pub struct AuthService {
     key_value_service: Data<KeyValueService>,

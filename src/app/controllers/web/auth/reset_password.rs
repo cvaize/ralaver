@@ -11,9 +11,9 @@ use crate::app::controllers::web::{get_public_context_data, get_public_template_
 
 pub static CODE_LEN: usize = 64;
 
-static RATE_LIMIT_MAX_ATTEMPTS: u64 = 5;
-static RATE_LIMIT_TTL: u64 = 60;
-static RATE_KEY: &str = "reset_password";
+const RL_MAX_ATTEMPTS: u64 = 5;
+const RL_TTL: u64 = 60;
+const RL_KEY: &'static str = "reset_password";
 
 #[derive(Deserialize, Debug)]
 pub struct ResetPasswordData {
@@ -149,11 +149,11 @@ async fn post(
 
     if is_post {
         let rate_limit_key = rate_limit_service
-            .make_key_from_request(req, RATE_KEY)
+            .make_key_from_request(req, RL_KEY)
             .map_err(|_| error::ErrorInternalServerError(""))?;
 
         let executed = rate_limit_service
-            .attempt(&rate_limit_key, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_TTL)
+            .attempt(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)
             .map_err(|_| error::ErrorInternalServerError(""))?;
 
         if executed {

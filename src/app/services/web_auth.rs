@@ -3,21 +3,25 @@ use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
 use actix_web::web::Data;
 use actix_web::{error, Error, HttpRequest};
+use chrono::{DateTime, NaiveDateTime, TimeDelta, Utc};
 use std::borrow::Cow;
+use std::ops::Add;
 use std::time::{SystemTime, UNIX_EPOCH};
 use strum_macros::{Display, EnumString};
 
-pub static CSRF_ERROR_MESSAGE: &str = "CSRF token mismatch.";
+const FORMAT: &'static str = "%Y.%m.%d %H:%M:%S";
+
+pub const CSRF_ERROR_MESSAGE: &'static str = "CSRF token mismatch.";
 
 #[derive(Debug, Clone)]
-pub struct Session(u64, u64, String, u64, Option<String>);
+pub struct Session(u64, u64, String, DateTime<Utc>, Option<String>);
 
 impl Session {
     pub fn new(
         user_id: u64,
         token_id: u64,
         token_value: String,
-        expires: u64,
+        expires: DateTime<Utc>,
         old_token_value: Option<String>,
     ) -> Self {
         Self(user_id, token_id, token_value, expires, old_token_value)
@@ -31,8 +35,8 @@ impl Session {
     pub fn get_token_value(&self) -> &str {
         &self.2
     }
-    pub fn get_expires(&self) -> u64 {
-        self.3
+    pub fn get_expires(&self) -> &DateTime<Utc> {
+        &self.3
     }
     pub fn get_old_token_value(&self) -> &Option<String> {
         &self.4
@@ -79,7 +83,7 @@ impl WebAuthService {
         token.push('-');
         token.push_str(session.get_token_value());
         token.push('-');
-        token.push_str(session.get_expires().to_string().as_str());
+        token.push_str(session.get_expires().format(FORMAT).to_string().as_str());
         crypt_service.encrypt_string(&token).map_err(|e| {
             log::error!("WebAuthService::encrypt_session - {e}");
             return WebAuthServiceError::Fail;
@@ -105,10 +109,15 @@ impl WebAuthService {
             return WebAuthServiceError::Fail;
         })?;
         let token_value: String = split.get(2).unwrap().to_string();
-        let expires: u64 = split.get(3).unwrap().parse().map_err(|e| {
+        let expires: String = split.get(3).unwrap().parse().map_err(|e| {
             log::error!("WebAuthService::decrypt_session - {e}");
             return WebAuthServiceError::Fail;
         })?;
+        let expires = NaiveDateTime::parse_from_str(&expires, FORMAT).map_err(|e| {
+            log::error!("WebAuthService::decrypt_session - {e}");
+            return WebAuthServiceError::Fail;
+        })?;
+        let expires: DateTime<Utc> = DateTime::<Utc>::from_naive_utc_and_offset(expires, Utc);
         Ok(Session::new(user_id, token_id, token_value, expires, None))
     }
 
@@ -168,7 +177,8 @@ impl WebAuthService {
         let random_service = self.random_service.get_ref();
         let token: String = random_service.str(config.auth.cookie.token_length);
         let token_id: u64 = random_service.range(u64::MIN..=u64::MAX);
-        let expires: u64 = config.auth.cookie.token_expires;
+        let expires: u64 = config.auth.cookie.session_expires;
+        let expires: DateTime<Utc> = Utc::now().add(TimeDelta::seconds(expires as i64));
         Session::new(user_id, token_id, token, expires, None)
     }
 
@@ -178,15 +188,6 @@ impl WebAuthService {
         key.push_str(".tokens.");
         key.push_str(token.get_token_id().to_string().as_str());
         key.push_str(".value");
-        key
-    }
-
-    pub fn get_token_expires_key(&self, token: &Session) -> String {
-        let mut key = "auth.".to_string();
-        key.push_str(token.get_user_id().to_string().as_str());
-        key.push_str(".tokens.");
-        key.push_str(token.get_token_id().to_string().as_str());
-        key.push_str(".expires");
         key
     }
 
@@ -219,19 +220,10 @@ impl WebAuthService {
         let config = self.config.get_ref();
         let key_value_service = self.key_value_service.get_ref();
 
-        let expires = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_err(|e| {
-                log::error!("WebAuthService::save_session - {e}");
-                return WebAuthServiceError::Fail;
-            })?
-            .as_secs()
-            + config.auth.cookie.session_expires;
-
         key_value_service
             .set_ex(
                 self.get_token_value_key(&token),
-                self.make_store_data(token.get_token_value(), expires),
+                token.get_token_value(),
                 config.auth.cookie.token_expires,
             )
             .map_err(|e| {
@@ -259,14 +251,28 @@ impl WebAuthService {
         Ok(())
     }
 
+    pub fn is_need_new_token(&self, token: &Session) -> bool {
+        let expires = token.get_expires();
+        let now = Utc::now();
+        now.ge(expires)
+    }
+
     pub fn login_by_session(
         &self,
         token: &Session,
     ) -> Result<(User, Session), WebAuthServiceError> {
+        let config = self.config.get_ref();
         let key_value_service = self.key_value_service.get_ref();
 
+        let is_need_new_token = self.is_need_new_token(token);
+
+        let token_expires = if is_need_new_token {
+            config.auth.cookie.session_expires
+        } else {
+            config.auth.cookie.token_expires
+        };
         let value: Option<String> = key_value_service
-            .get(self.get_token_value_key(&token))
+            .get_ex(self.get_token_value_key(&token), token_expires)
             .map_err(|e| {
                 log::error!("WebAuthService::login_by_session - {e}");
                 return WebAuthServiceError::Fail;
@@ -275,11 +281,7 @@ impl WebAuthService {
         if value.is_none() {
             return Err(WebAuthServiceError::Fail);
         }
-        let value = value.unwrap();
-        let (token_value, token_expires) = self.extract_store_data(&value).map_err(|e| {
-            log::error!("WebAuthService::login_by_session - {e}");
-            return WebAuthServiceError::Fail;
-        })?;
+        let token_value = value.unwrap();
 
         if token_value != token.get_token_value() {
             return Err(WebAuthServiceError::Fail);
@@ -298,32 +300,6 @@ impl WebAuthService {
         }
 
         let user = user.unwrap();
-
-        // Нужно сгенерировать новый токен, потому что этот старый токен помечен на удаление
-        let mut is_need_new_token = token_expires == 1;
-
-        if !is_need_new_token {
-            let expires = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map_err(|e| {
-                    log::error!("WebAuthService::login_by_session - {e}");
-                    return WebAuthServiceError::Fail;
-                })?
-                .as_secs();
-
-            // Дата сохранённая в token_expires меньше чем текущая дата expires
-            is_need_new_token = token_expires < expires;
-        }
-
-        // Нужно пометить старый токен на удаление
-        let is_expire_old_token = is_need_new_token && token_expires != 1;
-
-        if is_expire_old_token {
-            self.expire_session(token).map_err(|e| {
-                log::error!("WebAuthService::login_by_session - {e}");
-                return WebAuthServiceError::Fail;
-            })?
-        }
 
         let token: Session = if is_need_new_token {
             let mut new_token = self.generate_session(user_id);
@@ -417,16 +393,26 @@ pub enum WebAuthServiceError {
 
 #[cfg(test)]
 mod tests {
+    use crate::app::services::web_auth::FORMAT;
     use crate::preparation;
     use crate::*;
+    use chrono::{DateTime, NaiveDateTime, Utc};
     use test::Bencher;
+
+    fn get_now_date_time() -> DateTime<Utc> {
+        let datetime: DateTime<Utc> = Utc::now();
+        let datetime: String = datetime.format(FORMAT).to_string();
+        let datetime: NaiveDateTime = NaiveDateTime::parse_from_str(&datetime, FORMAT).unwrap();
+        DateTime::<Utc>::from_naive_utc_and_offset(datetime, Utc)
+    }
 
     #[test]
     fn encrypt_session() {
         let (_, all_services) = preparation();
         let auth = all_services.web_auth_service.get_ref();
 
-        let session = Session::new(5, 6, "test".to_string(), 100, None);
+        let expires: DateTime<Utc> = get_now_date_time();
+        let session = Session::new(5, 6, "test".to_string(), expires, None);
         auth.encrypt_session(&session).unwrap();
     }
 
@@ -435,7 +421,8 @@ mod tests {
         let (_, all_services) = preparation();
         let auth = all_services.web_auth_service.get_ref();
 
-        let session = Session::new(5, 6, "test".to_string(), 100, None);
+        let expires: DateTime<Utc> = get_now_date_time();
+        let session = Session::new(5, 6, "test".to_string(), expires, None);
         let s: String = auth.encrypt_session(&session).unwrap();
         let result: Session = auth.decrypt_session(&s).unwrap();
         assert_eq!(session.get_token_id(), result.get_token_id());
@@ -455,6 +442,7 @@ mod tests {
 
     #[bench]
     fn bench_save_session(b: &mut Bencher) {
+        // 47,360.80 ns/iter (+/- 6,764.60)
         let (_, all_services) = preparation();
         let auth = all_services.web_auth_service.get_ref();
         let session = auth.generate_session(1);
@@ -466,6 +454,7 @@ mod tests {
 
     #[bench]
     fn bench_expire_session(b: &mut Bencher) {
+        // 46,769.59 ns/iter (+/- 5,040.02)
         let (_, all_services) = preparation();
         let auth = all_services.web_auth_service.get_ref();
         let session = auth.generate_session(1);
@@ -478,6 +467,7 @@ mod tests {
 
     #[bench]
     fn bench_login_by_session(b: &mut Bencher) {
+        // 164,653.54 ns/iter (+/- 35,507.35)
         let (_, all_services) = preparation();
         let auth = all_services.web_auth_service.get_ref();
         let session = auth.generate_session(1);

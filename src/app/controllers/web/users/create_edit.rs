@@ -18,9 +18,9 @@ use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-static RL_MAX_ATTEMPTS: u64 = 10;
-static RL_TTL: u64 = 60;
-static RL_KEY: &str = "users_create_update";
+const RL_MAX_ATTEMPTS: u64 = 10;
+const RL_TTL: u64 = 60;
+const RL_KEY: &'static str = "users_create_update";
 
 #[derive(Deserialize, Default, Debug)]
 pub struct PostData {
