@@ -1,15 +1,15 @@
-use crate::{HashService, PaginationResult, User, UserPaginateParams, UserRepository, UserRepositoryError};
+use crate::{HashService, PaginationResult, User, UserMysqlRepositoryPaginateParams, UserMysqlRepository, UserMysqlRepositoryError, TranslatableError, TranslatorService};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use strum_macros::{Display, EnumString};
 
 pub struct UserService {
     hash_service: Data<HashService>,
-    user_repository: Data<UserRepository>,
+    user_repository: Data<UserMysqlRepository>,
 }
 
 impl UserService {
-    pub fn new(hash_service: Data<HashService>, user_repository: Data<UserRepository>) -> Self {
+    pub fn new(hash_service: Data<HashService>, user_repository: Data<UserMysqlRepository>) -> Self {
         Self {
             hash_service,
             user_repository,
@@ -62,9 +62,9 @@ impl UserService {
         Ok(())
     }
 
-    fn match_error(&self, e: UserRepositoryError) -> UserServiceError {
+    fn match_error(&self, e: UserMysqlRepositoryError) -> UserServiceError {
         match e {
-            UserRepositoryError::DuplicateEmail => UserServiceError::DuplicateEmail,
+            UserMysqlRepositoryError::DuplicateEmail => UserServiceError::DuplicateEmail,
             _ => UserServiceError::Fail,
         }
     }
@@ -141,7 +141,7 @@ impl UserService {
 
     pub fn paginate(
         &self,
-        params: &UserPaginateParams,
+        params: &UserMysqlRepositoryPaginateParams,
     ) -> Result<PaginationResult<User>, UserServiceError> {
         self.user_repository
             .get_ref()
@@ -151,7 +151,7 @@ impl UserService {
 
     pub fn paginate_throw_http(
         &self,
-        params: &UserPaginateParams,
+        params: &UserMysqlRepositoryPaginateParams,
     ) -> Result<PaginationResult<User>, Error> {
         self.paginate(params)
             .map_err(|_| error::ErrorInternalServerError(""))
@@ -165,4 +165,25 @@ pub enum UserServiceError {
     PasswordHashFail,
     NotFound,
     Fail,
+}
+
+
+impl TranslatableError for UserServiceError {
+    fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
+        match self {
+            Self::DbConnectionFail => {
+                translate_service.translate(lang, "error.UserServiceError.DbConnectionFail")
+            }
+            Self::DuplicateEmail => {
+                translate_service.translate(lang, "error.UserServiceError.DuplicateEmail")
+            }
+            Self::PasswordHashFail => {
+                translate_service.translate(lang, "error.UserServiceError.PasswordHashFail")
+            }
+            Self::NotFound => {
+                translate_service.translate(lang, "error.UserServiceError.NotFound")
+            }
+            _ => translate_service.translate(lang, "error.UserServiceError.Fail"),
+        }
+    }
 }

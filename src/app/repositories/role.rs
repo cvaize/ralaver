@@ -10,32 +10,32 @@ use r2d2_mysql::mysql::Value;
 use r2d2_mysql::mysql::{params, Error, Params, Row};
 use strum_macros::{Display, EnumIter, EnumString};
 
-pub struct RoleRepository {
+pub struct RoleMysqlRepository {
     table: String,
     db_pool: Data<MysqlPool>,
 }
 
-impl RoleRepository {
+impl RoleMysqlRepository {
     pub fn new(db_pool: Data<MysqlPool>) -> Self {
         let table = "roles".to_string();
         Self { table, db_pool }
     }
 
-    fn connection(&self) -> Result<MysqlPooledConnection, RoleRepositoryError> {
+    fn connection(&self) -> Result<MysqlPooledConnection, RoleMysqlRepositoryError> {
         self.db_pool.get_ref().get().map_err(|e| {
             log::error!("RoleRepository::connection - {e}");
-            return RoleRepositoryError::DbConnectionFail;
+            return RoleMysqlRepositoryError::DbConnectionFail;
         })
     }
 
-    fn row_to_entity(&self, row: &mut Row) -> Result<Role, RoleRepositoryError> {
-        Role::take_from_db_row(row).map_err(|_| RoleRepositoryError::Fail)
+    fn row_to_entity(&self, row: &mut Row) -> Result<Role, RoleMysqlRepositoryError> {
+        Role::take_from_mysql_row(row).map_err(|_| RoleMysqlRepositoryError::Fail)
     }
 
     fn try_row_to_entity(
         &self,
         row: &mut Option<Row>,
-    ) -> Result<Option<Role>, RoleRepositoryError> {
+    ) -> Result<Option<Role>, RoleMysqlRepositoryError> {
         if let Some(row) = row {
             return Ok(Some(self.row_to_entity(row)?));
         }
@@ -43,7 +43,7 @@ impl RoleRepository {
         Ok(None)
     }
 
-    fn try_row_is_exists(&self, row: &Option<Row>) -> Result<bool, RoleRepositoryError> {
+    fn try_row_is_exists(&self, row: &Option<Row>) -> Result<bool, RoleMysqlRepositoryError> {
         if let Some(row) = row {
             return Ok(row.get("is_exists").unwrap_or(false));
         }
@@ -51,32 +51,32 @@ impl RoleRepository {
         Ok(false)
     }
 
-    pub fn first_by_id(&self, id: u64) -> Result<Option<Role>, RoleRepositoryError> {
-        let columns = Role::db_select_columns();
+    pub fn first_by_id(&self, id: u64) -> Result<Option<Role>, RoleMysqlRepositoryError> {
+        let columns = Role::mysql_select_columns();
         let query = make_select_mysql_query(&self.table, &columns, "id=:id", "");
         let mut conn = self.connection()?;
         let mut row: Option<Row> = conn
             .exec_first(query, params! {"id" => id})
-            .map_err(|_| RoleRepositoryError::Fail)?;
+            .map_err(|_| RoleMysqlRepositoryError::Fail)?;
 
         self.try_row_to_entity(&mut row)
     }
 
-    pub fn first_by_code(&self, code: &str) -> Result<Option<Role>, RoleRepositoryError> {
-        let columns = Role::db_select_columns();
+    pub fn first_by_code(&self, code: &str) -> Result<Option<Role>, RoleMysqlRepositoryError> {
+        let columns = Role::mysql_select_columns();
         let query = make_select_mysql_query(&self.table, &columns, "code=:code", "");
         let mut conn = self.connection()?;
         let mut row: Option<Row> = conn
             .exec_first(query, params! {"code" => code})
-            .map_err(|_| RoleRepositoryError::Fail)?;
+            .map_err(|_| RoleMysqlRepositoryError::Fail)?;
 
         self.try_row_to_entity(&mut row)
     }
 
     pub fn paginate(
         &self,
-        params: &RolePaginateParams,
-    ) -> Result<PaginationResult<Role>, RoleRepositoryError> {
+        params: &RoleMysqlRepositoryPaginateParams,
+    ) -> Result<PaginationResult<Role>, RoleMysqlRepositoryError> {
         let mut conn = self.connection()?;
         let page = params.page;
         let per_page = params.per_page;
@@ -105,14 +105,14 @@ impl RoleRepository {
         }
 
         let table = &self.table;
-        let columns = Role::db_select_columns();
+        let columns = Role::mysql_select_columns();
         let query = make_pagination_mysql_query(table, &columns, &mysql_where, &mysql_order);
 
         let rows = conn
             .exec_iter(&query, Params::from(mysql_params))
             .map_err(|e| {
                 log::error!("RoleRepository::paginate - {e}");
-                RoleRepositoryError::Fail
+                RoleMysqlRepositoryError::Fail
             })?;
 
         let mut records: Vec<Role> = Vec::new();
@@ -134,84 +134,84 @@ impl RoleRepository {
         ))
     }
 
-    pub fn exists_by_code(&self, code: &str) -> Result<bool, RoleRepositoryError> {
+    pub fn exists_by_code(&self, code: &str) -> Result<bool, RoleMysqlRepositoryError> {
         let mut conn = self.connection()?;
         let table = &self.table;
         let query = make_is_exists_mysql_query(&table, "code=:code");
         let row: Option<Row> = conn
             .exec_first(query, params! { "code" => code })
-            .map_err(|_| RoleRepositoryError::Fail)?;
+            .map_err(|_| RoleMysqlRepositoryError::Fail)?;
 
         self.try_row_is_exists(&row)
     }
 
-    pub fn insert(&self, data: &Role) -> Result<(), RoleRepositoryError> {
+    pub fn insert(&self, data: &Role) -> Result<(), RoleMysqlRepositoryError> {
         let mut conn = self.connection()?;
-        let columns = Role::db_insert_columns();
-        let params = data.to_insert_db_params();
+        let columns = Role::mysql_insert_columns();
+        let params = data.to_insert_mysql_params();
         let query = make_insert_mysql_query(&self.table, &columns);
         conn.exec_drop(query, params)
             .map_err(|e| match &e {
                 Error::MySqlError(e_) => {
                     if e_.code == 1062 {
-                        RoleRepositoryError::DuplicateCode
+                        RoleMysqlRepositoryError::DuplicateCode
                     } else {
                         log::error!("RoleRepository::insert - {e}");
-                        RoleRepositoryError::Fail
+                        RoleMysqlRepositoryError::Fail
                     }
                 }
                 _ => {
                     log::error!("RoleRepository::insert - {e}");
-                    RoleRepositoryError::Fail
+                    RoleMysqlRepositoryError::Fail
                 }
             })?;
 
         Ok(())
     }
 
-    pub fn delete_by_id(&self, id: u64) -> Result<(), RoleRepositoryError> {
+    pub fn delete_by_id(&self, id: u64) -> Result<(), RoleMysqlRepositoryError> {
         let mut conn = self.connection()?;
         let query = make_delete_mysql_query(&self.table, "id=:id");
         conn.exec_drop(query, params! { "id" => id }).map_err(|e| {
             log::error!("RoleRepository::delete_by_id - {e}");
-            return RoleRepositoryError::Fail;
+            return RoleMysqlRepositoryError::Fail;
         })?;
 
         Ok(())
     }
 
-    pub fn delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), RoleRepositoryError> {
+    pub fn delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), RoleMysqlRepositoryError> {
         let mut conn = self.connection()?;
         let query = make_delete_mysql_query(&self.table, "id IN (:id)");
         let params = ids.iter().map(|id| params! { "id" => id });
         conn.exec_batch(query, params).map_err(|e| {
             log::error!("RoleRepository::delete_by_ids - {e}");
-            return RoleRepositoryError::Fail;
+            return RoleMysqlRepositoryError::Fail;
         })?;
 
         Ok(())
     }
 
-    pub fn delete_by_code(&self, code: &str) -> Result<(), RoleRepositoryError> {
+    pub fn delete_by_code(&self, code: &str) -> Result<(), RoleMysqlRepositoryError> {
         let mut conn = self.connection()?;
         let query = make_delete_mysql_query(&self.table, "code=:code");
         conn.exec_drop(query, params! { "code" => code }).map_err(|e| {
             log::error!("RoleRepository::delete_by_code - {e}");
-            return RoleRepositoryError::Fail;
+            return RoleMysqlRepositoryError::Fail;
         })?;
 
         Ok(())
     }
 
-    pub fn update<'a>(&self, data: &Role) -> Result<(), RoleRepositoryError> {
+    pub fn update<'a>(&self, data: &Role) -> Result<(), RoleMysqlRepositoryError> {
         let mut conn = self.connection()?;
-        let columns = Role::db_update_columns();
-        let params = data.to_update_db_params();
+        let columns = Role::mysql_update_columns();
+        let params = data.to_update_mysql_params();
 
         let query = make_update_mysql_query(&self.table, &columns, "id=:id");
         conn.exec_drop(query, params).map_err(|e| {
             log::error!("RoleRepository::update - {e}");
-            return RoleRepositoryError::Fail;
+            return RoleMysqlRepositoryError::Fail;
         })?;
 
         Ok(())
@@ -219,7 +219,7 @@ impl RoleRepository {
 }
 
 #[derive(Debug, Clone, Copy, Display, EnumString)]
-pub enum RoleRepositoryError {
+pub enum RoleMysqlRepositoryError {
     DbConnectionFail,
     DuplicateCode,
     NotFound,
@@ -227,13 +227,13 @@ pub enum RoleRepositoryError {
 }
 
 #[derive(Debug)]
-pub enum RoleFilter<'a> {
+pub enum RoleMysqlRepositoryFilter<'a> {
     Id(u64),
     Code(&'a str),
     Search(&'a str),
 }
 
-impl RoleFilter<'_> {
+impl RoleMysqlRepositoryFilter<'_> {
     pub fn push_params_to_mysql_query(&self, query: &mut String) {
         match self {
             Self::Id(_) => query.push_str("id=:id"),
@@ -265,7 +265,7 @@ impl RoleFilter<'_> {
 
 #[derive(Debug, Display, EnumString, EnumIter)]
 #[strum(serialize_all = "snake_case")]
-pub enum RoleSort {
+pub enum RoleMysqlRepositorySort {
     IdAsc,
     IdDesc,
     NameAsc,
@@ -274,7 +274,7 @@ pub enum RoleSort {
     CodeDesc,
 }
 
-impl RoleSort {
+impl RoleMysqlRepositorySort {
     pub fn push_params_to_mysql_query(&self, query: &mut String) {
         match self {
             Self::IdAsc => query.push_str("id ASC"),
@@ -290,19 +290,19 @@ impl RoleSort {
 }
 
 #[derive(Debug)]
-pub struct RolePaginateParams<'a> {
+pub struct RoleMysqlRepositoryPaginateParams<'a> {
     pub page: i64,
     pub per_page: i64,
-    pub filters: Vec<RoleFilter<'a>>,
-    pub sort: Option<RoleSort>,
+    pub filters: Vec<RoleMysqlRepositoryFilter<'a>>,
+    pub sort: Option<RoleMysqlRepositorySort>,
 }
 
-impl<'a> RolePaginateParams<'a> {
+impl<'a> RoleMysqlRepositoryPaginateParams<'a> {
     pub fn new(
         page: i64,
         per_page: i64,
-        filters: Vec<RoleFilter<'a>>,
-        sort: Option<RoleSort>,
+        filters: Vec<RoleMysqlRepositoryFilter<'a>>,
+        sort: Option<RoleMysqlRepositorySort>,
     ) -> Self {
         Self {
             page,
@@ -332,23 +332,23 @@ impl<'a> RolePaginateParams<'a> {
 }
 
 impl ToMysqlDto for Role {
-    fn db_select_columns() -> String {
+    fn mysql_select_columns() -> String {
         "id,name,code,description".to_string()
     }
-    fn db_insert_columns() -> String {
+    fn mysql_insert_columns() -> String {
         "(name, code, description) VALUES (:name, :code, :description)".to_string()
     }
-    fn to_insert_db_params(&self) -> Params {
+    fn to_insert_mysql_params(&self) -> Params {
         params! {
             "name" => &self.name,
             "code" => &self.code,
             "description" => &self.description,
         }
     }
-    fn db_update_columns() -> String {
+    fn mysql_update_columns() -> String {
         "name=:name, code=:code, description=:description".to_string()
     }
-    fn to_update_db_params(&self) -> Params {
+    fn to_update_mysql_params(&self) -> Params {
         params! {
             "id" => &self.id,
             "name" => &self.name,
@@ -359,7 +359,7 @@ impl ToMysqlDto for Role {
 }
 
 impl FromMysqlDto for Role {
-    fn take_from_db_row(row: &mut Row) -> Result<Self, FromDbRowError> {
+    fn take_from_mysql_row(row: &mut Row) -> Result<Self, FromDbRowError> {
         Ok(Self {
             id: row.take("id").ok_or(FromDbRowError)?,
             name: row.take("name").ok_or(FromDbRowError)?,
@@ -371,13 +371,13 @@ impl FromMysqlDto for Role {
 }
 
 trait ShortToMysqlDto {
-    fn db_short_select_columns() -> String {
+    fn mysql_short_select_columns() -> String {
         "".to_string()
     }
 }
 
 impl ShortToMysqlDto for Role {
-    fn db_short_select_columns() -> String {
+    fn mysql_short_select_columns() -> String {
         "id,name,code".to_string()
     }
 }

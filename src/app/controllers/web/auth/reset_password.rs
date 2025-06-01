@@ -203,7 +203,7 @@ async fn post(
                     "description": translator_service.translate(lang, "mail.reset_password.description"),
                     "lang": lang.to_owned(),
                     "site_name": translator_service.translate(lang, "mail.reset_password.site_name"),
-                    "site_href": app_service.url().to_string(),
+                    "site_url": app_service.url().to_string(),
                     "site_domain": site_domain,
                     "logo_src": logo_src,
                     "header": translator_service.translate(lang, "mail.reset_password.header"),

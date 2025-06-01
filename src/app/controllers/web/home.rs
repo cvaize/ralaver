@@ -7,6 +7,8 @@ use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use serde_json::json;
 use std::sync::Arc;
 
+const ROUTE_NAME: &'static str = "home_index";
+
 pub async fn index(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
@@ -23,6 +25,7 @@ pub async fn index(
     let user = user.as_ref();
 
     let mut context_data = get_context_data(
+        ROUTE_NAME,
         &req,
         user,
         &session,

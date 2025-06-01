@@ -81,6 +81,22 @@ impl Alert {
                 let vars = two_variables!("seconds", seconds, "unit", unit);
                 Self::success(t_s.variables(&lang, "validation.rate_limit", &vars))
             }
+            AlertVariant::RolesCreateSuccess(name) => {
+                let vars = one_variables!("name", name);
+                Self::success(t_s.variables(&lang, "alert.roles.create.success", &vars))
+            }
+            AlertVariant::RolesUpdateSuccess(name) => {
+                let vars = one_variables!("name", name);
+                Self::success(t_s.variables(&lang, "alert.roles.update.success", &vars))
+            }
+            AlertVariant::RolesDeleteSuccess(name) => {
+                let vars = one_variables!("name", name);
+                Self::success(t_s.variables(&lang, "alert.roles.delete.success", &vars))
+            }
+            AlertVariant::RolesMassDeleteSuccess(ids) => {
+                let vars = one_variables!("ids", ids);
+                Self::success(t_s.variables(&lang, "alert.roles.mass_delete.success", &vars))
+            }
         }
     }
 }
@@ -97,6 +113,10 @@ pub enum AlertVariant {
     UsersDeleteSuccess(String),
     UsersMassDeleteSuccess(String),
     ValidationRateLimitError(String, String),
+    RolesCreateSuccess(String),
+    RolesUpdateSuccess(String),
+    RolesDeleteSuccess(String),
+    RolesMassDeleteSuccess(String),
 }
 
 impl AlertVariant {
@@ -137,6 +157,26 @@ impl AlertVariant {
                 str.push_str(unit);
                 str
             }
+            Self::RolesCreateSuccess(name) => {
+                let mut str = "roles_create_success::".to_string();
+                str.push_str(name);
+                str
+            }
+            Self::RolesUpdateSuccess(name) => {
+                let mut str = "roles_update_success::".to_string();
+                str.push_str(name);
+                str
+            }
+            Self::RolesDeleteSuccess(name) => {
+                let mut str = "roles_delete_success::".to_string();
+                str.push_str(name);
+                str
+            }
+            Self::RolesMassDeleteSuccess(ids) => {
+                let mut str = "roles_mass_delete_success::".to_string();
+                str.push_str(ids);
+                str
+            }
         }
     }
 
@@ -171,6 +211,22 @@ impl AlertVariant {
                 let p1 = string.get(1).ok_or(ParseAlertVariantError)?;
                 let p2 = string.get(2).ok_or(ParseAlertVariantError)?;
                 Ok(Self::ValidationRateLimitError(p1.to_string(), p2.to_string()))
+            }
+            "roles_create_success" => {
+                let p = string.get(1).ok_or(ParseAlertVariantError)?;
+                Ok(Self::RolesCreateSuccess(p.to_string()))
+            }
+            "roles_update_success" => {
+                let p = string.get(1).ok_or(ParseAlertVariantError)?;
+                Ok(Self::RolesUpdateSuccess(p.to_string()))
+            }
+            "roles_delete_success" => {
+                let p = string.get(1).ok_or(ParseAlertVariantError)?;
+                Ok(Self::RolesDeleteSuccess(p.to_string()))
+            }
+            "roles_mass_delete_success" => {
+                let p = string.get(1).ok_or(ParseAlertVariantError)?;
+                Ok(Self::RolesMassDeleteSuccess(p.to_string()))
             }
             _ => Err(ParseAlertVariantError),
         }

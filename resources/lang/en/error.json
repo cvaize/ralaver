@@ -3,6 +3,7 @@
     "DbConnectionFail":  "Error connecting to the UserService database.",
     "DuplicateEmail": "A user with this E-mail is already registered.",
     "PasswordHashFail":  "Password could not be hashed.",
+    "NotFound":  "User not found.",
     "Fail": "UserService error."
   },
   "AuthServiceError": {
@@ -12,5 +13,11 @@
     "PasswordHashFail":  "{{error.UserServiceError.PasswordHashFail}}",
     "InsertNewUserFail":  "New user registration failed.",
     "Fail": "AuthService error."
+  },
+  "RoleServiceError": {
+    "DbConnectionFail":  "Error connecting to the RoleService database.",
+    "DuplicateCode": "A role with this code is already exists.",
+    "NotFound":  "Role not found.",
+    "Fail": "RoleService error."
   }
 }

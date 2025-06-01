@@ -30,25 +30,25 @@ impl<U> PaginationResult<U> {
 pub struct FromDbRowError;
 
 pub trait ToMysqlDto {
-    fn db_select_columns() -> String {
+    fn mysql_select_columns() -> String {
         "".to_string()
     }
-    fn db_insert_columns() -> String {
+    fn mysql_insert_columns() -> String {
         "".to_string()
     }
-    fn to_insert_db_params(&self) -> Params {
+    fn to_insert_mysql_params(&self) -> Params {
         Params::Empty
     }
-    fn db_update_columns() -> String {
+    fn mysql_update_columns() -> String {
         "".to_string()
     }
-    fn to_update_db_params(&self) -> Params {
+    fn to_update_mysql_params(&self) -> Params {
         Params::Empty
     }
 }
 
 pub trait FromMysqlDto {
-    fn take_from_db_row(row: &mut Row) -> Result<Self, FromDbRowError> where Self: Sized;
+    fn take_from_mysql_row(row: &mut Row) -> Result<Self, FromDbRowError> where Self: Sized;
 }
 
 pub fn make_pagination_mysql_query(table: &str, columns: &str, where_: &str, order_: &str) -> String {

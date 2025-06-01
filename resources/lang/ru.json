@@ -23,5 +23,9 @@
   "Edit user": "Редактировать пользователя",
   "Delete user": "Удалить пользователя",
   "Create user": "Создать пользователя",
-  "Delete user(ID: :id)?": "Удалить пользователя(ID: :id)?"
+  "Delete user(ID: :id)?": "Удалить пользователя(ID: :id)?",
+  "Edit role": "Редактировать роль",
+  "Delete role": "Удалить роль",
+  "Create role": "Создать роль",
+  "Delete role(ID: :id)?": "Удалить роль(ID: :id)?"
 }

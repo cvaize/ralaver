@@ -1,9 +1,6 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
-use crate::{
-    HashService, KeyValueService, KeyValueServiceError, User, UserRepository, UserService,
-    UserServiceError,
-};
+use crate::{HashService, KeyValueService, KeyValueServiceError, TranslatableError, TranslatorService, User, UserMysqlRepository, UserService, UserServiceError};
 use actix_web::web::Data;
 use serde_derive::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
@@ -14,7 +11,7 @@ pub struct AuthService {
     key_value_service: Data<KeyValueService>,
     hash_service: Data<HashService>,
     user_service: Data<UserService>,
-    user_repository: Data<UserRepository>,
+    user_repository: Data<UserMysqlRepository>,
 }
 
 impl AuthService {
@@ -22,7 +19,7 @@ impl AuthService {
         key_value_service: Data<KeyValueService>,
         hash_service: Data<HashService>,
         user_service: Data<UserService>,
-        user_repository: Data<UserRepository>,
+        user_repository: Data<UserMysqlRepository>,
     ) -> Self {
         Self {
             key_value_service,
@@ -183,6 +180,29 @@ pub enum AuthServiceError {
     InsertNewUserFail,
     PasswordHashFail,
     Fail,
+}
+
+impl TranslatableError for AuthServiceError {
+    fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
+        match self {
+            Self::CredentialsInvalid => {
+                translate_service.translate(lang, "error.AuthServiceError.CredentialsInvalid")
+            }
+            Self::DbConnectionFail => {
+                translate_service.translate(lang, "error.AuthServiceError.DbConnectionFail")
+            }
+            Self::DuplicateEmail => {
+                translate_service.translate(lang, "error.AuthServiceError.DuplicateEmail")
+            }
+            Self::InsertNewUserFail => {
+                translate_service.translate(lang, "error.AuthServiceError.InsertNewUserFail")
+            }
+            Self::PasswordHashFail => {
+                translate_service.translate(lang, "error.AuthServiceError.PasswordHashFail")
+            }
+            _ => translate_service.translate(lang, "error.AuthServiceError.Fail"),
+        }
+    }
 }
 
 #[cfg(test)]

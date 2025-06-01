@@ -3,11 +3,12 @@ pub mod errors;
 pub mod home;
 pub mod locale;
 pub mod profile;
+pub mod roles;
 pub mod users;
 
 use crate::{
-    Alert, AlertVariant, AppService, Locale, Session, TranslatorService, User,
-    WebAuthService, ALERTS_KEY,
+    Alert, AlertVariant, AppService, Locale, Session, TranslatorService, User, WebAuthService,
+    ALERTS_KEY,
 };
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
@@ -44,7 +45,10 @@ impl WebHttpResponse for HttpResponseBuilder {
         )
     }
     fn set_alerts(&mut self, alerts: Vec<AlertVariant>) -> &mut Self {
-        let cookie: Vec<String> = alerts.into_iter().map(|a| a.to_string().replace(",", "=-=")).collect();
+        let cookie: Vec<String> = alerts
+            .into_iter()
+            .map(|a| a.to_string().replace(",", "=-="))
+            .collect();
 
         self.cookie(
             Cookie::build(ALERTS_KEY, cookie.join(","))
@@ -73,8 +77,10 @@ fn string_to_alerts(s: &str, translator_service: &TranslatorService, lang: &str)
 }
 
 pub struct ContextData<'a> {
+    route_name: &'a str,
     user: &'a User,
     translator_service: &'a TranslatorService,
+    app_service: &'a AppService,
     dark_mode: Option<String>,
     lang: String,
     locale: &'a Locale,
@@ -85,6 +91,7 @@ pub struct ContextData<'a> {
 }
 
 pub fn get_context_data<'a>(
+    route_name: &'a str,
     req: &'a HttpRequest,
     user: &'a User,
     session: &'a Session,
@@ -98,8 +105,10 @@ pub fn get_context_data<'a>(
     let alerts: Vec<Alert> = req.get_alerts(&translator_service, &lang);
     let title = translator_service.translate(&lang, "app.name");
     ContextData {
+        route_name,
         user,
         translator_service,
+        app_service,
         dark_mode,
         lang,
         locale,
@@ -113,10 +122,13 @@ pub fn get_context_data<'a>(
 pub fn get_template_context<'a>(data: &'a ContextData) -> Value {
     let lang = &data.lang;
     let translator_service = data.translator_service;
+    let app_service = data.app_service;
     json!({
-      "title": &data.title,
-      "brand": translator_service.translate(lang, "layout.brand"),
-      "sidebar": {
+        "route_name": &data.route_name,
+        "site_url": app_service.url().to_string(),
+        "title": &data.title,
+        "brand": translator_service.translate(lang, "layout.brand"),
+        "sidebar": {
         "home": translator_service.translate(lang, "layout.sidebar.home"),
         "users": {
           "index": translator_service.translate(lang, "layout.sidebar.users.index"),
@@ -125,18 +137,18 @@ pub fn get_template_context<'a>(data: &'a ContextData) -> Value {
         },
         "profile": translator_service.translate(lang, "layout.sidebar.profile"),
         "logout": translator_service.translate(lang, "layout.sidebar.logout"),
-      },
-      "dark_mode": {
+        },
+        "dark_mode": {
         "value": &data.dark_mode,
         "dark": translator_service.translate(lang, "layout.dark_mode.dark"),
         "light": translator_service.translate(lang, "layout.dark_mode.light"),
         "auto": translator_service.translate(lang, "layout.dark_mode.auto"),
-      },
-      "locale": &data.locale,
-      "locales": &data.locales,
-      "user" : &data.user,
-      "alerts": &data.alerts,
-      "csrf": &data.csrf
+        },
+        "locale": &data.locale,
+        "locales": &data.locales,
+        "user" : &data.user,
+        "alerts": &data.alerts,
+        "csrf": &data.csrf
     })
 }
 
@@ -384,7 +396,7 @@ macro_rules! prepare_value {
                 $t = Some(value_.to_owned());
             }
         }
-    }
+    };
 }
 
 #[macro_export]
@@ -394,7 +406,7 @@ macro_rules! prepare_paginate {
         let per_page = std::cmp::min($per_page.unwrap_or($default_per_page), $max_per_page);
         $page = Some(page);
         $per_page = Some(per_page);
-    }
+    };
 }
 
 #[macro_export]
@@ -402,13 +414,19 @@ macro_rules! validation_query_max_length_string {
     ($errors:expr, $field:expr, $field_name:expr, $max_size:expr, $translator_service:expr, $lang:expr) => {
         if let Some(value) = &$field {
             let mut errors_: Vec<String> =
-                crate::app::validator::rules::length::MaxLengthString::validate($translator_service, $lang, value, $max_size, $field_name);
+                crate::app::validator::rules::length::MaxLengthString::validate(
+                    $translator_service,
+                    $lang,
+                    value,
+                    $max_size,
+                    $field_name,
+                );
             if errors_.len() != 0 {
                 $errors.append(&mut errors_);
                 $field = None;
             }
         }
-    }
+    };
 }
 
 #[cfg(test)]

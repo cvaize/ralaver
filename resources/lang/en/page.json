@@ -113,5 +113,43 @@
       "title": "{{page.users.edit.header}} - {{app.name}}",
       "header": "Edit user \":user_name\""
     }
+  },
+  "roles": {
+    "index": {
+      "title": "Page :page of :per_page - {{page.roles.index.header}} - {{app.name}}",
+      "header": "Roles list",
+      "sort": {
+        "id_asc": "ID 0-9",
+        "id_desc": "ID 9-0",
+        "code_asc": "Code A-Z",
+        "code_desc": "Code Z-A",
+        "name_asc": "Name A-Z",
+        "name_desc": "Name Z-A"
+      },
+      "columns": {
+        "id": "ID",
+        "code": "Code",
+        "name": "Name",
+        "description": "Description",
+        "actions": "Actions"
+      }
+    },
+    "create": {
+      "title": "{{page.roles.create.header}} - {{app.name}}",
+      "header": "Create role",
+      "fields": {
+        "code": "{{validation.attributes.code}}",
+        "name": "{{validation.attributes.name}}",
+        "description": "{{validation.attributes.description}}"
+      },
+      "tabs": {
+        "main": "Main",
+        "permissions": "Permissions"
+      }
+    },
+    "edit": {
+      "title": "{{page.roles.edit.header}} - {{app.name}}",
+      "header": "Edit role \":name\""
+    }
   }
 }

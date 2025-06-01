@@ -11,6 +11,11 @@ pub fn default_error_handler<B>(
     // split service response into request and response components
     let (req, res) = ser_res.into_parts();
 
+    if let Some(error) = res.error() {
+        let url = req.full_url().to_string();
+        log::error!("Http error \"{url}\" \"{error}\"");
+    }
+
     let path = req.uri().path();
     let res = if path.starts_with("/css") || path.starts_with("/js") || path.starts_with("/svg") {
         res.set_body("".to_string())

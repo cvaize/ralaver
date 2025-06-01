@@ -151,6 +151,8 @@
         "surname": "Фамилия",
         "user_name": "Имя",
         "name": "Название",
-        "patronymic": "Отчество"
+        "patronymic": "Отчество",
+        "description": "Описание",
+        "code": "Код"
     }
 }

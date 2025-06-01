@@ -282,46 +282,6 @@ pub trait TranslatableError {
     fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String;
 }
 
-impl TranslatableError for UserServiceError {
-    fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
-        match self {
-            Self::DbConnectionFail => {
-                translate_service.translate(lang, "error.UserServiceError.DbConnectionFail")
-            }
-            Self::DuplicateEmail => {
-                translate_service.translate(lang, "error.UserServiceError.DuplicateEmail")
-            }
-            Self::PasswordHashFail => {
-                translate_service.translate(lang, "error.UserServiceError.PasswordHashFail")
-            }
-            _ => translate_service.translate(lang, "error.UserServiceError.Fail"),
-        }
-    }
-}
-
-impl TranslatableError for AuthServiceError {
-    fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
-        match self {
-            Self::CredentialsInvalid => {
-                translate_service.translate(lang, "error.AuthServiceError.CredentialsInvalid")
-            }
-            Self::DbConnectionFail => {
-                translate_service.translate(lang, "error.AuthServiceError.DbConnectionFail")
-            }
-            Self::DuplicateEmail => {
-                translate_service.translate(lang, "error.AuthServiceError.DuplicateEmail")
-            }
-            Self::InsertNewUserFail => {
-                translate_service.translate(lang, "error.AuthServiceError.InsertNewUserFail")
-            }
-            Self::PasswordHashFail => {
-                translate_service.translate(lang, "error.AuthServiceError.PasswordHashFail")
-            }
-            _ => translate_service.translate(lang, "error.AuthServiceError.Fail"),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

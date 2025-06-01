@@ -48,18 +48,41 @@ pub fn register(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/users/create")
             .wrap(WebAuthMiddleware)
-            .route(web::get().to(controllers::web::users::create_edit::create))
-            .route(web::post().to(controllers::web::users::create_edit::store)),
+            .route(web::get().to(controllers::web::users::create_update::create))
+            .route(web::post().to(controllers::web::users::create_update::store)),
     );
     cfg.service(
         web::resource("/users/{user_id}")
             .wrap(WebAuthMiddleware)
-            .route(web::get().to(controllers::web::users::create_edit::edit))
-            .route(web::post().to(controllers::web::users::create_edit::update)),
+            .route(web::get().to(controllers::web::users::create_update::edit))
+            .route(web::post().to(controllers::web::users::create_update::update)),
     );
     cfg.service(
         web::resource("/users/{user_id}/delete")
             .wrap(WebAuthMiddleware)
             .route(web::post().to(controllers::web::users::delete::invoke)),
+    );
+    cfg.service(
+        web::resource("/roles")
+            .wrap(WebAuthMiddleware)
+            .route(web::get().to(controllers::web::roles::index::invoke))
+            .route(web::post().to(controllers::web::roles::mass_actions::invoke)),
+    );
+    cfg.service(
+        web::resource("/roles/create")
+            .wrap(WebAuthMiddleware)
+            .route(web::get().to(controllers::web::roles::create_update::create))
+            .route(web::post().to(controllers::web::roles::create_update::store)),
+    );
+    cfg.service(
+        web::resource("/roles/{role_id}")
+            .wrap(WebAuthMiddleware)
+            .route(web::get().to(controllers::web::roles::create_update::edit))
+            .route(web::post().to(controllers::web::roles::create_update::update)),
+    );
+    cfg.service(
+        web::resource("/roles/{role_id}/delete")
+            .wrap(WebAuthMiddleware)
+            .route(web::post().to(controllers::web::roles::delete::invoke)),
     );
 }

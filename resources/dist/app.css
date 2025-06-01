@@ -2825,7 +2825,7 @@ a.admin-pagination__link:active, button.admin-pagination__link:active {
     cursor: pointer;
 }
 
-.admin-sidebar__menu__item__link.admin-active {
+.admin-sidebar__menu__item__link.admin-active, .admin-sidebar__menu__header.admin-active {
     opacity: 0.8;
 }
 

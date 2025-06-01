@@ -1,8 +1,8 @@
 use crate::connections::Connections;
 use crate::{
     AppService, AuthService, Config, CryptService, HashService, KeyValueService, LocaleService,
-    MailService, RandomService, RateLimitService, TemplateService, TranslatorService, UserService,
-    WebAuthService, UserRepository
+    MailService, RandomService, RateLimitService, RoleMysqlRepository, RoleService,
+    TemplateService, TranslatorService, UserMysqlRepository, UserService, WebAuthService,
 };
 use actix_web::web::Data;
 
@@ -30,7 +30,9 @@ pub struct AdvancedServices {
     pub rand_service: Data<RandomService>,
     pub rate_limit_service: Data<RateLimitService>,
     pub user_service: Data<UserService>,
-    pub user_repository: Data<UserRepository>,
+    pub user_repository: Data<UserMysqlRepository>,
+    pub role_service: Data<RoleService>,
+    pub role_repository: Data<RoleMysqlRepository>,
 }
 
 pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
@@ -46,7 +48,7 @@ pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
     let rand_service = Data::new(RandomService::new());
 
     let hash_service = Data::new(HashService::new(s.config.clone()));
-    let user_repository = Data::new(UserRepository::new(c.mysql.clone()));
+    let user_repository = Data::new(UserMysqlRepository::new(c.mysql.clone()));
     let user_service = Data::new(UserService::new(
         hash_service.clone(),
         user_repository.clone(),
@@ -76,6 +78,9 @@ pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
         user_service.clone(),
     ));
 
+    let role_repository = Data::new(RoleMysqlRepository::new(c.mysql.clone()));
+    let role_service = Data::new(RoleService::new(role_repository.clone()));
+
     AdvancedServices {
         key_value_service,
         translator_service,
@@ -91,6 +96,8 @@ pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
         rate_limit_service,
         user_service,
         user_repository,
+        role_service,
+        role_repository,
     }
 }
 
@@ -109,7 +116,9 @@ pub struct Services {
     pub rand_service: Data<RandomService>,
     pub rate_limit_service: Data<RateLimitService>,
     pub user_service: Data<UserService>,
-    pub user_repository: Data<UserRepository>,
+    pub user_repository: Data<UserMysqlRepository>,
+    pub role_service: Data<RoleService>,
+    pub role_repository: Data<RoleMysqlRepository>,
 }
 
 pub fn join_to_all(base: BaseServices, advanced: AdvancedServices) -> Services {
@@ -129,5 +138,7 @@ pub fn join_to_all(base: BaseServices, advanced: AdvancedServices) -> Services {
         rate_limit_service: advanced.rate_limit_service,
         user_service: advanced.user_service,
         user_repository: advanced.user_repository,
+        role_service: advanced.role_service,
+        role_repository: advanced.role_repository,
     }
 }

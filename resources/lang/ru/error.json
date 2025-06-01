@@ -3,6 +3,7 @@
     "DbConnectionFail":  "Ошибка подключения к базе данных UserService.",
     "DuplicateEmail": "Пользователь с таким E-mail уже зарегистрирован.",
     "PasswordHashFail":  "Пароль не удалось хэшировать.",
+    "NotFound":  "Пользователь не найден.",
     "Fail": "Ошибка сервиса UserService."
   },
   "AuthServiceError": {
@@ -12,5 +13,11 @@
     "PasswordHashFail":  "{{error.UserServiceError.PasswordHashFail}}",
     "InsertNewUserFail":  "Регистрация нового пользователя не удалась.",
     "Fail": "Ошибка сервиса AuthService."
+  },
+  "RoleServiceError": {
+    "DbConnectionFail":  "Ошибка подключения к базе данных RoleService.",
+    "DuplicateCode": "Роль с таким кодом уже создана.",
+    "NotFound":  "Роль не найдена.",
+    "Fail": "Ошибка сервиса RoleService."
   }
 }

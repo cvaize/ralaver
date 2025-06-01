@@ -21,6 +21,8 @@ const RL_MAX_ATTEMPTS: u64 = 10;
 const RL_TTL: u64 = 60;
 const RL_KEY: &'static str = "users_create_update";
 
+const ROUTE_NAME: &'static str = "users_create_update";
+
 #[derive(Deserialize, Default, Debug)]
 pub struct PostData {
     pub _token: Option<String>,
@@ -164,7 +166,7 @@ pub fn invoke(
     let user = user.as_ref();
 
     let mut alert_variants: Vec<AlertVariant> = Vec::new();
-    let mut context_data = get_context_data(&req, user, &session, tr_s, ap_s, wa_s);
+    let mut context_data = get_context_data(ROUTE_NAME, &req, user, &session, tr_s, ap_s, wa_s);
 
     let lang = &context_data.lang;
 
@@ -397,7 +399,7 @@ pub fn invoke(
             },
         },
     });
-    let s = tm_s.render_throw_http("pages/users/create-edit.hbs", &ctx)?;
+    let s = tm_s.render_throw_http("pages/users/create-update.hbs", &ctx)?;
     Ok(HttpResponse::Ok()
         .clear_alerts()
         .content_type(mime::TEXT_HTML_UTF_8.as_ref())

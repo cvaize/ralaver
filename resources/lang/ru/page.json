@@ -113,5 +113,43 @@
       "title": "{{page.users.edit.header}} - {{app.name}}",
       "header": "Редактирование пользователя \":user_name\""
     }
+  },
+  "roles": {
+    "index": {
+      "title": "Страница :page из :total_pages - {{page.roles.index.header}} - {{app.name}}",
+      "header": "Список ролей",
+      "sort": {
+        "id_asc": "ID 0-9",
+        "id_desc": "ID 9-0",
+        "code_asc": "Код A-Z",
+        "code_desc": "Код Z-A",
+        "name_asc": "Название А-Я",
+        "name_desc": "Название Я-А"
+      },
+      "columns": {
+        "id": "ID",
+        "code": "Код",
+        "name": "Название",
+        "description": "Описание",
+        "actions": "Действия"
+      }
+    },
+    "create": {
+      "title": "{{page.roles.create.header}} - {{app.name}}",
+      "header": "Создание роли",
+      "fields": {
+        "code": "{{validation.attributes.code}}",
+        "name": "{{validation.attributes.name}}",
+        "description": "{{validation.attributes.description}}"
+      },
+      "tabs": {
+        "main": "Основные",
+        "permissions": "Разрешения"
+      }
+    },
+    "edit": {
+      "title": "{{page.roles.edit.header}} - {{app.name}}",
+      "header": "Редактирование роли \":name\""
+    }
   }
 }

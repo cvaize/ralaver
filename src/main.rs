@@ -64,6 +64,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(all_services.user_service.clone())
             .app_data(all_services.crypt_service.clone())
             .app_data(all_services.rate_limit_service.clone())
+            .app_data(all_services.role_service.clone())
             .wrap(Logger::default())
             .configure(routes::register)
             .wrap(ErrorHandlers::new().default_handler(default_error_handler))
