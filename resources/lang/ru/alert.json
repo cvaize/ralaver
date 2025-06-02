@@ -35,5 +35,19 @@
     "mass_delete": {
       "success": "Пользователи IDs:\":ids\" успешно удалены."
     }
+  },
+  "roles": {
+    "create": {
+      "success": "Роль \":name\" успешно создана."
+    },
+    "update": {
+      "success": "Роль \":name\" успешно изменена."
+    },
+    "delete": {
+      "success": "Роль \":name\" успешно удалена."
+    },
+    "mass_delete": {
+      "success": "Роли IDs:\":ids\" успешно удалены."
+    }
   }
 }

@@ -153,6 +153,7 @@
         "name": "Название",
         "patronymic": "Отчество",
         "description": "Описание",
-        "code": "Код"
+        "code": "Код",
+        "permissions": "Разрешения"
     }
 }

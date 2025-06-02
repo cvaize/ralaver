@@ -35,5 +35,19 @@
     "mass_delete": {
       "success": "User IDs:\":ids\" has been successfully deleted."
     }
+  },
+  "roles": {
+    "create": {
+      "success": "Role \":name\" has been successfully created."
+    },
+    "update": {
+      "success": "Role \":name\" has been successfully updated."
+    },
+    "delete": {
+      "success": "Role \":name\" has been successfully deleted."
+    },
+    "mass_delete": {
+      "success": "Role IDs:\":ids\" has been successfully deleted."
+    }
   }
 }

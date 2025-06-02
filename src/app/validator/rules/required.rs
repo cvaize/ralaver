@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::TranslatorService;
 
 pub struct Required;
@@ -12,11 +13,14 @@ impl Required {
         translator_service: &TranslatorService,
         lang: &str,
         value: &Option<T>,
+        attribute_name: &str,
     ) -> Vec<String> {
         if Self::apply(value) {
             Vec::new()
         } else {
-            Vec::from([translator_service.translate(&lang, "validation.required")])
+            let mut vars = HashMap::new();
+            vars.insert("attribute", attribute_name);
+            Vec::from([translator_service.variables(&lang, "validation.required", &vars)])
         }
     }
 
@@ -25,11 +29,14 @@ impl Required {
         lang: &str,
         value: &Option<T>,
         cb: O,
+        attribute_name: &str,
     ) -> Vec<String> {
         if Self::apply(value) {
             cb(value.as_ref().unwrap())
         } else {
-            Vec::from([translator_service.translate(&lang, "validation.required")])
+            let mut vars = HashMap::new();
+            vars.insert("attribute", attribute_name);
+            Vec::from([translator_service.variables(&lang, "validation.required", &vars)])
         }
     }
 }

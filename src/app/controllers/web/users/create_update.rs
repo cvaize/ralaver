@@ -213,12 +213,12 @@ pub fn invoke(
         if executed {
             errors.email = Required::validated(tr_s, lang, &data.email, |value| {
                 Email::validate(tr_s, lang, value, &email_str)
-            });
+            }, &email_str);
 
             if edit_user.is_none() {
                 errors.password = Required::validated(tr_s, lang, &data.password, |value| {
                     MMLS::validate(tr_s, lang, value, 4, 255, &password_str)
-                });
+                }, &password_str);
             } else {
                 if let Some(password) = &data.password {
                     errors.password = MMLS::validate(tr_s, lang, password, 4, 255, &password_str);
@@ -229,7 +229,7 @@ pub fn invoke(
                 errors.confirm_password =
                     Required::validated(tr_s, lang, &data.confirm_password, |value| {
                         MMLS::validate(tr_s, lang, value, 4, 255, &confirm_password_str)
-                    });
+                    }, &confirm_password_str);
             }
 
             if errors.password.len() == 0

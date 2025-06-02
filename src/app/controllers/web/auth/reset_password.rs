@@ -159,7 +159,7 @@ async fn post(
         if executed {
             email_errors = Required::validated(translator_service, lang, &data.email, |value| {
                 Email::validate(translator_service, lang, value, &email_str)
-            });
+            }, &email_str);
             let email: String = data.email.clone().unwrap_or("".to_string());
 
             if email_errors.len() == 0 {

@@ -1,19 +1,17 @@
 use crate::app::controllers::web::{get_context_data, get_template_context};
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString as MMLS};
 use crate::app::validator::rules::required::Required;
-use crate::{
-    prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, RateLimitService, Role,
-    RoleService, RoleServiceError, Session, TemplateService, TranslatableError, TranslatorService,
-    User, WebAuthService, WebHttpResponse,
-};
+use crate::{prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, Permission, RateLimitService, Role, RoleService, RoleServiceError, Session, TemplateService, TranslatableError, TranslatorService, User, WebAuthService, WebHttpResponse};
 use actix_web::web::Path;
-use actix_web::web::{Data, Form, ReqData};
+use actix_web::web::{Data, ReqData};
+use crate::libs::actix_web::types::form::Form;
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
+use strum::VariantNames;
 
 const RL_MAX_ATTEMPTS: u64 = 10;
 const RL_TTL: u64 = 60;
@@ -28,6 +26,7 @@ pub struct PostData {
     pub code: Option<String>,
     pub name: Option<String>,
     pub description: Option<String>,
+    pub permissions: Option<Vec<String>>,
 }
 
 #[derive(Deserialize, Default, Debug)]
@@ -36,6 +35,7 @@ struct ErrorMessages {
     pub code: Vec<String>,
     pub name: Vec<String>,
     pub description: Vec<String>,
+    pub permissions: Vec<String>,
 }
 
 pub async fn create(
@@ -95,6 +95,7 @@ pub async fn edit(
         code: Some(edit_role.code.to_owned()),
         name: Some(edit_role.name.to_owned()),
         description: edit_role.description.to_owned(),
+        permissions: edit_role.permissions.to_owned(),
     };
     let edit_role = Some(edit_role);
     let data = Form(post_data);
@@ -159,6 +160,7 @@ pub fn invoke(
     let code_str = tr_s.translate(lang, "page.roles.create.fields.code");
     let name_str = tr_s.translate(lang, "page.roles.create.fields.name");
     let description_str = tr_s.translate(lang, "page.roles.create.fields.description");
+    let permissions_str = tr_s.translate(lang, "page.roles.create.fields.permissions");
 
     let (title, heading, action) = if let Some(edit_role) = &edit_role {
         let mut vars: HashMap<&str, &str> = HashMap::new();
@@ -195,11 +197,11 @@ pub fn invoke(
         if executed {
             errors.code = Required::validated(tr_s, lang, &data.code, |value| {
                 MMLS::validate(tr_s, lang, value, 4, 255, &code_str)
-            });
+            }, &code_str);
 
             errors.name = Required::validated(tr_s, lang, &data.name, |value| {
                 MMLS::validate(tr_s, lang, value, 4, 255, &name_str)
-            });
+            }, &name_str);
 
             if let Some(description) = &data.description {
                 errors.description = MaxLengthString::validate(tr_s, lang, description, 255, &description_str);
@@ -216,6 +218,7 @@ pub fn invoke(
                 role_data.code = data.code.clone().unwrap();
                 role_data.name = data.name.clone().unwrap();
                 role_data.description = data.description.to_owned();
+                role_data.permissions = data.permissions.to_owned();
                 let result = r_s.upsert(&mut role_data);
 
                 if let Err(error) = result {
@@ -297,11 +300,30 @@ pub fn invoke(
     }
 
     let layout_ctx = get_template_context(&context_data);
+    let mut permissions: Vec<Value> = Vec::new();
+
+    for variant in Permission::VARIANTS {
+        let mut key = "permission.".to_string();
+        key.push_str(variant);
+        let mut checked = false;
+        if let Some(permissions_) = &data.permissions {
+            let variant_ = variant.to_string();
+            if permissions_.contains(&variant_) {
+                checked = true;
+            }
+        }
+        permissions.push(json!({
+            "label": tr_s.translate(lang, &key),
+            "value": variant,
+            "checked": checked
+        }));
+    }
 
     let fields = json!({
         "code": { "label": code_str, "value": &data.code, "errors": errors.code },
         "name": { "label": name_str, "value": &data.name, "errors": errors.name },
         "description": { "label": description_str, "value": &data.description, "errors": errors.description },
+        "permissions": { "label": permissions_str, "value": &data.permissions, "errors": errors.permissions, "options": permissions },
     });
 
     let ctx = json!({

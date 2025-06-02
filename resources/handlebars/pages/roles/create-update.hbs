@@ -57,10 +57,25 @@
                     </div>
                 </div>
                 <div class="admin-tabs__pane">
-                    <div class="admin-row">
-                        <div class="admin-col-auto">
-                            TODO: Permissions
-                        </div>
+                    <h3>{{form.fields.permissions.label}}</h3>
+                    {{#if form.fields.permissions.errors}}
+                        {{#each form.fields.permissions.errors as |error|}}
+                            <div class="admin-text--mini admin-text--danger">{{this}}</div>
+                        {{/each}}
+                        <br>
+                    {{/if}}
+                    <div>
+                        {{#each form.fields.permissions.options as |permission|}}
+                            <div>
+                                {{> components/checkbox.hbs
+                                        label=permission.label
+                                        value=permission.value
+                                        checked=permission.checked
+                                        form="admin-create-form"
+                                        name="permissions[]"
+                                }}
+                            </div>
+                        {{/each}}
                     </div>
                 </div>
             </div>

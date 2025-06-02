@@ -236,7 +236,7 @@ async fn post(
         if executed {
             email_errors = Required::validated(translator_service, lang, &data.email, |value| {
                 Email::validate(translator_service, lang, value, &email_str)
-            });
+            }, &email_str);
             password_errors =
                 Required::validated(translator_service, lang, &data.password, |value| {
                     MinMaxLengthString::validate(
@@ -247,7 +247,7 @@ async fn post(
                         255,
                         &password_str,
                     )
-                });
+                }, &password_str);
             confirm_password_errors =
                 Required::validated(translator_service, lang, &data.confirm_password, |value| {
                     MinMaxLengthString::validate(
@@ -258,7 +258,7 @@ async fn post(
                         255,
                         &confirm_password_str,
                     )
-                });
+                }, &confirm_password_str);
             code_errors = Required::validated(translator_service, lang, &data.code, |value| {
                 MinMaxLengthString::validate(
                     translator_service,
@@ -268,7 +268,7 @@ async fn post(
                     CODE_LEN,
                     "code",
                 )
-            });
+            }, "code");
 
             if password_errors.len() == 0 && confirm_password_errors.len() == 0 {
                 let mut password_errors2: Vec<String> = Confirmed::validate(

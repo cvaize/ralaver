@@ -207,6 +207,7 @@ impl RoleMysqlRepository {
         let mut conn = self.connection()?;
         let columns = Role::mysql_update_columns();
         let params = data.to_update_mysql_params();
+        // TODO: With permissions
 
         let query = make_update_mysql_query(&self.table, &columns, "id=:id");
         conn.exec_drop(query, params).map_err(|e| {
@@ -333,39 +334,60 @@ impl<'a> RoleMysqlRepositoryPaginateParams<'a> {
 
 impl ToMysqlDto for Role {
     fn mysql_select_columns() -> String {
-        "id,name,code,description".to_string()
+        "id,name,code,description,permissions".to_string()
     }
     fn mysql_insert_columns() -> String {
-        "(name, code, description) VALUES (:name, :code, :description)".to_string()
+        "(name, code, description, permissions) VALUES (:name, :code, :description, :permissions)".to_string()
     }
     fn to_insert_mysql_params(&self) -> Params {
+        let permissions_ = serde_json::to_string(&self.permissions).unwrap_or("".to_string());
+        let mut permissions: Option<String> = None;
+        if permissions_.len() > 0 {
+            permissions = Some(permissions_);
+        }
         params! {
             "name" => &self.name,
             "code" => &self.code,
             "description" => &self.description,
+            "permissions" => permissions,
         }
     }
     fn mysql_update_columns() -> String {
-        "name=:name, code=:code, description=:description".to_string()
+        "name=:name, code=:code, description=:description, permissions=:permissions".to_string()
     }
     fn to_update_mysql_params(&self) -> Params {
+        let permissions_ = serde_json::to_string(&self.permissions).unwrap_or("".to_string());
+        let mut permissions: Option<String> = None;
+        if permissions_.len() > 0 {
+            permissions = Some(permissions_);
+        }
         params! {
             "id" => &self.id,
             "name" => &self.name,
             "code" => &self.code,
             "description" => &self.description,
+            "permissions" => permissions,
         }
     }
 }
 
 impl FromMysqlDto for Role {
     fn take_from_mysql_row(row: &mut Row) -> Result<Self, FromDbRowError> {
+        let mut permissions: Option<Vec<String>> = None;
+
+        if let Some(permissions_) = row.take::<String, &str>("permissions") {
+            let permissions_: serde_json::Result<Vec<String>> = serde_json::from_str(&permissions_);
+            if let Ok(permissions_) = permissions_ {
+                permissions = Some(permissions_);
+            }
+        }
+
         Ok(Self {
             id: row.take("id").ok_or(FromDbRowError)?,
             name: row.take("name").ok_or(FromDbRowError)?,
             code: row.take("code").ok_or(FromDbRowError)?,
             description: row.take("description").unwrap_or(None),
-            permissions: None
+            permissions
         })
     }
 }

@@ -180,7 +180,7 @@ async fn post(
         if executed {
             email_errors = Required::validated(translator_service, lang, &data.email, |value| {
                 Email::validate(translator_service, lang, value, email_str)
-            });
+            }, email_str);
             password_errors =
                 Required::validated(translator_service, lang, &data.password, |value| {
                     MinMaxLengthString::validate(
@@ -191,7 +191,7 @@ async fn post(
                         255,
                         password_str,
                     )
-                });
+                }, password_str);
 
             if email_errors.len() == 0 && password_errors.len() == 0 {
                 let email_value = data.email.as_ref().unwrap();

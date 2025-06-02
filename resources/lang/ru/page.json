@@ -140,7 +140,8 @@
       "fields": {
         "code": "{{validation.attributes.code}}",
         "name": "{{validation.attributes.name}}",
-        "description": "{{validation.attributes.description}}"
+        "description": "{{validation.attributes.description}}",
+        "permissions": "{{validation.attributes.permissions}}"
       },
       "tabs": {
         "main": "Основные",

@@ -7,5 +7,5 @@ pub struct Role {
     pub code: String,
     pub name: String,
     pub description: Option<String>,
-    pub permissions: Option<Vec<Permission>>,
+    pub permissions: Option<Vec<String>>,
 }
