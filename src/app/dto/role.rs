@@ -1,5 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
-use crate::Permission;
+use strum_macros::{Display, EnumString, VariantNames, EnumIter};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Role {
@@ -8,4 +8,14 @@ pub struct Role {
     pub name: String,
     pub description: Option<String>,
     pub permissions: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Copy, Display, EnumString, Serialize, Deserialize, VariantNames, EnumIter)]
+#[strum(serialize_all = "snake_case")]
+pub enum RoleColumn {
+    Id,
+    Code,
+    Name,
+    Description,
+    Permissions,
 }

@@ -3,11 +3,7 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString as MMLS};
 use crate::app::validator::rules::required::Required;
-use crate::{
-    prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, RateLimitService,
-    Session, TemplateService, TranslatableError, TranslatorService, User, UserService,
-    UserServiceError, WebAuthService, WebHttpResponse,
-};
+use crate::{prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, RateLimitService, RoleColumn, Session, TemplateService, TranslatableError, TranslatorService, User, UserColumn, UserService, UserServiceError, WebAuthService, WebHttpResponse};
 use actix_web::web::Path;
 use actix_web::web::{Data, Form, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -262,38 +258,55 @@ pub fn invoke(
             }
 
             if errors.is_empty() {
-                let mut password = data.password.to_owned();
-                let mut is_need_hash_password = true;
                 let id = if let Some(edit_user) = &edit_user {
-                    if password.is_none() {
-                        is_need_hash_password = false;
-                        password = edit_user.password.to_owned();
-                    }
                     edit_user.id
                 } else {
                     0
                 };
                 let mut user_data = User::default();
                 user_data.id = id;
-                user_data.email = data.email.clone().unwrap();
-                user_data.password = password;
+                user_data.email = data.email.to_owned().unwrap();
                 user_data.locale = data.locale.to_owned();
                 user_data.surname = data.surname.to_owned();
                 user_data.name = data.name.to_owned();
                 user_data.patronymic = data.patronymic.to_owned();
-                let result = u_s.upsert(&mut user_data, is_need_hash_password);
+
+                let columns: Option<Vec<UserColumn>> = Some(vec![
+                    UserColumn::Email,
+                    UserColumn::Locale,
+                    UserColumn::Surname,
+                    UserColumn::Name,
+                    UserColumn::Patronymic,
+                ]);
+
+                let result = u_s.upsert(&user_data, &columns);
 
                 if let Err(error) = result {
                     if error.eq(&UserServiceError::DuplicateEmail) {
                         errors.email.push(error.translate(lang, tr_s));
-                    } else if error.eq(&UserServiceError::PasswordHashFail) {
-                        errors.password.push(error.translate(lang, tr_s));
                     } else {
                         errors.form.push(error.translate(lang, tr_s));
                     }
-                } else {
-                    is_done = true;
                 }
+
+                if let Some(password) = &data.password {
+                    let result = if let Some(edit_user) = &edit_user {
+                        u_s.update_password_by_id(edit_user.id, password)
+                    } else {
+                        let email = data.email.to_owned().unwrap();
+                        u_s.update_password_by_email(&email, password)
+                    };
+
+                    if let Err(error) = result {
+                        if error.eq(&UserServiceError::PasswordHashFail) {
+                            errors.password.push(error.translate(lang, tr_s));
+                        } else {
+                            errors.form.push(error.translate(lang, tr_s));
+                        }
+                    }
+                }
+
+                is_done = errors.is_empty();
             }
         } else {
             let ttl_message = rl_s.ttl_message_throw_http(tr_s, lang, &rate_limit_key)?;

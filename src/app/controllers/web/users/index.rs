@@ -1,7 +1,7 @@
 use crate::app::controllers::web::{generate_2_offset_pagination_array, get_context_data, get_template_context};
 use crate::{
     prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService, LocaleService, Session, TemplateService, TranslatorService, User, UserService,
-    WebAuthService, WebHttpResponse, UserMysqlRepositoryFilter, UserMysqlRepositoryPaginateParams, UserMysqlRepositorySort
+    WebAuthService, WebHttpResponse, UserFilter, UserPaginateParams, UserSort
 };
 use actix_web::web::{Data, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -66,9 +66,9 @@ pub async fn invoke(
     let page = query.page.unwrap();
     let per_page = query.per_page.unwrap();
     let page_str = page.to_string();
-    let filters: Vec<UserMysqlRepositoryFilter> = query.get_filters();
+    let filters: Vec<UserFilter> = query.get_filters();
     let sort = query.get_sort();
-    let pagination_params = UserMysqlRepositoryPaginateParams::new(page, per_page, filters, sort);
+    let pagination_params = UserPaginateParams::new(page, per_page, filters, sort);
     let users = user_service.paginate_throw_http(&pagination_params)?;
     let total_pages = max(users.total_pages, 1);
     let total_pages_str = total_pages.to_string();
@@ -117,7 +117,7 @@ pub async fn invoke(
     }
 
     let mut sort_options: Vec<Value> = Vec::new();
-    for sort_enum in UserMysqlRepositorySort::iter() {
+    for sort_enum in UserSort::iter() {
         let value = sort_enum.to_string();
         let mut key = "page.users.index.sort.".to_string();
         key.push_str(&value);
@@ -227,7 +227,7 @@ impl IndexQuery {
         prepare_value!(self.locale);
         prepare_value!(self.sort);
         if self.sort.is_none() {
-            self.sort = Some(UserMysqlRepositorySort::IdDesc.to_string());
+            self.sort = Some(UserSort::IdDesc.to_string());
         }
     }
     pub fn validate(
@@ -275,21 +275,21 @@ impl IndexQuery {
         result.push_str(&url);
         Ok(result)
     }
-    pub fn get_filters(&self) -> Vec<UserMysqlRepositoryFilter> {
-        let mut filters: Vec<UserMysqlRepositoryFilter> = Vec::new();
+    pub fn get_filters(&self) -> Vec<UserFilter> {
+        let mut filters: Vec<UserFilter> = Vec::new();
 
         if let Some(value) = &self.search {
-            filters.push(UserMysqlRepositoryFilter::Search(value));
+            filters.push(UserFilter::Search(value));
         }
         if let Some(value) = &self.locale {
-            filters.push(UserMysqlRepositoryFilter::Locale(value));
+            filters.push(UserFilter::Locale(value));
         }
         filters
     }
-    pub fn get_sort(&self) -> Option<UserMysqlRepositorySort> {
+    pub fn get_sort(&self) -> Option<UserSort> {
         let mut sort = None;
         if let Some(sort_) = &self.sort {
-            if let Ok(sort__) = UserMysqlRepositorySort::from_str(sort_) {
+            if let Ok(sort__) = UserSort::from_str(sort_) {
                 sort = Some(sort__);
             }
         }

@@ -1,4 +1,7 @@
-use crate::{PaginationResult, Role, RoleMysqlRepository, RoleMysqlRepositoryError, RoleMysqlRepositoryPaginateParams, TranslatableError, TranslatorService, UserServiceError};
+use crate::{
+    PaginationResult, Role, RoleColumn, RoleMysqlRepository, RolePaginateParams,
+    RoleRepositoryError, TranslatableError, TranslatorService, UserServiceError,
+};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use strum_macros::{Display, EnumString};
@@ -46,9 +49,9 @@ impl RoleService {
         Err(error::ErrorNotFound(""))
     }
 
-    fn match_error(&self, e: RoleMysqlRepositoryError) -> RoleServiceError {
+    fn match_error(&self, e: RoleRepositoryError) -> RoleServiceError {
         match e {
-            RoleMysqlRepositoryError::DuplicateCode => RoleServiceError::DuplicateCode,
+            RoleRepositoryError::DuplicateCode => RoleServiceError::DuplicateCode,
             _ => RoleServiceError::Fail,
         }
     }
@@ -60,14 +63,22 @@ impl RoleService {
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn update(&self, data: &mut Role) -> Result<(), RoleServiceError> {
+    pub fn update(
+        &self,
+        data: &mut Role,
+        columns: &Option<Vec<RoleColumn>>,
+    ) -> Result<(), RoleServiceError> {
         self.role_repository
             .get_ref()
-            .update(data)
+            .update(data, columns)
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn upsert(&self, data: &mut Role) -> Result<(), RoleServiceError> {
+    pub fn upsert(
+        &self,
+        data: &mut Role,
+        columns: &Option<Vec<RoleColumn>>,
+    ) -> Result<(), RoleServiceError> {
         if data.id == 0 {
             self.role_repository
                 .get_ref()
@@ -76,7 +87,7 @@ impl RoleService {
         } else {
             self.role_repository
                 .get_ref()
-                .update(data)
+                .update(data, columns)
                 .map_err(|e| self.match_error(e))
         }
     }
@@ -107,7 +118,7 @@ impl RoleService {
 
     pub fn paginate(
         &self,
-        params: &RoleMysqlRepositoryPaginateParams,
+        params: &RolePaginateParams,
     ) -> Result<PaginationResult<Role>, RoleServiceError> {
         self.role_repository
             .get_ref()
@@ -117,7 +128,7 @@ impl RoleService {
 
     pub fn paginate_throw_http(
         &self,
-        params: &RoleMysqlRepositoryPaginateParams,
+        params: &RolePaginateParams,
     ) -> Result<PaginationResult<Role>, Error> {
         self.paginate(params)
             .map_err(|_| error::ErrorInternalServerError(""))
@@ -141,9 +152,7 @@ impl TranslatableError for RoleServiceError {
             Self::DuplicateCode => {
                 translate_service.translate(lang, "error.RoleServiceError.DuplicateCode")
             }
-            Self::NotFound => {
-                translate_service.translate(lang, "error.RoleServiceError.NotFound")
-            }
+            Self::NotFound => translate_service.translate(lang, "error.RoleServiceError.NotFound"),
             _ => translate_service.translate(lang, "error.RoleServiceError.Fail"),
         }
     }

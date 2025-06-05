@@ -33,7 +33,7 @@ impl AuthService {
     pub fn login_by_password(&self, email: &str, password: &str) -> Result<u64, AuthServiceError> {
         let hash_service = self.hash_service.get_ref();
         let user_repository = self.user_repository.get_ref();
-        let user = user_repository.first_by_email(email).map_err(|e| {
+        let user = user_repository.first_credentials_by_email(email).map_err(|e| {
             log::error!("AuthService::login_by_password - {email} - {e}");
             return AuthServiceError::Fail;
         })?;
@@ -68,15 +68,22 @@ impl AuthService {
         }
         let user_service = self.user_service.get_ref();
 
-        let mut user = User::empty(data.email.to_owned());
-        user.password = Some(data.password.to_owned());
+        let user = User::empty(data.email.to_owned());
 
-        user_service.create(&mut user, true).map_err(|e| {
+        user_service.create(&user).map_err(|e| {
+            log::error!("AuthService::register_by_credentials - {e}");
+            match e {
+                UserServiceError::DbConnectionFail => AuthServiceError::DbConnectionFail,
+                UserServiceError::DuplicateEmail => AuthServiceError::DuplicateEmail,
+                _ => AuthServiceError::InsertNewUserFail,
+            }
+        })?;
+
+        user_service.update_password_by_email(&data.email, &data.password).map_err(|e| {
             log::error!("AuthService::register_by_credentials - {e}");
             match e {
                 UserServiceError::DbConnectionFail => AuthServiceError::DbConnectionFail,
                 UserServiceError::PasswordHashFail => AuthServiceError::PasswordHashFail,
-                UserServiceError::DuplicateEmail => AuthServiceError::DuplicateEmail,
                 _ => AuthServiceError::InsertNewUserFail,
             }
         })?;

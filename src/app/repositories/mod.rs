@@ -1,10 +1,13 @@
 pub mod role;
 pub mod user;
 
-use r2d2_mysql::mysql::{Params, Row};
 pub use self::role::*;
 pub use self::user::*;
+use r2d2_mysql::mysql::{Params, Row, Value};
 use serde_derive::{Deserialize, Serialize};
+use std::fmt::Display;
+use strum::{VariantNames};
+use crate::UserColumn;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PaginationResult<U> {
@@ -29,29 +32,154 @@ impl<U> PaginationResult<U> {
 
 pub struct FromDbRowError;
 
-pub trait ToMysqlDto {
-    fn mysql_select_columns() -> String {
+pub trait MysqlAllColumnEnum {
+    fn mysql_all_select_columns() -> String {
         "".to_string()
     }
-    fn mysql_insert_columns() -> String {
+    fn mysql_all_insert_columns() -> String {
         "".to_string()
     }
-    fn to_insert_mysql_params(&self) -> Params {
-        Params::Empty
-    }
-    fn mysql_update_columns() -> String {
+    fn mysql_all_update_columns() -> String {
         "".to_string()
     }
-    fn to_update_mysql_params(&self) -> Params {
-        Params::Empty
+}
+
+pub trait MysqlColumnEnum {
+    fn mysql_select_columns(&self) -> String {
+        "".to_string()
+    }
+    fn mysql_insert_columns(&self) -> String {
+        "".to_string()
+    }
+    fn mysql_update_columns(&self) -> String {
+        "".to_string()
+    }
+}
+
+pub trait ToMysqlDto<T>
+where
+    T: Display + VariantNames + strum::IntoEnumIterator,
+{
+    fn push_mysql_param_to_vec(
+        &self,
+        column: &T,
+        params: &mut Vec<(String, Value)>,
+    ) {
+    }
+    fn push_mysql_params_to_vec(
+        &self,
+        columns: &Option<Vec<T>>,
+        params: &mut Vec<(String, Value)>,
+    ) {
+        if let Some(columns) = columns {
+            for column in columns.iter() {
+                self.push_mysql_param_to_vec(&column, params);
+            }
+        } else {
+            for column in T::iter() {
+                self.push_mysql_param_to_vec(&column, params);
+            }
+        }
+    }
+    fn push_all_mysql_params_to_vec(
+        &self,
+        params: &mut Vec<(String, Value)>,
+    ) {
+        for column in T::iter() {
+            self.push_mysql_param_to_vec(&column, params);
+        }
     }
 }
 
 pub trait FromMysqlDto {
-    fn take_from_mysql_row(row: &mut Row) -> Result<Self, FromDbRowError> where Self: Sized;
+    fn take_from_mysql_row(row: &mut Row) -> Result<Self, FromDbRowError>
+    where
+        Self: Sized;
 }
 
-pub fn make_pagination_mysql_query(table: &str, columns: &str, where_: &str, order_: &str) -> String {
+impl<T: Display + VariantNames + MysqlColumnEnum> MysqlAllColumnEnum for T
+{
+    fn mysql_all_select_columns() -> String {
+        T::VARIANTS.join(",").to_string()
+    }
+    fn mysql_all_insert_columns() -> String {
+        let columns = Self::mysql_all_select_columns();
+        let set = Self::mysql_all_update_columns();
+
+        let mut s = "(".to_string();
+        s.push_str(&columns);
+        s.push_str(") VALUES (");
+        s.push_str(&set);
+        s.push_str(")");
+        s
+    }
+    fn mysql_all_update_columns() -> String {
+        let t: Vec<String> = T::VARIANTS
+            .iter()
+            .map(|t| {
+                let mut s = t.to_string();
+                s.push_str("=:");
+                s.push_str(t);
+                s
+            })
+            .collect();
+        t.join(",").to_string()
+    }
+}
+
+impl<T> MysqlColumnEnum for Option<Vec<T>>
+where
+    T: Display + VariantNames + MysqlAllColumnEnum,
+{
+    fn mysql_select_columns(&self) -> String {
+        // id,email,locale,surname,name,patronymic,is_super_admin
+        if let Some(vec) = self {
+            if vec.len() > 0 {
+                let t: Vec<String> = vec.iter().map(|t| t.to_string()).collect();
+                return t.join(",").to_string();
+            }
+        }
+        T::mysql_all_select_columns()
+    }
+    fn mysql_insert_columns(&self) -> String {
+        // (email, locale, surname, name, patronymic) VALUES (:email, :locale, :surname, :name, :patronymic)
+        let columns = self.mysql_select_columns();
+        let set = self.mysql_update_columns();
+
+        let mut s = "(".to_string();
+        s.push_str(&columns);
+        s.push_str(") VALUES (");
+        s.push_str(&set);
+        s.push_str(")");
+        s
+    }
+    fn mysql_update_columns(&self) -> String {
+        // email=:email, locale=:locale, surname=:surname, name=:name, patronymic=:patronymic
+        if let Some(vec) = self {
+            if vec.len() > 0 {
+                let t: Vec<String> = vec
+                    .iter()
+                    .map(|t| {
+                        let mut s = t.to_string();
+                        s.push_str("=:");
+                        s.push_str(t.to_string().as_str());
+                        s
+                    })
+                    .collect();
+                return t.join(",").to_string();
+            }
+        }
+
+        T::mysql_all_update_columns()
+    }
+}
+
+pub fn make_pagination_mysql_query(
+    table: &str,
+    columns: &str,
+    where_: &str,
+    order_: &str,
+) -> String {
     let mut sql = "SELECT ".to_string();
     sql.push_str(columns);
     sql.push_str(", COUNT(*) OVER () as total_records FROM ");

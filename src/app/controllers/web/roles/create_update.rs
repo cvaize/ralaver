@@ -1,7 +1,7 @@
 use crate::app::controllers::web::{get_context_data, get_template_context};
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString as MMLS};
 use crate::app::validator::rules::required::Required;
-use crate::{prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, Permission, RateLimitService, Role, RoleService, RoleServiceError, Session, TemplateService, TranslatableError, TranslatorService, User, WebAuthService, WebHttpResponse};
+use crate::{prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, Permission, RateLimitService, Role, RoleColumn, RoleService, RoleServiceError, Session, TemplateService, TranslatableError, TranslatorService, User, UserColumn, WebAuthService, WebHttpResponse};
 use actix_web::web::Path;
 use actix_web::web::{Data, ReqData};
 use crate::libs::actix_web::types::form::Form;
@@ -219,7 +219,15 @@ pub fn invoke(
                 role_data.name = data.name.clone().unwrap();
                 role_data.description = data.description.to_owned();
                 role_data.permissions = data.permissions.to_owned();
-                let result = r_s.upsert(&mut role_data);
+
+                let columns: Option<Vec<RoleColumn>> = Some(vec![
+                    RoleColumn::Code,
+                    RoleColumn::Name,
+                    RoleColumn::Description,
+                    RoleColumn::Permissions,
+                ]);
+
+                let result = r_s.upsert(&mut role_data, &columns);
 
                 if let Err(error) = result {
                     if error.eq(&RoleServiceError::DuplicateCode) {
@@ -306,9 +314,9 @@ pub fn invoke(
         let mut key = "permission.".to_string();
         key.push_str(variant);
         let mut checked = false;
-        if let Some(permissions_) = &data.permissions {
+        if let Some(val) = &data.permissions {
             let variant_ = variant.to_string();
-            if permissions_.contains(&variant_) {
+            if val.contains(&variant_) {
                 checked = true;
             }
         }

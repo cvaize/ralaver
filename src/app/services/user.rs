@@ -1,4 +1,7 @@
-use crate::{HashService, PaginationResult, User, UserMysqlRepositoryPaginateParams, UserMysqlRepository, UserMysqlRepositoryError, TranslatableError, TranslatorService};
+use crate::{
+    HashService, PaginationResult, RoleColumn, TranslatableError, TranslatorService, User,
+    UserColumn, UserMysqlRepository, UserPaginateParams, UserRepositoryError,
+};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use strum_macros::{Display, EnumString};
@@ -9,7 +12,10 @@ pub struct UserService {
 }
 
 impl UserService {
-    pub fn new(hash_service: Data<HashService>, user_repository: Data<UserMysqlRepository>) -> Self {
+    pub fn new(
+        hash_service: Data<HashService>,
+        user_repository: Data<UserMysqlRepository>,
+    ) -> Self {
         Self {
             hash_service,
             user_repository,
@@ -17,7 +23,10 @@ impl UserService {
     }
 
     pub fn first_by_id(&self, user_id: u64) -> Result<Option<User>, UserServiceError> {
-        self.user_repository.get_ref().first_by_id(user_id).map_err(|e| self.match_error(e))
+        self.user_repository
+            .get_ref()
+            .first_by_id(user_id)
+            .map_err(|e| self.match_error(e))
     }
 
     pub fn first_by_id_throw_http(&self, user_id: u64) -> Result<User, Error> {
@@ -31,7 +40,10 @@ impl UserService {
     }
 
     pub fn first_by_email(&self, email: &str) -> Result<Option<User>, UserServiceError> {
-        self.user_repository.get_ref().first_by_email(email).map_err(|e| self.match_error(e))
+        self.user_repository
+            .get_ref()
+            .first_by_email(email)
+            .map_err(|e| self.match_error(e))
     }
 
     pub fn first_by_email_throw_http(&self, email: &str) -> Result<User, Error> {
@@ -44,38 +56,14 @@ impl UserService {
         Err(error::ErrorNotFound(""))
     }
 
-    pub fn user_data_hash_password_(
-        &self,
-        data: &mut User,
-        is_need_hash_password: bool,
-    ) -> Result<(), UserServiceError> {
-        if is_need_hash_password {
-            let hash_service = self.hash_service.get_ref();
-            if let Some(password) = &data.password {
-                data.password = Some(hash_service.hash_password(password).map_err(|e| {
-                    log::error!("UserService::user_data_hash_password_ - {e}");
-                    UserServiceError::PasswordHashFail
-                })?);
-            }
-        }
-
-        Ok(())
-    }
-
-    fn match_error(&self, e: UserMysqlRepositoryError) -> UserServiceError {
+    fn match_error(&self, e: UserRepositoryError) -> UserServiceError {
         match e {
-            UserMysqlRepositoryError::DuplicateEmail => UserServiceError::DuplicateEmail,
+            UserRepositoryError::DuplicateEmail => UserServiceError::DuplicateEmail,
             _ => UserServiceError::Fail,
         }
     }
 
-    pub fn create(
-        &self,
-        data: &mut User,
-        is_need_hash_password: bool,
-    ) -> Result<(), UserServiceError> {
-        self.user_data_hash_password_(data, is_need_hash_password)?;
-
+    pub fn create(&self, data: &User) -> Result<(), UserServiceError> {
         self.user_repository
             .get_ref()
             .insert(data)
@@ -84,24 +72,20 @@ impl UserService {
 
     pub fn update(
         &self,
-        data: &mut User,
-        is_need_hash_password: bool,
+        data: &User,
+        columns: &Option<Vec<UserColumn>>,
     ) -> Result<(), UserServiceError> {
-        self.user_data_hash_password_(data, is_need_hash_password)?;
-
         self.user_repository
             .get_ref()
-            .update(data)
+            .update(data, columns)
             .map_err(|e| self.match_error(e))
     }
 
     pub fn upsert(
         &self,
-        data: &mut User,
-        is_need_hash_password: bool,
+        data: &User,
+        columns: &Option<Vec<UserColumn>>,
     ) -> Result<(), UserServiceError> {
-        self.user_data_hash_password_(data, is_need_hash_password)?;
-
         if data.id == 0 {
             self.user_repository
                 .get_ref()
@@ -110,9 +94,39 @@ impl UserService {
         } else {
             self.user_repository
                 .get_ref()
-                .update(data)
+                .update(data, columns)
                 .map_err(|e| self.match_error(e))
         }
+    }
+
+    pub fn update_password_by_id(&self, id: u64, password: &str) -> Result<(), UserServiceError> {
+        let hash_service = self.hash_service.get_ref();
+        let password = hash_service.hash_password(password).map_err(|e| {
+            log::error!("UserService::update_password_by_id - {e}");
+            UserServiceError::PasswordHashFail
+        })?;
+
+        self.user_repository
+            .get_ref()
+            .update_password_by_id(id, &password)
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn update_password_by_email(
+        &self,
+        email: &str,
+        password: &str,
+    ) -> Result<(), UserServiceError> {
+        let hash_service = self.hash_service.get_ref();
+        let password = hash_service.hash_password(password).map_err(|e| {
+            log::error!("UserService::update_password_by_id - {e}");
+            UserServiceError::PasswordHashFail
+        })?;
+
+        self.user_repository
+            .get_ref()
+            .update_password_by_email(email, &password)
+            .map_err(|e| self.match_error(e))
     }
 
     pub fn delete_by_id(&self, id: u64) -> Result<(), UserServiceError> {
@@ -141,7 +155,7 @@ impl UserService {
 
     pub fn paginate(
         &self,
-        params: &UserMysqlRepositoryPaginateParams,
+        params: &UserPaginateParams,
     ) -> Result<PaginationResult<User>, UserServiceError> {
         self.user_repository
             .get_ref()
@@ -151,7 +165,7 @@ impl UserService {
 
     pub fn paginate_throw_http(
         &self,
-        params: &UserMysqlRepositoryPaginateParams,
+        params: &UserPaginateParams,
     ) -> Result<PaginationResult<User>, Error> {
         self.paginate(params)
             .map_err(|_| error::ErrorInternalServerError(""))
@@ -167,7 +181,6 @@ pub enum UserServiceError {
     Fail,
 }
 
-
 impl TranslatableError for UserServiceError {
     fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
         match self {
@@ -180,9 +193,7 @@ impl TranslatableError for UserServiceError {
             Self::PasswordHashFail => {
                 translate_service.translate(lang, "error.UserServiceError.PasswordHashFail")
             }
-            Self::NotFound => {
-                translate_service.translate(lang, "error.UserServiceError.NotFound")
-            }
+            Self::NotFound => translate_service.translate(lang, "error.UserServiceError.NotFound"),
             _ => translate_service.translate(lang, "error.UserServiceError.Fail"),
         }
     }

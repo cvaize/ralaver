@@ -27,6 +27,7 @@ pub use connections::Connections;
 pub use mysql_connection::MysqlPool;
 pub use mysql_connection::MysqlPooledConnection;
 pub use services::Services;
+// pub use libs::strum_macros;
 
 fn preparation() -> (Connections, Services) {
     dotenv::dotenv().ok();

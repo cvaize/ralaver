@@ -1,17 +1,44 @@
 use serde::{Deserialize, Serialize};
-use crate::Role;
+use strum_macros::{Display, EnumIter, EnumString, VariantNames};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct User {
     pub id: u64,
     pub email: String,
-    pub password: Option<String>,
     pub locale: Option<String>,
     pub surname: Option<String>,
     pub name: Option<String>,
     pub patronymic: Option<String>,
     pub is_super_admin: bool,
-    pub roles: Option<Vec<Role>>,
+    pub roles_ids: Option<Vec<u64>>,
+}
+
+#[derive(Debug, Clone, Copy, Display, EnumString, Serialize, Deserialize, VariantNames, EnumIter)]
+#[strum(serialize_all = "snake_case")]
+pub enum UserColumn {
+    Id,
+    Email,
+    Locale,
+    Surname,
+    Name,
+    Patronymic,
+    IsSuperAdmin,
+    RolesIds,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct UserCredentials {
+    pub id: u64,
+    pub email: String,
+    pub password: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Display, EnumString, Serialize, Deserialize, VariantNames, EnumIter)]
+#[strum(serialize_all = "snake_case")]
+pub enum UserCredentialsColumn {
+    Id,
+    Email,
+    Password,
 }
 
 impl User {
@@ -48,9 +75,6 @@ impl User {
 
         full_name
     }
-}
-
-impl User {
     pub fn empty(email: String) -> Self {
         let mut entity = Self::default();
         entity.email = email;

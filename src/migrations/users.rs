@@ -10,12 +10,13 @@ pub fn up(_: &Config, connection: &mut MysqlPooledConnection) {
    `surname` VARCHAR(255) NULL DEFAULT NULL,
    `name` VARCHAR(255) NULL DEFAULT NULL,
    `patronymic` VARCHAR(255) NULL DEFAULT NULL,
-   `is_super_admin` BOOLEAN NOT NULL DEFAULT FALSE
+   `is_super_admin` BOOLEAN NOT NULL DEFAULT FALSE,
+   `roles_ids` JSON NULL DEFAULT NULL
 );
 ";
     connection.query_drop(query).unwrap();
     let query = "
-INSERT INTO `users` (`id`, `email`, `is_super_admin`) VALUES (1, 'admin@admin.example', true);
+INSERT INTO `users` (`id`, `email`, `is_super_admin`, `roles_ids`) VALUES (1, 'admin@admin.example', true, '[1]');
 ";
     connection.query_drop(query).unwrap();
 }

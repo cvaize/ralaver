@@ -1,13 +1,17 @@
 use crate::{
-    MysqlPool, MysqlPooledConnection, PaginationResult, User,
     make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query,
     make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query, FromDbRowError,
-    FromMysqlDto, ToMysqlDto,
+    FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum, MysqlPool, MysqlPooledConnection,
+    PaginationResult, ToMysqlDto, User, UserColumn, UserColumnIter, UserCredentials,
+    UserCredentialsColumn,
 };
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;
 use r2d2_mysql::mysql::Value;
 use r2d2_mysql::mysql::{params, Error, Params, Row};
+use std::fmt::Display;
+use std::slice::Iter;
+use strum::{IntoEnumIterator, VariantNames};
 use strum_macros::{Display, EnumIter, EnumString};
 
 pub struct UserMysqlRepository {
@@ -21,21 +25,21 @@ impl UserMysqlRepository {
         Self { table, db_pool }
     }
 
-    fn connection(&self) -> Result<MysqlPooledConnection, UserMysqlRepositoryError> {
+    fn connection(&self) -> Result<MysqlPooledConnection, UserRepositoryError> {
         self.db_pool.get_ref().get().map_err(|e| {
             log::error!("UserRepository::connection - {e}");
-            return UserMysqlRepositoryError::DbConnectionFail;
+            return UserRepositoryError::DbConnectionFail;
         })
     }
 
-    fn row_to_entity(&self, row: &mut Row) -> Result<User, UserMysqlRepositoryError> {
-        User::take_from_mysql_row(row).map_err(|_| UserMysqlRepositoryError::Fail)
+    fn row_to_entity(&self, row: &mut Row) -> Result<User, UserRepositoryError> {
+        User::take_from_mysql_row(row).map_err(|_| UserRepositoryError::Fail)
     }
 
     fn try_row_to_entity(
         &self,
         row: &mut Option<Row>,
-    ) -> Result<Option<User>, UserMysqlRepositoryError> {
+    ) -> Result<Option<User>, UserRepositoryError> {
         if let Some(row) = row {
             return Ok(Some(self.row_to_entity(row)?));
         }
@@ -43,7 +47,7 @@ impl UserMysqlRepository {
         Ok(None)
     }
 
-    fn try_row_is_exists(&self, row: &Option<Row>) -> Result<bool, UserMysqlRepositoryError> {
+    fn try_row_is_exists(&self, row: &Option<Row>) -> Result<bool, UserRepositoryError> {
         if let Some(row) = row {
             return Ok(row.get("is_exists").unwrap_or(false));
         }
@@ -51,32 +55,61 @@ impl UserMysqlRepository {
         Ok(false)
     }
 
-    pub fn first_by_id(&self, id: u64) -> Result<Option<User>, UserMysqlRepositoryError> {
-        let columns = User::mysql_select_columns();
+    fn row_to_credentials(&self, row: &mut Row) -> Result<UserCredentials, UserRepositoryError> {
+        UserCredentials::take_from_mysql_row(row).map_err(|_| UserRepositoryError::Fail)
+    }
+
+    fn try_row_to_credentials(
+        &self,
+        row: &mut Option<Row>,
+    ) -> Result<Option<UserCredentials>, UserRepositoryError> {
+        if let Some(row) = row {
+            return Ok(Some(self.row_to_credentials(row)?));
+        }
+
+        Ok(None)
+    }
+
+    pub fn first_by_id(&self, id: u64) -> Result<Option<User>, UserRepositoryError> {
+        let columns = UserColumn::mysql_all_select_columns();
         let query = make_select_mysql_query(&self.table, &columns, "id=:id", "");
         let mut conn = self.connection()?;
         let mut row: Option<Row> = conn
             .exec_first(query, params! {"id" => id})
-            .map_err(|_| UserMysqlRepositoryError::Fail)?;
+            .map_err(|_| UserRepositoryError::Fail)?;
 
         self.try_row_to_entity(&mut row)
     }
 
-    pub fn first_by_email(&self, email: &str) -> Result<Option<User>, UserMysqlRepositoryError> {
-        let columns = User::mysql_select_columns();
+    pub fn first_by_email(&self, email: &str) -> Result<Option<User>, UserRepositoryError> {
+        let columns = UserColumn::mysql_all_select_columns();
         let query = make_select_mysql_query(&self.table, &columns, "email=:email", "");
         let mut conn = self.connection()?;
         let mut row: Option<Row> = conn
             .exec_first(query, params! {"email" => email})
-            .map_err(|_| UserMysqlRepositoryError::Fail)?;
+            .map_err(|_| UserRepositoryError::Fail)?;
 
         self.try_row_to_entity(&mut row)
     }
 
+    pub fn first_credentials_by_email(
+        &self,
+        email: &str,
+    ) -> Result<Option<UserCredentials>, UserRepositoryError> {
+        let columns = UserCredentialsColumn::mysql_all_select_columns();
+        let query = make_select_mysql_query(&self.table, &columns, "email=:email", "");
+        let mut conn = self.connection()?;
+        let mut row: Option<Row> = conn
+            .exec_first(query, params! {"email" => email})
+            .map_err(|_| UserRepositoryError::Fail)?;
+
+        self.try_row_to_credentials(&mut row)
+    }
+
     pub fn paginate(
         &self,
-        params: &UserMysqlRepositoryPaginateParams,
-    ) -> Result<PaginationResult<User>, UserMysqlRepositoryError> {
+        params: &UserPaginateParams,
+    ) -> Result<PaginationResult<User>, UserRepositoryError> {
         let mut conn = self.connection()?;
         let page = params.page;
         let per_page = params.per_page;
@@ -85,8 +118,8 @@ impl UserMysqlRepository {
         let mut mysql_where: String = String::new();
         let mut mysql_order: String = String::new();
         let mut mysql_params: Vec<(String, Value)> = vec![
-            (String::from("per_page"), Value::Int(per_page)),
-            (String::from("offset"), Value::Int(offset)),
+            (String::from("per_page"), Value::from(per_page)),
+            (String::from("offset"), Value::from(offset)),
         ];
 
         let mut is_and = false;
@@ -105,14 +138,14 @@ impl UserMysqlRepository {
         }
 
         let table = &self.table;
-        let columns = User::mysql_select_columns();
+        let columns = UserColumn::mysql_all_select_columns();
         let query = make_pagination_mysql_query(table, &columns, &mysql_where, &mysql_order);
 
         let rows = conn
             .exec_iter(&query, Params::from(mysql_params))
             .map_err(|e| {
                 log::error!("UserRepository::paginate - {e}");
-                UserMysqlRepositoryError::Fail
+                UserRepositoryError::Fail
             })?;
 
         let mut records: Vec<User> = Vec::new();
@@ -134,85 +167,108 @@ impl UserMysqlRepository {
         ))
     }
 
-    pub fn exists_by_email(&self, email: &str) -> Result<bool, UserMysqlRepositoryError> {
+    pub fn exists_by_email(&self, email: &str) -> Result<bool, UserRepositoryError> {
         let mut conn = self.connection()?;
         let table = &self.table;
         let query = make_is_exists_mysql_query(&table, "email=:email");
         let row: Option<Row> = conn
             .exec_first(query, params! { "email" => email })
-            .map_err(|_| UserMysqlRepositoryError::Fail)?;
+            .map_err(|_| UserRepositoryError::Fail)?;
 
         self.try_row_is_exists(&row)
     }
 
-    pub fn insert(&self, data: &User) -> Result<(), UserMysqlRepositoryError> {
+    pub fn insert(&self, data: &User) -> Result<(), UserRepositoryError> {
         let mut conn = self.connection()?;
-        let columns = User::mysql_insert_columns();
-        let params = data.to_insert_mysql_params();
-        let query = make_insert_mysql_query(&self.table, &columns);
-        conn.exec_drop(query, params)
+        let columns_str = UserColumn::mysql_all_select_columns();
+        let mut params: Vec<(String, Value)> = Vec::new();
+        data.push_all_mysql_params_to_vec(&mut params);
+        let query = make_insert_mysql_query(&self.table, &columns_str);
+        conn.exec_drop(query, Params::from(params))
             .map_err(|e| match &e {
                 Error::MySqlError(e_) => {
                     if e_.code == 1062 {
-                        UserMysqlRepositoryError::DuplicateEmail
+                        UserRepositoryError::DuplicateEmail
                     } else {
                         log::error!("UserRepository::insert - {e}");
-                        UserMysqlRepositoryError::Fail
+                        UserRepositoryError::Fail
                     }
                 }
                 _ => {
                     log::error!("UserRepository::insert - {e}");
-                    UserMysqlRepositoryError::Fail
+                    UserRepositoryError::Fail
                 }
             })?;
 
         Ok(())
     }
 
-    pub fn delete_by_id(&self, id: u64) -> Result<(), UserMysqlRepositoryError> {
+    pub fn delete_by_id(&self, id: u64) -> Result<(), UserRepositoryError> {
         let mut conn = self.connection()?;
         let query = make_delete_mysql_query(&self.table, "id=:id");
         conn.exec_drop(query, params! { "id" => id }).map_err(|e| {
             log::error!("UserRepository::delete_by_id - {e}");
-            return UserMysqlRepositoryError::Fail;
+            return UserRepositoryError::Fail;
         })?;
 
         Ok(())
     }
 
-    pub fn delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), UserMysqlRepositoryError> {
+    pub fn delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), UserRepositoryError> {
         let mut conn = self.connection()?;
         let query = make_delete_mysql_query(&self.table, "id IN (:id)");
         let params = ids.iter().map(|id| params! { "id" => id });
         conn.exec_batch(query, params).map_err(|e| {
             log::error!("UserRepository::delete_by_ids - {e}");
-            return UserMysqlRepositoryError::Fail;
+            return UserRepositoryError::Fail;
         })?;
 
         Ok(())
     }
 
-    pub fn delete_by_email(&self, email: &str) -> Result<(), UserMysqlRepositoryError> {
+    pub fn delete_by_email(&self, email: &str) -> Result<(), UserRepositoryError> {
         let mut conn = self.connection()?;
         let query = make_delete_mysql_query(&self.table, "email=:email");
-        conn.exec_drop(query, params! { "email" => email }).map_err(|e| {
-            log::error!("UserRepository::delete_by_email - {e}");
-            return UserMysqlRepositoryError::Fail;
+        conn.exec_drop(query, params! { "email" => email })
+            .map_err(|e| {
+                log::error!("UserRepository::delete_by_email - {e}");
+                return UserRepositoryError::Fail;
+            })?;
+
+        Ok(())
+    }
+
+    pub fn update<'a>(
+        &self,
+        data: &User,
+        columns: &Option<Vec<UserColumn>>,
+    ) -> Result<(), UserRepositoryError> {
+        let mut conn = self.connection()?;
+        let columns_str = columns.mysql_update_columns();
+        let mut params: Vec<(String, Value)> = vec![(String::from("id"), Value::from(data.id))];
+        data.push_mysql_params_to_vec(columns, &mut params);
+
+        let query = make_update_mysql_query(&self.table, &columns_str, "id=:id");
+        conn.exec_drop(query, Params::from(params)).map_err(|e| {
+            log::error!("UserRepository::update - {e}");
+            return UserRepositoryError::Fail;
         })?;
 
         Ok(())
     }
 
-    pub fn update<'a>(&self, data: &User) -> Result<(), UserMysqlRepositoryError> {
+    pub fn update_password_by_id(
+        &self,
+        id: u64,
+        password: &str,
+    ) -> Result<(), UserRepositoryError> {
         let mut conn = self.connection()?;
-        let columns = User::mysql_update_columns();
-        let params = data.to_update_mysql_params();
-
-        let query = make_update_mysql_query(&self.table, &columns, "id=:id");
-        conn.exec_drop(query, params).map_err(|e| {
-            log::error!("UserRepository::update - {e}");
-            return UserMysqlRepositoryError::Fail;
-        })?;
+        let query = make_update_mysql_query(&self.table, "password=:password", "id=:id");
+        conn.exec_drop(query, params! { "id" => id, "password" => password })
+            .map_err(|e| {
+                log::error!("UserRepository::update_password_by_id - {e}");
+                return UserRepositoryError::Fail;
+            })?;
 
         Ok(())
     }
@@ -221,13 +277,13 @@ impl UserMysqlRepository {
         &self,
         email: &str,
         password: &str,
-    ) -> Result<(), UserMysqlRepositoryError> {
+    ) -> Result<(), UserRepositoryError> {
         let mut conn = self.connection()?;
         let query = make_update_mysql_query(&self.table, "password=:password", "email=:email");
         conn.exec_drop(query, params! { "email" => email, "password" => password })
             .map_err(|e| {
                 log::error!("UserRepository::update_password_by_email - {e}");
-                return UserMysqlRepositoryError::Fail;
+                return UserRepositoryError::Fail;
             })?;
 
         Ok(())
@@ -235,7 +291,7 @@ impl UserMysqlRepository {
 }
 
 #[derive(Debug, Clone, Copy, Display, EnumString)]
-pub enum UserMysqlRepositoryError {
+pub enum UserRepositoryError {
     DbConnectionFail,
     DuplicateEmail,
     NotFound,
@@ -243,14 +299,14 @@ pub enum UserMysqlRepositoryError {
 }
 
 #[derive(Debug)]
-pub enum UserMysqlRepositoryFilter<'a> {
+pub enum UserFilter<'a> {
     Id(u64),
     Email(&'a str),
     Search(&'a str),
     Locale(&'a str),
 }
 
-impl UserMysqlRepositoryFilter<'_> {
+impl UserFilter<'_> {
     pub fn push_params_to_mysql_query(&self, query: &mut String) {
         match self {
             Self::Id(_) => query.push_str("id=:id"),
@@ -263,24 +319,24 @@ impl UserMysqlRepositoryFilter<'_> {
     pub fn push_params_to_vec(&self, params: &mut Vec<(String, Value)>) {
         match self {
             Self::Id(value) => {
-                params.push(("id".to_string(), Value::UInt(value.to_owned())));
+                params.push(("id".to_string(), Value::from(value.to_owned())));
             }
             Self::Email(value) => {
                 params.push((
                     "email".to_string(),
-                    Value::Bytes(value.to_string().into_bytes()),
+                    Value::from(value.to_string().into_bytes()),
                 ));
             }
             Self::Search(value) => {
                 let mut s = "%".to_string();
                 s.push_str(value);
                 s.push_str("%");
-                params.push(("search".to_string(), Value::Bytes(s.into_bytes())));
+                params.push(("search".to_string(), Value::from(s.into_bytes())));
             }
             Self::Locale(value) => {
                 params.push((
                     "locale".to_string(),
-                    Value::Bytes(value.to_string().into_bytes()),
+                    Value::from(value.to_string().into_bytes()),
                 ));
             }
         }
@@ -289,7 +345,7 @@ impl UserMysqlRepositoryFilter<'_> {
 
 #[derive(Debug, Display, EnumString, EnumIter)]
 #[strum(serialize_all = "snake_case")]
-pub enum UserMysqlRepositorySort {
+pub enum UserSort {
     IdAsc,
     IdDesc,
     EmailAsc,
@@ -304,7 +360,7 @@ pub enum UserMysqlRepositorySort {
     FullNameDesc,
 }
 
-impl UserMysqlRepositorySort {
+impl UserSort {
     pub fn push_params_to_mysql_query(&self, query: &mut String) {
         match self {
             Self::IdAsc => query.push_str("id ASC"),
@@ -326,19 +382,19 @@ impl UserMysqlRepositorySort {
 }
 
 #[derive(Debug)]
-pub struct UserMysqlRepositoryPaginateParams<'a> {
+pub struct UserPaginateParams<'a> {
     pub page: i64,
     pub per_page: i64,
-    pub filters: Vec<UserMysqlRepositoryFilter<'a>>,
-    pub sort: Option<UserMysqlRepositorySort>,
+    pub filters: Vec<UserFilter<'a>>,
+    pub sort: Option<UserSort>,
 }
 
-impl<'a> UserMysqlRepositoryPaginateParams<'a> {
+impl<'a> UserPaginateParams<'a> {
     pub fn new(
         page: i64,
         per_page: i64,
-        filters: Vec<UserMysqlRepositoryFilter<'a>>,
-        sort: Option<UserMysqlRepositorySort>,
+        filters: Vec<UserFilter<'a>>,
+        sort: Option<UserSort>,
     ) -> Self {
         Self {
             page,
@@ -367,54 +423,119 @@ impl<'a> UserMysqlRepositoryPaginateParams<'a> {
     }
 }
 
-impl ToMysqlDto for User {
-    fn mysql_select_columns() -> String {
-        "id,email,password,locale,surname,name,patronymic,is_super_admin".to_string()
-    }
-    fn mysql_insert_columns() -> String {
-        "(email, password, locale, surname, name, patronymic) VALUES (:email, :password, :locale, :surname, :name, :patronymic)".to_string()
-    }
-    fn to_insert_mysql_params(&self) -> Params {
-        params! {
-            "email" => &self.email,
-            "password" => &self.password,
-            "locale" => &self.locale,
-            "surname" => &self.surname,
-            "name" => &self.name,
-            "patronymic" => &self.patronymic,
-        }
-    }
-    fn mysql_update_columns() -> String {
-        "email=:email, password=:password, locale=:locale, surname=:surname, name=:name, patronymic=:patronymic".to_string()
-    }
-    fn to_update_mysql_params(&self) -> Params {
-        params! {
-            "id" => &self.id,
-            "email" => &self.email,
-            "password" => &self.password,
-            "locale" => &self.locale,
-            "surname" => &self.surname,
-            "name" => &self.name,
-            "patronymic" => &self.patronymic,
+impl ToMysqlDto<UserColumn> for User {
+    fn push_mysql_param_to_vec(&self, column: &UserColumn, params: &mut Vec<(String, Value)>) {
+        match column {
+            UserColumn::Id => params.push((column.to_string(), Value::from(self.id.to_owned()))),
+            UserColumn::Email => {
+                params.push((column.to_string(), Value::from(self.email.to_owned())))
+            }
+            UserColumn::Locale => {
+                params.push((column.to_string(), Value::from(self.locale.to_owned())))
+            }
+            UserColumn::Surname => {
+                params.push((column.to_string(), Value::from(self.surname.to_owned())))
+            }
+            UserColumn::Name => {
+                params.push((column.to_string(), Value::from(self.name.to_owned())))
+            }
+            UserColumn::Patronymic => {
+                params.push((column.to_string(), Value::from(self.patronymic.to_owned())))
+            }
+            UserColumn::IsSuperAdmin => params.push((
+                column.to_string(),
+                Value::from(self.is_super_admin.to_owned()),
+            )),
+            UserColumn::RolesIds => {
+                let mut roles_ids: Option<String> = None;
+
+                if let Some(val) = &self.roles_ids {
+                    let val: serde_json::Result<String> = serde_json::to_string(&val);
+                    if let Ok(val) = val {
+                        roles_ids = Some(val);
+                    }
+                }
+                params.push((column.to_string(), Value::from(roles_ids)))
+            }
         }
     }
 }
 
 impl FromMysqlDto for User {
     fn take_from_mysql_row(row: &mut Row) -> Result<Self, FromDbRowError> {
+        let mut roles_ids: Option<Vec<u64>> = None;
+
+        if let Some(val) = row.take::<String, &str>(UserColumn::RolesIds.to_string().as_str()) {
+            let val: serde_json::Result<Vec<u64>> = serde_json::from_str(&val);
+            if let Ok(val) = val {
+                roles_ids = Some(val);
+            }
+        }
         Ok(Self {
-            id: row.take("id").ok_or(FromDbRowError)?,
-            email: row.take("email").ok_or(FromDbRowError)?,
-            password: row.take("password").unwrap_or(None),
-            locale: row.take("locale").unwrap_or(None),
-            surname: row.take("surname").unwrap_or(None),
-            name: row.take("name").unwrap_or(None),
-            patronymic: row.take("patronymic").unwrap_or(None),
-            is_super_admin: row.take("is_super_admin").unwrap_or(false),
-            roles: None
+            id: row
+                .take(UserColumn::Id.to_string().as_str())
+                .ok_or(FromDbRowError)?,
+            email: row
+                .take(UserColumn::Email.to_string().as_str())
+                .ok_or(FromDbRowError)?,
+            locale: row
+                .take(UserColumn::Locale.to_string().as_str())
+                .unwrap_or(None),
+            surname: row
+                .take(UserColumn::Surname.to_string().as_str())
+                .unwrap_or(None),
+            name: row
+                .take(UserColumn::Name.to_string().as_str())
+                .unwrap_or(None),
+            patronymic: row
+                .take(UserColumn::Patronymic.to_string().as_str())
+                .unwrap_or(None),
+            is_super_admin: row
+                .take(UserColumn::IsSuperAdmin.to_string().as_str())
+                .unwrap_or(false),
+            roles_ids,
         })
     }
 }
+
+impl ToMysqlDto<UserCredentialsColumn> for UserCredentials {
+    fn push_mysql_param_to_vec(
+        &self,
+        column: &UserCredentialsColumn,
+        params: &mut Vec<(String, Value)>,
+    ) {
+        match column {
+            UserCredentialsColumn::Id => {
+                params.push((column.to_string(), Value::from(self.id.to_owned())))
+            }
+            UserCredentialsColumn::Email => {
+                params.push((column.to_string(), Value::from(self.email.to_owned())))
+            }
+            UserCredentialsColumn::Password => {
+                params.push((column.to_string(), Value::from(self.password.to_owned())));
+            }
+        }
+    }
+}
+
+impl FromMysqlDto for UserCredentials {
+    fn take_from_mysql_row(row: &mut Row) -> Result<Self, FromDbRowError> {
+        Ok(Self {
+            id: row
+                .take(UserCredentialsColumn::Id.to_string().as_str())
+                .ok_or(FromDbRowError)?,
+            email: row
+                .take(UserCredentialsColumn::Email.to_string().as_str())
+                .ok_or(FromDbRowError)?,
+            password: row
+                .take(UserCredentialsColumn::Password.to_string().as_str())
+                .unwrap_or(None),
+        })
+    }
+}
+
+impl MysqlColumnEnum for UserColumn {}
+impl MysqlColumnEnum for UserCredentialsColumn {}
 
 #[cfg(test)]
 mod tests {
@@ -466,7 +587,7 @@ mod tests {
         let (_, all_services) = preparation();
         let user_rep = all_services.user_repository.get_ref();
 
-        let users = user_rep.paginate(&UserMysqlRepositoryPaginateParams::one()).unwrap();
+        let users = user_rep.paginate(&UserPaginateParams::one()).unwrap();
         assert_eq!(users.page, 1);
     }
 
@@ -588,7 +709,7 @@ mod tests {
         let user = User::empty(email.to_string());
         user_rep.insert(&user).unwrap();
 
-        let user = user_rep.first_by_email(email);
+        let user = user_rep.first_credentials_by_email(email);
         let mut is_exists = false;
         if let Ok(user) = user {
             if let Some(user) = user {
@@ -600,7 +721,7 @@ mod tests {
 
         user_rep.update_password_by_email(email, email).unwrap();
 
-        let user = user_rep.first_by_email(email);
+        let user = user_rep.first_credentials_by_email(email);
         let mut is_exists = false;
         if let Ok(user) = user {
             if let Some(user) = user {
@@ -647,16 +768,16 @@ mod tests {
 
         // Search exists
         let search = "paginate_with_filters";
-        let mut params = UserMysqlRepositoryPaginateParams::one();
-        params.filters.push(UserMysqlRepositoryFilter::Search(search));
+        let mut params = UserPaginateParams::one();
+        params.filters.push(UserFilter::Search(search));
 
         let users = user_rep.paginate(&params).unwrap();
         assert_eq!(users.records[0].email, email);
 
         // Search not exists
         let search = "paginate_____filters";
-        let mut params = UserMysqlRepositoryPaginateParams::one();
-        params.filters.push(UserMysqlRepositoryFilter::Search(search));
+        let mut params = UserPaginateParams::one();
+        params.filters.push(UserFilter::Search(search));
 
         let users = user_rep.paginate(&params).unwrap();
         assert_eq!(users.records.len(), 0);
@@ -670,10 +791,7 @@ mod tests {
         let (_, all_services) = preparation();
         let user_rep = all_services.user_repository.get_ref();
 
-        let emails = [
-            "admin_update1@admin.example",
-            "admin_update2@admin.example",
-        ];
+        let emails = ["admin_update1@admin.example", "admin_update2@admin.example"];
 
         for email in emails {
             user_rep.delete_by_email(email).unwrap();
@@ -687,7 +805,8 @@ mod tests {
 
         user.email = emails[1].to_string();
 
-        user_rep.update(&user).unwrap();
+        let columns: Option<Vec<UserColumn>> = None;
+        user_rep.update(&user, &columns).unwrap();
 
         let user = user_rep.first_by_id(user.id).unwrap().unwrap();
         assert_eq!(emails[1].to_string(), user.email);

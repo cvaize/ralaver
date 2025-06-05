@@ -3,8 +3,8 @@ use crate::app::controllers::web::{
 };
 use crate::{
     prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService,
-    LocaleService, Role, RoleMysqlRepositoryFilter, RoleMysqlRepositoryPaginateParams,
-    RoleMysqlRepositorySort, RoleService, Session, TemplateService, TranslatorService, User,
+    LocaleService, Role, RoleFilter, RolePaginateParams,
+    RoleSort, RoleService, Session, TemplateService, TranslatorService, User,
     WebAuthService, WebHttpResponse,
 };
 use actix_web::web::{Data, Query, ReqData};
@@ -67,9 +67,9 @@ pub async fn invoke(
     let page = query.page.unwrap();
     let per_page = query.per_page.unwrap();
     let page_str = page.to_string();
-    let filters: Vec<RoleMysqlRepositoryFilter> = query.get_filters();
+    let filters: Vec<RoleFilter> = query.get_filters();
     let sort = query.get_sort();
-    let pagination_params = RoleMysqlRepositoryPaginateParams::new(page, per_page, filters, sort);
+    let pagination_params = RolePaginateParams::new(page, per_page, filters, sort);
     let roles = role_service.paginate_throw_http(&pagination_params)?;
     let total_pages = max(roles.total_pages, 1);
     let total_pages_str = total_pages.to_string();
@@ -112,7 +112,7 @@ pub async fn invoke(
     }
 
     let mut sort_options: Vec<Value> = Vec::new();
-    for sort_enum in RoleMysqlRepositorySort::iter() {
+    for sort_enum in RoleSort::iter() {
         let value = sort_enum.to_string();
         let mut key = "page.roles.index.sort.".to_string();
         key.push_str(&value);
@@ -208,7 +208,7 @@ impl IndexQuery {
         prepare_value!(self.search);
         prepare_value!(self.sort);
         if self.sort.is_none() {
-            self.sort = Some(RoleMysqlRepositorySort::IdAsc.to_string());
+            self.sort = Some(RoleSort::IdAsc.to_string());
         }
     }
     pub fn validate(
@@ -250,18 +250,18 @@ impl IndexQuery {
         result.push_str(&url);
         Ok(result)
     }
-    pub fn get_filters(&self) -> Vec<RoleMysqlRepositoryFilter> {
-        let mut filters: Vec<RoleMysqlRepositoryFilter> = Vec::new();
+    pub fn get_filters(&self) -> Vec<RoleFilter> {
+        let mut filters: Vec<RoleFilter> = Vec::new();
 
         if let Some(value) = &self.search {
-            filters.push(RoleMysqlRepositoryFilter::Search(value));
+            filters.push(RoleFilter::Search(value));
         }
         filters
     }
-    pub fn get_sort(&self) -> Option<RoleMysqlRepositorySort> {
+    pub fn get_sort(&self) -> Option<RoleSort> {
         let mut sort = None;
         if let Some(sort_) = &self.sort {
-            if let Ok(sort__) = RoleMysqlRepositorySort::from_str(sort_) {
+            if let Ok(sort__) = RoleSort::from_str(sort_) {
                 sort = Some(sort__);
             }
         }
