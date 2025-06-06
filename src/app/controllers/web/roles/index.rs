@@ -3,9 +3,8 @@ use crate::app::controllers::web::{
 };
 use crate::{
     prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService,
-    LocaleService, Role, RoleFilter, RolePaginateParams,
-    RoleSort, RoleService, Session, TemplateService, TranslatorService, User,
-    WebAuthService, WebHttpResponse,
+    LocaleService, RoleFilter, RolePaginateParams, RoleService, RoleSort, Session, TemplateService,
+    TranslatorService, User, WebAuthService, WebHttpResponse,
 };
 use actix_web::web::{Data, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};

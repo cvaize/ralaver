@@ -1,6 +1,6 @@
 use crate::{
-    HashService, PaginationResult, RoleColumn, TranslatableError, TranslatorService, User,
-    UserColumn, UserMysqlRepository, UserPaginateParams, UserRepositoryError,
+    HashService, PaginationResult, TranslatableError, TranslatorService, User, UserColumn,
+    UserMysqlRepository, UserPaginateParams, UserRepositoryError,
 };
 use actix_web::web::Data;
 use actix_web::{error, Error};

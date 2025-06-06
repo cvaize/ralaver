@@ -2,8 +2,7 @@ use crate::{
     make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query,
     make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query, FromDbRowError,
     FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum, MysqlPool, MysqlPooledConnection,
-    PaginationResult, Role, RoleColumn, ToMysqlDto, User, UserColumn, UserCredentials,
-    UserCredentialsColumn,
+    PaginationResult, Role, RoleColumn, ToMysqlDto,
 };
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;

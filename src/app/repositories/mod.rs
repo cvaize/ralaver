@@ -3,11 +3,10 @@ pub mod user;
 
 pub use self::role::*;
 pub use self::user::*;
-use r2d2_mysql::mysql::{Params, Row, Value};
+use r2d2_mysql::mysql::{Row, Value};
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::Display;
-use strum::{VariantNames};
-use crate::UserColumn;
+use strum::VariantNames;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PaginationResult<U> {
@@ -60,12 +59,8 @@ pub trait ToMysqlDto<T>
 where
     T: Display + VariantNames + strum::IntoEnumIterator,
 {
-    fn push_mysql_param_to_vec(
-        &self,
-        column: &T,
-        params: &mut Vec<(String, Value)>,
-    ) {
-    }
+    #[allow(unused_variables)]
+    fn push_mysql_param_to_vec(&self, column: &T, params: &mut Vec<(String, Value)>) {}
     fn push_mysql_params_to_vec(
         &self,
         columns: &Option<Vec<T>>,
@@ -81,10 +76,7 @@ where
             }
         }
     }
-    fn push_all_mysql_params_to_vec(
-        &self,
-        params: &mut Vec<(String, Value)>,
-    ) {
+    fn push_all_mysql_params_to_vec(&self, params: &mut Vec<(String, Value)>) {
         for column in T::iter() {
             self.push_mysql_param_to_vec(&column, params);
         }
@@ -97,8 +89,7 @@ pub trait FromMysqlDto {
         Self: Sized;
 }
 
-impl<T: Display + VariantNames + MysqlColumnEnum> MysqlAllColumnEnum for T
-{
+impl<T: Display + VariantNames + MysqlColumnEnum> MysqlAllColumnEnum for T {
     fn mysql_all_select_columns() -> String {
         T::VARIANTS.join(",").to_string()
     }

@@ -1,6 +1,6 @@
 use crate::libs::actix_web::types::form::Form;
 use crate::{
-    AlertVariant, LocaleService, RateLimitService, Role, RoleService, Session, TranslatorService,
+    AlertVariant, LocaleService, RateLimitService, RoleService, Session, TranslatorService,
     User, WebAuthService, WebHttpResponse,
 };
 use actix_web::web::{Data, ReqData};

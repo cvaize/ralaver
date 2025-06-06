@@ -6,7 +6,6 @@ use actix_web::{error, Error, HttpRequest};
 use chrono::{DateTime, NaiveDateTime, TimeDelta, Utc};
 use std::borrow::Cow;
 use std::ops::Add;
-use std::time::{SystemTime, UNIX_EPOCH};
 use strum_macros::{Display, EnumString};
 
 const FORMAT: &'static str = "%Y.%m.%d %H:%M:%S";
@@ -191,6 +190,7 @@ impl WebAuthService {
         key
     }
 
+    #[allow(dead_code)]
     fn make_store_data(&self, token_value: &str, expires: u64) -> String {
         let mut value = "".to_string();
         value.push_str(token_value);
@@ -199,6 +199,7 @@ impl WebAuthService {
         value
     }
 
+    #[allow(dead_code)]
     fn extract_store_data(&self, value: &str) -> Result<(String, u64), WebAuthServiceError> {
         let v: Vec<&str> = value.split("-").collect();
         let v0 = v.get(0);

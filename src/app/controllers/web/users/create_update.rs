@@ -3,7 +3,7 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString as MMLS};
 use crate::app::validator::rules::required::Required;
-use crate::{prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, RateLimitService, RoleColumn, Session, TemplateService, TranslatableError, TranslatorService, User, UserColumn, UserService, UserServiceError, WebAuthService, WebHttpResponse};
+use crate::{prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, RateLimitService, Session, TemplateService, TranslatableError, TranslatorService, User, UserColumn, UserService, UserServiceError, WebAuthService, WebHttpResponse};
 use actix_web::web::Path;
 use actix_web::web::{Data, Form, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};

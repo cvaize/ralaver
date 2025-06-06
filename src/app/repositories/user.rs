@@ -2,16 +2,13 @@ use crate::{
     make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query,
     make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query, FromDbRowError,
     FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum, MysqlPool, MysqlPooledConnection,
-    PaginationResult, ToMysqlDto, User, UserColumn, UserColumnIter, UserCredentials,
+    PaginationResult, ToMysqlDto, User, UserColumn, UserCredentials,
     UserCredentialsColumn,
 };
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;
 use r2d2_mysql::mysql::Value;
 use r2d2_mysql::mysql::{params, Error, Params, Row};
-use std::fmt::Display;
-use std::slice::Iter;
-use strum::{IntoEnumIterator, VariantNames};
 use strum_macros::{Display, EnumIter, EnumString};
 
 pub struct UserMysqlRepository {

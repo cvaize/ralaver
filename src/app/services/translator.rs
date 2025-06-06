@@ -1,5 +1,5 @@
 use crate::helpers::collect_files_from_dir;
-use crate::{AuthServiceError, Config, UserServiceError};
+use crate::Config;
 use actix_web::web::Data;
 use serde_json::Value;
 use std::collections::HashMap;
