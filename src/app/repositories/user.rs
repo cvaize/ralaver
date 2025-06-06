@@ -9,6 +9,8 @@ use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;
 use r2d2_mysql::mysql::Value;
 use r2d2_mysql::mysql::{params, Error, Params, Row};
+use r2d2_mysql::mysql::Error::FromValueError;
+use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 pub struct UserMysqlRepository {
@@ -177,9 +179,20 @@ impl UserMysqlRepository {
 
     pub fn insert(&self, data: &User) -> Result<(), UserRepositoryError> {
         let mut conn = self.connection()?;
-        let columns_str = UserColumn::mysql_all_select_columns();
-        let mut params: Vec<(String, Value)> = Vec::new();
-        data.push_all_mysql_params_to_vec(&mut params);
+
+        let (columns_str, params) = if data.id == 0 {
+            let columns: Option<Vec<UserColumn>> = Some(UserColumn::iter().filter(|c| c.ne(&UserColumn::Id)).collect());
+            let columns_str = columns.mysql_insert_columns();
+            let mut params: Vec<(String, Value)> = Vec::new();
+            data.push_mysql_params_to_vec(&columns, &mut params);
+            (columns_str, params)
+        } else {
+            let columns_str = UserColumn::mysql_all_insert_columns();
+            let mut params: Vec<(String, Value)> = Vec::new();
+            data.push_all_mysql_params_to_vec(&mut params);
+            (columns_str, params)
+        };
+
         let query = make_insert_mysql_query(&self.table, &columns_str);
         conn.exec_drop(query, Params::from(params))
             .map_err(|e| match &e {
@@ -462,10 +475,12 @@ impl FromMysqlDto for User {
     fn take_from_mysql_row(row: &mut Row) -> Result<Self, FromDbRowError> {
         let mut roles_ids: Option<Vec<u64>> = None;
 
-        if let Some(val) = row.take::<String, &str>(UserColumn::RolesIds.to_string().as_str()) {
-            let val: serde_json::Result<Vec<u64>> = serde_json::from_str(&val);
+        if let Some(val) = row.take_opt::<String, &str>(UserColumn::RolesIds.to_string().as_str()) {
             if let Ok(val) = val {
-                roles_ids = Some(val);
+                let val: serde_json::Result<Vec<u64>> = serde_json::from_str(&val);
+                if let Ok(val) = val {
+                    roles_ids = Some(val);
+                }
             }
         }
         Ok(Self {

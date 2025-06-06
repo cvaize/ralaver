@@ -13,7 +13,7 @@ pub struct User {
     pub roles_ids: Option<Vec<u64>>,
 }
 
-#[derive(Debug, Clone, Copy, Display, EnumString, Serialize, Deserialize, VariantNames, EnumIter)]
+#[derive(Debug, Clone, Copy, Display, EnumString, Serialize, Deserialize, VariantNames, EnumIter, Eq, PartialEq)]
 #[strum(serialize_all = "snake_case")]
 pub enum UserColumn {
     Id,

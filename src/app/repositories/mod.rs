@@ -91,20 +91,23 @@ pub trait FromMysqlDto {
 
 impl<T: Display + VariantNames + MysqlColumnEnum> MysqlAllColumnEnum for T {
     fn mysql_all_select_columns() -> String {
+        // id,email,locale,surname,name,patronymic,is_super_admin
         T::VARIANTS.join(",").to_string()
     }
     fn mysql_all_insert_columns() -> String {
+        // (email, locale, surname, name, patronymic) VALUES (:email, :locale, :surname, :name, :patronymic)
         let columns = Self::mysql_all_select_columns();
-        let set = Self::mysql_all_update_columns();
+        let values = T::VARIANTS.join(",:").to_string();
 
         let mut s = "(".to_string();
         s.push_str(&columns);
-        s.push_str(") VALUES (");
-        s.push_str(&set);
+        s.push_str(") VALUES (:");
+        s.push_str(&values);
         s.push_str(")");
         s
     }
     fn mysql_all_update_columns() -> String {
+        // email=:email, locale=:locale, surname=:surname, name=:name, patronymic=:patronymic
         let t: Vec<String> = T::VARIANTS
             .iter()
             .map(|t| {
@@ -134,15 +137,23 @@ where
     }
     fn mysql_insert_columns(&self) -> String {
         // (email, locale, surname, name, patronymic) VALUES (:email, :locale, :surname, :name, :patronymic)
-        let columns = self.mysql_select_columns();
-        let set = self.mysql_update_columns();
+        if let Some(vec) = self {
+            if vec.len() > 0 {
+                let columns = self.mysql_select_columns();
 
-        let mut s = "(".to_string();
-        s.push_str(&columns);
-        s.push_str(") VALUES (");
-        s.push_str(&set);
-        s.push_str(")");
-        s
+                let t: Vec<String> = vec.iter().map(|t| t.to_string()).collect();
+                let values = t.join(",:").to_string();
+
+                let mut s = "(".to_string();
+                s.push_str(&columns);
+                s.push_str(") VALUES (:");
+                s.push_str(&values);
+                s.push_str(")");
+                return s;
+            }
+        }
+
+        T::mysql_all_insert_columns()
     }
     fn mysql_update_columns(&self) -> String {
         // email=:email, locale=:locale, surname=:surname, name=:name, patronymic=:patronymic
@@ -215,6 +226,7 @@ pub fn make_is_exists_mysql_query(table: &str, where_: &str) -> String {
 pub fn make_insert_mysql_query(table: &str, columns_: &str) -> String {
     let mut sql = "INSERT INTO ".to_string();
     sql.push_str(table);
+    sql.push_str(" ");
     sql.push_str(columns_);
     sql
 }
