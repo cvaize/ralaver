@@ -1,9 +1,16 @@
-use crate::{make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query, make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query, option_take_json_from_mysql_row, take_from_mysql_row, take_json_from_mysql_row, FromDbRowError, FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum, MysqlPool, MysqlPooledConnection, PaginationResult, ToMysqlDto, User, UserColumn, UserCredentials, UserCredentialsColumn};
+use crate::{
+    make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query,
+    make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query,
+    option_take_json_from_mysql_row, option_to_json_string_for_mysql, take_from_mysql_row,
+    take_json_from_mysql_row, FromDbRowError, FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum,
+    MysqlPool, MysqlPooledConnection, PaginationResult, ToMysqlDto, User, UserColumn,
+    UserCredentials, UserCredentialsColumn,
+};
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;
+use r2d2_mysql::mysql::Error::FromValueError;
 use r2d2_mysql::mysql::Value;
 use r2d2_mysql::mysql::{params, Error, Params, Row};
-use r2d2_mysql::mysql::Error::FromValueError;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
@@ -175,7 +182,11 @@ impl UserMysqlRepository {
         let mut conn = self.connection()?;
 
         let (columns_str, params) = if data.id == 0 {
-            let columns: Option<Vec<UserColumn>> = Some(UserColumn::iter().filter(|c| c.ne(&UserColumn::Id)).collect());
+            let columns: Option<Vec<UserColumn>> = Some(
+                UserColumn::iter()
+                    .filter(|c| c.ne(&UserColumn::Id))
+                    .collect(),
+            );
             let columns_str = columns.mysql_insert_columns();
             let mut params: Vec<(String, Value)> = Vec::new();
             data.push_mysql_params_to_vec(&columns, &mut params);
@@ -451,14 +462,7 @@ impl ToMysqlDto<UserColumn> for User {
                 Value::from(self.is_super_admin.to_owned()),
             )),
             UserColumn::RolesIds => {
-                let mut roles_ids: Option<String> = None;
-
-                if let Some(val) = &self.roles_ids {
-                    let val: serde_json::Result<String> = serde_json::to_string(&val);
-                    if let Ok(val) = val {
-                        roles_ids = Some(val);
-                    }
-                }
+                let roles_ids: Option<String> = option_to_json_string_for_mysql(&self.roles_ids);
                 params.push((column.to_string(), Value::from(roles_ids)))
             }
         }
@@ -470,12 +474,19 @@ impl FromMysqlDto for User {
         Ok(Self {
             id: take_from_mysql_row(row, UserColumn::Id.to_string().as_str())?,
             email: take_from_mysql_row(row, UserColumn::Email.to_string().as_str())?,
-            locale: take_from_mysql_row(row, UserColumn::Locale.to_string().as_str()).unwrap_or(None),
-            surname: take_from_mysql_row(row, UserColumn::Surname.to_string().as_str()).unwrap_or(None),
+            locale: take_from_mysql_row(row, UserColumn::Locale.to_string().as_str())
+                .unwrap_or(None),
+            surname: take_from_mysql_row(row, UserColumn::Surname.to_string().as_str())
+                .unwrap_or(None),
             name: take_from_mysql_row(row, UserColumn::Name.to_string().as_str()).unwrap_or(None),
-            patronymic: take_from_mysql_row(row, UserColumn::Patronymic.to_string().as_str()).unwrap_or(None),
-            is_super_admin: take_from_mysql_row(row, UserColumn::IsSuperAdmin.to_string().as_str()).unwrap_or(false),
-            roles_ids: option_take_json_from_mysql_row(row, UserColumn::RolesIds.to_string().as_str()),
+            patronymic: take_from_mysql_row(row, UserColumn::Patronymic.to_string().as_str())
+                .unwrap_or(None),
+            is_super_admin: take_from_mysql_row(row, UserColumn::IsSuperAdmin.to_string().as_str())
+                .unwrap_or(false),
+            roles_ids: option_take_json_from_mysql_row(
+                row,
+                UserColumn::RolesIds.to_string().as_str(),
+            ),
         })
     }
 }
@@ -505,7 +516,11 @@ impl FromMysqlDto for UserCredentials {
         Ok(Self {
             id: take_from_mysql_row(row, UserCredentialsColumn::Id.to_string().as_str())?,
             email: take_from_mysql_row(row, UserCredentialsColumn::Email.to_string().as_str())?,
-            password: take_from_mysql_row(row, UserCredentialsColumn::Password.to_string().as_str()).unwrap_or(None),
+            password: take_from_mysql_row(
+                row,
+                UserCredentialsColumn::Password.to_string().as_str(),
+            )
+            .unwrap_or(None),
         })
     }
 }

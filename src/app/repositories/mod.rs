@@ -4,10 +4,10 @@ pub mod user;
 pub use self::role::*;
 pub use self::user::*;
 use r2d2_mysql::mysql::{Row, Value};
-use serde_derive::{Deserialize, Serialize};
 use std::fmt::Display;
 use r2d2_mysql::mysql::prelude::FromValue;
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use strum::VariantNames;
 use crate::UserColumn;
 
@@ -32,6 +32,7 @@ impl<U> PaginationResult<U> {
     }
 }
 
+pub struct ToDbValueError;
 pub struct FromDbRowError;
 
 pub trait MysqlAllColumnEnum {
@@ -280,6 +281,27 @@ pub fn take_json_from_mysql_row<T: DeserializeOwned>(row: &mut Row, name: &str) 
 pub fn option_take_json_from_mysql_row<T: DeserializeOwned>(row: &mut Row, name: &str) -> Option<T>{
     if let Ok(v) = take_json_from_mysql_row(row, name) {
         Some(v)
+    } else {
+        None
+    }
+}
+
+pub fn to_json_string_for_mysql<T: Serialize>(val: &T) -> Result<String, ToDbValueError> {
+    let val: serde_json::Result<String> = serde_json::to_string(&val);
+    if let Ok(val) = val {
+        Ok(val)
+    } else {
+        Err(ToDbValueError)
+    }
+}
+
+pub fn option_to_json_string_for_mysql<T: Serialize>(val: &Option<T>) -> Option<String> {
+    if let Some(val) = val{
+        if let Ok(v) = to_json_string_for_mysql(val) {
+            Some(v)
+        } else {
+            None
+        }
     } else {
         None
     }
