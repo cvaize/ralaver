@@ -1,13 +1,9 @@
-use crate::{
-    make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query,
-    make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query, FromDbRowError,
-    FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum, MysqlPool, MysqlPooledConnection,
-    PaginationResult, Role, RoleColumn, ToMysqlDto,
-};
+use crate::{make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query, make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query, FromDbRowError, FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum, MysqlPool, MysqlPooledConnection, PaginationResult, Role, RoleColumn, ToMysqlDto, UserColumn};
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;
 use r2d2_mysql::mysql::Value;
 use r2d2_mysql::mysql::{params, Error, Params, Row};
+use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 pub struct RoleMysqlRepository {
@@ -147,9 +143,24 @@ impl RoleMysqlRepository {
 
     pub fn insert(&self, data: &Role) -> Result<(), RoleRepositoryError> {
         let mut conn = self.connection()?;
-        let columns_str = RoleColumn::mysql_all_insert_columns();
-        let mut params: Vec<(String, Value)> = vec![];
-        data.push_all_mysql_params_to_vec(&mut params);
+
+        let (columns_str, params) = if data.id == 0 {
+            let columns: Option<Vec<RoleColumn>> = Some(
+                RoleColumn::iter()
+                    .filter(|c| c.ne(&RoleColumn::Id))
+                    .collect(),
+            );
+            let columns_str = columns.mysql_insert_columns();
+            let mut params: Vec<(String, Value)> = Vec::new();
+            data.push_mysql_params_to_vec(&columns, &mut params);
+            (columns_str, params)
+        } else {
+            let columns_str = RoleColumn::mysql_all_insert_columns();
+            let mut params: Vec<(String, Value)> = Vec::new();
+            data.push_all_mysql_params_to_vec(&mut params);
+            (columns_str, params)
+        };
+
         let query = make_insert_mysql_query(&self.table, &columns_str);
         conn.exec_drop(query, Params::from(params))
             .map_err(|e| match &e {
@@ -367,10 +378,12 @@ impl FromMysqlDto for Role {
     fn take_from_mysql_row(row: &mut Row) -> Result<Self, FromDbRowError> {
         let mut permissions: Option<Vec<String>> = None;
 
-        if let Some(val) = row.take::<String, &str>(RoleColumn::Permissions.to_string().as_str()) {
-            let val: serde_json::Result<Vec<String>> = serde_json::from_str(&val);
+        if let Some(val) = row.take_opt::<String, &str>(RoleColumn::Permissions.to_string().as_str()) {
             if let Ok(val) = val {
-                permissions = Some(val);
+                let val: serde_json::Result<Vec<String>> = serde_json::from_str(&val);
+                if let Ok(val) = val {
+                    permissions = Some(val);
+                }
             }
         }
 

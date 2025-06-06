@@ -10,7 +10,7 @@ pub struct Role {
     pub permissions: Option<Vec<String>>,
 }
 
-#[derive(Debug, Clone, Copy, Display, EnumString, Serialize, Deserialize, VariantNames, EnumIter)]
+#[derive(Debug, Clone, Copy, Display, EnumString, Serialize, Deserialize, VariantNames, EnumIter, Eq, PartialEq)]
 #[strum(serialize_all = "snake_case")]
 pub enum RoleColumn {
     Id,
