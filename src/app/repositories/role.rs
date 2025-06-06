@@ -1,4 +1,4 @@
-use crate::{make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query, make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query, FromDbRowError, FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum, MysqlPool, MysqlPooledConnection, PaginationResult, Role, RoleColumn, ToMysqlDto, UserColumn};
+use crate::{make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query, make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query, option_take_json_from_mysql_row, take_from_mysql_row, take_json_from_mysql_row, FromDbRowError, FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum, MysqlPool, MysqlPooledConnection, PaginationResult, Role, RoleColumn, ToMysqlDto, UserColumn};
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;
 use r2d2_mysql::mysql::Value;
@@ -376,31 +376,12 @@ impl ToMysqlDto<RoleColumn> for Role {
 
 impl FromMysqlDto for Role {
     fn take_from_mysql_row(row: &mut Row) -> Result<Self, FromDbRowError> {
-        let mut permissions: Option<Vec<String>> = None;
-
-        if let Some(val) = row.take_opt::<String, &str>(RoleColumn::Permissions.to_string().as_str()) {
-            if let Ok(val) = val {
-                let val: serde_json::Result<Vec<String>> = serde_json::from_str(&val);
-                if let Ok(val) = val {
-                    permissions = Some(val);
-                }
-            }
-        }
-
         Ok(Self {
-            id: row
-                .take(RoleColumn::Id.to_string().as_str())
-                .ok_or(FromDbRowError)?,
-            name: row
-                .take(RoleColumn::Name.to_string().as_str())
-                .ok_or(FromDbRowError)?,
-            code: row
-                .take(RoleColumn::Code.to_string().as_str())
-                .ok_or(FromDbRowError)?,
-            description: row
-                .take(RoleColumn::Description.to_string().as_str())
-                .unwrap_or(None),
-            permissions,
+            id: take_from_mysql_row(row, RoleColumn::Id.to_string().as_str())?,
+            name: take_from_mysql_row(row, RoleColumn::Name.to_string().as_str())?,
+            code: take_from_mysql_row(row, RoleColumn::Code.to_string().as_str())?,
+            description: take_from_mysql_row(row, RoleColumn::Description.to_string().as_str()).unwrap_or(None),
+            permissions: option_take_json_from_mysql_row(row, RoleColumn::Permissions.to_string().as_str()),
         })
     }
 }

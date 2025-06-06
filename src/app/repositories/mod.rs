@@ -6,7 +6,10 @@ pub use self::user::*;
 use r2d2_mysql::mysql::{Row, Value};
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::Display;
+use r2d2_mysql::mysql::prelude::FromValue;
+use serde::de::DeserializeOwned;
 use strum::VariantNames;
+use crate::UserColumn;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PaginationResult<U> {
@@ -247,4 +250,37 @@ pub fn make_delete_mysql_query(table: &str, where_: &str) -> String {
     sql.push_str(" WHERE ");
     sql.push_str(where_);
     sql
+}
+
+pub fn take_from_mysql_row<T: FromValue>(row: &mut Row, name: &str) -> Result<T, FromDbRowError>{
+    if let Some(val) = row.take_opt::<T, &str>(name) {
+        return val.map_err(|_| FromDbRowError)
+    }
+    Err(FromDbRowError)
+}
+
+pub fn take_json_from_mysql_row<T: DeserializeOwned>(row: &mut Row, name: &str) -> Result<T, FromDbRowError>{
+    if let Some(val) = row.take_opt::<String, &str>(name) {
+        if let Ok(val) = val {
+            if val.len() == 0 {
+                return Err(FromDbRowError);
+            }
+            let val: serde_json::Result<T> = serde_json::from_str(&val);
+            if let Ok(val) = val {
+                return Ok(val);
+            }
+            return Err(FromDbRowError);
+        }
+
+        return Err(FromDbRowError);
+    }
+    Err(FromDbRowError)
+}
+
+pub fn option_take_json_from_mysql_row<T: DeserializeOwned>(row: &mut Row, name: &str) -> Option<T>{
+    if let Ok(v) = take_json_from_mysql_row(row, name) {
+        Some(v)
+    } else {
+        None
+    }
 }

@@ -1,10 +1,4 @@
-use crate::{
-    make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query,
-    make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query, FromDbRowError,
-    FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum, MysqlPool, MysqlPooledConnection,
-    PaginationResult, ToMysqlDto, User, UserColumn, UserCredentials,
-    UserCredentialsColumn,
-};
+use crate::{make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query, make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query, option_take_json_from_mysql_row, take_from_mysql_row, take_json_from_mysql_row, FromDbRowError, FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum, MysqlPool, MysqlPooledConnection, PaginationResult, ToMysqlDto, User, UserColumn, UserCredentials, UserCredentialsColumn};
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;
 use r2d2_mysql::mysql::Value;
@@ -473,39 +467,15 @@ impl ToMysqlDto<UserColumn> for User {
 
 impl FromMysqlDto for User {
     fn take_from_mysql_row(row: &mut Row) -> Result<Self, FromDbRowError> {
-        let mut roles_ids: Option<Vec<u64>> = None;
-
-        if let Some(val) = row.take_opt::<String, &str>(UserColumn::RolesIds.to_string().as_str()) {
-            if let Ok(val) = val {
-                let val: serde_json::Result<Vec<u64>> = serde_json::from_str(&val);
-                if let Ok(val) = val {
-                    roles_ids = Some(val);
-                }
-            }
-        }
         Ok(Self {
-            id: row
-                .take(UserColumn::Id.to_string().as_str())
-                .ok_or(FromDbRowError)?,
-            email: row
-                .take(UserColumn::Email.to_string().as_str())
-                .ok_or(FromDbRowError)?,
-            locale: row
-                .take(UserColumn::Locale.to_string().as_str())
-                .unwrap_or(None),
-            surname: row
-                .take(UserColumn::Surname.to_string().as_str())
-                .unwrap_or(None),
-            name: row
-                .take(UserColumn::Name.to_string().as_str())
-                .unwrap_or(None),
-            patronymic: row
-                .take(UserColumn::Patronymic.to_string().as_str())
-                .unwrap_or(None),
-            is_super_admin: row
-                .take(UserColumn::IsSuperAdmin.to_string().as_str())
-                .unwrap_or(false),
-            roles_ids,
+            id: take_from_mysql_row(row, UserColumn::Id.to_string().as_str())?,
+            email: take_from_mysql_row(row, UserColumn::Email.to_string().as_str())?,
+            locale: take_from_mysql_row(row, UserColumn::Locale.to_string().as_str()).unwrap_or(None),
+            surname: take_from_mysql_row(row, UserColumn::Surname.to_string().as_str()).unwrap_or(None),
+            name: take_from_mysql_row(row, UserColumn::Name.to_string().as_str()).unwrap_or(None),
+            patronymic: take_from_mysql_row(row, UserColumn::Patronymic.to_string().as_str()).unwrap_or(None),
+            is_super_admin: take_from_mysql_row(row, UserColumn::IsSuperAdmin.to_string().as_str()).unwrap_or(false),
+            roles_ids: option_take_json_from_mysql_row(row, UserColumn::RolesIds.to_string().as_str()),
         })
     }
 }
@@ -533,15 +503,9 @@ impl ToMysqlDto<UserCredentialsColumn> for UserCredentials {
 impl FromMysqlDto for UserCredentials {
     fn take_from_mysql_row(row: &mut Row) -> Result<Self, FromDbRowError> {
         Ok(Self {
-            id: row
-                .take(UserCredentialsColumn::Id.to_string().as_str())
-                .ok_or(FromDbRowError)?,
-            email: row
-                .take(UserCredentialsColumn::Email.to_string().as_str())
-                .ok_or(FromDbRowError)?,
-            password: row
-                .take(UserCredentialsColumn::Password.to_string().as_str())
-                .unwrap_or(None),
+            id: take_from_mysql_row(row, UserCredentialsColumn::Id.to_string().as_str())?,
+            email: take_from_mysql_row(row, UserCredentialsColumn::Email.to_string().as_str())?,
+            password: take_from_mysql_row(row, UserCredentialsColumn::Password.to_string().as_str()).unwrap_or(None),
         })
     }
 }
