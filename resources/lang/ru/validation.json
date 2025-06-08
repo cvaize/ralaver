@@ -154,6 +154,7 @@
         "patronymic": "Отчество",
         "description": "Описание",
         "code": "Код",
-        "permissions": "Разрешения"
+        "permissions": "Разрешения",
+        "roles_ids": "Роли"
     }
 }

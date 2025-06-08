@@ -108,6 +108,26 @@
                             }}
                         </div>
                     </div>
+                    <div>
+                        <label>{{form.fields.roles_ids.label}}</label>
+                        {{#if form.fields.roles_ids.errors}}
+                            {{#each form.fields.roles_ids.errors as |error|}}
+                                <div class="admin-text--mini admin-text--danger">{{this}}</div>
+                            {{/each}}
+                            <br>
+                        {{/if}}
+                        {{#each form.fields.roles_ids.options as |role|}}
+                            <div>
+                                {{> components/checkbox.hbs
+                                        label=role.label
+                                        value=role.value
+                                        checked=role.checked
+                                        form="admin-create-form"
+                                        name="roles_ids[]"
+                                }}
+                            </div>
+                        {{/each}}
+                    </div>
                 </div>
             </div>
         </div>

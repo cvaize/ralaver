@@ -3,15 +3,16 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString as MMLS};
 use crate::app::validator::rules::required::Required;
-use crate::{prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, RateLimitService, Session, TemplateService, TranslatableError, TranslatorService, User, UserColumn, UserService, UserServiceError, WebAuthService, WebHttpResponse};
+use crate::{prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, Permission, RateLimitService, RoleService, Session, TemplateService, TranslatableError, TranslatorService, User, UserColumn, UserService, UserServiceError, WebAuthService, WebHttpResponse};
 use actix_web::web::Path;
-use actix_web::web::{Data, Form, ReqData};
+use actix_web::web::{Data, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
+use crate::libs::actix_web::types::form::Form;
 
 const RL_MAX_ATTEMPTS: u64 = 10;
 const RL_TTL: u64 = 60;
@@ -30,6 +31,7 @@ pub struct PostData {
     pub surname: Option<String>,
     pub name: Option<String>,
     pub patronymic: Option<String>,
+    pub roles_ids: Option<Vec<u64>>,
 }
 
 #[derive(Deserialize, Default, Debug)]
@@ -42,6 +44,7 @@ struct ErrorMessages {
     pub surname: Vec<String>,
     pub name: Vec<String>,
     pub patronymic: Vec<String>,
+    pub roles_ids: Vec<String>,
 }
 
 pub async fn create(
@@ -55,10 +58,11 @@ pub async fn create(
     rl_s: Data<RateLimitService>,
     u_s: Data<UserService>,
     l_s: Data<LocaleService>,
+    r_s: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
     let data = Form(PostData::default());
     invoke(
-        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s,
+        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s, r_s
     )
 }
 
@@ -74,9 +78,10 @@ pub async fn store(
     rl_s: Data<RateLimitService>,
     u_s: Data<UserService>,
     l_s: Data<LocaleService>,
+    r_s: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
     invoke(
-        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s,
+        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s, r_s
     )
 }
 
@@ -92,6 +97,7 @@ pub async fn edit(
     rl_s: Data<RateLimitService>,
     u_s: Data<UserService>,
     l_s: Data<LocaleService>,
+    r_s: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
     let user_id = path.into_inner();
     let edit_user = u_s.get_ref().first_by_id_throw_http(user_id)?;
@@ -105,11 +111,12 @@ pub async fn edit(
         surname: edit_user.surname.to_owned(),
         name: edit_user.name.to_owned(),
         patronymic: edit_user.patronymic.to_owned(),
+        roles_ids: edit_user.roles_ids.to_owned(),
     };
     let edit_user = Some(edit_user);
     let data = Form(post_data);
     invoke(
-        edit_user, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s,
+        edit_user, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s, r_s
     )
 }
 
@@ -126,11 +133,12 @@ pub async fn update(
     rl_s: Data<RateLimitService>,
     u_s: Data<UserService>,
     l_s: Data<LocaleService>,
+    r_s: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
     let user_id = path.into_inner();
     let edit_user = Some(u_s.get_ref().first_by_id_throw_http(user_id)?);
     invoke(
-        edit_user, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s,
+        edit_user, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s, r_s
     )
 }
 
@@ -147,6 +155,7 @@ pub fn invoke(
     rl_s: Data<RateLimitService>,
     u_s: Data<UserService>,
     l_s: Data<LocaleService>,
+    r_s: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
     data.prepare();
     //
@@ -157,6 +166,7 @@ pub fn invoke(
     let rl_s = rl_s.get_ref();
     let u_s = u_s.get_ref();
     let l_s = l_s.get_ref();
+    let r_s = r_s.get_ref();
 
     //
     let user = user.as_ref();
@@ -173,6 +183,7 @@ pub fn invoke(
     let name_str = tr_s.translate(lang, "page.users.create.fields.name");
     let patronymic_str = tr_s.translate(lang, "page.users.create.fields.patronymic");
     let locale_str = tr_s.translate(lang, "page.users.create.fields.locale");
+    let roles_ids_str = tr_s.translate(lang, "page.users.create.fields.roles_ids");
 
     let (title, heading, action) = if let Some(edit_user) = &edit_user {
         let mut vars: HashMap<&str, &str> = HashMap::new();
@@ -270,6 +281,7 @@ pub fn invoke(
                 user_data.surname = data.surname.to_owned();
                 user_data.name = data.name.to_owned();
                 user_data.patronymic = data.patronymic.to_owned();
+                user_data.roles_ids = data.roles_ids.to_owned();
 
                 let columns: Option<Vec<UserColumn>> = Some(vec![
                     UserColumn::Email,
@@ -277,6 +289,7 @@ pub fn invoke(
                     UserColumn::Surname,
                     UserColumn::Name,
                     UserColumn::Patronymic,
+                    UserColumn::RolesIds,
                 ]);
 
                 let result = u_s.upsert(&user_data, &columns);
@@ -378,6 +391,23 @@ pub fn invoke(
 
     let layout_ctx = get_template_context(&context_data);
 
+    let roles = r_s.get_all_throw_http()?;
+    let mut roles_options: Vec<Value> = Vec::new();
+
+    for role in roles {
+        let mut checked = false;
+        if let Some(val) = &data.roles_ids {
+            if val.contains(&role.id) {
+                checked = true;
+            }
+        }
+        roles_options.push(json!({
+            "label": role.name,
+            "value": &role.id,
+            "checked": checked
+        }));
+    }
+
     let fields = json!({
         "email": { "label": email_str, "value": &data.email, "errors": errors.email },
         "password": { "label": password_str, "value": &data.password, "errors": errors.password },
@@ -385,7 +415,8 @@ pub fn invoke(
         "surname": { "label": surname_str, "value": &data.surname, "errors": errors.surname },
         "name": { "label": name_str, "value": &data.name, "errors": errors.name },
         "patronymic": { "label": patronymic_str, "value": &data.patronymic, "errors": errors.patronymic },
-        "locale": { "label": locale_str, "value": &data.locale, "errors": errors.locale, "options": locales_, "placeholder": tr_s.translate(lang, "Not selected..."), }
+        "locale": { "label": locale_str, "value": &data.locale, "errors": errors.locale, "options": locales_, "placeholder": tr_s.translate(lang, "Not selected..."), },
+        "roles_ids": { "label": roles_ids_str, "value": &data.roles_ids, "errors": errors.roles_ids, "options": roles_options, }
     });
 
     let ctx = json!({

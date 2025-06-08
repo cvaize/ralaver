@@ -53,6 +53,45 @@ impl RoleMysqlRepository {
         Ok(false)
     }
 
+    pub fn get_all_ids(&self) -> Result<Vec<u64>, RoleRepositoryError> {
+        let column: String = RoleColumn::Id.to_string();
+        let query = make_select_mysql_query(&self.table, &column, "", "");
+        let mut conn = self.connection()?;
+        let mut rows = conn
+            .query_iter(query)
+            .map_err(|_| RoleRepositoryError::Fail)?;
+
+        let mut ids: Vec<u64> = Vec::new();
+        for mut row in rows.into_iter() {
+            if let Ok(row) = &mut row {
+                if let Ok(id) = take_from_mysql_row::<u64>(row, &column) {
+                    ids.push(id);
+                }
+            }
+        }
+
+        Ok(ids)
+    }
+
+    pub fn get_all(&self) -> Result<Vec<Role>, RoleRepositoryError> {
+        let columns: String = RoleColumn::mysql_all_select_columns();
+        let query = make_select_mysql_query(&self.table, &columns, "", "");
+        let mut conn = self.connection()?;
+        let mut rows = conn
+            .query_iter(query)
+            .map_err(|_| RoleRepositoryError::Fail)?;
+
+
+        let mut records: Vec<Role> = Vec::new();
+        for mut row in rows.into_iter() {
+            if let Ok(row) = &mut row {
+                records.push(self.row_to_entity(row)?);
+            }
+        }
+
+        Ok(records)
+    }
+
     pub fn first_by_id(&self, id: u64) -> Result<Option<Role>, RoleRepositoryError> {
         let columns = RoleColumn::mysql_all_select_columns();
         let query = make_select_mysql_query(&self.table, &columns, "id=:id", "");

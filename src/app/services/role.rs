@@ -15,6 +15,28 @@ impl RoleService {
         Self { role_repository }
     }
 
+    pub fn get_all_ids(&self) -> Result<Vec<u64>, RoleServiceError> {
+        self.role_repository
+            .get_ref()
+            .get_all_ids()
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn get_all_ids_throw_http(&self) -> Result<Vec<u64>, Error> {
+        self.get_all_ids().map_err(|_| error::ErrorInternalServerError(""))
+    }
+
+    pub fn get_all(&self) -> Result<Vec<Role>, RoleServiceError> {
+        self.role_repository
+            .get_ref()
+            .get_all()
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn get_all_throw_http(&self) -> Result<Vec<Role>, Error> {
+        self.get_all().map_err(|_| error::ErrorInternalServerError(""))
+    }
+
     pub fn first_by_id(&self, role_id: u64) -> Result<Option<Role>, RoleServiceError> {
         self.role_repository
             .get_ref()
