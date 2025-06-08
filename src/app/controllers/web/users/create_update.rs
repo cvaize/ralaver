@@ -1,9 +1,16 @@
 use crate::app::controllers::web::{get_context_data, get_template_context};
+use crate::app::policies::user::UserPolicy;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString as MMLS};
 use crate::app::validator::rules::required::Required;
-use crate::{prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, Permission, RateLimitService, RoleService, Session, TemplateService, TranslatableError, TranslatorService, User, UserColumn, UserService, UserServiceError, WebAuthService, WebHttpResponse};
+use crate::libs::actix_web::types::form::Form;
+use crate::{
+    prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, Permission,
+    RateLimitService, Role, RoleService, Session, TemplateService, TranslatableError,
+    TranslatorService, User, UserColumn, UserService, UserServiceError, WebAuthService,
+    WebHttpResponse,
+};
 use actix_web::web::Path;
 use actix_web::web::{Data, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -12,8 +19,6 @@ use serde_derive::Deserialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
-use crate::app::policies::user::UserPolicy;
-use crate::libs::actix_web::types::form::Form;
 
 const RL_MAX_ATTEMPTS: u64 = 10;
 const RL_TTL: u64 = 60;
@@ -62,12 +67,12 @@ pub async fn create(
     r_s: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
     let data = Form(PostData::default());
-    let roles = r_s.get_all_throw_http()?;
-    if !UserPolicy::can_create(&user, &roles) {
+    let user_roles = r_s.get_all_throw_http()?;
+    if !UserPolicy::can_create(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
     invoke(
-        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s, r_s
+        None, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s, r_s,
     )
 }
 
@@ -85,12 +90,12 @@ pub async fn store(
     l_s: Data<LocaleService>,
     r_s: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = r_s.get_all_throw_http()?;
-    if !UserPolicy::can_create(&user, &roles) {
+    let user_roles = r_s.get_all_throw_http()?;
+    if !UserPolicy::can_create(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
     invoke(
-        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s, r_s
+        None, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s, r_s,
     )
 }
 
@@ -108,8 +113,8 @@ pub async fn edit(
     l_s: Data<LocaleService>,
     r_s: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = r_s.get_all_throw_http()?;
-    if !UserPolicy::can_update(&user, &roles) {
+    let user_roles = r_s.get_all_throw_http()?;
+    if !UserPolicy::can_update(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
     let user_id = path.into_inner();
@@ -129,7 +134,8 @@ pub async fn edit(
     let edit_user = Some(edit_user);
     let data = Form(post_data);
     invoke(
-        edit_user, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s, r_s
+        edit_user, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s,
+        r_s,
     )
 }
 
@@ -148,14 +154,15 @@ pub async fn update(
     l_s: Data<LocaleService>,
     r_s: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = r_s.get_all_throw_http()?;
-    if !UserPolicy::can_update(&user, &roles) {
+    let user_roles = r_s.get_all_throw_http()?;
+    if !UserPolicy::can_update(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
     let user_id = path.into_inner();
     let edit_user = Some(u_s.get_ref().first_by_id_throw_http(user_id)?);
     invoke(
-        edit_user, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s, r_s
+        edit_user, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s,
+        r_s,
     )
 }
 
@@ -164,6 +171,7 @@ pub fn invoke(
     req: HttpRequest,
     mut data: Form<PostData>,
     user: ReqData<Arc<User>>,
+    user_roles: Vec<Role>,
     session: ReqData<Arc<Session>>,
     tr_s: Data<TranslatorService>,
     tm_s: Data<TemplateService>,
@@ -189,7 +197,8 @@ pub fn invoke(
     let user = user.as_ref();
 
     let mut alert_variants: Vec<AlertVariant> = Vec::new();
-    let mut context_data = get_context_data(ROUTE_NAME, &req, user, &session, tr_s, ap_s, wa_s, r_s);
+    let mut context_data =
+        get_context_data(ROUTE_NAME, &req, user, &session, tr_s, ap_s, wa_s, r_s);
 
     let lang = &context_data.lang;
 
@@ -235,14 +244,22 @@ pub fn invoke(
         let executed = rl_s.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
 
         if executed {
-            errors.email = Required::validated(tr_s, lang, &data.email, |value| {
-                Email::validate(tr_s, lang, value, &email_str)
-            }, &email_str);
+            errors.email = Required::validated(
+                tr_s,
+                lang,
+                &data.email,
+                |value| Email::validate(tr_s, lang, value, &email_str),
+                &email_str,
+            );
 
             if edit_user.is_none() {
-                errors.password = Required::validated(tr_s, lang, &data.password, |value| {
-                    MMLS::validate(tr_s, lang, value, 4, 255, &password_str)
-                }, &password_str);
+                errors.password = Required::validated(
+                    tr_s,
+                    lang,
+                    &data.password,
+                    |value| MMLS::validate(tr_s, lang, value, 4, 255, &password_str),
+                    &password_str,
+                );
             } else {
                 if let Some(password) = &data.password {
                     errors.password = MMLS::validate(tr_s, lang, password, 4, 255, &password_str);
@@ -250,10 +267,13 @@ pub fn invoke(
             }
 
             if edit_user.is_none() || data.password.is_some() {
-                errors.confirm_password =
-                    Required::validated(tr_s, lang, &data.confirm_password, |value| {
-                        MMLS::validate(tr_s, lang, value, 4, 255, &confirm_password_str)
-                    }, &confirm_password_str);
+                errors.confirm_password = Required::validated(
+                    tr_s,
+                    lang,
+                    &data.confirm_password,
+                    |value| MMLS::validate(tr_s, lang, value, 4, 255, &confirm_password_str),
+                    &confirm_password_str,
+                );
             }
 
             if errors.password.len() == 0
@@ -298,16 +318,21 @@ pub fn invoke(
                 user_data.surname = data.surname.to_owned();
                 user_data.name = data.name.to_owned();
                 user_data.patronymic = data.patronymic.to_owned();
-                user_data.roles_ids = data.roles_ids.to_owned();
 
-                let columns: Option<Vec<UserColumn>> = Some(vec![
+                let mut columns: Vec<UserColumn> = vec![
                     UserColumn::Email,
                     UserColumn::Locale,
                     UserColumn::Surname,
                     UserColumn::Name,
                     UserColumn::Patronymic,
-                    UserColumn::RolesIds,
-                ]);
+                ];
+
+                if UserPolicy::can_set_roles(&user, &user_roles) {
+                    user_data.roles_ids = data.roles_ids.to_owned();
+                    columns.push(UserColumn::RolesIds);
+                }
+
+                let columns: Option<Vec<UserColumn>> = Some(columns);
 
                 let result = u_s.upsert(&user_data, &columns);
 
@@ -408,21 +433,27 @@ pub fn invoke(
 
     let layout_ctx = get_template_context(&context_data);
 
-    let roles = r_s.get_all_throw_http()?;
-    let mut roles_options: Vec<Value> = Vec::new();
+    let mut field_roles_ids: Option<Value> = None;
+    if UserPolicy::can_set_roles(&user, &user_roles) {
+        let mut roles_options: Vec<Value> = Vec::new();
 
-    for role in roles {
-        let mut checked = false;
-        if let Some(val) = &data.roles_ids {
-            if val.contains(&role.id) {
-                checked = true;
+        for role in &user_roles {
+            let mut checked = false;
+            if let Some(val) = &data.roles_ids {
+                if val.contains(&role.id) {
+                    checked = true;
+                }
             }
+            roles_options.push(json!({
+                "label": role.name,
+                "value": &role.id,
+                "checked": checked
+            }));
         }
-        roles_options.push(json!({
-            "label": role.name,
-            "value": &role.id,
-            "checked": checked
-        }));
+
+        field_roles_ids = Some(
+            json!({ "label": roles_ids_str, "value": &data.roles_ids, "errors": errors.roles_ids, "options": roles_options, }),
+        );
     }
 
     let fields = json!({
@@ -433,7 +464,7 @@ pub fn invoke(
         "name": { "label": name_str, "value": &data.name, "errors": errors.name },
         "patronymic": { "label": patronymic_str, "value": &data.patronymic, "errors": errors.patronymic },
         "locale": { "label": locale_str, "value": &data.locale, "errors": errors.locale, "options": locales_, "placeholder": tr_s.translate(lang, "Not selected..."), },
-        "roles_ids": { "label": roles_ids_str, "value": &data.roles_ids, "errors": errors.roles_ids, "options": roles_options, }
+        "roles_ids": field_roles_ids
     });
 
     let ctx = json!({

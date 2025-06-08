@@ -17,6 +17,7 @@ INSERT INTO `roles` (`id`, `code`, `name`, `permissions`) VALUES (1, 'admin', 'A
 \"users_create\",
 \"users_update\",
 \"users_delete\",
+\"users_set_roles\",
 \"roles_show\",
 \"roles_create\",
 \"roles_update\",

@@ -10,6 +10,7 @@ pub enum Permission {
     UsersCreate,
     UsersUpdate,
     UsersDelete,
+    UsersSetRoles,
     RolesShow,
     RolesCreate,
     RolesUpdate,

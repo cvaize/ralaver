@@ -15,6 +15,9 @@ impl UserPolicy {
     pub fn can_delete(user: &User, user_roles: &Vec<Role>) -> bool {
         can_permission!(user, user_roles, Permission::UsersDelete);
     }
+    pub fn can_set_roles(user: &User, user_roles: &Vec<Role>) -> bool {
+        can_permission!(user, user_roles, Permission::UsersSetRoles);
+    }
 }
 
 #[cfg(test)]
