@@ -1,5 +1,12 @@
-use crate::app::controllers::web::{generate_2_offset_pagination_array, get_context_data, get_template_context};
-use crate::{prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService, LocaleService, Session, TemplateService, TranslatorService, User, UserService, WebAuthService, WebHttpResponse, UserFilter, UserPaginateParams, UserSort, RoleService, CSRF_ERROR_MESSAGE};
+use crate::app::controllers::web::{
+    generate_2_offset_pagination_array, get_context_data, get_template_context,
+};
+use crate::app::policies::user::UserPolicy;
+use crate::{
+    prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService,
+    LocaleService, RoleService, Session, TemplateService, TranslatorService, User, UserFilter,
+    UserPaginateParams, UserService, UserSort, WebAuthService, WebHttpResponse, CSRF_ERROR_MESSAGE,
+};
 use actix_web::web::{Data, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
@@ -9,7 +16,6 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
-use crate::app::policies::user::UserPolicy;
 
 const PAGE_URL: &'static str = "/users?";
 
@@ -50,8 +56,8 @@ pub async fn invoke(
     let role_service = role_service.get_ref();
     let user = user.as_ref();
 
-    let roles = role_service.get_all_throw_http()?;
-    if !UserPolicy::can_show(&user, &roles) {
+    let user_roles = role_service.get_all_throw_http()?;
+    if !UserPolicy::can_show(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
 
@@ -65,8 +71,7 @@ pub async fn invoke(
     let locale_str = tr_s.translate(lang, "page.users.index.columns.locale");
     let sort_str = tr_s.translate(lang, "Sort");
 
-    let form_errors: Vec<String> =
-        query.validate(tr_s, lang, &search_str, &locale_str, &sort_str);
+    let form_errors: Vec<String> = query.validate(tr_s, lang, &search_str, &locale_str, &sort_str);
 
     let page = query.page.unwrap();
     let per_page = query.per_page.unwrap();
@@ -78,8 +83,16 @@ pub async fn invoke(
     let total_pages = max(users.total_pages, 1);
     let total_pages_str = total_pages.to_string();
 
-    let mut context_data =
-        get_context_data(ROUTE_NAME, &req, user, &session, tr_s, app_service, web_auth_service, role_service);
+    let mut context_data = get_context_data(
+        ROUTE_NAME,
+        &req,
+        user,
+        &session,
+        tr_s,
+        app_service,
+        web_auth_service,
+        role_service,
+    );
     let mut page_vars: HashMap<&str, &str> = HashMap::new();
     page_vars.insert("page", &page_str);
     page_vars.insert("total_pages", &total_pages_str);
@@ -131,6 +144,39 @@ pub async fn invoke(
         sort_options.push(json!({ "label": label, "value": value }));
     }
 
+    let mut selected: Option<Value> = None;
+    let mut create: Option<Value> = None;
+    let mut edit: Option<Value> = None;
+    let mut delete: Option<Value> = None;
+
+    if UserPolicy::can_create(&user, &user_roles) {
+        create = Some(json!({
+            "label": tr_s.translate(lang, "Create user"),
+            "href": "/users/create"
+        }));
+    }
+
+    if UserPolicy::can_update(&user, &user_roles) {
+        edit = Some(json!({
+            "label": tr_s.translate(lang, "Edit user"),
+            "href": "/users/:id"
+        }));
+    }
+
+    if UserPolicy::can_delete(&user, &user_roles) {
+        selected = Some(json!({
+            "label": tr_s.translate(lang, "Selected"),
+            "delete": tr_s.translate(lang, "Delete selected"),
+            "delete_confirm": tr_s.translate(lang, "Delete selected?"),
+        }));
+        delete = Some(json!({
+            "action": "/users/:id/delete",
+            "method": "post",
+            "label": tr_s.translate(lang, "Delete user"),
+            "confirm": tr_s.translate(lang, "Delete user(ID: :id)?"),
+        }));
+    }
+
     let ctx = json!({
         "ctx": &layout_ctx,
         "heading": tr_s.translate(lang, "page.users.index.header"),
@@ -139,20 +185,9 @@ pub async fn invoke(
             {"href": "/users", "label": tr_s.translate(lang, "page.users.index.header")},
             {"label": tr_s.variables(lang, "Page :page of :total_pages", &page_vars)},
         ],
-        "create": {
-            "label": tr_s.translate(lang, "Create user"),
-            "href": "/users/create"
-        },
-        "edit": {
-            "label": tr_s.translate(lang, "Edit user"),
-            "href": "/users/:id"
-        },
-        "delete": {
-            "action": "/users/:id/delete",
-            "method": "post",
-            "label": tr_s.translate(lang, "Delete user"),
-            "confirm": tr_s.translate(lang, "Delete user(ID: :id)?"),
-        },
+        "create": create,
+        "edit": edit,
+        "delete": delete,
         "page_per_page": tr_s.variables(lang, "Page :page of :total_pages", &page_vars),
         "per_page_label": tr_s.translate(lang, "Number of entries per page"),
         "select_page": tr_s.translate(lang, "Select page"),
@@ -161,11 +196,7 @@ pub async fn invoke(
             "value": &query.sort,
             "options": &sort_options
         },
-        "selected": {
-            "label": tr_s.translate(lang, "Selected"),
-            "delete": tr_s.translate(lang, "Delete selected"),
-            "delete_confirm": tr_s.translate(lang, "Delete selected?"),
-        },
+        "selected": selected,
         "columns": {
             "id": tr_s.translate(lang, "page.users.index.columns.id"),
             "email": tr_s.translate(lang, "page.users.index.columns.email"),
