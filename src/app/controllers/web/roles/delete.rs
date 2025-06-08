@@ -3,11 +3,12 @@ use crate::{
     User, WebAuthService, WebHttpResponse,
 };
 use actix_web::web::{Data, Form, Path, ReqData};
-use actix_web::{Error, HttpRequest, HttpResponse, Result};
+use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::header::{ORIGIN, REFERER};
 use http::HeaderValue;
 use serde_derive::Deserialize;
 use std::sync::Arc;
+use crate::app::policies::role::RolePolicy;
 
 const RL_MAX_ATTEMPTS: u64 = 60;
 const RL_TTL: u64 = 60;
@@ -37,6 +38,11 @@ pub async fn invoke(
     let tr_s = tr_s.get_ref();
 
     wa_s.check_csrf_throw_http(&session, &data._token)?;
+
+    let roles = r_s.get_all_throw_http()?;
+    if !RolePolicy::can_delete(&user, &roles) {
+        return Err(error::ErrorForbidden(""));
+    }
 
     let role_id = path.into_inner();
     let user = user.as_ref();

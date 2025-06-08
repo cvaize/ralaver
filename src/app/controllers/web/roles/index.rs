@@ -15,6 +15,8 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
+use crate::app::policies::role::RolePolicy;
+use crate::app::policies::user::UserPolicy;
 
 const PAGE_URL: &'static str = "/roles?";
 
@@ -44,8 +46,6 @@ pub async fn invoke(
     role_service: Data<RoleService>,
     locale_service: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
-    query.prepare();
-
     let tr_s = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
@@ -53,6 +53,13 @@ pub async fn invoke(
     let locale_service = locale_service.get_ref();
     let role_service = role_service.get_ref();
     let user = user.as_ref();
+
+    let roles = role_service.get_all_throw_http()?;
+    if !RolePolicy::can_show(&user, &roles) {
+        return Err(error::ErrorForbidden(""));
+    }
+
+    query.prepare();
 
     let lang: String = locale_service.get_locale_code(Some(&req), Some(&user));
     let lang = &lang;
@@ -81,6 +88,7 @@ pub async fn invoke(
         tr_s,
         app_service,
         web_auth_service,
+        role_service,
     );
     let mut page_vars: HashMap<&str, &str> = HashMap::new();
     page_vars.insert("page", &page_str);

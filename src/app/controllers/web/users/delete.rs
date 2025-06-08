@@ -1,10 +1,11 @@
-use crate::{AlertVariant, LocaleService, RateLimitService, Session, TranslatorService, User, UserService, WebAuthService, WebHttpResponse};
+use crate::{AlertVariant, LocaleService, RateLimitService, RoleService, Session, TranslatorService, User, UserService, WebAuthService, WebHttpResponse};
 use actix_web::web::{Data, Form, Path, ReqData};
-use actix_web::{Error, HttpRequest, HttpResponse, Result};
+use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use serde_derive::Deserialize;
 use std::sync::Arc;
 use http::header::{ORIGIN, REFERER};
 use http::HeaderValue;
+use crate::app::policies::user::UserPolicy;
 
 const RL_MAX_ATTEMPTS: u64 = 60;
 const RL_TTL: u64 = 60;
@@ -26,14 +27,21 @@ pub async fn invoke(
     wa_s: Data<WebAuthService>,
     rl_s: Data<RateLimitService>,
     tr_s: Data<TranslatorService>,
+    r_s: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
     let wa_s = wa_s.get_ref();
     let rl_s = rl_s.get_ref();
     let l_s = l_s.get_ref();
     let u_s = u_s.get_ref();
     let tr_s = tr_s.get_ref();
+    let r_s = r_s.get_ref();
 
     wa_s.check_csrf_throw_http(&session, &data._token)?;
+
+    let roles = r_s.get_all_throw_http()?;
+    if !UserPolicy::can_delete(&user, &roles) {
+        return Err(error::ErrorForbidden(""));
+    }
 
     let user_id = path.into_inner();
     let user = user.as_ref();

@@ -13,11 +13,11 @@ pub fn up(_: &Config, connection: &mut MysqlPooledConnection) {
     connection.query_drop(query).unwrap();
 
     let query = "
-INSERT INTO `roles` (`id`, `code`, `name`, `permissions`) VALUES (1, 'admin', 'Admin', '[\"users_index\",
+INSERT INTO `roles` (`id`, `code`, `name`, `permissions`) VALUES (1, 'admin', 'Admin', '[\"users_show\",
 \"users_create\",
 \"users_update\",
 \"users_delete\",
-\"roles_index\",
+\"roles_show\",
 \"roles_create\",
 \"roles_update\",
 \"roles_delete\"]');

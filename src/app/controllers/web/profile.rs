@@ -1,5 +1,5 @@
 use crate::app::controllers::web::{get_context_data, get_template_context};
-use crate::{AppService, TemplateService, TranslatorService};
+use crate::{AppService, RoleService, TemplateService, TranslatorService};
 use crate::{Session, User, WebAuthService};
 use actix_web::web::{Data, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
@@ -16,11 +16,13 @@ pub async fn index(
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     web_auth_service: Data<WebAuthService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
     let translator_service = translator_service.get_ref();
     let web_auth_service = web_auth_service.get_ref();
+    let role_service = role_service.get_ref();
     let user = user.as_ref();
 
     let mut context_data = get_context_data(
@@ -31,6 +33,7 @@ pub async fn index(
         translator_service,
         app_service,
         web_auth_service,
+        role_service,
     );
     let lang = &context_data.lang;
     context_data.title = translator_service.translate(lang, "page.profile.title");

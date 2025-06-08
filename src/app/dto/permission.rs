@@ -6,11 +6,11 @@ use strum_macros::{Display, EnumString};
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum Permission {
-    UsersIndex,
+    UsersShow,
     UsersCreate,
     UsersUpdate,
     UsersDelete,
-    RolesIndex,
+    RolesShow,
     RolesCreate,
     RolesUpdate,
     RolesDelete,

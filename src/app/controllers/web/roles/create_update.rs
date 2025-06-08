@@ -12,6 +12,7 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
 use strum::VariantNames;
+use crate::app::policies::role::RolePolicy;
 
 const RL_MAX_ATTEMPTS: u64 = 10;
 const RL_TTL: u64 = 60;
@@ -50,6 +51,10 @@ pub async fn create(
     r_s: Data<RoleService>,
     l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
+    let roles = r_s.get_all_throw_http()?;
+    if !RolePolicy::can_create(&user, &roles) {
+        return Err(error::ErrorForbidden(""));
+    }
     let data = Form(PostData::default());
     invoke(
         None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, l_s,
@@ -69,6 +74,10 @@ pub async fn store(
     r_s: Data<RoleService>,
     l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
+    let roles = r_s.get_all_throw_http()?;
+    if !RolePolicy::can_create(&user, &roles) {
+        return Err(error::ErrorForbidden(""));
+    }
     invoke(
         None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, l_s,
     )
@@ -87,6 +96,10 @@ pub async fn edit(
     r_s: Data<RoleService>,
     l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
+    let roles = r_s.get_all_throw_http()?;
+    if !RolePolicy::can_update(&user, &roles) {
+        return Err(error::ErrorForbidden(""));
+    }
     let role_id = path.into_inner();
     let edit_role = r_s.get_ref().first_by_id_throw_http(role_id)?;
     let post_data = PostData {
@@ -118,6 +131,10 @@ pub async fn update(
     r_s: Data<RoleService>,
     l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
+    let roles = r_s.get_all_throw_http()?;
+    if !RolePolicy::can_update(&user, &roles) {
+        return Err(error::ErrorForbidden(""));
+    }
     let role_id = path.into_inner();
     let edit_role = Some(r_s.get_ref().first_by_id_throw_http(role_id)?);
     invoke(
@@ -153,7 +170,7 @@ pub fn invoke(
     let user = user.as_ref();
 
     let mut alert_variants: Vec<AlertVariant> = Vec::new();
-    let mut context_data = get_context_data(ROUTE_NAME, &req, user, &session, tr_s, ap_s, wa_s);
+    let mut context_data = get_context_data(ROUTE_NAME, &req, user, &session, tr_s, ap_s, wa_s, r_s);
 
     let lang = &context_data.lang;
 

@@ -4,11 +4,12 @@ use crate::{
     User, WebAuthService, WebHttpResponse,
 };
 use actix_web::web::{Data, ReqData};
-use actix_web::{Error, HttpRequest, HttpResponse, Result};
+use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::header::{ORIGIN, REFERER};
 use http::HeaderValue;
 use serde_derive::Deserialize;
 use std::sync::Arc;
+use crate::app::policies::role::RolePolicy;
 
 const RL_MAX_ATTEMPTS: u64 = 30;
 const RL_TTL: u64 = 60;
@@ -40,6 +41,8 @@ pub async fn invoke(
 
     wa_s.check_csrf_throw_http(&session, &data._token)?;
 
+    let roles = r_s.get_all_throw_http()?;
+
     let user = user.as_ref();
     let lang: String = l_s.get_locale_code(Some(&req), Some(&user));
 
@@ -54,6 +57,9 @@ pub async fn invoke(
             let ids = data.selected.as_ref().unwrap();
             if ids.len() > 0 {
                 if action.eq("delete") {
+                    if !RolePolicy::can_delete(&user, &roles) {
+                        return Err(error::ErrorForbidden(""));
+                    }
                     r_s.delete_by_ids_throw_http(ids)?;
                     alert_variants.push(AlertVariant::RolesMassDeleteSuccess(
                         ids.iter()

@@ -1,9 +1,9 @@
 {
-  "users_index":  "Viewing the list of users",
+  "users_show":  "Viewing the list of users",
   "users_create":  "Create users",
   "users_update":  "User update",
   "users_delete":  "User delete",
-  "roles_index":  "Viewing the list of roles",
+  "roles_show":  "Viewing the list of roles",
   "roles_create":  "Create roles",
   "roles_update":  "Role update",
   "roles_delete":  "Role delete"

@@ -1,14 +1,12 @@
 use crate::libs::actix_web::types::form::Form;
-use crate::{
-    AlertVariant, LocaleService, RateLimitService, Session, TranslatorService, User, UserService,
-    WebAuthService, WebHttpResponse,
-};
+use crate::{AlertVariant, LocaleService, RateLimitService, RoleService, Session, TranslatorService, User, UserService, WebAuthService, WebHttpResponse};
 use actix_web::web::{Data, ReqData};
-use actix_web::{Error, HttpRequest, HttpResponse, Result};
+use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::header::{ORIGIN, REFERER};
 use http::HeaderValue;
 use serde_derive::Deserialize;
 use std::sync::Arc;
+use crate::app::policies::user::UserPolicy;
 
 const RL_MAX_ATTEMPTS: u64 = 30;
 const RL_TTL: u64 = 60;
@@ -31,14 +29,18 @@ pub async fn invoke(
     wa_s: Data<WebAuthService>,
     rl_s: Data<RateLimitService>,
     tr_s: Data<TranslatorService>,
+    r_s: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
     let wa_s = wa_s.get_ref();
     let rl_s = rl_s.get_ref();
     let l_s = l_s.get_ref();
     let u_s = u_s.get_ref();
     let tr_s = tr_s.get_ref();
+    let r_s = r_s.get_ref();
 
     wa_s.check_csrf_throw_http(&session, &data._token)?;
+
+    let roles = r_s.get_all_throw_http()?;
 
     let user = user.as_ref();
     let lang: String = l_s.get_locale_code(Some(&req), Some(&user));
@@ -54,6 +56,9 @@ pub async fn invoke(
             let ids = data.selected.as_ref().unwrap();
             if ids.len() > 0 {
                 if action.eq("delete") {
+                    if !UserPolicy::can_delete(&user, &roles) {
+                        return Err(error::ErrorForbidden(""));
+                    }
                     u_s.delete_by_ids_throw_http(ids)?;
                     alert_variants.push(AlertVariant::UsersMassDeleteSuccess(
                         ids.iter().map(|id| id.to_string()).collect::<Vec<String>>().join(", "),

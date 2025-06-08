@@ -1,8 +1,5 @@
 use crate::app::controllers::web::{generate_2_offset_pagination_array, get_context_data, get_template_context};
-use crate::{
-    prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService, LocaleService, Session, TemplateService, TranslatorService, User, UserService,
-    WebAuthService, WebHttpResponse, UserFilter, UserPaginateParams, UserSort
-};
+use crate::{prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService, LocaleService, Session, TemplateService, TranslatorService, User, UserService, WebAuthService, WebHttpResponse, UserFilter, UserPaginateParams, UserSort, RoleService, CSRF_ERROR_MESSAGE};
 use actix_web::web::{Data, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
@@ -12,6 +9,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
+use crate::app::policies::user::UserPolicy;
 
 const PAGE_URL: &'static str = "/users?";
 
@@ -41,16 +39,23 @@ pub async fn invoke(
     web_auth_service: Data<WebAuthService>,
     user_service: Data<UserService>,
     locale_service: Data<LocaleService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    query.prepare();
-
     let tr_s = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
     let web_auth_service = web_auth_service.get_ref();
     let locale_service = locale_service.get_ref();
     let user_service = user_service.get_ref();
+    let role_service = role_service.get_ref();
     let user = user.as_ref();
+
+    let roles = role_service.get_all_throw_http()?;
+    if !UserPolicy::can_show(&user, &roles) {
+        return Err(error::ErrorForbidden(""));
+    }
+
+    query.prepare();
 
     let lang: String = locale_service.get_locale_code(Some(&req), Some(&user));
     let lang = &lang;
@@ -74,7 +79,7 @@ pub async fn invoke(
     let total_pages_str = total_pages.to_string();
 
     let mut context_data =
-        get_context_data(ROUTE_NAME, &req, user, &session, tr_s, app_service, web_auth_service);
+        get_context_data(ROUTE_NAME, &req, user, &session, tr_s, app_service, web_auth_service, role_service);
     let mut page_vars: HashMap<&str, &str> = HashMap::new();
     page_vars.insert("page", &page_str);
     page_vars.insert("total_pages", &total_pages_str);
