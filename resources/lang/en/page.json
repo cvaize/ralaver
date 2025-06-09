@@ -21,7 +21,7 @@
     "text": "Send confirmation code to email.",
     "validation": {
       "email": {
-        "exists": "{{validation.custom.email.exists}}"
+        "not_exists": "{{validation.custom.email.not_exists}}"
       }
     }
   },

@@ -21,7 +21,7 @@
     "text": "Отправить код подтверждения на E-mail.",
     "validation": {
       "email": {
-        "exists": "{{validation.custom.email.exists}}"
+        "not_exists": "{{validation.custom.email.not_exists}}"
       }
     }
   },

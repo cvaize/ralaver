@@ -140,7 +140,7 @@
     "uuid": "The :attribute field must be a valid UUID.",
     "custom": {
         "email": {
-            "exists": "An account with this email address was not found."
+            "not_exists": "An account with this email address was not found."
         }
     },
     "attributes": {

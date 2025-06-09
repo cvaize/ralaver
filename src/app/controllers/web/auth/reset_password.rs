@@ -1,13 +1,16 @@
+use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
-use crate::{prepare_value, Alert, AppService, AuthService, EmailAddress, EmailMessage, MailService, RandomService, TemplateService, TranslatorService, WebHttpResponse};
+use crate::{
+    prepare_value, Alert, AppService, AuthService, EmailAddress, EmailMessage, MailService,
+    RandomService, TemplateService, TranslatorService, WebHttpResponse,
+};
 use crate::{RateLimitService, WebHttpRequest};
 use actix_web::web::{Data, Form};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
 use serde_json::json;
-use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
 
 pub static CODE_LEN: usize = 64;
 
@@ -93,6 +96,10 @@ pub async fn invoke(
         ));
     }
 
+    for alert in alerts {
+        context_data.alerts.push(alert);
+    }
+
     let layout_ctx = get_public_template_context(&context_data);
     let ctx = json!({
         "ctx": layout_ctx,
@@ -157,9 +164,13 @@ async fn post(
             .map_err(|_| error::ErrorInternalServerError(""))?;
 
         if executed {
-            email_errors = Required::validated(translator_service, lang, &data.email, |value| {
-                Email::validate(translator_service, lang, value, &email_str)
-            }, &email_str);
+            email_errors = Required::validated(
+                translator_service,
+                lang,
+                &data.email,
+                |value| Email::validate(translator_service, lang, value, &email_str),
+                &email_str,
+            );
             let email: String = data.email.clone().unwrap_or("".to_string());
 
             if email_errors.len() == 0 {
@@ -168,7 +179,8 @@ async fn post(
                     .map_err(|_| error::ErrorInternalServerError(""))?;
                 if exists == false {
                     email_errors.push(
-                        translator_service.translate(lang, "page.reset_password.validation.email.exists"),
+                        translator_service
+                            .translate(lang, "page.reset_password.validation.email.not_exists"),
                     );
                 }
             }
@@ -214,8 +226,7 @@ async fn post(
                     from: None,
                     reply_to: None,
                     to: EmailAddress { name: None, email },
-                    subject: translator_service
-                        .translate(lang, "mail.reset_password.subject"),
+                    subject: translator_service.translate(lang, "mail.reset_password.subject"),
                     html_body: Some(
                         tmpl_service.render_throw_http("emails/auth/reset_password.hbs", &ctx)?,
                     ),
@@ -224,8 +235,7 @@ async fn post(
                 let send_email_result = mail_service.send_email(&message);
 
                 if send_email_result.is_err() {
-                    let email_str =
-                        translator_service.translate(lang, "alert.reset_password.fail");
+                    let email_str = translator_service.translate(lang, "alert.reset_password.fail");
                     form_errors.push(email_str);
                 } else {
                     is_done = true;
@@ -253,7 +263,6 @@ async fn post(
 
     Ok((is_done, form_errors, email_errors))
 }
-
 
 impl ResetPasswordData {
     pub fn prepare(&mut self) {
