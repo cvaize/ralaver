@@ -37,7 +37,8 @@ pub fn register(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/profile")
             .wrap(WebAuthMiddleware)
-            .route(web::get().to(controllers::web::profile::index)),
+            .route(web::get().to(controllers::web::profile::index))
+            .route(web::post().to(controllers::web::profile::update)),
     );
     cfg.service(
         web::resource("/users")

@@ -1,54 +1,63 @@
-use crate::app::controllers::web::{get_context_data, get_template_context};
-use crate::{AppService, RoleService, TemplateService, TranslatorService};
+use crate::app::controllers::web::users::create_update::{invoke as users_create_update_invoke, post_data_from_user, PostData};
+use crate::libs::actix_web::types::form::Form;
+use crate::{
+    AppService, LocaleService, RateLimitService, RoleService, TemplateService, TranslatorService,
+    UserService,
+};
 use crate::{Session, User, WebAuthService};
 use actix_web::web::{Data, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
-use serde_json::json;
 use std::sync::Arc;
 
-const ROUTE_NAME: &'static str = "profile_index";
+pub const ROUTE_NAME: &'static str = "profile_index";
 
 pub async fn index(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tmpl_service: Data<TemplateService>,
-    app_service: Data<AppService>,
-    translator_service: Data<TranslatorService>,
-    web_auth_service: Data<WebAuthService>,
-    role_service: Data<RoleService>,
+    tr_s: Data<TranslatorService>,
+    tm_s: Data<TemplateService>,
+    ap_s: Data<AppService>,
+    wa_s: Data<WebAuthService>,
+    rl_s: Data<RateLimitService>,
+    u_s: Data<UserService>,
+    l_s: Data<LocaleService>,
+    r_s: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let tmpl_service = tmpl_service.get_ref();
-    let app_service = app_service.get_ref();
-    let translator_service = translator_service.get_ref();
-    let web_auth_service = web_auth_service.get_ref();
-    let role_service = role_service.get_ref();
-    let user = user.as_ref();
+    let user_roles = r_s.get_all_throw_http()?;
+    let edit_user = user.as_ref().clone();
+    let post_data = post_data_from_user(&edit_user);
+    let edit_user = Some(edit_user);
+    let data = Form(post_data);
+    users_create_update_invoke(
+        true, edit_user, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s,
+        l_s, r_s,
+    )
+}
 
-    let mut context_data = get_context_data(
-        ROUTE_NAME,
-        &req,
-        user,
-        &session,
-        translator_service,
-        app_service,
-        web_auth_service,
-        role_service,
-    );
-    let lang = &context_data.lang;
-    context_data.title = translator_service.translate(lang, "page.profile.title");
+pub async fn update(
+    req: HttpRequest,
+    user: ReqData<Arc<User>>,
+    session: ReqData<Arc<Session>>,
+    data: Form<PostData>,
+    tr_s: Data<TranslatorService>,
+    tm_s: Data<TemplateService>,
+    ap_s: Data<AppService>,
+    wa_s: Data<WebAuthService>,
+    rl_s: Data<RateLimitService>,
+    u_s: Data<UserService>,
+    l_s: Data<LocaleService>,
+    r_s: Data<RoleService>,
+) -> Result<HttpResponse, Error> {
+    let user_roles = r_s.get_all_throw_http()?;
+    let edit_user = user.as_ref().clone();
+    let edit_user = Some(edit_user);
+    users_create_update_invoke(
+        true, edit_user, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s,
+        l_s, r_s,
+    )
+}
 
-    let layout_ctx = get_template_context(&context_data);
-
-    let ctx = json!({
-        "ctx": layout_ctx,
-        "breadcrumbs": [
-            {"href": "/", "label": translator_service.translate(lang, "page.profile.breadcrumbs.home")},
-            {"label": translator_service.translate(lang, "page.profile.breadcrumbs.profile")},
-        ],
-    });
-    let s = tmpl_service.render_throw_http("pages/profile/index.hbs", &ctx)?;
-    Ok(HttpResponse::Ok()
-        .content_type(mime::TEXT_HTML_UTF_8.as_ref())
-        .body(s))
+pub fn get_url() -> String {
+    "/profile".to_string()
 }

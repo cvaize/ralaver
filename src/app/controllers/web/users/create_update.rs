@@ -1,3 +1,6 @@
+use crate::app::controllers::web::profile::{
+    get_url as get_profile_url, ROUTE_NAME as PROFILE_ROUTE_NAME,
+};
 use crate::app::controllers::web::{get_context_data, get_template_context};
 use crate::app::policies::user::UserPolicy;
 use crate::app::validator::rules::confirmed::Confirmed;
@@ -72,7 +75,8 @@ pub async fn create(
         return Err(error::ErrorForbidden(""));
     }
     invoke(
-        None, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s, r_s,
+        false, None, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s,
+        r_s,
     )
 }
 
@@ -95,7 +99,8 @@ pub async fn store(
         return Err(error::ErrorForbidden(""));
     }
     invoke(
-        None, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s, r_s,
+        false, None, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s,
+        r_s,
     )
 }
 
@@ -119,23 +124,12 @@ pub async fn edit(
     }
     let user_id = path.into_inner();
     let edit_user = u_s.get_ref().first_by_id_throw_http(user_id)?;
-    let post_data = PostData {
-        _token: None,
-        action: None,
-        email: Some(edit_user.email.to_owned()),
-        password: None,
-        confirm_password: None,
-        locale: edit_user.locale.to_owned(),
-        surname: edit_user.surname.to_owned(),
-        name: edit_user.name.to_owned(),
-        patronymic: edit_user.patronymic.to_owned(),
-        roles_ids: edit_user.roles_ids.to_owned(),
-    };
+    let post_data = post_data_from_user(&edit_user);
     let edit_user = Some(edit_user);
     let data = Form(post_data);
     invoke(
-        edit_user, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s,
-        r_s,
+        false, edit_user, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s,
+        l_s, r_s,
     )
 }
 
@@ -161,12 +155,13 @@ pub async fn update(
     let user_id = path.into_inner();
     let edit_user = Some(u_s.get_ref().first_by_id_throw_http(user_id)?);
     invoke(
-        edit_user, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s,
-        r_s,
+        false, edit_user, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s,
+        l_s, r_s,
     )
 }
 
 pub fn invoke(
+    is_profile: bool,
     edit_user: Option<User>,
     req: HttpRequest,
     mut data: Form<PostData>,
@@ -197,8 +192,13 @@ pub fn invoke(
     let user = user.as_ref();
 
     let mut alert_variants: Vec<AlertVariant> = Vec::new();
+    let route_name = if is_profile {
+        PROFILE_ROUTE_NAME
+    } else {
+        ROUTE_NAME
+    };
     let mut context_data =
-        get_context_data(ROUTE_NAME, &req, user, &session, tr_s, ap_s, wa_s, r_s);
+        get_context_data(route_name, &req, user, &session, tr_s, ap_s, wa_s, r_s);
 
     let lang = &context_data.lang;
 
@@ -211,22 +211,30 @@ pub fn invoke(
     let locale_str = tr_s.translate(lang, "page.users.create.fields.locale");
     let roles_ids_str = tr_s.translate(lang, "page.users.create.fields.roles_ids");
 
-    let (title, heading, action) = if let Some(edit_user) = &edit_user {
-        let mut vars: HashMap<&str, &str> = HashMap::new();
-        let user_name = edit_user.get_full_name_with_id_and_email();
-        vars.insert("user_name", &user_name);
-
-        (
-            tr_s.variables(lang, "page.users.edit.title", &vars),
-            tr_s.variables(lang, "page.users.edit.header", &vars),
-            get_edit_url(edit_user.id.to_string().as_str()),
-        )
+    let (title, heading, action) = if is_profile {
+        let title = tr_s.translate(lang, "page.profile.title");
+        let heading = tr_s.translate(lang, "page.profile.header");
+        let action = get_profile_url();
+        (title, heading, action)
     } else {
-        (
-            tr_s.translate(lang, "page.users.create.title"),
-            tr_s.translate(lang, "page.users.create.header"),
-            get_create_url(),
-        )
+        let data = if let Some(edit_user) = &edit_user {
+            let mut vars: HashMap<&str, &str> = HashMap::new();
+            let user_name = edit_user.get_full_name_with_id_and_email();
+            vars.insert("user_name", &user_name);
+
+            (
+                tr_s.variables(lang, "page.users.edit.title", &vars),
+                tr_s.variables(lang, "page.users.edit.header", &vars),
+                get_edit_url(edit_user.id.to_string().as_str()),
+            )
+        } else {
+            (
+                tr_s.translate(lang, "page.users.create.title"),
+                tr_s.translate(lang, "page.users.create.header"),
+                get_create_url(),
+            )
+        };
+        data
     };
 
     context_data.title = title;
@@ -395,7 +403,11 @@ pub fn invoke(
 
         if let Some(action) = &data.action {
             if action.eq("save") {
-                let url_ = get_edit_url(&id);
+                let url_ = if is_profile {
+                    get_profile_url()
+                } else {
+                    get_edit_url(&id)
+                };
                 return Ok(HttpResponse::SeeOther()
                     .set_alerts(alert_variants)
                     .insert_header((
@@ -467,6 +479,26 @@ pub fn invoke(
         "roles_ids": field_roles_ids
     });
 
+    let (breadcrumbs, save_and_close, close) = if is_profile {
+        let breadcrumbs = json!([
+            {"href": "/", "label": tr_s.translate(lang, "page.profile.breadcrumbs.home")},
+            {"label": tr_s.translate(lang, "page.profile.breadcrumbs.profile")},
+        ]);
+        (breadcrumbs, None, None)
+    } else {
+        let breadcrumbs = json!([
+            {"href": "/", "label": tr_s.translate(lang, "page.home.header")},
+            {"href": "/users", "label": tr_s.translate(lang, "page.users.index.header")},
+            {"label": &heading},
+        ]);
+        let save_and_close = Some(json!(tr_s.translate(lang, "Save and close")));
+        let close = Some(json!({
+            "label": tr_s.translate(lang, "Close"),
+            "href": "/users"
+        }));
+        (breadcrumbs, save_and_close, close)
+    };
+
     let ctx = json!({
         "ctx": layout_ctx,
         "heading": &heading,
@@ -474,21 +506,14 @@ pub fn invoke(
             "main": tr_s.translate(lang, "page.users.create.tabs.main"),
             "extended": tr_s.translate(lang, "page.users.create.tabs.extended"),
         },
-        "breadcrumbs": [
-            {"href": "/", "label": tr_s.translate(lang, "page.home.header")},
-            {"href": "/users", "label": tr_s.translate(lang, "page.users.index.header")},
-            {"label": &heading},
-        ],
+        "breadcrumbs": breadcrumbs,
         "form": {
             "action": &action,
             "method": "post",
             "fields": fields,
             "save": tr_s.translate(lang, "Save"),
-            "save_and_close": tr_s.translate(lang, "Save and close"),
-            "close": {
-                "label": tr_s.translate(lang, "Close"),
-                "href": "/users"
-            },
+            "save_and_close": save_and_close,
+            "close": close,
         },
     });
     let s = tm_s.render_throw_http("pages/users/create-update.hbs", &ctx)?;
@@ -532,5 +557,20 @@ impl ErrorMessages {
             && self.name.len() == 0
             && self.patronymic.len() == 0
             && self.locale.len() == 0
+    }
+}
+
+pub fn post_data_from_user(user: &User) -> PostData {
+    PostData {
+        _token: None,
+        action: None,
+        email: Some(user.email.to_owned()),
+        password: None,
+        confirm_password: None,
+        locale: user.locale.to_owned(),
+        surname: user.surname.to_owned(),
+        name: user.name.to_owned(),
+        patronymic: user.patronymic.to_owned(),
+        roles_ids: user.roles_ids.to_owned(),
     }
 }
