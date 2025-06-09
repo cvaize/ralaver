@@ -1,10 +1,14 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
-use crate::{HashService, KeyValueService, KeyValueServiceError, TranslatableError, TranslatorService, User, UserMysqlRepository, UserService, UserServiceError};
+use crate::{
+    HashService, KeyValueService, KeyValueServiceError, TranslatableError, TranslatorService, User,
+    UserMysqlRepository, UserService, UserServiceError,
+};
 use actix_web::web::Data;
 use serde_derive::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 
+pub const RESET_PASSWORD_TTL: u64 = 60;
 const RESET_PASSWORD_CODE_KEY: &'static str = "reset_password.code";
 
 pub struct AuthService {
@@ -33,10 +37,12 @@ impl AuthService {
     pub fn login_by_password(&self, email: &str, password: &str) -> Result<u64, AuthServiceError> {
         let hash_service = self.hash_service.get_ref();
         let user_repository = self.user_repository.get_ref();
-        let user = user_repository.first_credentials_by_email(email).map_err(|e| {
-            log::error!("AuthService::login_by_password - {email} - {e}");
-            return AuthServiceError::Fail;
-        })?;
+        let user = user_repository
+            .first_credentials_by_email(email)
+            .map_err(|e| {
+                log::error!("AuthService::login_by_password - {email} - {e}");
+                return AuthServiceError::Fail;
+            })?;
 
         if user.is_none() {
             return Err(AuthServiceError::Fail);
@@ -79,16 +85,37 @@ impl AuthService {
             }
         })?;
 
-        user_service.update_password_by_email(&data.email, &data.password).map_err(|e| {
-            log::error!("AuthService::register_by_credentials - {e}");
-            match e {
-                UserServiceError::DbConnectionFail => AuthServiceError::DbConnectionFail,
-                UserServiceError::PasswordHashFail => AuthServiceError::PasswordHashFail,
-                _ => AuthServiceError::InsertNewUserFail,
-            }
-        })?;
+        user_service
+            .update_password_by_email(&data.email, &data.password)
+            .map_err(|e| {
+                log::error!("AuthService::register_by_credentials - {e}");
+                match e {
+                    UserServiceError::DbConnectionFail => AuthServiceError::DbConnectionFail,
+                    UserServiceError::PasswordHashFail => AuthServiceError::PasswordHashFail,
+                    _ => AuthServiceError::InsertNewUserFail,
+                }
+            })?;
 
         Ok(())
+    }
+
+    pub fn make_reset_password_store_key(
+        &self,
+        email: &str,
+        code: &str,
+    ) -> Result<String, KeyValueServiceError> {
+        let hash_service = self.hash_service.get_ref();
+        let email = hash_service.base64_hash(email).map_err(|e| {
+            log::error!("AuthService::make_reset_password_store_key - {e}");
+            KeyValueServiceError::Fail
+        })?;
+
+        let mut key = RESET_PASSWORD_CODE_KEY.to_string();
+        key.push('.');
+        key.push_str(&email);
+        key.push('.');
+        key.push_str(code);
+        Ok(key)
     }
 
     pub fn save_reset_password_code(
@@ -96,44 +123,45 @@ impl AuthService {
         email: &str,
         code: &str,
     ) -> Result<(), KeyValueServiceError> {
-        let key = format!("{}:{}", RESET_PASSWORD_CODE_KEY, &email);
+        let key = self.make_reset_password_store_key(email, code)?;
+        let key_value_service = self.key_value_service.get_ref();
 
-        self.key_value_service
-            .get_ref()
-            .set(&key, code)
-            .map_err(|e| {
-                log::error!("AuthService::save_reset_password_code - {key} - {e}");
-                e
-            })?;
+        key_value_service.set_ex(&key, true, RESET_PASSWORD_TTL).map_err(|e| {
+            log::error!("AuthService::save_reset_password_code - {key} - {e}");
+            e
+        })?;
         Ok(())
     }
 
-    pub fn get_reset_password_code(
+    pub fn delete_reset_password_code(
         &self,
         email: &str,
-    ) -> Result<Option<String>, KeyValueServiceError> {
-        let key = format!("{}:{}", RESET_PASSWORD_CODE_KEY, &email);
+        code: &str,
+    ) -> Result<(), KeyValueServiceError> {
+        let key = self.make_reset_password_store_key(email, code)?;
+        let key_value_service = self.key_value_service.get_ref();
 
-        let value: Option<String> = self.key_value_service.get_ref().get(&key).map_err(|e| {
-            log::error!("AuthService::get_reset_password_code - {key} - {e}");
+        key_value_service.del(&key).map_err(|e| {
+            log::error!("AuthService::save_reset_password_code - {key} - {e}");
             e
         })?;
-        Ok(value)
+        Ok(())
     }
 
-    pub fn is_equal_reset_password_code(
+    pub fn is_exists_reset_password_code(
         &self,
         email: &str,
         code: &str,
     ) -> Result<bool, KeyValueServiceError> {
-        let stored_code: Option<String> = self.get_reset_password_code(email).map_err(|e| {
-            log::error!("AuthService::is_equal_reset_password_code - {email} - {e}");
+        let key = self.make_reset_password_store_key(email, code)?;
+        let key_value_service = self.key_value_service.get_ref();
+
+        let is_stored: Option<bool> = key_value_service.get(&key).map_err(|e| {
+            log::error!("AuthService::is_exists_reset_password_code - {key} - {e}");
             e
         })?;
-        match stored_code {
-            Some(stored_code) => Ok(stored_code.eq(code)),
-            _ => Ok(false),
-        }
+
+        Ok(is_stored.unwrap_or(false))
     }
 
     pub fn update_password_by_email(
@@ -247,17 +275,11 @@ mod tests {
             .save_reset_password_code(email, &code)
             .unwrap();
 
-        let saved_code = all_services
-            .auth_service
-            .get_reset_password_code(email)
-            .unwrap()
-            .unwrap();
-        assert_eq!(code, saved_code);
         assert_eq!(
             true,
             all_services
                 .auth_service
-                .is_equal_reset_password_code(email, &code)
+                .is_exists_reset_password_code(email, &code)
                 .unwrap()
         );
         let code = all_services.rand_service.get_ref().str(64);
@@ -265,7 +287,7 @@ mod tests {
             false,
             all_services
                 .auth_service
-                .is_equal_reset_password_code(email, &code)
+                .is_exists_reset_password_code(email, &code)
                 .unwrap()
         );
     }

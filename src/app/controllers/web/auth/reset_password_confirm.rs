@@ -5,7 +5,7 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{prepare_value, AlertVariant, RateLimitService, WebHttpResponse};
+use crate::{prepare_value, AlertVariant, RateLimitService, WebHttpResponse, RESET_PASSWORD_TTL};
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::web::{Data, Form, Query};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -14,7 +14,7 @@ use serde_derive::Deserialize;
 use serde_json::json;
 
 const RL_MAX_ATTEMPTS: u64 = 5;
-const RL_TTL: u64 = 60;
+const RL_TTL: u64 = RESET_PASSWORD_TTL;
 const RL_KEY: &'static str = "reset_password_confirm";
 
 #[derive(Deserialize)]
@@ -292,16 +292,21 @@ async fn post(
                 let code = data.code.as_ref().unwrap_or(&d_);
                 let password = data.password.as_ref().unwrap_or(&d_);
 
-                let is_code_equal: bool = auth_service
-                    .is_equal_reset_password_code(email, code)
+                let is_exists_code: bool = auth_service
+                    .is_exists_reset_password_code(email, code)
                     .map_err(|_| error::ErrorInternalServerError(""))?;
 
-                if is_code_equal {
+                if is_exists_code {
                     auth_service
                         .update_password_by_email(email, password)
                         .map_err(|_| error::ErrorInternalServerError(""))?;
+                    auth_service
+                        .delete_reset_password_code(email, code)
+                        .map_err(|_| error::ErrorInternalServerError(""))?;
 
                     is_done1 = true;
+                } else {
+                    code_errors.push("Reset password code not exists.".to_string());
                 }
 
                 is_done1

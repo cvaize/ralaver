@@ -6,6 +6,7 @@ pub mod profile;
 pub mod roles;
 pub mod users;
 
+use std::collections::HashSet;
 use crate::{Alert, AlertVariant, AppService, Locale, RoleService, Session, TranslatorService, User, WebAuthService, ALERTS_KEY};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;

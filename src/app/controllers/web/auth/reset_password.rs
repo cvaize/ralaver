@@ -1,10 +1,7 @@
 use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
-use crate::{
-    prepare_value, Alert, AppService, AuthService, EmailAddress, EmailMessage, MailService,
-    RandomService, TemplateService, TranslatorService, WebHttpResponse,
-};
+use crate::{prepare_value, Alert, AppService, AuthService, EmailAddress, EmailMessage, MailService, RandomService, TemplateService, TranslatorService, WebHttpResponse, RESET_PASSWORD_TTL};
 use crate::{RateLimitService, WebHttpRequest};
 use actix_web::web::{Data, Form};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -15,7 +12,7 @@ use serde_json::json;
 pub static CODE_LEN: usize = 64;
 
 const RL_MAX_ATTEMPTS: u64 = 5;
-const RL_TTL: u64 = 60;
+const RL_TTL: u64 = RESET_PASSWORD_TTL;
 const RL_KEY: &'static str = "reset_password";
 
 #[derive(Deserialize, Debug)]
@@ -88,16 +85,11 @@ pub async fn invoke(
         rate_limit_service,
     )
     .await?;
-    let mut alerts = req.get_alerts(&translator_service, lang);
 
     if is_done {
-        alerts.push(Alert::success(
+        context_data.alerts.push(Alert::success(
             translator_service.translate(lang, "alert.reset_password.success"),
         ));
-    }
-
-    for alert in alerts {
-        context_data.alerts.push(alert);
     }
 
     let layout_ctx = get_public_template_context(&context_data);
