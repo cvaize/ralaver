@@ -97,6 +97,22 @@ impl Alert {
                 let vars = one_variables!("ids", ids);
                 Self::success(t_s.variables(&lang, "alert.roles.mass_delete.success", &vars))
             }
+            AlertVariant::FilesCreateSuccess(name) => {
+                let vars = one_variables!("name", name);
+                Self::success(t_s.variables(&lang, "alert.files.create.success", &vars))
+            }
+            AlertVariant::FilesUpdateSuccess(name) => {
+                let vars = one_variables!("name", name);
+                Self::success(t_s.variables(&lang, "alert.files.update.success", &vars))
+            }
+            AlertVariant::FilesDeleteSuccess(name) => {
+                let vars = one_variables!("name", name);
+                Self::success(t_s.variables(&lang, "alert.files.delete.success", &vars))
+            }
+            AlertVariant::FilesMassDeleteSuccess(ids) => {
+                let vars = one_variables!("ids", ids);
+                Self::success(t_s.variables(&lang, "alert.files.mass_delete.success", &vars))
+            }
         }
     }
 }
@@ -117,6 +133,10 @@ pub enum AlertVariant {
     RolesUpdateSuccess(String),
     RolesDeleteSuccess(String),
     RolesMassDeleteSuccess(String),
+    FilesCreateSuccess(String),
+    FilesUpdateSuccess(String),
+    FilesDeleteSuccess(String),
+    FilesMassDeleteSuccess(String),
 }
 
 impl AlertVariant {
@@ -177,6 +197,26 @@ impl AlertVariant {
                 str.push_str(ids);
                 str
             }
+            Self::FilesCreateSuccess(name) => {
+                let mut str = "files_create_success::".to_string();
+                str.push_str(name);
+                str
+            }
+            Self::FilesUpdateSuccess(name) => {
+                let mut str = "files_update_success::".to_string();
+                str.push_str(name);
+                str
+            }
+            Self::FilesDeleteSuccess(name) => {
+                let mut str = "files_delete_success::".to_string();
+                str.push_str(name);
+                str
+            }
+            Self::FilesMassDeleteSuccess(ids) => {
+                let mut str = "files_mass_delete_success::".to_string();
+                str.push_str(ids);
+                str
+            }
         }
     }
 
@@ -227,6 +267,22 @@ impl AlertVariant {
             "roles_mass_delete_success" => {
                 let p = string.get(1).ok_or(ParseAlertVariantError)?;
                 Ok(Self::RolesMassDeleteSuccess(p.to_string()))
+            }
+            "files_create_success" => {
+                let p = string.get(1).ok_or(ParseAlertVariantError)?;
+                Ok(Self::FilesCreateSuccess(p.to_string()))
+            }
+            "files_update_success" => {
+                let p = string.get(1).ok_or(ParseAlertVariantError)?;
+                Ok(Self::FilesUpdateSuccess(p.to_string()))
+            }
+            "files_delete_success" => {
+                let p = string.get(1).ok_or(ParseAlertVariantError)?;
+                Ok(Self::FilesDeleteSuccess(p.to_string()))
+            }
+            "files_mass_delete_success" => {
+                let p = string.get(1).ok_or(ParseAlertVariantError)?;
+                Ok(Self::FilesMassDeleteSuccess(p.to_string()))
             }
             _ => Err(ParseAlertVariantError),
         }

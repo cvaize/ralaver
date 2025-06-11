@@ -1,5 +1,8 @@
 <label class="admin-radio">
-    <input class="admin-radio__input" type="radio" name="example-name" hidden>
+    <input class="admin-radio__input" type="radio" name="{{name}}" value="{{value}}" hidden
+        {{#if checked}} checked {{/if}}
+        {{#if form}} form="{{form}}" {{/if}}
+    >
     <span class="admin-radio__box"></span>
-    <span class="admin-radio__text">Example</span>
+    <span class="admin-radio__text">{{label}}</span>
 </label>

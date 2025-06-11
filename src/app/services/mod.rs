@@ -1,6 +1,7 @@
 mod app;
 mod auth;
 mod crypt;
+mod file;
 mod hash;
 mod key_value;
 mod locale;
@@ -16,6 +17,7 @@ mod web_auth;
 pub use self::app::*;
 pub use self::auth::*;
 pub use self::crypt::*;
+pub use self::file::*;
 pub use self::hash::*;
 pub use self::key_value::*;
 pub use self::locale::*;

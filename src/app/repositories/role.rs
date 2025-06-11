@@ -3,7 +3,8 @@ use crate::{
     make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query,
     option_take_json_from_mysql_row, option_to_json_string_for_mysql, take_from_mysql_row,
     take_json_from_mysql_row, FromDbRowError, FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum,
-    MysqlPool, MysqlPooledConnection, PaginationResult, Role, RoleColumn, ToMysqlDto, UserColumn,
+    MysqlPool, MysqlPooledConnection, PaginateParams, PaginationResult, Role, RoleColumn,
+    ToMysqlDto, UserColumn, UserFilter, UserSort,
 };
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;
@@ -80,7 +81,6 @@ impl RoleMysqlRepository {
         let mut rows = conn
             .query_iter(query)
             .map_err(|_| RoleRepositoryError::Fail)?;
-
 
         let mut records: Vec<Role> = Vec::new();
         for mut row in rows.into_iter() {
@@ -349,13 +349,7 @@ impl RoleSort {
     pub fn push_params_to_vec(&self, _: &mut Vec<(String, Value)>) {}
 }
 
-#[derive(Debug)]
-pub struct RolePaginateParams<'a> {
-    pub page: i64,
-    pub per_page: i64,
-    pub filters: Vec<RoleFilter<'a>>,
-    pub sort: Option<RoleSort>,
-}
+pub type RolePaginateParams<'a> = PaginateParams<RoleFilter<'a>, RoleSort>;
 
 impl<'a> RolePaginateParams<'a> {
     pub fn new(

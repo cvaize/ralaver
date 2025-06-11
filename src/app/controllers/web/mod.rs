@@ -1,19 +1,20 @@
 pub mod auth;
 pub mod errors;
+pub mod files;
 pub mod home;
 pub mod locale;
 pub mod profile;
 pub mod roles;
 pub mod users;
 
-use std::collections::HashSet;
-use crate::{Alert, AlertVariant, AppService, Locale, RoleService, Session, TranslatorService, User, WebAuthService, ALERTS_KEY};
+use crate::{
+    Alert, AlertVariant, AppService, FilePolicy, Locale, RolePolicy, RoleService, Session,
+    TranslatorService, User, UserPolicy, WebAuthService, ALERTS_KEY,
+};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
-use actix_web::{error, HttpRequest, HttpResponseBuilder};
+use actix_web::{HttpRequest, HttpResponseBuilder};
 use serde_json::{json, Value};
-use crate::app::policies::role::RolePolicy;
-use crate::app::policies::user::UserPolicy;
 
 pub trait WebHttpRequest {
     fn get_alerts(&self, translator_service: &TranslatorService, lang: &str) -> Vec<Alert>;
@@ -124,47 +125,53 @@ pub fn get_context_data<'a>(
 
 pub fn get_template_context<'a>(data: &'a ContextData) -> Value {
     let lang = &data.lang;
-    let translator_service = data.translator_service;
-    let app_service = data.app_service;
+    let t_s = data.translator_service;
+    let a_s = data.app_service;
     let user = data.user;
     let role_service = data.role_service;
 
     let mut sidebar_users_index: Option<String> = None;
     let mut sidebar_roles_index: Option<String> = None;
+    let mut sidebar_files: Option<String> = None;
     let mut is_sidebar_users_dropdown = false;
 
     if let Ok(roles) = role_service.get_all() {
         let is_users_show = UserPolicy::can_show(user, &roles);
         if is_users_show {
-            sidebar_users_index = Some(translator_service.translate(lang, "layout.sidebar.users.index"));
+            sidebar_users_index = Some(t_s.translate(lang, "layout.sidebar.users.index"));
         }
         let is_roles_show = RolePolicy::can_show(user, &roles);
         if is_roles_show {
-            sidebar_roles_index = Some(translator_service.translate(lang, "layout.sidebar.users.roles"));
+            sidebar_roles_index = Some(t_s.translate(lang, "layout.sidebar.users.roles"));
         }
         is_sidebar_users_dropdown = is_users_show && is_roles_show;
+
+        if FilePolicy::can_show(user, &roles) {
+            sidebar_files = Some(t_s.translate(lang, "layout.sidebar.files"));
+        }
     }
 
     json!({
         "route_name": &data.route_name,
-        "site_url": app_service.url().to_string(),
+        "site_url": a_s.url().to_string(),
         "title": &data.title,
-        "brand": translator_service.translate(lang, "layout.brand"),
+        "brand": t_s.translate(lang, "layout.brand"),
         "sidebar": {
-            "home": translator_service.translate(lang, "layout.sidebar.home"),
+            "home": t_s.translate(lang, "layout.sidebar.home"),
             "users": {
               "is_dropdown": is_sidebar_users_dropdown,
               "index": sidebar_users_index,
               "roles": sidebar_roles_index,
             },
-            "profile": translator_service.translate(lang, "layout.sidebar.profile"),
-            "logout": translator_service.translate(lang, "layout.sidebar.logout"),
+            "files": sidebar_files,
+            "profile": t_s.translate(lang, "layout.sidebar.profile"),
+            "logout": t_s.translate(lang, "layout.sidebar.logout"),
         },
         "dark_mode": {
             "value": &data.dark_mode,
-            "dark": translator_service.translate(lang, "layout.dark_mode.dark"),
-            "light": translator_service.translate(lang, "layout.dark_mode.light"),
-            "auto": translator_service.translate(lang, "layout.dark_mode.auto"),
+            "dark": t_s.translate(lang, "layout.dark_mode.dark"),
+            "light": t_s.translate(lang, "layout.dark_mode.light"),
+            "auto": t_s.translate(lang, "layout.dark_mode.auto"),
         },
         "locale": &data.locale,
         "locales": &data.locales,

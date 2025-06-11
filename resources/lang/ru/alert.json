@@ -49,5 +49,19 @@
     "mass_delete": {
       "success": "Роли IDs:\":ids\" успешно удалены."
     }
+  },
+  "files": {
+    "create": {
+      "success": "Файл \":name\" успешно создана."
+    },
+    "update": {
+      "success": "Файл \":name\" успешно изменена."
+    },
+    "delete": {
+      "success": "Файл \":name\" успешно удалена."
+    },
+    "mass_delete": {
+      "success": "Файлы IDs:\":ids\" успешно удалены."
+    }
   }
 }

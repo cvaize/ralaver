@@ -1,0 +1,59 @@
+{{#> components/layout.hbs }}
+    {{> components/alerts.hbs }}
+    {{> components/breadcrumb.hbs }}
+    {{> components/heading.hbs }}
+
+    <form id="admin-create-form" action="{{form.action}}" method="{{form.method}}" autocomplete="off" style="display: block;">
+        <input type="hidden" name="_token" value="{{ctx.csrf}}">
+        <div style="margin-bottom: 1rem;">
+            <button type="submit" class="admin-btn admin-success" name="action" value="save">{{form.save}}</button>
+            <button type="submit" class="admin-btn admin-success" name="action" value="save_and_close">{{form.save_and_close}}</button>
+            <a href="{{form.close.href}}" class="admin-btn">{{form.close.label}}</a>
+        </div>
+        <div class="admin-tabs admin-tabs--menu-mod-xs">
+            <input id="admin-tabs__0" class="admin-tabs__checkbox" type="radio" name="admin-tabs__1" hidden checked>
+            <input id="admin-tabs--menu-checkbox" class="admin-tabs__menu-checkbox" type="checkbox" hidden>
+            <label for="admin-tabs--menu-checkbox" class="admin-tabs__menu-label">
+                <span class="admin-tabs__burger"></span>
+            </label>
+            <nav class="admin-tabs__nav">
+                <label for="admin-tabs__0" class="admin-tabs__link">{{tabs.main}}</label>
+            </nav>
+            <div class="admin-tabs__content">
+                <div class="admin-tabs__pane">
+                    {{> components/field.hbs
+                            label=form.fields.name.label
+                            value=form.fields.name.value
+                            errors=form.fields.name.errors
+                            form="admin-create-form"
+                            name="name"
+                            type="text"
+                            required=true
+                            style="margin-bottom: 0.5rem;"
+                    }}
+                    {{> components/field.hbs
+                            label=form.fields.url.label
+                            value=form.fields.url.value
+                            errors=form.fields.url.errors
+                            form="admin-create-form"
+                            name="url"
+                            type="text"
+                            style="margin-bottom: 0.5rem;"
+                    }}
+                    {{> components/field.hbs
+                            label=form.fields.is_deleted.label
+                            value=form.fields.is_deleted.value
+                            errors=form.fields.is_deleted.errors
+                            options=form.fields.is_deleted.options
+                            form="admin-create-form"
+                            name="is_deleted"
+                            type="select"
+                            style="margin-bottom: 0.5rem;"
+                            option_value_key="value"
+                            option_label_key="label"
+                    }}
+                </div>
+            </div>
+        </div>
+    </form>
+{{/components/layout.hbs}}

@@ -40,6 +40,7 @@ pub fn register(cfg: &mut web::ServiceConfig) {
             .route(web::get().to(controllers::web::profile::index))
             .route(web::post().to(controllers::web::profile::update)),
     );
+
     cfg.service(
         web::resource("/users")
             .wrap(WebAuthMiddleware)
@@ -63,6 +64,7 @@ pub fn register(cfg: &mut web::ServiceConfig) {
             .wrap(WebAuthMiddleware)
             .route(web::post().to(controllers::web::users::delete::invoke)),
     );
+
     cfg.service(
         web::resource("/roles")
             .wrap(WebAuthMiddleware)
@@ -85,5 +87,29 @@ pub fn register(cfg: &mut web::ServiceConfig) {
         web::resource("/roles/{role_id}/delete")
             .wrap(WebAuthMiddleware)
             .route(web::post().to(controllers::web::roles::delete::invoke)),
+    );
+
+    cfg.service(
+        web::resource("/files")
+            .wrap(WebAuthMiddleware)
+            .route(web::get().to(controllers::web::files::index::invoke))
+            .route(web::post().to(controllers::web::files::mass_actions::invoke)),
+    );
+    cfg.service(
+        web::resource("/files/create")
+            .wrap(WebAuthMiddleware)
+            .route(web::get().to(controllers::web::files::create_update::create))
+            .route(web::post().to(controllers::web::files::create_update::store)),
+    );
+    cfg.service(
+        web::resource("/files/{file_id}")
+            .wrap(WebAuthMiddleware)
+            .route(web::get().to(controllers::web::files::create_update::edit))
+            .route(web::post().to(controllers::web::files::create_update::update)),
+    );
+    cfg.service(
+        web::resource("/files/{file_id}/delete")
+            .wrap(WebAuthMiddleware)
+            .route(web::post().to(controllers::web::files::delete::invoke)),
     );
 }

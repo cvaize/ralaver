@@ -19,5 +19,11 @@
     "DuplicateCode": "A role with this code is already exists.",
     "NotFound":  "Role not found.",
     "Fail": "RoleService error."
+  },
+  "FileServiceError": {
+    "DbConnectionFail":  "Error connecting to the FileService database.",
+    "DuplicateUrl": "A file with this URL is already exists.",
+    "NotFound":  "File not found.",
+    "Fail": "FileService error."
   }
 }

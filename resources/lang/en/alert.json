@@ -49,5 +49,19 @@
     "mass_delete": {
       "success": "Role IDs:\":ids\" has been successfully deleted."
     }
+  },
+  "files": {
+    "create": {
+      "success": "File \":name\" has been successfully created."
+    },
+    "update": {
+      "success": "File \":name\" has been successfully updated."
+    },
+    "delete": {
+      "success": "File \":name\" has been successfully deleted."
+    },
+    "mass_delete": {
+      "success": "File IDs:\":ids\" has been successfully deleted."
+    }
   }
 }

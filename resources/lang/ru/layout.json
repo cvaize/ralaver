@@ -7,6 +7,7 @@
       "roles": "Роли",
       "permissions": "Разрешения"
     },
+    "files": "Файлы",
     "profile": "Профиль",
     "logout": "Выход"
   },

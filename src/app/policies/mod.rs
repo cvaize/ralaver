@@ -1,5 +1,10 @@
-pub mod role;
-pub mod user;
+mod file;
+mod role;
+mod user;
+
+pub use self::file::{*};
+pub use self::role::{*};
+pub use self::user::{*};
 
 pub struct PolicyError;
 

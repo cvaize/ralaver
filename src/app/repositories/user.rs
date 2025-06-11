@@ -3,8 +3,8 @@ use crate::{
     make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query,
     option_take_json_from_mysql_row, option_to_json_string_for_mysql, take_from_mysql_row,
     take_json_from_mysql_row, FromDbRowError, FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum,
-    MysqlPool, MysqlPooledConnection, PaginationResult, ToMysqlDto, User, UserColumn,
-    UserCredentials, UserCredentialsColumn,
+    MysqlPool, MysqlPooledConnection, PaginateParams, PaginationResult, ToMysqlDto, User,
+    UserColumn, UserCredentials, UserCredentialsColumn,
 };
 use actix_web::web::Data;
 use r2d2_mysql::mysql::prelude::Queryable;
@@ -396,13 +396,7 @@ impl UserSort {
     pub fn push_params_to_vec(&self, _: &mut Vec<(String, Value)>) {}
 }
 
-#[derive(Debug)]
-pub struct UserPaginateParams<'a> {
-    pub page: i64,
-    pub per_page: i64,
-    pub filters: Vec<UserFilter<'a>>,
-    pub sort: Option<UserSort>,
-}
+pub type UserPaginateParams<'a> = PaginateParams<UserFilter<'a>, UserSort>;
 
 impl<'a> UserPaginateParams<'a> {
     pub fn new(
@@ -536,7 +530,7 @@ mod tests {
     #[test]
     fn test_first_by_id() {
         let (_, all_services) = preparation();
-        let user_rep = all_services.user_repository.get_ref();
+        let user_rep = all_services.user_mysql_repository.get_ref();
 
         let email = "admin_first_by_id@admin.example";
 
@@ -558,7 +552,7 @@ mod tests {
     #[test]
     fn test_first_by_email() {
         let (_, all_services) = preparation();
-        let user_rep = all_services.user_repository.get_ref();
+        let user_rep = all_services.user_mysql_repository.get_ref();
 
         let email = "admin_first_by_email@admin.example";
 
@@ -576,7 +570,7 @@ mod tests {
     #[test]
     fn test_paginate() {
         let (_, all_services) = preparation();
-        let user_rep = all_services.user_repository.get_ref();
+        let user_rep = all_services.user_mysql_repository.get_ref();
 
         let users = user_rep.paginate(&UserPaginateParams::one()).unwrap();
         assert_eq!(users.page, 1);
@@ -585,7 +579,7 @@ mod tests {
     #[test]
     fn test_insert() {
         let (_, all_services) = preparation();
-        let user_rep = all_services.user_repository.get_ref();
+        let user_rep = all_services.user_mysql_repository.get_ref();
         let emails = ["admin_insert1@admin.example", "admin_insert2@admin.example"];
 
         let mut users: Vec<User> = Vec::new();
@@ -615,7 +609,7 @@ mod tests {
     #[test]
     fn test_delete_by_id() {
         let (_, all_services) = preparation();
-        let user_rep = all_services.user_repository.get_ref();
+        let user_rep = all_services.user_mysql_repository.get_ref();
         let emails = [
             "admin_delete_by_id1@admin.example",
             "admin_delete_by_id2@admin.example",
@@ -651,7 +645,7 @@ mod tests {
     #[test]
     fn test_delete_by_ids() {
         let (_, all_services) = preparation();
-        let user_rep = all_services.user_repository.get_ref();
+        let user_rep = all_services.user_mysql_repository.get_ref();
         let emails = [
             "admin_delete_by_ids1@admin.example",
             "admin_delete_by_ids2@admin.example",
@@ -691,7 +685,7 @@ mod tests {
     #[test]
     fn test_update_password_by_email() {
         let (_, all_services) = preparation();
-        let user_rep = all_services.user_repository.get_ref();
+        let user_rep = all_services.user_mysql_repository.get_ref();
 
         let email = "admin_update_password_by_email@admin.example";
 
@@ -728,7 +722,7 @@ mod tests {
     #[test]
     fn test_exists_by_email() {
         let (_, all_services) = preparation();
-        let user_rep = all_services.user_repository.get_ref();
+        let user_rep = all_services.user_mysql_repository.get_ref();
 
         let email = "admin_exists_by_email@admin.example";
 
@@ -747,7 +741,7 @@ mod tests {
     #[test]
     fn test_paginate_with_filters() {
         let (_, all_services) = preparation();
-        let user_rep = all_services.user_repository.get_ref();
+        let user_rep = all_services.user_mysql_repository.get_ref();
 
         let email = "admin_paginate_with_filters@admin.example";
 
@@ -780,7 +774,7 @@ mod tests {
     #[test]
     fn test_update() {
         let (_, all_services) = preparation();
-        let user_rep = all_services.user_repository.get_ref();
+        let user_rep = all_services.user_mysql_repository.get_ref();
 
         let emails = ["admin_update1@admin.example", "admin_update2@admin.example"];
 

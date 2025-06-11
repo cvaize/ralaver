@@ -1,5 +1,8 @@
 {
+  "Yes": "Да",
+  "No": "Нет",
   "Not selected...": "Не выбрано...",
+  "Actions": "Действия",
   "Reset": "Сбросить",
   "Search": "Поиск",
   "Sort": "Сортировка",
@@ -27,5 +30,9 @@
   "Edit role": "Редактировать роль",
   "Delete role": "Удалить роль",
   "Create role": "Создать роль",
-  "Delete role(ID: :id)?": "Удалить роль(ID: :id)?"
+  "Delete role(ID: :id)?": "Удалить роль(ID: :id)?",
+  "Edit file": "Редактировать файл",
+  "Delete file": "Удалить файл",
+  "Create file": "Создать файл",
+  "Delete file(ID: :id)?": "Удалить файл(ID: :id)?"
 }

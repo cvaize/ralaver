@@ -1,11 +1,11 @@
 use crate::app::controllers::web::{
     generate_2_offset_pagination_array, get_context_data, get_template_context,
 };
-use crate::app::policies::user::UserPolicy;
 use crate::{
     prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService,
     LocaleService, RoleService, Session, TemplateService, TranslatorService, User, UserFilter,
-    UserPaginateParams, UserService, UserSort, WebAuthService, WebHttpResponse, CSRF_ERROR_MESSAGE,
+    UserPaginateParams, UserPolicy, UserService, UserSort, WebAuthService, WebHttpResponse,
+    CSRF_ERROR_MESSAGE,
 };
 use actix_web::web::{Data, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};

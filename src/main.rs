@@ -22,6 +22,7 @@ pub use app::controllers::web::WebHttpResponse;
 pub use app::dto::*;
 pub use app::services::*;
 pub use app::repositories::*;
+pub use app::policies::*;
 pub use config::Config;
 pub use connections::Connections;
 pub use mysql_connection::MysqlPool;
@@ -66,6 +67,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(all_services.crypt_service.clone())
             .app_data(all_services.rate_limit_service.clone())
             .app_data(all_services.role_service.clone())
+            .app_data(all_services.file_service.clone())
             .wrap(Logger::default())
             .configure(routes::register)
             .wrap(ErrorHandlers::new().default_handler(default_error_handler))

@@ -1,6 +1,8 @@
-pub mod role;
-pub mod user;
+mod file;
+mod role;
+mod user;
 
+pub use self::file::*;
 pub use self::role::*;
 pub use self::user::*;
 use r2d2_mysql::mysql::{Row, Value};
@@ -30,6 +32,14 @@ impl<U> PaginationResult<U> {
             records,
         }
     }
+}
+
+#[derive(Debug)]
+pub struct PaginateParams<F, S> {
+    pub page: i64,
+    pub per_page: i64,
+    pub filters: Vec<F>,
+    pub sort: Option<S>,
 }
 
 pub struct ToDbValueError;

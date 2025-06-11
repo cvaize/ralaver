@@ -2,7 +2,6 @@ use crate::app::controllers::web::profile::{
     get_url as get_profile_url, ROUTE_NAME as PROFILE_ROUTE_NAME,
 };
 use crate::app::controllers::web::{get_context_data, get_template_context};
-use crate::app::policies::user::UserPolicy;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString as MMLS};
@@ -11,7 +10,7 @@ use crate::libs::actix_web::types::form::Form;
 use crate::{
     prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, Permission,
     RateLimitService, Role, RoleService, Session, TemplateService, TranslatableError,
-    TranslatorService, User, UserColumn, UserService, UserServiceError, WebAuthService,
+    TranslatorService, User, UserColumn, UserPolicy, UserService, UserServiceError, WebAuthService,
     WebHttpResponse,
 };
 use actix_web::web::Path;

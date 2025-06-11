@@ -15,4 +15,8 @@ pub enum Permission {
     RolesCreate,
     RolesUpdate,
     RolesDelete,
+    FilesShow,
+    FilesCreate,
+    FilesUpdate,
+    FilesDelete,
 }

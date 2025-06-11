@@ -1,12 +1,14 @@
 use crate::libs::actix_web::types::form::Form;
-use crate::{AlertVariant, LocaleService, RateLimitService, RoleService, Session, TranslatorService, User, UserService, WebAuthService, WebHttpResponse};
+use crate::{
+    AlertVariant, LocaleService, RateLimitService, RoleService, Session, TranslatorService, User,
+    UserPolicy, UserService, WebAuthService, WebHttpResponse,
+};
 use actix_web::web::{Data, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::header::{ORIGIN, REFERER};
 use http::HeaderValue;
 use serde_derive::Deserialize;
 use std::sync::Arc;
-use crate::app::policies::user::UserPolicy;
 
 const RL_MAX_ATTEMPTS: u64 = 30;
 const RL_TTL: u64 = 60;
@@ -61,7 +63,10 @@ pub async fn invoke(
                     }
                     u_s.delete_by_ids_throw_http(ids)?;
                     alert_variants.push(AlertVariant::UsersMassDeleteSuccess(
-                        ids.iter().map(|id| id.to_string()).collect::<Vec<String>>().join(", "),
+                        ids.iter()
+                            .map(|id| id.to_string())
+                            .collect::<Vec<String>>()
+                            .join(", "),
                     ));
                 }
             }

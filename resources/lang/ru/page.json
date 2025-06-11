@@ -153,5 +153,38 @@
       "title": "{{page.roles.edit.header}} - {{app.name}}",
       "header": "Редактирование роли \":name\""
     }
+  },
+  "files": {
+    "index": {
+      "title": "Страница :page из :total_pages - {{page.files.index.header}} - {{app.name}}",
+      "header": "Список файлов",
+      "sort": {
+        "id_asc": "ID 0-9",
+        "id_desc": "ID 9-0"
+      },
+      "columns": {
+        "id": "ID",
+        "name": "Название",
+        "url": "URL",
+        "is_deleted": "Удалён?",
+        "actions": "Действия"
+      }
+    },
+    "create": {
+      "title": "{{page.files.create.header}} - {{app.name}}",
+      "header": "Создание файла",
+      "fields": {
+        "name": "Название",
+        "url": "URL",
+        "is_deleted": "Удалён?"
+      },
+      "tabs": {
+        "main": "Основные"
+      }
+    },
+    "edit": {
+      "title": "{{page.files.edit.header}} - {{app.name}}",
+      "header": "Редактирование файла \":name\""
+    }
   }
 }

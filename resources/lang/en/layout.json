@@ -7,6 +7,7 @@
       "roles": "Roles",
       "permissions": "Permissions"
     },
+    "files": "Files",
     "profile": "My profile",
     "logout": "Logout"
   },

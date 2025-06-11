@@ -1,45 +1,42 @@
 use crate::app::controllers::web::{get_context_data, get_template_context};
-use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString as MMLS};
+use crate::app::validator::rules::length::MinMaxLengthString as MMLS;
 use crate::app::validator::rules::required::Required;
 use crate::libs::actix_web::types::form::Form;
 use crate::{
-    prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, Permission,
-    RateLimitService, Role, RoleColumn, RolePolicy, RoleService, RoleServiceError, Session,
-    TemplateService, TranslatableError, TranslatorService, User, WebAuthService, WebHttpResponse,
+    prepare_value, Alert, AlertVariant, AppService, File, FileColumn, FilePolicy, FileService,
+    FileServiceError, LocaleService, RateLimitService, Role, RoleService, Session, TemplateService,
+    TranslatableError, TranslatorService, User, WebAuthService, WebHttpResponse,
 };
 use actix_web::web::Path;
 use actix_web::web::{Data, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde_derive::Deserialize;
-use serde_json::{json, Value};
+use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
-use strum::VariantNames;
 
 const RL_MAX_ATTEMPTS: u64 = 10;
 const RL_TTL: u64 = 60;
-const RL_KEY: &'static str = "roles_create_update";
+const RL_KEY: &'static str = "files_create_update";
 
-const ROUTE_NAME: &'static str = "roles_create_update";
+const ROUTE_NAME: &'static str = "files_create_update";
 
 #[derive(Deserialize, Default, Debug)]
 pub struct PostData {
     pub _token: Option<String>,
     pub action: Option<String>,
-    pub code: Option<String>,
+    pub url: Option<String>,
     pub name: Option<String>,
-    pub description: Option<String>,
-    pub permissions: Option<Vec<String>>,
+    pub is_deleted: Option<bool>,
 }
 
 #[derive(Deserialize, Default, Debug)]
 struct ErrorMessages {
     pub form: Vec<String>,
-    pub code: Vec<String>,
+    pub url: Vec<String>,
     pub name: Vec<String>,
-    pub description: Vec<String>,
-    pub permissions: Vec<String>,
+    pub is_deleted: Vec<String>,
 }
 
 pub async fn create(
@@ -52,15 +49,16 @@ pub async fn create(
     wa_s: Data<WebAuthService>,
     rl_s: Data<RateLimitService>,
     r_s: Data<RoleService>,
+    f_s: Data<FileService>,
     l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = r_s.get_all_throw_http()?;
-    if !RolePolicy::can_create(&user, &roles) {
+    let user_roles: Vec<Role> = r_s.get_all_throw_http()?;
+    if !FilePolicy::can_create(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
     let data = Form(PostData::default());
     invoke(
-        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, l_s,
+        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, f_s, l_s,
     )
 }
 
@@ -75,14 +73,15 @@ pub async fn store(
     wa_s: Data<WebAuthService>,
     rl_s: Data<RateLimitService>,
     r_s: Data<RoleService>,
+    f_s: Data<FileService>,
     l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = r_s.get_all_throw_http()?;
-    if !RolePolicy::can_create(&user, &roles) {
+    let user_roles = r_s.get_all_throw_http()?;
+    if !FilePolicy::can_create(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
     invoke(
-        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, l_s,
+        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, f_s, l_s,
     )
 }
 
@@ -97,26 +96,26 @@ pub async fn edit(
     wa_s: Data<WebAuthService>,
     rl_s: Data<RateLimitService>,
     r_s: Data<RoleService>,
+    f_s: Data<FileService>,
     l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = r_s.get_all_throw_http()?;
-    if !RolePolicy::can_update(&user, &roles) {
+    let user_roles = r_s.get_all_throw_http()?;
+    if !FilePolicy::can_update(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
-    let role_id = path.into_inner();
-    let edit_role = r_s.get_ref().first_by_id_throw_http(role_id)?;
+    let file_id = path.into_inner();
+    let edit_file = f_s.get_ref().first_by_id_throw_http(file_id)?;
     let post_data = PostData {
         _token: None,
         action: None,
-        code: Some(edit_role.code.to_owned()),
-        name: Some(edit_role.name.to_owned()),
-        description: edit_role.description.to_owned(),
-        permissions: edit_role.permissions.to_owned(),
+        name: Some(edit_file.name.to_owned()),
+        url: Some(edit_file.url.to_owned()),
+        is_deleted: Some(edit_file.is_deleted.to_owned()),
     };
-    let edit_role = Some(edit_role);
+    let edit_file = Some(edit_file);
     let data = Form(post_data);
     invoke(
-        edit_role, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, l_s,
+        edit_file, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, f_s, l_s,
     )
 }
 
@@ -132,21 +131,22 @@ pub async fn update(
     wa_s: Data<WebAuthService>,
     rl_s: Data<RateLimitService>,
     r_s: Data<RoleService>,
+    f_s: Data<FileService>,
     l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = r_s.get_all_throw_http()?;
-    if !RolePolicy::can_update(&user, &roles) {
+    let user_roles = r_s.get_all_throw_http()?;
+    if !FilePolicy::can_update(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
-    let role_id = path.into_inner();
-    let edit_role = Some(r_s.get_ref().first_by_id_throw_http(role_id)?);
+    let file_id = path.into_inner();
+    let edit_file = Some(f_s.get_ref().first_by_id_throw_http(file_id)?);
     invoke(
-        edit_role, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, l_s,
+        edit_file, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, f_s, l_s,
     )
 }
 
 pub fn invoke(
-    edit_role: Option<Role>,
+    edit_file: Option<File>,
     req: HttpRequest,
     mut data: Form<PostData>,
     user: ReqData<Arc<User>>,
@@ -157,6 +157,7 @@ pub fn invoke(
     wa_s: Data<WebAuthService>,
     rl_s: Data<RateLimitService>,
     r_s: Data<RoleService>,
+    f_s: Data<FileService>,
     l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
     data.prepare();
@@ -168,6 +169,7 @@ pub fn invoke(
     let rl_s = rl_s.get_ref();
     let r_s = r_s.get_ref();
     let l_s = l_s.get_ref();
+    let f_s = f_s.get_ref();
 
     //
     let user = user.as_ref();
@@ -178,25 +180,24 @@ pub fn invoke(
 
     let lang = &context_data.lang;
 
-    let code_str = tr_s.translate(lang, "page.roles.create.fields.code");
-    let name_str = tr_s.translate(lang, "page.roles.create.fields.name");
-    let description_str = tr_s.translate(lang, "page.roles.create.fields.description");
-    let permissions_str = tr_s.translate(lang, "page.roles.create.fields.permissions");
+    let name_str = tr_s.translate(lang, "page.files.create.fields.name");
+    let url_str = tr_s.translate(lang, "page.files.create.fields.url");
+    let is_deleted_str = tr_s.translate(lang, "page.files.create.fields.is_deleted");
 
-    let (title, heading, action) = if let Some(edit_role) = &edit_role {
+    let (title, heading, action) = if let Some(edit_file) = &edit_file {
         let mut vars: HashMap<&str, &str> = HashMap::new();
-        let name_ = &edit_role.name;
+        let name_ = &edit_file.name;
         vars.insert("name", name_);
 
         (
-            tr_s.variables(lang, "page.roles.edit.title", &vars),
-            tr_s.variables(lang, "page.roles.edit.header", &vars),
-            get_edit_url(edit_role.id.to_string().as_str()),
+            tr_s.variables(lang, "page.files.edit.title", &vars),
+            tr_s.variables(lang, "page.files.edit.header", &vars),
+            get_edit_url(edit_file.id.to_string().as_str()),
         )
     } else {
         (
-            tr_s.translate(lang, "page.roles.create.title"),
-            tr_s.translate(lang, "page.roles.create.header"),
+            tr_s.translate(lang, "page.files.create.title"),
+            tr_s.translate(lang, "page.files.create.header"),
             get_create_url(),
         )
     };
@@ -216,12 +217,12 @@ pub fn invoke(
         let executed = rl_s.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
 
         if executed {
-            errors.code = Required::validated(
+            errors.url = Required::validated(
                 tr_s,
                 lang,
-                &data.code,
-                |value| MMLS::validate(tr_s, lang, value, 4, 255, &code_str),
-                &code_str,
+                &data.url,
+                |value| MMLS::validate(tr_s, lang, value, 4, 2048, &url_str),
+                &url_str,
             );
 
             errors.name = Required::validated(
@@ -232,36 +233,31 @@ pub fn invoke(
                 &name_str,
             );
 
-            if let Some(description) = &data.description {
-                errors.description =
-                    MaxLengthString::validate(tr_s, lang, description, 255, &description_str);
-            }
+            errors.is_deleted = Required::validate(tr_s, lang, &data.is_deleted, &is_deleted_str);
 
             if errors.is_empty() {
-                let id = if let Some(edit_role) = &edit_role {
-                    edit_role.id
+                let id = if let Some(edit_file) = &edit_file {
+                    edit_file.id
                 } else {
                     0
                 };
-                let mut role_data = Role::default();
-                role_data.id = id;
-                role_data.code = data.code.clone().unwrap();
-                role_data.name = data.name.clone().unwrap();
-                role_data.description = data.description.to_owned();
-                role_data.permissions = data.permissions.to_owned();
+                let mut file_data = File::default();
+                file_data.id = id;
+                file_data.name = data.name.clone().unwrap();
+                file_data.url = data.url.clone().unwrap();
+                file_data.is_deleted = data.is_deleted.clone().unwrap();
 
-                let columns: Option<Vec<RoleColumn>> = Some(vec![
-                    RoleColumn::Code,
-                    RoleColumn::Name,
-                    RoleColumn::Description,
-                    RoleColumn::Permissions,
+                let columns: Option<Vec<FileColumn>> = Some(vec![
+                    FileColumn::Name,
+                    FileColumn::Url,
+                    FileColumn::IsDeleted,
                 ]);
 
-                let result = r_s.upsert(&mut role_data, &columns);
+                let result = f_s.upsert(&mut file_data, &columns);
 
                 if let Err(error) = result {
-                    if error.eq(&RoleServiceError::DuplicateCode) {
-                        errors.code.push(error.translate(lang, tr_s));
+                    if error.eq(&FileServiceError::DuplicateUrl) {
+                        errors.url.push(error.translate(lang, tr_s));
                     } else {
                         errors.form.push(error.translate(lang, tr_s));
                     }
@@ -287,16 +283,16 @@ pub fn invoke(
     if is_done {
         let mut id: String = "".to_string();
 
-        if let Some(edit_role) = &edit_role {
-            let user = r_s.first_by_id_throw_http(edit_role.id)?;
-            id = user.id.to_string();
-            let name_ = user.name;
-            alert_variants.push(AlertVariant::RolesUpdateSuccess(name_))
-        } else if let Some(code_) = &data.code {
-            let user = r_s.first_by_code_throw_http(code_)?;
-            id = user.id.to_string();
-            let name_ = user.name;
-            alert_variants.push(AlertVariant::RolesCreateSuccess(name_))
+        if let Some(edit_file) = &edit_file {
+            let file = f_s.first_by_id_throw_http(edit_file.id)?;
+            id = file.id.to_string();
+            let name_ = file.name;
+            alert_variants.push(AlertVariant::FilesUpdateSuccess(name_))
+        } else if let Some(url_) = &data.url {
+            let file = f_s.first_by_url_throw_http(url_)?;
+            id = file.id.to_string();
+            let name_ = file.name;
+            alert_variants.push(AlertVariant::FilesCreateSuccess(name_))
         }
 
         if let Some(action) = &data.action {
@@ -315,7 +311,7 @@ pub fn invoke(
                     .set_alerts(alert_variants)
                     .insert_header((
                         http::header::LOCATION,
-                        http::HeaderValue::from_static("/roles"),
+                        http::HeaderValue::from_static("/files"),
                     ))
                     .finish());
             }
@@ -329,42 +325,29 @@ pub fn invoke(
     }
 
     let layout_ctx = get_template_context(&context_data);
-    let mut permissions: Vec<Value> = Vec::new();
 
-    for variant in Permission::VARIANTS {
-        let mut key = "permission.".to_string();
-        key.push_str(variant);
-        let mut checked = false;
-        if let Some(val) = &data.permissions {
-            let variant_ = variant.to_string();
-            if val.contains(&variant_) {
-                checked = true;
-            }
-        }
-        permissions.push(json!({
-            "label": tr_s.translate(lang, &key),
-            "value": variant,
-            "checked": checked
-        }));
+    if data.is_deleted.is_none() {
+        data.is_deleted = Some(false);
     }
 
     let fields = json!({
-        "code": { "label": code_str, "value": &data.code, "errors": errors.code },
         "name": { "label": name_str, "value": &data.name, "errors": errors.name },
-        "description": { "label": description_str, "value": &data.description, "errors": errors.description },
-        "permissions": { "label": permissions_str, "value": &data.permissions, "errors": errors.permissions, "options": permissions },
+        "url": { "label": url_str, "value": &data.url, "errors": errors.url },
+        "is_deleted": {
+            "label": is_deleted_str, "value": &data.is_deleted, "errors": errors.is_deleted,
+            "options": [{"label": tr_s.translate(lang, "Yes"), "value": true}, {"label": tr_s.translate(lang, "No"), "value": false}]
+        },
     });
 
     let ctx = json!({
         "ctx": layout_ctx,
         "heading": &heading,
         "tabs": {
-            "main": tr_s.translate(lang, "page.roles.create.tabs.main"),
-            "permissions": tr_s.translate(lang, "page.roles.create.tabs.permissions"),
+            "main": tr_s.translate(lang, "page.files.create.tabs.main")
         },
         "breadcrumbs": [
             {"href": "/", "label": tr_s.translate(lang, "page.home.header")},
-            {"href": "/roles", "label": tr_s.translate(lang, "page.roles.index.header")},
+            {"href": "/files", "label": tr_s.translate(lang, "page.files.index.header")},
             {"label": &heading},
         ],
         "form": {
@@ -375,11 +358,11 @@ pub fn invoke(
             "save_and_close": tr_s.translate(lang, "Save and close"),
             "close": {
                 "label": tr_s.translate(lang, "Close"),
-                "href": "/roles"
+                "href": "/files"
             },
         },
     });
-    let s = tm_s.render_throw_http("pages/roles/create-update.hbs", &ctx)?;
+    let s = tm_s.render_throw_http("pages/files/create-update.hbs", &ctx)?;
     Ok(HttpResponse::Ok()
         .clear_alerts()
         .content_type(mime::TEXT_HTML_UTF_8.as_ref())
@@ -387,11 +370,11 @@ pub fn invoke(
 }
 
 pub fn get_create_url() -> String {
-    "/roles/create".to_string()
+    "/files/create".to_string()
 }
 
 pub fn get_edit_url(id: &str) -> String {
-    let mut str_ = "/roles/".to_string();
+    let mut str_ = "/files/".to_string();
     str_.push_str(id);
     str_
 }
@@ -400,17 +383,16 @@ impl PostData {
     pub fn prepare(&mut self) {
         prepare_value!(self._token);
         prepare_value!(self.action);
-        prepare_value!(self.code);
         prepare_value!(self.name);
-        prepare_value!(self.description);
+        prepare_value!(self.url);
     }
 }
 
 impl ErrorMessages {
     pub fn is_empty(&self) -> bool {
         self.form.len() == 0
-            && self.code.len() == 0
             && self.name.len() == 0
-            && self.description.len() == 0
+            && self.url.len() == 0
+            && self.is_deleted.len() == 0
     }
 }

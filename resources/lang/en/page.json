@@ -153,5 +153,38 @@
       "title": "{{page.roles.edit.header}} - {{app.name}}",
       "header": "Edit role \":name\""
     }
+  },
+  "files": {
+    "index": {
+      "title": "Page :page of :per_page - {{page.files.index.header}} - {{app.name}}",
+      "header": "Files list",
+      "sort": {
+        "id_asc": "ID 0-9",
+        "id_desc": "ID 9-0"
+      },
+      "columns": {
+        "id": "ID",
+        "name": "Name",
+        "url": "URL",
+        "is_deleted": "Is deleted?",
+        "actions": "Actions"
+      }
+    },
+    "create": {
+      "title": "{{page.files.create.header}} - {{app.name}}",
+      "header": "Create file",
+      "fields": {
+        "name": "Name",
+        "url": "URL",
+        "is_deleted": "Is deleted?"
+      },
+      "tabs": {
+        "main": "Main"
+      }
+    },
+    "edit": {
+      "title": "{{page.files.edit.header}} - {{app.name}}",
+      "header": "Edit file \":name\""
+    }
   }
 }

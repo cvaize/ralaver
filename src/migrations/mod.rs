@@ -1,5 +1,6 @@
 use crate::{Config, MysqlPooledConnection};
 
+pub mod files;
 pub mod users;
 pub mod roles;
 
@@ -8,6 +9,7 @@ pub fn get_migrations() -> Vec<(String, [fn(&Config, &mut MysqlPooledConnection)
 
     items.push(("users".to_string(), [users::up, users::down]));
     items.push(("roles".to_string(), [roles::up, roles::down]));
+    items.push(("files".to_string(), [files::up, files::down]));
 
     items
 }

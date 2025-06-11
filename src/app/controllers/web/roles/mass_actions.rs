@@ -1,7 +1,7 @@
 use crate::libs::actix_web::types::form::Form;
 use crate::{
-    AlertVariant, LocaleService, RateLimitService, RoleService, Session, TranslatorService,
-    User, WebAuthService, WebHttpResponse,
+    AlertVariant, LocaleService, RateLimitService, RolePolicy, RoleService, Session,
+    TranslatorService, User, WebAuthService, WebHttpResponse,
 };
 use actix_web::web::{Data, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -9,7 +9,6 @@ use http::header::{ORIGIN, REFERER};
 use http::HeaderValue;
 use serde_derive::Deserialize;
 use std::sync::Arc;
-use crate::app::policies::role::RolePolicy;
 
 const RL_MAX_ATTEMPTS: u64 = 30;
 const RL_TTL: u64 = 60;

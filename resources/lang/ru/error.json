@@ -19,5 +19,11 @@
     "DuplicateCode": "Роль с таким кодом уже создана.",
     "NotFound":  "Роль не найдена.",
     "Fail": "Ошибка сервиса RoleService."
+  },
+  "FileServiceError": {
+    "DbConnectionFail":  "Ошибка подключения к базе данных FileService.",
+    "DuplicateUrl": "Файл с таким URL уже создан.",
+    "NotFound":  "Файл не найден.",
+    "Fail": "Ошибка сервиса FileService."
   }
 }

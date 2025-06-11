@@ -1,11 +1,13 @@
-use crate::{AlertVariant, LocaleService, RateLimitService, RoleService, Session, TranslatorService, User, UserService, WebAuthService, WebHttpResponse};
+use crate::{
+    AlertVariant, LocaleService, RateLimitService, RoleService, Session, TranslatorService, User,
+    UserPolicy, UserService, WebAuthService, WebHttpResponse,
+};
 use actix_web::web::{Data, Form, Path, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
-use serde_derive::Deserialize;
-use std::sync::Arc;
 use http::header::{ORIGIN, REFERER};
 use http::HeaderValue;
-use crate::app::policies::user::UserPolicy;
+use serde_derive::Deserialize;
+use std::sync::Arc;
 
 const RL_MAX_ATTEMPTS: u64 = 60;
 const RL_TTL: u64 = 60;
@@ -64,11 +66,16 @@ pub async fn invoke(
 
     let headers = req.headers();
     let default = HeaderValue::from_static("/users");
-    let location = headers.get(REFERER).unwrap_or(headers.get(ORIGIN).unwrap_or(&default));
+    let location = headers
+        .get(REFERER)
+        .unwrap_or(headers.get(ORIGIN).unwrap_or(&default));
     let location = location.to_str().unwrap_or("/users");
 
     Ok(HttpResponse::SeeOther()
         .set_alerts(alert_variants)
-        .insert_header((http::header::LOCATION, HeaderValue::from_str(location).unwrap_or(default)))
+        .insert_header((
+            http::header::LOCATION,
+            HeaderValue::from_str(location).unwrap_or(default),
+        ))
         .finish())
 }

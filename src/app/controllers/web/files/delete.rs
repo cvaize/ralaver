@@ -1,5 +1,5 @@
 use crate::{
-    AlertVariant, LocaleService, RateLimitService, RolePolicy, RoleService, Session,
+    AlertVariant, FilePolicy, FileService, LocaleService, RateLimitService, RoleService, Session,
     TranslatorService, User, WebAuthService, WebHttpResponse,
 };
 use actix_web::web::{Data, Form, Path, ReqData};
@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 const RL_MAX_ATTEMPTS: u64 = 60;
 const RL_TTL: u64 = 60;
-const RL_KEY: &'static str = "roles_delete";
+const RL_KEY: &'static str = "files_delete";
 
 #[derive(Deserialize, Default, Debug)]
 pub struct DeleteData {
@@ -24,6 +24,7 @@ pub async fn invoke(
     data: Form<DeleteData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
+    f_s: Data<FileService>,
     r_s: Data<RoleService>,
     l_s: Data<LocaleService>,
     wa_s: Data<WebAuthService>,
@@ -34,19 +35,20 @@ pub async fn invoke(
     let rl_s = rl_s.get_ref();
     let l_s = l_s.get_ref();
     let r_s = r_s.get_ref();
+    let f_s = f_s.get_ref();
     let tr_s = tr_s.get_ref();
 
     wa_s.check_csrf_throw_http(&session, &data._token)?;
 
-    let roles = r_s.get_all_throw_http()?;
-    if !RolePolicy::can_delete(&user, &roles) {
+    let user_roles = r_s.get_all_throw_http()?;
+    if !FilePolicy::can_delete(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
 
-    let role_id = path.into_inner();
+    let file_id = path.into_inner();
     let user = user.as_ref();
     let lang: String = l_s.get_locale_code(Some(&req), Some(&user));
-    let delete_role = r_s.first_by_id_throw_http(role_id)?;
+    let delete_file = f_s.first_by_id_throw_http(file_id)?;
 
     let rate_limit_key = rl_s.make_key_from_request_throw_http(&req, RL_KEY)?;
 
@@ -54,20 +56,20 @@ pub async fn invoke(
     let executed = rl_s.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
 
     if executed {
-        r_s.delete_by_id_throw_http(delete_role.id)?;
-        let name = delete_role.name;
-        alert_variants.push(AlertVariant::RolesDeleteSuccess(name));
+        f_s.delete_by_id_throw_http(delete_file.id)?;
+        let name = delete_file.name;
+        alert_variants.push(AlertVariant::FilesDeleteSuccess(name));
     } else {
         let alert_variant = rl_s.alert_variant_throw_http(tr_s, &lang, &rate_limit_key)?;
         alert_variants.push(alert_variant);
     }
 
     let headers = req.headers();
-    let default = HeaderValue::from_static("/roles");
+    let default = HeaderValue::from_static("/files");
     let location = headers
         .get(REFERER)
         .unwrap_or(headers.get(ORIGIN).unwrap_or(&default));
-    let location = location.to_str().unwrap_or("/roles");
+    let location = location.to_str().unwrap_or("/files");
 
     Ok(HttpResponse::SeeOther()
         .set_alerts(alert_variants)
