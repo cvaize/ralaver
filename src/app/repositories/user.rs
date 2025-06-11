@@ -398,40 +398,6 @@ impl UserSort {
 
 pub type UserPaginateParams<'a> = PaginateParams<UserFilter<'a>, UserSort>;
 
-impl<'a> UserPaginateParams<'a> {
-    pub fn new(
-        page: i64,
-        per_page: i64,
-        filters: Vec<UserFilter<'a>>,
-        sort: Option<UserSort>,
-    ) -> Self {
-        Self {
-            page,
-            per_page,
-            filters,
-            sort,
-        }
-    }
-
-    pub fn simple(page: i64, per_page: i64) -> Self {
-        Self {
-            page,
-            per_page,
-            filters: Vec::new(),
-            sort: None,
-        }
-    }
-
-    pub fn one() -> Self {
-        Self {
-            page: 1,
-            per_page: 1,
-            filters: Vec::new(),
-            sort: None,
-        }
-    }
-}
-
 impl ToMysqlDto<UserColumn> for User {
     fn push_mysql_param_to_vec(&self, column: &UserColumn, params: &mut Vec<(String, Value)>) {
         match column {

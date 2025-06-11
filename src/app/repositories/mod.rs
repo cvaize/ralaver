@@ -42,6 +42,40 @@ pub struct PaginateParams<F, S> {
     pub sort: Option<S>,
 }
 
+impl<F, S> PaginateParams<F, S> {
+    pub fn new(
+        page: i64,
+        per_page: i64,
+        filters: Vec<F>,
+        sort: Option<S>,
+    ) -> Self {
+        Self {
+            page,
+            per_page,
+            filters,
+            sort,
+        }
+    }
+
+    pub fn simple(page: i64, per_page: i64) -> Self {
+        Self {
+            page,
+            per_page,
+            filters: Vec::new(),
+            sort: None,
+        }
+    }
+
+    pub fn one() -> Self {
+        Self {
+            page: 1,
+            per_page: 1,
+            filters: Vec::new(),
+            sort: None,
+        }
+    }
+}
+
 pub struct ToDbValueError;
 pub struct FromDbRowError;
 

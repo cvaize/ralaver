@@ -36,6 +36,7 @@ fn main() {
         "down" => down(&config, &mut mysql_connection),
         _ => panic!("Wrong command. Allowed commands: \"up\", \"down\"."),
     }
+    log::info!("The migration was successful!");
 }
 
 fn create_migrations_table(mysql_connection: &mut MysqlPooledConnection) {
@@ -63,8 +64,8 @@ fn up(config: &Config, mysql_connection: &mut MysqlPooledConnection) -> () {
             log::info!("Up migrating - {}", &name);
             up(config, mysql_connection);
             insert_migration(mysql_connection, &name);
+            log::info!("Up migrated - {}", &name);
         }
-        log::info!("Up migrated - {}", &name);
     }
 
     ()

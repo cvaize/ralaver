@@ -351,40 +351,6 @@ impl RoleSort {
 
 pub type RolePaginateParams<'a> = PaginateParams<RoleFilter<'a>, RoleSort>;
 
-impl<'a> RolePaginateParams<'a> {
-    pub fn new(
-        page: i64,
-        per_page: i64,
-        filters: Vec<RoleFilter<'a>>,
-        sort: Option<RoleSort>,
-    ) -> Self {
-        Self {
-            page,
-            per_page,
-            filters,
-            sort,
-        }
-    }
-
-    pub fn simple(page: i64, per_page: i64) -> Self {
-        Self {
-            page,
-            per_page,
-            filters: Vec::new(),
-            sort: None,
-        }
-    }
-
-    pub fn one() -> Self {
-        Self {
-            page: 1,
-            per_page: 1,
-            filters: Vec::new(),
-            sort: None,
-        }
-    }
-}
-
 impl ToMysqlDto<RoleColumn> for Role {
     fn push_mysql_param_to_vec(&self, column: &RoleColumn, params: &mut Vec<(String, Value)>) {
         match column {

@@ -5,6 +5,7 @@ pub mod app;
 pub mod config;
 pub mod connections;
 pub mod helpers;
+pub mod drivers;
 pub mod libs;
 pub mod migrations;
 pub mod routes;
@@ -28,7 +29,6 @@ pub use connections::Connections;
 pub use mysql_connection::MysqlPool;
 pub use mysql_connection::MysqlPooledConnection;
 pub use services::Services;
-// pub use libs::strum_macros;
 
 fn preparation() -> (Connections, Services) {
     dotenv::dotenv().ok();

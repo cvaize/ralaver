@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::env;
+use crate::drivers::filesystem::FilesystemDriver;
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -10,6 +11,26 @@ pub struct Config {
     pub translator: TranslatorConfig,
     pub template: TemplateConfig,
     pub mail: MailConfig,
+    pub filesystem: FilesystemConfig,
+}
+
+#[derive(Debug, Clone)]
+pub struct FilesystemConfig {
+    pub default: String,
+    pub disks: FilesystemDisksConfig
+}
+
+#[derive(Debug, Clone)]
+pub struct FilesystemDisksConfig {
+    pub local: FilesystemLocalDiskConfig,
+}
+
+#[derive(Debug, Clone)]
+pub struct FilesystemLocalDiskConfig {
+    pub driver: String,
+    pub root: String,
+    pub public_root: String,
+    pub url: String,
 }
 
 #[derive(Debug, Clone)]
@@ -238,6 +259,20 @@ impl Config {
                         .to_string(),
                 },
             },
+            filesystem: FilesystemConfig {
+                default: env::var("FILESYSTEM_DISK")
+                    .unwrap_or("local".to_string())
+                    .trim()
+                    .to_string(),
+                disks: FilesystemDisksConfig {
+                    local: FilesystemLocalDiskConfig {
+                        driver: FilesystemDriver::Local.to_string(),
+                        root: "storage/app".to_string(),
+                        public_root: "public/storage".to_string(),
+                        url: "/storage".to_string(),
+                    }
+                }
+            }
         }
     }
 }

@@ -299,40 +299,6 @@ impl FileSort {
 
 pub type FilePaginateParams<'a> = PaginateParams<FileFilter<'a>, FileSort>;
 
-impl<'a> FilePaginateParams<'a> {
-    pub fn new(
-        page: i64,
-        per_page: i64,
-        filters: Vec<FileFilter<'a>>,
-        sort: Option<FileSort>,
-    ) -> Self {
-        Self {
-            page,
-            per_page,
-            filters,
-            sort,
-        }
-    }
-
-    pub fn simple(page: i64, per_page: i64) -> Self {
-        Self {
-            page,
-            per_page,
-            filters: Vec::new(),
-            sort: None,
-        }
-    }
-
-    pub fn one() -> Self {
-        Self {
-            page: 1,
-            per_page: 1,
-            filters: Vec::new(),
-            sort: None,
-        }
-    }
-}
-
 impl ToMysqlDto<FileColumn> for File {
     fn push_mysql_param_to_vec(&self, column: &FileColumn, params: &mut Vec<(String, Value)>) {
         match column {
@@ -342,6 +308,45 @@ impl ToMysqlDto<FileColumn> for File {
             },
             FileColumn::Url => {
                 params.push((column.to_string(), Value::from(self.url.to_owned())))
+            },
+            FileColumn::PublicPath => {
+                params.push((column.to_string(), Value::from(self.public_path.to_owned())))
+            },
+            FileColumn::LocalPath => {
+                params.push((column.to_string(), Value::from(self.local_path.to_owned())))
+            },
+            FileColumn::Mime => {
+                params.push((column.to_string(), Value::from(self.mime.to_owned())))
+            },
+            FileColumn::Hash => {
+                params.push((column.to_string(), Value::from(self.hash.to_owned())))
+            },
+            FileColumn::Size => {
+                params.push((column.to_string(), Value::from(self.size.to_owned())))
+            },
+            FileColumn::CreatorUserId => {
+                params.push((column.to_string(), Value::from(self.creator_user_id.to_owned())))
+            },
+            FileColumn::CreatedAt => {
+                params.push((column.to_string(), Value::from(self.created_at.to_owned())))
+            },
+            FileColumn::UpdatedAt => {
+                params.push((column.to_string(), Value::from(self.updated_at.to_owned())))
+            },
+            FileColumn::FileDeleteAt => {
+                params.push((column.to_string(), Value::from(self.file_delete_at.to_owned())))
+            },
+            FileColumn::FileDeletedAt => {
+                params.push((column.to_string(), Value::from(self.file_deleted_at.to_owned())))
+            },
+            FileColumn::DeletedAt => {
+                params.push((column.to_string(), Value::from(self.deleted_at.to_owned())))
+            },
+            FileColumn::Disk => {
+                params.push((column.to_string(), Value::from(self.disk.to_owned())))
+            },
+            FileColumn::IsPublic => {
+                params.push((column.to_string(), Value::from(self.is_public.to_owned())))
             },
             FileColumn::IsDeleted => {
                 params.push((column.to_string(), Value::from(self.is_deleted.to_owned())))
@@ -356,6 +361,19 @@ impl FromMysqlDto for File {
             id: take_from_mysql_row(row, FileColumn::Id.to_string().as_str())?,
             name: take_from_mysql_row(row, FileColumn::Name.to_string().as_str())?,
             url: take_from_mysql_row(row, FileColumn::Url.to_string().as_str())?,
+            public_path: take_from_mysql_row(row, FileColumn::PublicPath.to_string().as_str())?,
+            local_path: take_from_mysql_row(row, FileColumn::LocalPath.to_string().as_str())?,
+            mime: take_from_mysql_row(row, FileColumn::Mime.to_string().as_str())?,
+            hash: take_from_mysql_row(row, FileColumn::Hash.to_string().as_str())?,
+            size: take_from_mysql_row(row, FileColumn::Size.to_string().as_str())?,
+            creator_user_id: take_from_mysql_row(row, FileColumn::CreatorUserId.to_string().as_str())?,
+            created_at: take_from_mysql_row(row, FileColumn::CreatedAt.to_string().as_str())?,
+            updated_at: take_from_mysql_row(row, FileColumn::UpdatedAt.to_string().as_str())?,
+            file_delete_at: take_from_mysql_row(row, FileColumn::FileDeleteAt.to_string().as_str())?,
+            file_deleted_at: take_from_mysql_row(row, FileColumn::FileDeletedAt.to_string().as_str())?,
+            deleted_at: take_from_mysql_row(row, FileColumn::DeletedAt.to_string().as_str())?,
+            disk: take_from_mysql_row(row, FileColumn::Disk.to_string().as_str())?,
+            is_public: take_from_mysql_row(row, FileColumn::IsPublic.to_string().as_str())?,
             is_deleted: take_from_mysql_row(row, FileColumn::IsDeleted.to_string().as_str())?,
         })
     }
