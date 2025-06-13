@@ -1,7 +1,9 @@
+mod disk;
 mod file;
 mod role;
 mod user;
 
+pub use self::disk::*;
 pub use self::file::*;
 pub use self::role::*;
 pub use self::user::*;

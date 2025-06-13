@@ -5,7 +5,6 @@ pub mod app;
 pub mod config;
 pub mod connections;
 pub mod helpers;
-pub mod drivers;
 pub mod libs;
 pub mod migrations;
 pub mod routes;

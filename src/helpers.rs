@@ -4,6 +4,8 @@ use std::{fs, io};
 use std::path::{Path, PathBuf};
 use std::convert::TryInto;
 
+pub const CONVERSION_PATH_TO_STR_ERROR_MESSAGE: &'static str = "The conversion of the path to a string failed.";
+
 pub fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>());
 }
@@ -40,6 +42,60 @@ pub fn collect_files_from_dir(dir: &Path) -> io::Result<Vec<PathBuf>> {
         }
     }
     Ok(result)
+}
+
+pub fn collect_files_from_dir_into_str_vec(result: &mut Vec<String>, directory: &str, recursive: bool) -> io::Result<()> {
+    for entry in fs::read_dir(directory)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            if recursive {
+                if let Some(path) = path.to_str() {
+                    collect_files_from_dir_into_str_vec(result, path, recursive)?;
+                } else {
+                    return Err(io::Error::other(CONVERSION_PATH_TO_STR_ERROR_MESSAGE));
+                }
+            }
+        } else {
+            if let Some(path) = path.to_str() {
+                result.push(path.to_string());
+            } else {
+                return Err(io::Error::other(CONVERSION_PATH_TO_STR_ERROR_MESSAGE));
+            }
+        }
+    }
+    Ok(())
+}
+
+pub fn collect_directories_from_dir_into_str_vec(result: &mut Vec<String>, directory: &str, recursive: bool) -> io::Result<()> {
+    for entry in fs::read_dir(directory)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            if let Some(path) = path.to_str() {
+                result.push(path.to_string());
+
+                if recursive {
+                    collect_directories_from_dir_into_str_vec(result, path, recursive)?;
+                }
+            } else {
+                return Err(io::Error::other(CONVERSION_PATH_TO_STR_ERROR_MESSAGE));
+            }
+        }
+    }
+    Ok(())
+}
+
+pub fn create_dir_all_for_file(path: &str, separator: &str) -> io::Result<()> {
+    let mut s_path: Vec<&str> = path.split(separator).into_iter().collect();
+    if s_path.len() > 1 {
+        let _ = s_path.pop();
+        let folder = s_path.join(separator);
+        if folder.len() > 0 && folder.ne(separator) {
+            fs::create_dir_all(&folder)?;
+        }
+    }
+    Ok(())
 }
 
 pub fn get_sys_gettime_nsec() -> i64 {
