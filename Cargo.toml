@@ -45,7 +45,7 @@ futures-core = "0.3.31"
 futures-util = "0.3.31"
 cfg-if = "1.0.0"
 actix-rt = "2.10.0"
-reqwest = { version = "0.12.20", features = ["stream"] }
+ureq = "3.0.11"
 
 [[bin]]
 name = "migrate"
