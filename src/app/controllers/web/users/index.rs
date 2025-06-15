@@ -5,7 +5,6 @@ use crate::{
     prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService,
     LocaleService, RoleService, Session, TemplateService, TranslatorService, User, UserFilter,
     UserPaginateParams, UserPolicy, UserService, UserSort, WebAuthService, WebHttpResponse,
-    CSRF_ERROR_MESSAGE,
 };
 use actix_web::web::{Data, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -77,8 +76,8 @@ pub async fn invoke(
     let per_page = query.per_page.unwrap();
     let page_str = page.to_string();
     let filters: Vec<UserFilter> = query.get_filters();
-    let sort = query.get_sort();
-    let pagination_params = UserPaginateParams::new(page, per_page, filters, sort);
+    let sorts: Vec<UserSort> = query.get_sorts();
+    let pagination_params = UserPaginateParams::new(page, per_page, filters, sorts);
     let users = user_service.paginate_throw_http(&pagination_params)?;
     let total_pages = max(users.total_pages, 1);
     let total_pages_str = total_pages.to_string();
@@ -315,20 +314,20 @@ impl IndexQuery {
         let mut filters: Vec<UserFilter> = Vec::new();
 
         if let Some(value) = &self.search {
-            filters.push(UserFilter::Search(value));
+            filters.push(UserFilter::Search(value.to_string()));
         }
         if let Some(value) = &self.locale {
-            filters.push(UserFilter::Locale(value));
+            filters.push(UserFilter::Locale(value.to_string()));
         }
         filters
     }
-    pub fn get_sort(&self) -> Option<UserSort> {
-        let mut sort = None;
+    pub fn get_sorts(&self) -> Vec<UserSort> {
+        let mut sorts: Vec<UserSort> = Vec::new();
         if let Some(sort_) = &self.sort {
             if let Ok(sort__) = UserSort::from_str(sort_) {
-                sort = Some(sort__);
+                sorts.push(sort__);
             }
         }
-        sort
+        sorts
     }
 }

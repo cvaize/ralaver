@@ -2,10 +2,9 @@ use crate::helpers::{
     collect_directories_from_dir_into_str_vec, collect_files_from_dir_into_str_vec,
     create_dir_all_for_file,
 };
-use futures_core::Stream;
 use std::fs;
 use std::io;
-use std::io::{ErrorKind, Read};
+use std::io::{ErrorKind};
 use std::os::unix::fs::MetadataExt;
 use std::time::SystemTime;
 use ureq::http::StatusCode;
@@ -25,6 +24,7 @@ pub trait DiskRepository {
     // Get a resource to read the file.
     // fn read_stream(&self, path: &str) -> io::Result<S>;
     // Store the uploaded file on the disk.
+    #[allow(unused_variables)]
     fn put(&self, path: &str, content: Vec<u8>) -> io::Result<()> {
         Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
     }
@@ -39,38 +39,47 @@ pub trait DiskRepository {
     // // Append to a file.
     // fn append(&self, path: &str, data: &str) -> io::Result<()>;
     // Delete the file at a given path.
+    #[allow(unused_variables)]
     fn delete(&self, paths: &Vec<String>) -> io::Result<()> {
         Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
     }
     // Copy a file to a new location. On success, the total number of bytes copied is returned and it is equal to the length of the to file as reported by metadata.
+    #[allow(unused_variables)]
     fn copy(&self, from: &str, to: &str) -> io::Result<u64> {
         Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
     }
     // Move a file to a new location.
+    #[allow(unused_variables)]
     fn mv(&self, from: &str, to: &str) -> io::Result<()> {
         Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
     }
     // Get the file size of a given file.
+    #[allow(unused_variables)]
     fn size(&self, path: &str) -> io::Result<u64> {
         Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
     }
     // Get the file's last modification time.
+    #[allow(unused_variables)]
     fn last_modified(&self, path: &str) -> io::Result<SystemTime> {
         Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
     }
     // Get an array of all files in a directory.
+    #[allow(unused_variables)]
     fn files(&self, directory: &str, recursive: bool) -> io::Result<Vec<String>> {
         Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
     }
     // Get all of the directories within a given directory.
+    #[allow(unused_variables)]
     fn directories(&self, directory: &str, recursive: bool) -> io::Result<Vec<String>> {
         Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
     }
     // Create a directory.
+    #[allow(unused_variables)]
     fn make_directory(&self, path: &str) -> io::Result<()> {
         Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
     }
     // Recursively delete a directory.
+    #[allow(unused_variables)]
     fn delete_directory(&self, directory: &str) -> io::Result<()> {
         Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
     }

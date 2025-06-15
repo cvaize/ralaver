@@ -1,6 +1,6 @@
 use crate::{
-    HashService, PaginationResult, TranslatableError, TranslatorService, User, UserColumn,
-    UserMysqlRepository, UserPaginateParams, UserRepositoryError,
+    AppError, HashService, MysqlRepository, PaginationResult, TranslatableError, TranslatorService,
+    User, UserColumn, UserMysqlRepository, UserPaginateParams,
 };
 use actix_web::web::Data;
 use actix_web::{error, Error};
@@ -56,9 +56,10 @@ impl UserService {
         Err(error::ErrorNotFound(""))
     }
 
-    fn match_error(&self, e: UserRepositoryError) -> UserServiceError {
+    fn match_error(&self, e: AppError) -> UserServiceError {
+        dbg!(e.to_string());
         match e {
-            UserRepositoryError::DuplicateEmail => UserServiceError::DuplicateEmail,
+            // UserRepositoryError::DuplicateEmail => UserServiceError::DuplicateEmail,
             _ => UserServiceError::Fail,
         }
     }
@@ -66,7 +67,7 @@ impl UserService {
     pub fn create(&self, data: &User) -> Result<(), UserServiceError> {
         self.user_repository
             .get_ref()
-            .insert(data)
+            .insert_one(data)
             .map_err(|e| self.match_error(e))
     }
 
@@ -77,7 +78,7 @@ impl UserService {
     ) -> Result<(), UserServiceError> {
         self.user_repository
             .get_ref()
-            .update(data, columns)
+            .update_one(data, columns)
             .map_err(|e| self.match_error(e))
     }
 
@@ -89,12 +90,12 @@ impl UserService {
         if data.id == 0 {
             self.user_repository
                 .get_ref()
-                .insert(data)
+                .insert_one(data)
                 .map_err(|e| self.match_error(e))
         } else {
             self.user_repository
                 .get_ref()
-                .update(data, columns)
+                .update_one(data, columns)
                 .map_err(|e| self.match_error(e))
         }
     }

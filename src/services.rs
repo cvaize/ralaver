@@ -1,5 +1,10 @@
 use crate::connections::Connections;
-use crate::{AppService, AuthService, Config, CryptService, FileMysqlRepository, FileService, HashService, KeyValueService, LocaleService, MailService, RandomService, RateLimitService, RoleMysqlRepository, RoleService, TemplateService, TranslatorService, UserMysqlRepository, UserService, WebAuthService};
+use crate::{
+    AppService, AuthService, Config, CryptService, FileMysqlRepository, FileService, HashService,
+    KeyValueService, LocaleService, MailService, RandomService, RateLimitService,
+    RoleMysqlRepository, RoleService, TemplateService, TranslatorService, UserMysqlRepository,
+    UserService, WebAuthService,
+};
 use actix_web::web::Data;
 
 pub struct BaseServices {

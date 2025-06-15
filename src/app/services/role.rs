@@ -1,6 +1,6 @@
 use crate::{
-    PaginationResult, Role, RoleColumn, RoleMysqlRepository, RolePaginateParams,
-    RoleRepositoryError, TranslatableError, TranslatorService,
+    AppError, MysqlRepository, PaginationResult, Role, RoleColumn, RoleMysqlRepository,
+    RolePaginateParams, TranslatableError, TranslatorService,
 };
 use actix_web::web::Data;
 use actix_web::{error, Error};
@@ -23,7 +23,8 @@ impl RoleService {
     }
 
     pub fn get_all_ids_throw_http(&self) -> Result<Vec<u64>, Error> {
-        self.get_all_ids().map_err(|_| error::ErrorInternalServerError(""))
+        self.get_all_ids()
+            .map_err(|_| error::ErrorInternalServerError(""))
     }
 
     pub fn get_all(&self) -> Result<Vec<Role>, RoleServiceError> {
@@ -34,7 +35,8 @@ impl RoleService {
     }
 
     pub fn get_all_throw_http(&self) -> Result<Vec<Role>, Error> {
-        self.get_all().map_err(|_| error::ErrorInternalServerError(""))
+        self.get_all()
+            .map_err(|_| error::ErrorInternalServerError(""))
     }
 
     pub fn first_by_id(&self, role_id: u64) -> Result<Option<Role>, RoleServiceError> {
@@ -71,9 +73,10 @@ impl RoleService {
         Err(error::ErrorNotFound(""))
     }
 
-    fn match_error(&self, e: RoleRepositoryError) -> RoleServiceError {
+    fn match_error(&self, e: AppError) -> RoleServiceError {
+        dbg!(e.to_string());
         match e {
-            RoleRepositoryError::DuplicateCode => RoleServiceError::DuplicateCode,
+            // RoleRepositoryError::DuplicateCode => RoleServiceError::DuplicateCode,
             _ => RoleServiceError::Fail,
         }
     }
@@ -81,7 +84,7 @@ impl RoleService {
     pub fn create(&self, data: &mut Role) -> Result<(), RoleServiceError> {
         self.role_repository
             .get_ref()
-            .insert(data)
+            .insert_one(data)
             .map_err(|e| self.match_error(e))
     }
 
@@ -92,7 +95,7 @@ impl RoleService {
     ) -> Result<(), RoleServiceError> {
         self.role_repository
             .get_ref()
-            .update(data, columns)
+            .update_one(data, columns)
             .map_err(|e| self.match_error(e))
     }
 
@@ -104,12 +107,12 @@ impl RoleService {
         if data.id == 0 {
             self.role_repository
                 .get_ref()
-                .insert(data)
+                .insert_one(data)
                 .map_err(|e| self.match_error(e))
         } else {
             self.role_repository
                 .get_ref()
-                .update(data, columns)
+                .update_one(data, columns)
                 .map_err(|e| self.match_error(e))
         }
     }

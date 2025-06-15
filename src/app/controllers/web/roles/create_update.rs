@@ -3,7 +3,7 @@ use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString a
 use crate::app::validator::rules::required::Required;
 use crate::libs::actix_web::types::form::Form;
 use crate::{
-    prepare_value, Alert, AlertVariant, AppService, Locale, LocaleService, Permission,
+    prepare_value, Alert, AlertVariant, AppService, Permission,
     RateLimitService, Role, RoleColumn, RolePolicy, RoleService, RoleServiceError, Session,
     TemplateService, TranslatableError, TranslatorService, User, WebAuthService, WebHttpResponse,
 };
@@ -52,7 +52,6 @@ pub async fn create(
     wa_s: Data<WebAuthService>,
     rl_s: Data<RateLimitService>,
     r_s: Data<RoleService>,
-    l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
     let roles = r_s.get_all_throw_http()?;
     if !RolePolicy::can_create(&user, &roles) {
@@ -60,7 +59,7 @@ pub async fn create(
     }
     let data = Form(PostData::default());
     invoke(
-        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, l_s,
+        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s,
     )
 }
 
@@ -75,14 +74,13 @@ pub async fn store(
     wa_s: Data<WebAuthService>,
     rl_s: Data<RateLimitService>,
     r_s: Data<RoleService>,
-    l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
     let roles = r_s.get_all_throw_http()?;
     if !RolePolicy::can_create(&user, &roles) {
         return Err(error::ErrorForbidden(""));
     }
     invoke(
-        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, l_s,
+        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s,
     )
 }
 
@@ -97,7 +95,6 @@ pub async fn edit(
     wa_s: Data<WebAuthService>,
     rl_s: Data<RateLimitService>,
     r_s: Data<RoleService>,
-    l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
     let roles = r_s.get_all_throw_http()?;
     if !RolePolicy::can_update(&user, &roles) {
@@ -116,7 +113,7 @@ pub async fn edit(
     let edit_role = Some(edit_role);
     let data = Form(post_data);
     invoke(
-        edit_role, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, l_s,
+        edit_role, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s,
     )
 }
 
@@ -132,7 +129,6 @@ pub async fn update(
     wa_s: Data<WebAuthService>,
     rl_s: Data<RateLimitService>,
     r_s: Data<RoleService>,
-    l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
     let roles = r_s.get_all_throw_http()?;
     if !RolePolicy::can_update(&user, &roles) {
@@ -141,7 +137,7 @@ pub async fn update(
     let role_id = path.into_inner();
     let edit_role = Some(r_s.get_ref().first_by_id_throw_http(role_id)?);
     invoke(
-        edit_role, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, l_s,
+        edit_role, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s,
     )
 }
 
@@ -157,7 +153,6 @@ pub fn invoke(
     wa_s: Data<WebAuthService>,
     rl_s: Data<RateLimitService>,
     r_s: Data<RoleService>,
-    l_s: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
     data.prepare();
     //
@@ -167,7 +162,6 @@ pub fn invoke(
     let wa_s = wa_s.get_ref();
     let rl_s = rl_s.get_ref();
     let r_s = r_s.get_ref();
-    let l_s = l_s.get_ref();
 
     //
     let user = user.as_ref();

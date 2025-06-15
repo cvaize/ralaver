@@ -5,8 +5,8 @@ pub fn up(_: &Config, connection: &mut MysqlPooledConnection) {
     let query = "CREATE TABLE `users` (
    `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
    `email` VARCHAR(255) NOT NULL UNIQUE,
-   `password` VARCHAR(255) NULL DEFAULT NULL,
-   `locale` VARCHAR(6) NULL DEFAULT NULL,
+   `password` VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NULL DEFAULT NULL,
+   `locale` VARCHAR(6) CHARACTER SET ascii COLLATE ascii_bin NULL DEFAULT NULL,
    `surname` VARCHAR(255) NULL DEFAULT NULL,
    `name` VARCHAR(255) NULL DEFAULT NULL,
    `patronymic` VARCHAR(255) NULL DEFAULT NULL,

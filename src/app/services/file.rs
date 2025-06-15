@@ -1,6 +1,6 @@
 use crate::{
-    PaginationResult, File, FileColumn, FileMysqlRepository, FilePaginateParams,
-    FileRepositoryError, TranslatableError, TranslatorService,
+    AppError, Disk, File, FileColumn, FileMysqlRepository, FilePaginateParams, MysqlRepository,
+    PaginationResult, TranslatableError, TranslatorService,
 };
 use actix_web::web::Data;
 use actix_web::{error, Error};
@@ -32,16 +32,24 @@ impl FileService {
         Err(error::ErrorNotFound(""))
     }
 
-    pub fn first_by_url(&self, url: &str) -> Result<Option<File>, FileServiceError> {
+    pub fn first_by_local_path(
+        &self,
+        disk: &Disk,
+        local_path: &str,
+    ) -> Result<Option<File>, FileServiceError> {
         self.file_repository
             .get_ref()
-            .first_by_url(url)
+            .first_by_local_path(disk, local_path)
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn first_by_url_throw_http(&self, url: &str) -> Result<File, Error> {
+    pub fn first_by_local_path_throw_http(
+        &self,
+        disk: &Disk,
+        local_path: &str,
+    ) -> Result<File, Error> {
         let user = self
-            .first_by_url(url)
+            .first_by_local_path(disk, local_path)
             .map_err(|_| error::ErrorInternalServerError(""))?;
         if let Some(user) = user {
             return Ok(user);
@@ -49,9 +57,10 @@ impl FileService {
         Err(error::ErrorNotFound(""))
     }
 
-    fn match_error(&self, e: FileRepositoryError) -> FileServiceError {
+    fn match_error(&self, e: AppError) -> FileServiceError {
+        dbg!(e.to_string());
         match e {
-            FileRepositoryError::DuplicateUrl => FileServiceError::DuplicateUrl,
+            // FileRepositoryError::DuplicateUrl => FileServiceError::DuplicateUrl,
             _ => FileServiceError::Fail,
         }
     }
@@ -59,7 +68,7 @@ impl FileService {
     pub fn create(&self, data: &mut File) -> Result<(), FileServiceError> {
         self.file_repository
             .get_ref()
-            .insert(data)
+            .insert_one(data)
             .map_err(|e| self.match_error(e))
     }
 
@@ -70,7 +79,7 @@ impl FileService {
     ) -> Result<(), FileServiceError> {
         self.file_repository
             .get_ref()
-            .update(data, columns)
+            .update_one(data, columns)
             .map_err(|e| self.match_error(e))
     }
 
@@ -82,12 +91,12 @@ impl FileService {
         if data.id == 0 {
             self.file_repository
                 .get_ref()
-                .insert(data)
+                .insert_one(data)
                 .map_err(|e| self.match_error(e))
         } else {
             self.file_repository
                 .get_ref()
-                .update(data, columns)
+                .update_one(data, columns)
                 .map_err(|e| self.match_error(e))
         }
     }

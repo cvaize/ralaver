@@ -1,303 +1,60 @@
-use crate::{
-    make_delete_mysql_query, make_insert_mysql_query, make_is_exists_mysql_query,
-    make_pagination_mysql_query, make_select_mysql_query, make_update_mysql_query,
-    option_take_json_from_mysql_row, option_to_json_string_for_mysql, take_from_mysql_row,
-    take_json_from_mysql_row, FromDbRowError, FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum,
-    MysqlPool, MysqlPooledConnection, PaginateParams, PaginationResult, Role, RoleColumn,
-    ToMysqlDto, UserColumn, UserFilter, UserSort,
-};
+
+use crate::{option_take_json_from_mysql_row, option_to_json_string_for_mysql, take_from_mysql_row, AppError, FromMysqlDto, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder, MysqlRepository, PaginateParams, Role, RoleColumn, ToMysqlDto};
 use actix_web::web::Data;
-use r2d2_mysql::mysql::prelude::Queryable;
+use r2d2_mysql::mysql::Row;
 use r2d2_mysql::mysql::Value;
-use r2d2_mysql::mysql::{params, Error, Params, Row};
-use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 pub struct RoleMysqlRepository {
-    table: String,
     db_pool: Data<MysqlPool>,
+}
+
+impl MysqlRepository<Role, RolePaginateParams, RoleColumn, RoleFilter, RoleSort>
+    for RoleMysqlRepository
+{
+    fn get_repository_name(&self) -> &str {
+        "RoleMysqlRepository"
+    }
+    fn get_table(&self) -> &str {
+        "roles"
+    }
+    fn get_db_pool(&self) -> &MysqlPool {
+        self.db_pool.get_ref()
+    }
 }
 
 impl RoleMysqlRepository {
     pub fn new(db_pool: Data<MysqlPool>) -> Self {
-        let table = "roles".to_string();
-        Self { table, db_pool }
+        Self { db_pool }
     }
 
-    fn connection(&self) -> Result<MysqlPooledConnection, RoleRepositoryError> {
-        self.db_pool.get_ref().get().map_err(|e| {
-            log::error!("RoleRepository::connection - {e}");
-            return RoleRepositoryError::DbConnectionFail;
-        })
+    pub fn first_by_code(&self, code: &str) -> Result<Option<Role>, AppError> {
+        let filters: Vec<RoleFilter> = vec![RoleFilter::Code(code.to_string())];
+        self.first_by_filters(&filters)
     }
 
-    fn row_to_entity(&self, row: &mut Row) -> Result<Role, RoleRepositoryError> {
-        Role::take_from_mysql_row(row).map_err(|_| RoleRepositoryError::Fail)
+    pub fn exists_by_code(&self, code: &str) -> Result<bool, AppError> {
+        let filters: Vec<RoleFilter> = vec![RoleFilter::Code(code.to_string())];
+        self.exists_by_filters(&filters)
     }
 
-    fn try_row_to_entity(
-        &self,
-        row: &mut Option<Row>,
-    ) -> Result<Option<Role>, RoleRepositoryError> {
-        if let Some(row) = row {
-            return Ok(Some(self.row_to_entity(row)?));
-        }
-
-        Ok(None)
-    }
-
-    fn try_row_is_exists(&self, row: &Option<Row>) -> Result<bool, RoleRepositoryError> {
-        if let Some(row) = row {
-            return Ok(row.get("is_exists").unwrap_or(false));
-        }
-
-        Ok(false)
-    }
-
-    pub fn get_all_ids(&self) -> Result<Vec<u64>, RoleRepositoryError> {
-        let column: String = RoleColumn::Id.to_string();
-        let query = make_select_mysql_query(&self.table, &column, "", "");
-        let mut conn = self.connection()?;
-        let mut rows = conn
-            .query_iter(query)
-            .map_err(|_| RoleRepositoryError::Fail)?;
-
-        let mut ids: Vec<u64> = Vec::new();
-        for mut row in rows.into_iter() {
-            if let Ok(row) = &mut row {
-                if let Ok(id) = take_from_mysql_row::<u64>(row, &column) {
-                    ids.push(id);
-                }
-            }
-        }
-
-        Ok(ids)
-    }
-
-    pub fn get_all(&self) -> Result<Vec<Role>, RoleRepositoryError> {
-        let columns: String = RoleColumn::mysql_all_select_columns();
-        let query = make_select_mysql_query(&self.table, &columns, "", "");
-        let mut conn = self.connection()?;
-        let mut rows = conn
-            .query_iter(query)
-            .map_err(|_| RoleRepositoryError::Fail)?;
-
-        let mut records: Vec<Role> = Vec::new();
-        for mut row in rows.into_iter() {
-            if let Ok(row) = &mut row {
-                records.push(self.row_to_entity(row)?);
-            }
-        }
-
-        Ok(records)
-    }
-
-    pub fn first_by_id(&self, id: u64) -> Result<Option<Role>, RoleRepositoryError> {
-        let columns = RoleColumn::mysql_all_select_columns();
-        let query = make_select_mysql_query(&self.table, &columns, "id=:id", "");
-        let mut conn = self.connection()?;
-        let mut row: Option<Row> = conn
-            .exec_first(query, params! {"id" => id})
-            .map_err(|_| RoleRepositoryError::Fail)?;
-
-        self.try_row_to_entity(&mut row)
-    }
-
-    pub fn first_by_code(&self, code: &str) -> Result<Option<Role>, RoleRepositoryError> {
-        let columns = RoleColumn::mysql_all_select_columns();
-        let query = make_select_mysql_query(&self.table, &columns, "code=:code", "");
-        let mut conn = self.connection()?;
-        let mut row: Option<Row> = conn
-            .exec_first(query, params! {"code" => code})
-            .map_err(|_| RoleRepositoryError::Fail)?;
-
-        self.try_row_to_entity(&mut row)
-    }
-
-    pub fn paginate(
-        &self,
-        params: &RolePaginateParams,
-    ) -> Result<PaginationResult<Role>, RoleRepositoryError> {
-        let mut conn = self.connection()?;
-        let page = params.page;
-        let per_page = params.per_page;
-        let offset = (page - 1) * per_page;
-
-        let mut mysql_where: String = String::new();
-        let mut mysql_order: String = String::new();
-        let mut mysql_params: Vec<(String, Value)> = vec![
-            (String::from("per_page"), Value::from(per_page)),
-            (String::from("offset"), Value::from(offset)),
-        ];
-
-        let mut is_and = false;
-        for filter in &params.filters {
-            if is_and {
-                mysql_where.push_str(" AND ")
-            }
-            filter.push_params_to_vec(&mut mysql_params);
-            filter.push_params_to_mysql_query(&mut mysql_where);
-            is_and = true;
-        }
-
-        if let Some(sort) = &params.sort {
-            sort.push_params_to_vec(&mut mysql_params);
-            sort.push_params_to_mysql_query(&mut mysql_order);
-        }
-
-        let table = &self.table;
-        let columns = RoleColumn::mysql_all_select_columns();
-        let query = make_pagination_mysql_query(table, &columns, &mysql_where, &mysql_order);
-
-        let rows = conn
-            .exec_iter(&query, Params::from(mysql_params))
-            .map_err(|e| {
-                log::error!("RoleRepository::paginate - {e}");
-                RoleRepositoryError::Fail
-            })?;
-
-        let mut records: Vec<Role> = Vec::new();
-        let mut total_records: i64 = 0;
-        for mut row in rows.into_iter() {
-            if let Ok(row) = &mut row {
-                if total_records == 0 {
-                    total_records = row.take("total_records").unwrap_or(total_records);
-                }
-                records.push(self.row_to_entity(row)?);
-            }
-        }
-
-        Ok(PaginationResult::new(
-            page,
-            per_page,
-            total_records,
-            records,
-        ))
-    }
-
-    pub fn exists_by_code(&self, code: &str) -> Result<bool, RoleRepositoryError> {
-        let mut conn = self.connection()?;
-        let table = &self.table;
-        let query = make_is_exists_mysql_query(&table, "code=:code");
-        let row: Option<Row> = conn
-            .exec_first(query, params! { "code" => code })
-            .map_err(|_| RoleRepositoryError::Fail)?;
-
-        self.try_row_is_exists(&row)
-    }
-
-    pub fn insert(&self, data: &Role) -> Result<(), RoleRepositoryError> {
-        let mut conn = self.connection()?;
-
-        let (columns_str, params) = if data.id == 0 {
-            let columns: Option<Vec<RoleColumn>> = Some(
-                RoleColumn::iter()
-                    .filter(|c| c.ne(&RoleColumn::Id))
-                    .collect(),
-            );
-            let columns_str = columns.mysql_insert_columns();
-            let mut params: Vec<(String, Value)> = Vec::new();
-            data.push_mysql_params_to_vec(&columns, &mut params);
-            (columns_str, params)
-        } else {
-            let columns_str = RoleColumn::mysql_all_insert_columns();
-            let mut params: Vec<(String, Value)> = Vec::new();
-            data.push_all_mysql_params_to_vec(&mut params);
-            (columns_str, params)
-        };
-
-        let query = make_insert_mysql_query(&self.table, &columns_str);
-        conn.exec_drop(query, Params::from(params))
-            .map_err(|e| match &e {
-                Error::MySqlError(e_) => {
-                    if e_.code == 1062 {
-                        RoleRepositoryError::DuplicateCode
-                    } else {
-                        log::error!("RoleRepository::insert - {e}");
-                        RoleRepositoryError::Fail
-                    }
-                }
-                _ => {
-                    log::error!("RoleRepository::insert - {e}");
-                    RoleRepositoryError::Fail
-                }
-            })?;
-
-        Ok(())
-    }
-
-    pub fn delete_by_id(&self, id: u64) -> Result<(), RoleRepositoryError> {
-        let mut conn = self.connection()?;
-        let query = make_delete_mysql_query(&self.table, "id=:id");
-        conn.exec_drop(query, params! { "id" => id }).map_err(|e| {
-            log::error!("RoleRepository::delete_by_id - {e}");
-            return RoleRepositoryError::Fail;
-        })?;
-
-        Ok(())
-    }
-
-    pub fn delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), RoleRepositoryError> {
-        let mut conn = self.connection()?;
-        let query = make_delete_mysql_query(&self.table, "id IN (:id)");
-        let params = ids.iter().map(|id| params! { "id" => id });
-        conn.exec_batch(query, params).map_err(|e| {
-            log::error!("RoleRepository::delete_by_ids - {e}");
-            return RoleRepositoryError::Fail;
-        })?;
-
-        Ok(())
-    }
-
-    pub fn delete_by_code(&self, code: &str) -> Result<(), RoleRepositoryError> {
-        let mut conn = self.connection()?;
-        let query = make_delete_mysql_query(&self.table, "code=:code");
-        conn.exec_drop(query, params! { "code" => code })
-            .map_err(|e| {
-                log::error!("RoleRepository::delete_by_code - {e}");
-                return RoleRepositoryError::Fail;
-            })?;
-
-        Ok(())
-    }
-
-    pub fn update<'a>(
-        &self,
-        data: &Role,
-        columns: &Option<Vec<RoleColumn>>,
-    ) -> Result<(), RoleRepositoryError> {
-        let mut conn = self.connection()?;
-        let columns_str = columns.mysql_update_columns();
-        let mut params: Vec<(String, Value)> = vec![(String::from("id"), Value::from(data.id))];
-        data.push_mysql_params_to_vec(columns, &mut params);
-
-        let query = make_update_mysql_query(&self.table, &columns_str, "id=:id");
-        conn.exec_drop(query, Params::from(params)).map_err(|e| {
-            log::error!("RoleRepository::update - {e}");
-            return RoleRepositoryError::Fail;
-        })?;
-
-        Ok(())
+    pub fn delete_by_code(&self, code: &str) -> Result<(), AppError> {
+        let filters: Vec<RoleFilter> = vec![RoleFilter::Code(code.to_string())];
+        self.delete_by_filters(&filters)
     }
 }
 
-#[derive(Debug, Clone, Copy, Display, EnumString)]
-pub enum RoleRepositoryError {
-    DbConnectionFail,
-    DuplicateCode,
-    NotFound,
-    Fail,
-}
+pub type RolePaginateParams = PaginateParams<RoleFilter, RoleSort>;
 
 #[derive(Debug)]
-pub enum RoleFilter<'a> {
+pub enum RoleFilter {
     Id(u64),
-    Code(&'a str),
-    Search(&'a str),
+    Code(String),
+    Search(String),
 }
 
-impl RoleFilter<'_> {
-    pub fn push_params_to_mysql_query(&self, query: &mut String) {
+impl MysqlQueryBuilder for RoleFilter {
+    fn push_params_to_mysql_query(&self, query: &mut String) {
         match self {
             Self::Id(_) => query.push_str("id=:id"),
             Self::Code(_) => query.push_str("code=:code"),
@@ -305,7 +62,7 @@ impl RoleFilter<'_> {
         }
     }
 
-    pub fn push_params_to_vec(&self, params: &mut Vec<(String, Value)>) {
+    fn push_params_to_vec(&self, params: &mut Vec<(String, Value)>) {
         match self {
             Self::Id(value) => {
                 params.push(("id".to_string(), Value::from(value)));
@@ -334,8 +91,8 @@ pub enum RoleSort {
     CodeDesc,
 }
 
-impl RoleSort {
-    pub fn push_params_to_mysql_query(&self, query: &mut String) {
+impl MysqlQueryBuilder for RoleSort {
+    fn push_params_to_mysql_query(&self, query: &mut String) {
         match self {
             Self::IdAsc => query.push_str("id ASC"),
             Self::IdDesc => query.push_str("id DESC"),
@@ -346,10 +103,8 @@ impl RoleSort {
         };
     }
 
-    pub fn push_params_to_vec(&self, _: &mut Vec<(String, Value)>) {}
+    fn push_params_to_vec(&self, _: &mut Vec<(String, Value)>) {}
 }
-
-pub type RolePaginateParams<'a> = PaginateParams<RoleFilter<'a>, RoleSort>;
 
 impl ToMysqlDto<RoleColumn> for Role {
     fn push_mysql_param_to_vec(&self, column: &RoleColumn, params: &mut Vec<(String, Value)>) {
@@ -371,10 +126,13 @@ impl ToMysqlDto<RoleColumn> for Role {
             }
         }
     }
+    fn get_id(&self) -> u64 {
+        self.id
+    }
 }
 
 impl FromMysqlDto for Role {
-    fn take_from_mysql_row(row: &mut Row) -> Result<Self, FromDbRowError> {
+    fn take_from_mysql_row(row: &mut Row) -> Result<Self, AppError> {
         Ok(Self {
             id: take_from_mysql_row(row, RoleColumn::Id.to_string().as_str())?,
             name: take_from_mysql_row(row, RoleColumn::Name.to_string().as_str())?,
@@ -390,3 +148,8 @@ impl FromMysqlDto for Role {
 }
 
 impl MysqlColumnEnum for RoleColumn {}
+impl MysqlIdColumn for RoleColumn {
+    fn get_mysql_id_column() -> Self {
+        Self::Id
+    }
+}

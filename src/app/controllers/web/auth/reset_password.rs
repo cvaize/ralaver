@@ -1,8 +1,11 @@
 use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
-use crate::{prepare_value, Alert, AppService, AuthService, EmailAddress, EmailMessage, MailService, RandomService, TemplateService, TranslatorService, WebHttpResponse, RESET_PASSWORD_TTL};
-use crate::{RateLimitService, WebHttpRequest};
+use crate::RateLimitService;
+use crate::{
+    prepare_value, Alert, AppService, AuthService, EmailAddress, EmailMessage, MailService,
+    RandomService, TemplateService, TranslatorService, WebHttpResponse, RESET_PASSWORD_TTL,
+};
 use actix_web::web::{Data, Form};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;

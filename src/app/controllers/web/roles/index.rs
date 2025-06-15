@@ -3,8 +3,8 @@ use crate::app::controllers::web::{
 };
 use crate::{
     prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService,
-    LocaleService, Role, RoleFilter, RolePaginateParams, RolePolicy, RoleService, RoleSort,
-    Session, TemplateService, TranslatorService, User, UserPolicy, WebAuthService, WebHttpResponse,
+    LocaleService, RoleFilter, RolePaginateParams, RolePolicy, RoleService, RoleSort,
+    Session, TemplateService, TranslatorService, User, WebAuthService, WebHttpResponse,
 };
 use actix_web::web::{Data, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -72,8 +72,8 @@ pub async fn invoke(
     let per_page = query.per_page.unwrap();
     let page_str = page.to_string();
     let filters: Vec<RoleFilter> = query.get_filters();
-    let sort = query.get_sort();
-    let pagination_params = RolePaginateParams::new(page, per_page, filters, sort);
+    let sorts: Vec<RoleSort> = query.get_sorts();
+    let pagination_params = RolePaginateParams::new(page, per_page, filters, sorts);
     let roles = role_service.paginate_throw_http(&pagination_params)?;
     let total_pages = max(roles.total_pages, 1);
     let total_pages_str = total_pages.to_string();
@@ -277,17 +277,17 @@ impl IndexQuery {
         let mut filters: Vec<RoleFilter> = Vec::new();
 
         if let Some(value) = &self.search {
-            filters.push(RoleFilter::Search(value));
+            filters.push(RoleFilter::Search(value.to_string()));
         }
         filters
     }
-    pub fn get_sort(&self) -> Option<RoleSort> {
-        let mut sort = None;
+    pub fn get_sorts(&self) -> Vec<RoleSort> {
+        let mut sorts: Vec<RoleSort> = Vec::new();
         if let Some(sort_) = &self.sort {
             if let Ok(sort__) = RoleSort::from_str(sort_) {
-                sort = Some(sort__);
+                sorts.push(sort__);
             }
         }
-        sort
+        sorts
     }
 }

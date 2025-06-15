@@ -1,7 +1,12 @@
 use crate::app::controllers::web::{
     generate_2_offset_pagination_array, get_context_data, get_template_context,
 };
-use crate::{FilePolicy, prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService, LocaleService, Role, RoleFilter, RolePaginateParams, RoleService, RoleSort, Session, TemplateService, TranslatorService, User, WebAuthService, WebHttpResponse, FileService, FilePaginateParams, FileFilter, FileSort};
+use crate::{
+    prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService,
+    FileFilter, FilePaginateParams, FilePolicy, FileService, FileSort, LocaleService,
+    RoleService, Session, TemplateService,
+    TranslatorService, User, WebAuthService, WebHttpResponse,
+};
 use actix_web::web::{Data, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
@@ -70,8 +75,8 @@ pub async fn invoke(
     let per_page = query.per_page.unwrap();
     let page_str = page.to_string();
     let filters: Vec<FileFilter> = query.get_filters();
-    let sort = query.get_sort();
-    let pagination_params = FilePaginateParams::new(page, per_page, filters, sort);
+    let sorts: Vec<FileSort> = query.get_sorts();
+    let pagination_params = FilePaginateParams::new(page, per_page, filters, sorts);
     let files = file_service.paginate_throw_http(&pagination_params)?;
     let total_pages = max(files.total_pages, 1);
     let total_pages_str = total_pages.to_string();
@@ -275,17 +280,17 @@ impl IndexQuery {
         let mut filters: Vec<FileFilter> = Vec::new();
 
         if let Some(value) = &self.search {
-            filters.push(FileFilter::Search(value));
+            filters.push(FileFilter::Search(value.to_string()));
         }
         filters
     }
-    pub fn get_sort(&self) -> Option<FileSort> {
-        let mut sort = None;
+    pub fn get_sorts(&self) -> Vec<FileSort> {
+        let mut sorts: Vec<FileSort> = Vec::new();
         if let Some(sort_) = &self.sort {
             if let Ok(sort__) = FileSort::from_str(sort_) {
-                sort = Some(sort__);
+                sorts.push(sort__);
             }
         }
-        sort
+        sorts
     }
 }

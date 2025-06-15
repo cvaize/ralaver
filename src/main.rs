@@ -9,6 +9,7 @@ pub mod libs;
 pub mod migrations;
 pub mod routes;
 pub mod services;
+pub mod errors;
 
 use crate::app::controllers::web::errors::default_error_handler;
 use crate::services::BaseServices;
@@ -28,6 +29,7 @@ pub use connections::Connections;
 pub use mysql_connection::MysqlPool;
 pub use mysql_connection::MysqlPooledConnection;
 pub use services::Services;
+pub use errors::AppError;
 
 fn preparation() -> (Connections, Services) {
     dotenv::dotenv().ok();

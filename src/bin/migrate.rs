@@ -1,5 +1,7 @@
 #[path = "../config.rs"]
 mod config;
+#[path = "../errors.rs"]
+mod errors;
 #[path = "../app/connections/mysql.rs"]
 mod connections_mysql;
 #[path = "../migrations/mod.rs"]
