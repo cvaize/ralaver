@@ -371,6 +371,19 @@ where
         let mut params: Vec<(String, Value)> = Vec::new();
         data.push_mysql_params_to_vec(columns, &mut params);
 
+        let mut is = true;
+        for (key, _) in &params {
+            if key.eq(id_key) {
+                is = false;
+                break;
+            }
+        }
+
+        if is {
+            let id = data.get_id();
+            params.push((id_key.to_string(), Value::from(id)));
+        }
+
         conn.exec_drop(query, Params::from(params))
             .map_err(|e| self.log_error("update_one", e.to_string()))?;
 
