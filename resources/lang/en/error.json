@@ -22,7 +22,7 @@
   },
   "FileServiceError": {
     "DbConnectionFail":  "Error connecting to the FileService database.",
-    "DuplicateUrl": "A file with this URL is already exists.",
+    "DuplicateLocalPath": "A file with this LocalPath is already exists.",
     "NotFound":  "File not found.",
     "Fail": "FileService error."
   }

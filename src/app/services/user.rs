@@ -57,11 +57,15 @@ impl UserService {
     }
 
     fn match_error(&self, e: AppError) -> UserServiceError {
-        dbg!(e.to_string());
-        match e {
-            // UserRepositoryError::DuplicateEmail => UserServiceError::DuplicateEmail,
-            _ => UserServiceError::Fail,
+        let error = e.to_string();
+
+        if error.contains("Duplicate entry") {
+            if error.contains(".email'") {
+                return UserServiceError::DuplicateEmail;
+            }
         }
+
+        UserServiceError::Fail
     }
 
     pub fn create(&self, data: &User) -> Result<(), UserServiceError> {

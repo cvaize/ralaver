@@ -58,11 +58,15 @@ impl FileService {
     }
 
     fn match_error(&self, e: AppError) -> FileServiceError {
-        dbg!(e.to_string());
-        match e {
-            // FileRepositoryError::DuplicateUrl => FileServiceError::DuplicateUrl,
-            _ => FileServiceError::Fail,
+        let error = e.to_string();
+
+        if error.contains("Duplicate entry") {
+            if error.contains(".local_path") {
+                return FileServiceError::DuplicateLocalPath;
+            }
         }
+
+        FileServiceError::Fail
     }
 
     pub fn create(&self, data: &mut File) -> Result<(), FileServiceError> {
@@ -147,7 +151,7 @@ impl FileService {
 #[derive(Debug, Clone, Copy, Display, EnumString, PartialEq, Eq)]
 pub enum FileServiceError {
     DbConnectionFail,
-    DuplicateUrl,
+    DuplicateLocalPath,
     NotFound,
     Fail,
 }
@@ -158,8 +162,8 @@ impl TranslatableError for FileServiceError {
             Self::DbConnectionFail => {
                 translate_service.translate(lang, "error.FileServiceError.DbConnectionFail")
             }
-            Self::DuplicateUrl => {
-                translate_service.translate(lang, "error.FileServiceError.DuplicateUrl")
+            Self::DuplicateLocalPath => {
+                translate_service.translate(lang, "error.FileServiceError.DuplicateLocalPath")
             }
             Self::NotFound => translate_service.translate(lang, "error.FileServiceError.NotFound"),
             _ => translate_service.translate(lang, "error.FileServiceError.Fail"),

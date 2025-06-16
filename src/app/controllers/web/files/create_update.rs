@@ -238,7 +238,7 @@ pub fn invoke(
                 let result = f_s.upsert(&mut file_data, &columns);
 
                 if let Err(error) = result {
-                    if error.eq(&FileServiceError::DuplicateUrl) {
+                    if error.eq(&FileServiceError::DuplicateLocalPath) {
                         errors.local_path.push(error.translate(lang, tr_s));
                     } else {
                         errors.form.push(error.translate(lang, tr_s));

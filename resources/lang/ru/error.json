@@ -22,7 +22,7 @@
   },
   "FileServiceError": {
     "DbConnectionFail":  "Ошибка подключения к базе данных FileService.",
-    "DuplicateUrl": "Файл с таким URL уже создан.",
+    "DuplicateLocalPath": "Файл с таким LocalPath уже создан.",
     "NotFound":  "Файл не найден.",
     "Fail": "Ошибка сервиса FileService."
   }

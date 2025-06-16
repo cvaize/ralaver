@@ -74,11 +74,15 @@ impl RoleService {
     }
 
     fn match_error(&self, e: AppError) -> RoleServiceError {
-        dbg!(e.to_string());
-        match e {
-            // RoleRepositoryError::DuplicateCode => RoleServiceError::DuplicateCode,
-            _ => RoleServiceError::Fail,
+        let error = e.to_string();
+
+        if error.contains("Duplicate entry") {
+            if error.contains(".code'") {
+                return RoleServiceError::DuplicateCode;
+            }
         }
+
+        RoleServiceError::Fail
     }
 
     pub fn create(&self, data: &mut Role) -> Result<(), RoleServiceError> {
