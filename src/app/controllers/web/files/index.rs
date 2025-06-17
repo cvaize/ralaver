@@ -3,9 +3,8 @@ use crate::app::controllers::web::{
 };
 use crate::{
     prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService,
-    FileFilter, FilePaginateParams, FilePolicy, FileService, FileSort, LocaleService,
-    RoleService, Session, TemplateService,
-    TranslatorService, User, WebAuthService, WebHttpResponse,
+    FileFilter, FilePaginateParams, FilePolicy, FileService, FileSort, LocaleService, RoleService,
+    Session, TemplateService, TranslatorService, User, WebAuthService, WebHttpResponse,
 };
 use actix_web::web::{Data, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -46,7 +45,7 @@ pub async fn invoke(
     file_service: Data<FileService>,
     locale_service: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
-    let tr_s = translator_service.get_ref();
+    let translator_service = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
     let web_auth_service = web_auth_service.get_ref();
@@ -65,11 +64,11 @@ pub async fn invoke(
     let lang: String = locale_service.get_locale_code(Some(&req), Some(&user));
     let lang = &lang;
 
-    let search_str = tr_s.translate(lang, "Search");
-    let reset_str = tr_s.translate(lang, "Reset");
-    let sort_str = tr_s.translate(lang, "Sort");
+    let search_str = translator_service.translate(lang, "Search");
+    let reset_str = translator_service.translate(lang, "Reset");
+    let sort_str = translator_service.translate(lang, "Sort");
 
-    let form_errors: Vec<String> = query.validate(tr_s, lang, &search_str, &sort_str);
+    let form_errors: Vec<String> = query.validate(translator_service, lang, &search_str, &sort_str);
 
     let page = query.page.unwrap();
     let per_page = query.per_page.unwrap();
@@ -86,7 +85,7 @@ pub async fn invoke(
         &req,
         user,
         &session,
-        tr_s,
+        translator_service,
         app_service,
         web_auth_service,
         role_service,
@@ -94,7 +93,7 @@ pub async fn invoke(
     let mut page_vars: HashMap<&str, &str> = HashMap::new();
     page_vars.insert("page", &page_str);
     page_vars.insert("total_pages", &total_pages_str);
-    context_data.title = tr_s.variables(lang, "page.files.index.title", &page_vars);
+    context_data.title = translator_service.variables(lang, "page.files.index.title", &page_vars);
 
     for form_error in form_errors {
         context_data.alerts.push(Alert::error(form_error));
@@ -124,7 +123,7 @@ pub async fn invoke(
         let value = sort_enum.to_string();
         let mut key = "page.files.index.sort.".to_string();
         key.push_str(&value);
-        let label = tr_s.translate(lang, &key);
+        let label = translator_service.translate(lang, &key);
         let value = sort_enum.to_string();
         sort_options.push(json!({ "label": label, "value": value }));
     }
@@ -136,46 +135,46 @@ pub async fn invoke(
 
     if FilePolicy::can_create(&user, &user_roles) {
         create = Some(json!({
-            "label": tr_s.translate(lang, "Create file"),
+            "label": translator_service.translate(lang, "Create file"),
             "href": "/files/create"
         }));
     }
 
     if FilePolicy::can_update(&user, &user_roles) {
         edit = Some(json!({
-            "label": tr_s.translate(lang, "Edit file"),
+            "label": translator_service.translate(lang, "Edit file"),
             "href": "/files/:id"
         }));
     }
 
     if FilePolicy::can_delete(&user, &user_roles) {
         selected = Some(json!({
-            "label": tr_s.translate(lang, "Selected"),
-            "delete": tr_s.translate(lang, "Delete selected"),
-            "delete_confirm": tr_s.translate(lang, "Delete selected?"),
+            "label": translator_service.translate(lang, "Selected"),
+            "delete": translator_service.translate(lang, "Delete selected"),
+            "delete_confirm": translator_service.translate(lang, "Delete selected?"),
         }));
         delete = Some(json!({
             "action": "/files/:id/delete",
             "method": "post",
-            "label": tr_s.translate(lang, "Delete file"),
-            "confirm": tr_s.translate(lang, "Delete file(ID: :id)?"),
+            "label": translator_service.translate(lang, "Delete file"),
+            "confirm": translator_service.translate(lang, "Delete file(ID: :id)?"),
         }));
     }
 
     let ctx = json!({
         "ctx": &layout_ctx,
-        "heading": tr_s.translate(lang, "page.files.index.header"),
+        "heading": translator_service.translate(lang, "page.files.index.header"),
         "breadcrumbs": [
-            {"href": "/", "label": tr_s.translate(lang, "page.home.header")},
-            {"href": "/files", "label": tr_s.translate(lang, "page.files.index.header")},
-            {"label": tr_s.variables(lang, "Page :page of :total_pages", &page_vars)},
+            {"href": "/", "label": translator_service.translate(lang, "page.home.header")},
+            {"href": "/files", "label": translator_service.translate(lang, "page.files.index.header")},
+            {"label": translator_service.variables(lang, "Page :page of :total_pages", &page_vars)},
         ],
         "create": create,
         "edit": edit,
         "delete": delete,
-        "page_per_page": tr_s.variables(lang, "Page :page of :total_pages", &page_vars),
-        "per_page_label": tr_s.translate(lang, "Number of entries per page"),
-        "select_page": tr_s.translate(lang, "Select page"),
+        "page_per_page": translator_service.variables(lang, "Page :page of :total_pages", &page_vars),
+        "per_page_label": translator_service.translate(lang, "Number of entries per page"),
+        "select_page": translator_service.translate(lang, "Select page"),
         "sort": {
             "label": &sort_str,
             "value": &query.sort,
@@ -183,11 +182,11 @@ pub async fn invoke(
         },
         "selected": selected,
         "columns": {
-            "id": tr_s.translate(lang, "page.files.index.columns.id"),
-            "name": tr_s.translate(lang, "page.files.index.columns.name"),
-            "url": tr_s.translate(lang, "page.files.index.columns.url"),
-            "is_deleted": tr_s.translate(lang, "page.files.index.columns.is_deleted"),
-            "actions": tr_s.translate(lang, "page.files.index.columns.actions")
+            "id": translator_service.translate(lang, "page.files.index.columns.id"),
+            "name": translator_service.translate(lang, "page.files.index.columns.name"),
+            "local_path": translator_service.translate(lang, "page.files.index.columns.local_path"),
+            "is_deleted": translator_service.translate(lang, "page.files.index.columns.is_deleted"),
+            "actions": translator_service.translate(lang, "page.files.index.columns.actions")
         },
         "files": {
             "page": files.page,
@@ -199,9 +198,9 @@ pub async fn invoke(
             "pagination_link": pagination_link
         },
         "per_pages": &PER_PAGES,
-        "filter_label": tr_s.translate(lang, "Filters"),
-        "close_label": tr_s.translate(lang, "Close"),
-        "apply_label": tr_s.translate(lang, "Apply"),
+        "filter_label": translator_service.translate(lang, "Filters"),
+        "close_label": translator_service.translate(lang, "Close"),
+        "apply_label": translator_service.translate(lang, "Apply"),
         "mass_actions": {
             "action": "/files",
             "method": "post",
@@ -239,15 +238,29 @@ impl IndexQuery {
     }
     pub fn validate(
         &mut self,
-        t_s: &TranslatorService,
+        translator_service: &TranslatorService,
         lang: &str,
         search_str: &str,
         sort_str: &str,
     ) -> Vec<String> {
         let mut errors: Vec<String> = Vec::new();
 
-        validation_query_max_length_string!(errors, self.search, search_str, 255, t_s, lang);
-        validation_query_max_length_string!(errors, self.sort, sort_str, 255, t_s, lang);
+        validation_query_max_length_string!(
+            errors,
+            self.search,
+            search_str,
+            255,
+            translator_service,
+            lang
+        );
+        validation_query_max_length_string!(
+            errors,
+            self.sort,
+            sort_str,
+            255,
+            translator_service,
+            lang
+        );
 
         errors
     }

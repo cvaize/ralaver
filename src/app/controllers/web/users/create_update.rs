@@ -58,23 +58,36 @@ pub async fn create(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    u_s: Data<UserService>,
-    l_s: Data<LocaleService>,
-    r_s: Data<RoleService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    user_service: Data<UserService>,
+    locale_service: Data<LocaleService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
     let data = Form(PostData::default());
-    let user_roles = r_s.get_all_throw_http()?;
+    let user_roles = role_service.get_all_throw_http()?;
     if !UserPolicy::can_create(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
     invoke(
-        false, None, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s,
-        r_s,
+        false,
+        None,
+        req,
+        data,
+        user,
+        user_roles,
+        session,
+        translator_service,
+        template_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        user_service,
+        locale_service,
+        role_service,
     )
 }
 
@@ -83,22 +96,35 @@ pub async fn store(
     data: Form<PostData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    u_s: Data<UserService>,
-    l_s: Data<LocaleService>,
-    r_s: Data<RoleService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    user_service: Data<UserService>,
+    locale_service: Data<LocaleService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = r_s.get_all_throw_http()?;
+    let user_roles = role_service.get_all_throw_http()?;
     if !UserPolicy::can_create(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
     invoke(
-        false, None, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s, l_s,
-        r_s,
+        false,
+        None,
+        req,
+        data,
+        user,
+        user_roles,
+        session,
+        translator_service,
+        template_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        user_service,
+        locale_service,
+        role_service,
     )
 }
 
@@ -107,27 +133,40 @@ pub async fn edit(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    u_s: Data<UserService>,
-    l_s: Data<LocaleService>,
-    r_s: Data<RoleService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    user_service: Data<UserService>,
+    locale_service: Data<LocaleService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = r_s.get_all_throw_http()?;
+    let user_roles = role_service.get_all_throw_http()?;
     if !UserPolicy::can_update(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
     let user_id = path.into_inner();
-    let edit_user = u_s.get_ref().first_by_id_throw_http(user_id)?;
+    let edit_user = user_service.get_ref().first_by_id_throw_http(user_id)?;
     let post_data = post_data_from_user(&edit_user);
     let edit_user = Some(edit_user);
     let data = Form(post_data);
     invoke(
-        false, edit_user, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s,
-        l_s, r_s,
+        false,
+        edit_user,
+        req,
+        data,
+        user,
+        user_roles,
+        session,
+        translator_service,
+        template_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        user_service,
+        locale_service,
+        role_service,
     )
 }
 
@@ -137,24 +176,37 @@ pub async fn update(
     data: Form<PostData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    u_s: Data<UserService>,
-    l_s: Data<LocaleService>,
-    r_s: Data<RoleService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    user_service: Data<UserService>,
+    locale_service: Data<LocaleService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = r_s.get_all_throw_http()?;
+    let user_roles = role_service.get_all_throw_http()?;
     if !UserPolicy::can_update(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
     let user_id = path.into_inner();
-    let edit_user = Some(u_s.get_ref().first_by_id_throw_http(user_id)?);
+    let edit_user = Some(user_service.get_ref().first_by_id_throw_http(user_id)?);
     invoke(
-        false, edit_user, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s,
-        l_s, r_s,
+        false,
+        edit_user,
+        req,
+        data,
+        user,
+        user_roles,
+        session,
+        translator_service,
+        template_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        user_service,
+        locale_service,
+        role_service,
     )
 }
 
@@ -166,25 +218,25 @@ pub fn invoke(
     user: ReqData<Arc<User>>,
     user_roles: Vec<Role>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    u_s: Data<UserService>,
-    l_s: Data<LocaleService>,
-    r_s: Data<RoleService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    user_service: Data<UserService>,
+    locale_service: Data<LocaleService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
     data.prepare();
     //
-    let tr_s = tr_s.get_ref();
-    let tm_s = tm_s.get_ref();
-    let ap_s = ap_s.get_ref();
-    let wa_s = wa_s.get_ref();
-    let rl_s = rl_s.get_ref();
-    let u_s = u_s.get_ref();
-    let l_s = l_s.get_ref();
-    let r_s = r_s.get_ref();
+    let translator_service = translator_service.get_ref();
+    let template_service = template_service.get_ref();
+    let app_service = app_service.get_ref();
+    let web_auth_service = web_auth_service.get_ref();
+    let rate_limit_service = rate_limit_service.get_ref();
+    let user_service = user_service.get_ref();
+    let locale_service = locale_service.get_ref();
+    let role_service = role_service.get_ref();
 
     //
     let user = user.as_ref();
@@ -195,23 +247,31 @@ pub fn invoke(
     } else {
         ROUTE_NAME
     };
-    let mut context_data =
-        get_context_data(route_name, &req, user, &session, tr_s, ap_s, wa_s, r_s);
+    let mut context_data = get_context_data(
+        route_name,
+        &req,
+        user,
+        &session,
+        translator_service,
+        app_service,
+        web_auth_service,
+        role_service,
+    );
 
     let lang = &context_data.lang;
 
-    let email_str = tr_s.translate(lang, "page.users.create.fields.email");
-    let password_str = tr_s.translate(lang, "page.users.create.fields.password");
-    let confirm_password_str = tr_s.translate(lang, "page.users.create.fields.confirm_password");
-    let surname_str = tr_s.translate(lang, "page.users.create.fields.surname");
-    let name_str = tr_s.translate(lang, "page.users.create.fields.name");
-    let patronymic_str = tr_s.translate(lang, "page.users.create.fields.patronymic");
-    let locale_str = tr_s.translate(lang, "page.users.create.fields.locale");
-    let roles_ids_str = tr_s.translate(lang, "page.users.create.fields.roles_ids");
+    let email_str = translator_service.translate(lang, "page.users.create.fields.email");
+    let password_str = translator_service.translate(lang, "page.users.create.fields.password");
+    let confirm_password_str = translator_service.translate(lang, "page.users.create.fields.confirm_password");
+    let surname_str = translator_service.translate(lang, "page.users.create.fields.surname");
+    let name_str = translator_service.translate(lang, "page.users.create.fields.name");
+    let patronymic_str = translator_service.translate(lang, "page.users.create.fields.patronymic");
+    let locale_str = translator_service.translate(lang, "page.users.create.fields.locale");
+    let roles_ids_str = translator_service.translate(lang, "page.users.create.fields.roles_ids");
 
     let (title, heading, action) = if is_profile {
-        let title = tr_s.translate(lang, "page.profile.title");
-        let heading = tr_s.translate(lang, "page.profile.header");
+        let title = translator_service.translate(lang, "page.profile.title");
+        let heading = translator_service.translate(lang, "page.profile.header");
         let action = get_profile_url();
         (title, heading, action)
     } else {
@@ -221,14 +281,14 @@ pub fn invoke(
             vars.insert("user_name", &user_name);
 
             (
-                tr_s.variables(lang, "page.users.edit.title", &vars),
-                tr_s.variables(lang, "page.users.edit.header", &vars),
+                translator_service.variables(lang, "page.users.edit.title", &vars),
+                translator_service.variables(lang, "page.users.edit.header", &vars),
                 get_edit_url(edit_user.id.to_string().as_str()),
             )
         } else {
             (
-                tr_s.translate(lang, "page.users.create.title"),
-                tr_s.translate(lang, "page.users.create.header"),
+                translator_service.translate(lang, "page.users.create.title"),
+                translator_service.translate(lang, "page.users.create.header"),
                 get_create_url(),
             )
         };
@@ -243,41 +303,42 @@ pub fn invoke(
     let mut errors = ErrorMessages::default();
 
     if is_post {
-        wa_s.check_csrf_throw_http(&session, &data._token)?;
+        web_auth_service.check_csrf_throw_http(&session, &data._token)?;
 
-        let rate_limit_key = rl_s.make_key_from_request_throw_http(&req, RL_KEY)?;
+        let rate_limit_key = rate_limit_service.make_key_from_request_throw_http(&req, RL_KEY)?;
 
-        let executed = rl_s.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
+        let executed =
+            rate_limit_service.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
 
         if executed {
             errors.email = Required::validated(
-                tr_s,
+                translator_service,
                 lang,
                 &data.email,
-                |value| Email::validate(tr_s, lang, value, &email_str),
+                |value| Email::validate(translator_service, lang, value, &email_str),
                 &email_str,
             );
 
             if edit_user.is_none() {
                 errors.password = Required::validated(
-                    tr_s,
+                    translator_service,
                     lang,
                     &data.password,
-                    |value| MMLS::validate(tr_s, lang, value, 4, 255, &password_str),
+                    |value| MMLS::validate(translator_service, lang, value, 4, 255, &password_str),
                     &password_str,
                 );
             } else {
                 if let Some(password) = &data.password {
-                    errors.password = MMLS::validate(tr_s, lang, password, 4, 255, &password_str);
+                    errors.password = MMLS::validate(translator_service, lang, password, 4, 255, &password_str);
                 }
             }
 
             if edit_user.is_none() || data.password.is_some() {
                 errors.confirm_password = Required::validated(
-                    tr_s,
+                    translator_service,
                     lang,
                     &data.confirm_password,
-                    |value| MMLS::validate(tr_s, lang, value, 4, 255, &confirm_password_str),
+                    |value| MMLS::validate(translator_service, lang, value, 4, 255, &confirm_password_str),
                     &confirm_password_str,
                 );
             }
@@ -288,7 +349,7 @@ pub fn invoke(
                 && data.confirm_password.is_some()
             {
                 let mut password_errors2: Vec<String> = Confirmed::validate(
-                    tr_s,
+                    translator_service,
                     lang,
                     data.password.as_ref().unwrap(),
                     data.confirm_password.as_ref().unwrap(),
@@ -298,17 +359,17 @@ pub fn invoke(
             }
 
             if let Some(surname) = &data.surname {
-                errors.surname = MaxLengthString::validate(tr_s, lang, surname, 255, &surname_str);
+                errors.surname = MaxLengthString::validate(translator_service, lang, surname, 255, &surname_str);
             }
             if let Some(name) = &data.name {
-                errors.name = MaxLengthString::validate(tr_s, lang, name, 255, &name_str);
+                errors.name = MaxLengthString::validate(translator_service, lang, name, 255, &name_str);
             }
             if let Some(patronymic) = &data.patronymic {
                 errors.patronymic =
-                    MaxLengthString::validate(tr_s, lang, patronymic, 255, &patronymic_str);
+                    MaxLengthString::validate(translator_service, lang, patronymic, 255, &patronymic_str);
             }
             if let Some(locale) = &data.locale {
-                errors.locale = MaxLengthString::validate(tr_s, lang, locale, 255, &locale_str);
+                errors.locale = MaxLengthString::validate(translator_service, lang, locale, 255, &locale_str);
             }
 
             if errors.is_empty() {
@@ -340,29 +401,29 @@ pub fn invoke(
 
                 let columns: Option<Vec<UserColumn>> = Some(columns);
 
-                let result = u_s.upsert(&user_data, &columns);
+                let result = user_service.upsert(&user_data, &columns);
 
                 if let Err(error) = result {
                     if error.eq(&UserServiceError::DuplicateEmail) {
-                        errors.email.push(error.translate(lang, tr_s));
+                        errors.email.push(error.translate(lang, translator_service));
                     } else {
-                        errors.form.push(error.translate(lang, tr_s));
+                        errors.form.push(error.translate(lang, translator_service));
                     }
                 }
 
                 if let Some(password) = &data.password {
                     let result = if let Some(edit_user) = &edit_user {
-                        u_s.update_password_by_id(edit_user.id, password)
+                        user_service.update_password_by_id(edit_user.id, password)
                     } else {
                         let email = data.email.to_owned().unwrap();
-                        u_s.update_password_by_email(&email, password)
+                        user_service.update_password_by_email(&email, password)
                     };
 
                     if let Err(error) = result {
                         if error.eq(&UserServiceError::PasswordHashFail) {
-                            errors.password.push(error.translate(lang, tr_s));
+                            errors.password.push(error.translate(lang, translator_service));
                         } else {
-                            errors.form.push(error.translate(lang, tr_s));
+                            errors.form.push(error.translate(lang, translator_service));
                         }
                     }
                 }
@@ -370,12 +431,13 @@ pub fn invoke(
                 is_done = errors.is_empty();
             }
         } else {
-            let ttl_message = rl_s.ttl_message_throw_http(tr_s, lang, &rate_limit_key)?;
+            let ttl_message =
+                rate_limit_service.ttl_message_throw_http(translator_service, lang, &rate_limit_key)?;
             errors.form.push(ttl_message)
         }
 
         if is_done {
-            rl_s.clear_throw_http(&rate_limit_key)?;
+            rate_limit_service.clear_throw_http(&rate_limit_key)?;
         }
     }
 
@@ -388,12 +450,12 @@ pub fn invoke(
         let mut id: String = "".to_string();
 
         if let Some(edit_user) = &edit_user {
-            let user = u_s.first_by_id_throw_http(edit_user.id)?;
+            let user = user_service.first_by_id_throw_http(edit_user.id)?;
             id = user.id.to_string();
             let name_ = user.get_full_name_with_id_and_email();
             alert_variants.push(AlertVariant::UsersUpdateSuccess(name_))
         } else if let Some(email_) = &data.email {
-            let user = u_s.first_by_email_throw_http(email_)?;
+            let user = user_service.first_by_email_throw_http(email_)?;
             id = user.id.to_string();
             let name_ = user.get_full_name_with_id_and_email();
             alert_variants.push(AlertVariant::UsersCreateSuccess(name_))
@@ -429,10 +491,10 @@ pub fn invoke(
     for variant in &alert_variants {
         context_data
             .alerts
-            .push(Alert::from_variant(tr_s, lang, variant));
+            .push(Alert::from_variant(translator_service, lang, variant));
     }
 
-    let default_locale = l_s.get_default_ref();
+    let default_locale = locale_service.get_default_ref();
     let mut locales_: Vec<&Locale> = vec![default_locale];
 
     for locale_ in context_data.locales {
@@ -473,25 +535,25 @@ pub fn invoke(
         "surname": { "label": surname_str, "value": &data.surname, "errors": errors.surname },
         "name": { "label": name_str, "value": &data.name, "errors": errors.name },
         "patronymic": { "label": patronymic_str, "value": &data.patronymic, "errors": errors.patronymic },
-        "locale": { "label": locale_str, "value": &data.locale, "errors": errors.locale, "options": locales_, "placeholder": tr_s.translate(lang, "Not selected..."), },
+        "locale": { "label": locale_str, "value": &data.locale, "errors": errors.locale, "options": locales_, "placeholder": translator_service.translate(lang, "Not selected..."), },
         "roles_ids": field_roles_ids
     });
 
     let (breadcrumbs, save_and_close, close) = if is_profile {
         let breadcrumbs = json!([
-            {"href": "/", "label": tr_s.translate(lang, "page.profile.breadcrumbs.home")},
-            {"label": tr_s.translate(lang, "page.profile.breadcrumbs.profile")},
+            {"href": "/", "label": translator_service.translate(lang, "page.profile.breadcrumbs.home")},
+            {"label": translator_service.translate(lang, "page.profile.breadcrumbs.profile")},
         ]);
         (breadcrumbs, None, None)
     } else {
         let breadcrumbs = json!([
-            {"href": "/", "label": tr_s.translate(lang, "page.home.header")},
-            {"href": "/users", "label": tr_s.translate(lang, "page.users.index.header")},
+            {"href": "/", "label": translator_service.translate(lang, "page.home.header")},
+            {"href": "/users", "label": translator_service.translate(lang, "page.users.index.header")},
             {"label": &heading},
         ]);
-        let save_and_close = Some(json!(tr_s.translate(lang, "Save and close")));
+        let save_and_close = Some(json!(translator_service.translate(lang, "Save and close")));
         let close = Some(json!({
-            "label": tr_s.translate(lang, "Close"),
+            "label": translator_service.translate(lang, "Close"),
             "href": "/users"
         }));
         (breadcrumbs, save_and_close, close)
@@ -501,20 +563,20 @@ pub fn invoke(
         "ctx": layout_ctx,
         "heading": &heading,
         "tabs": {
-            "main": tr_s.translate(lang, "page.users.create.tabs.main"),
-            "extended": tr_s.translate(lang, "page.users.create.tabs.extended"),
+            "main": translator_service.translate(lang, "page.users.create.tabs.main"),
+            "extended": translator_service.translate(lang, "page.users.create.tabs.extended"),
         },
         "breadcrumbs": breadcrumbs,
         "form": {
             "action": &action,
             "method": "post",
             "fields": fields,
-            "save": tr_s.translate(lang, "Save"),
+            "save": translator_service.translate(lang, "Save"),
             "save_and_close": save_and_close,
             "close": close,
         },
     });
-    let s = tm_s.render_throw_http("pages/users/create-update.hbs", &ctx)?;
+    let s = template_service.render_throw_http("pages/users/create-update.hbs", &ctx)?;
     Ok(HttpResponse::Ok()
         .clear_alerts()
         .content_type(mime::TEXT_HTML_UTF_8.as_ref())

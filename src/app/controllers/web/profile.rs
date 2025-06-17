@@ -1,4 +1,6 @@
-use crate::app::controllers::web::users::create_update::{invoke as users_create_update_invoke, post_data_from_user, PostData};
+use crate::app::controllers::web::users::create_update::{
+    invoke as users_create_update_invoke, post_data_from_user, PostData,
+};
 use crate::libs::actix_web::types::form::Form;
 use crate::{
     AppService, LocaleService, RateLimitService, RoleService, TemplateService, TranslatorService,
@@ -15,23 +17,36 @@ pub async fn index(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    u_s: Data<UserService>,
-    l_s: Data<LocaleService>,
-    r_s: Data<RoleService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    user_service: Data<UserService>,
+    locale_service: Data<LocaleService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = r_s.get_all_throw_http()?;
+    let user_roles = role_service.get_all_throw_http()?;
     let edit_user = user.as_ref().clone();
     let post_data = post_data_from_user(&edit_user);
     let edit_user = Some(edit_user);
     let data = Form(post_data);
     users_create_update_invoke(
-        true, edit_user, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s,
-        l_s, r_s,
+        true,
+        edit_user,
+        req,
+        data,
+        user,
+        user_roles,
+        session,
+        translator_service,
+        template_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        user_service,
+        locale_service,
+        role_service,
     )
 }
 
@@ -40,21 +55,34 @@ pub async fn update(
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
     data: Form<PostData>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    u_s: Data<UserService>,
-    l_s: Data<LocaleService>,
-    r_s: Data<RoleService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    user_service: Data<UserService>,
+    locale_service: Data<LocaleService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = r_s.get_all_throw_http()?;
+    let user_roles = role_service.get_all_throw_http()?;
     let edit_user = user.as_ref().clone();
     let edit_user = Some(edit_user);
     users_create_update_invoke(
-        true, edit_user, req, data, user, user_roles, session, tr_s, tm_s, ap_s, wa_s, rl_s, u_s,
-        l_s, r_s,
+        true,
+        edit_user,
+        req,
+        data,
+        user,
+        user_roles,
+        session,
+        translator_service,
+        template_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        user_service,
+        locale_service,
+        role_service,
     )
 }
 

@@ -2,7 +2,11 @@ use crate::app::controllers::web::{get_context_data, get_template_context};
 use crate::app::validator::rules::length::MinMaxLengthString as MMLS;
 use crate::app::validator::rules::required::Required;
 use crate::libs::actix_web::types::form::Form;
-use crate::{prepare_value, Alert, AlertVariant, AppService, Disk, File, FileColumn, FilePolicy, FileService, FileServiceError, RateLimitService, Role, RoleService, Session, TemplateService, TranslatableError, TranslatorService, User, WebAuthService, WebHttpResponse};
+use crate::{
+    prepare_value, Alert, AlertVariant, AppService, Disk, File, FileColumn, FilePolicy,
+    FileService, FileServiceError, RateLimitService, Role, RoleService, Session, TemplateService,
+    TranslatableError, TranslatorService, User, WebAuthService, WebHttpResponse,
+};
 use actix_web::web::Path;
 use actix_web::web::{Data, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
@@ -37,21 +41,32 @@ pub async fn create(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    r_s: Data<RoleService>,
-    f_s: Data<FileService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    role_service: Data<RoleService>,
+    file_service: Data<FileService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles: Vec<Role> = r_s.get_all_throw_http()?;
+    let user_roles: Vec<Role> = role_service.get_all_throw_http()?;
     if !FilePolicy::can_create(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
     let data = Form(PostData::default());
     invoke(
-        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, f_s,
+        None,
+        req,
+        data,
+        user,
+        session,
+        translator_service,
+        template_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        role_service,
+        file_service,
     )
 }
 
@@ -60,20 +75,31 @@ pub async fn store(
     data: Form<PostData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    r_s: Data<RoleService>,
-    f_s: Data<FileService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    role_service: Data<RoleService>,
+    file_service: Data<FileService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = r_s.get_all_throw_http()?;
+    let user_roles = role_service.get_all_throw_http()?;
     if !FilePolicy::can_create(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
     invoke(
-        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, f_s,
+        None,
+        req,
+        data,
+        user,
+        session,
+        translator_service,
+        template_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        role_service,
+        file_service,
     )
 }
 
@@ -82,20 +108,20 @@ pub async fn edit(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    r_s: Data<RoleService>,
-    f_s: Data<FileService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    role_service: Data<RoleService>,
+    file_service: Data<FileService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = r_s.get_all_throw_http()?;
+    let user_roles = role_service.get_all_throw_http()?;
     if !FilePolicy::can_update(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
     let file_id = path.into_inner();
-    let edit_file = f_s.get_ref().first_by_id_throw_http(file_id)?;
+    let edit_file = file_service.get_ref().first_by_id_throw_http(file_id)?;
     let post_data = PostData {
         _token: None,
         action: None,
@@ -105,7 +131,18 @@ pub async fn edit(
     let edit_file = Some(edit_file);
     let data = Form(post_data);
     invoke(
-        edit_file, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, f_s,
+        edit_file,
+        req,
+        data,
+        user,
+        session,
+        translator_service,
+        template_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        role_service,
+        file_service,
     )
 }
 
@@ -115,22 +152,33 @@ pub async fn update(
     data: Form<PostData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    r_s: Data<RoleService>,
-    f_s: Data<FileService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    role_service: Data<RoleService>,
+    file_service: Data<FileService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = r_s.get_all_throw_http()?;
+    let user_roles = role_service.get_all_throw_http()?;
     if !FilePolicy::can_update(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
     let file_id = path.into_inner();
-    let edit_file = Some(f_s.get_ref().first_by_id_throw_http(file_id)?);
+    let edit_file = Some(file_service.get_ref().first_by_id_throw_http(file_id)?);
     invoke(
-        edit_file, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s, f_s,
+        edit_file,
+        req,
+        data,
+        user,
+        session,
+        translator_service,
+        template_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        role_service,
+        file_service,
     )
 }
 
@@ -140,35 +188,43 @@ pub fn invoke(
     mut data: Form<PostData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    r_s: Data<RoleService>,
-    f_s: Data<FileService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    role_service: Data<RoleService>,
+    file_service: Data<FileService>,
 ) -> Result<HttpResponse, Error> {
     data.prepare();
     //
-    let tr_s = tr_s.get_ref();
-    let tm_s = tm_s.get_ref();
-    let ap_s = ap_s.get_ref();
-    let wa_s = wa_s.get_ref();
-    let rl_s = rl_s.get_ref();
-    let r_s = r_s.get_ref();
-    let f_s = f_s.get_ref();
+    let translator_service = translator_service.get_ref();
+    let template_service = template_service.get_ref();
+    let app_service = app_service.get_ref();
+    let web_auth_service = web_auth_service.get_ref();
+    let rate_limit_service = rate_limit_service.get_ref();
+    let role_service = role_service.get_ref();
+    let file_service = file_service.get_ref();
 
     //
     let user = user.as_ref();
 
     let mut alert_variants: Vec<AlertVariant> = Vec::new();
-    let mut context_data =
-        get_context_data(ROUTE_NAME, &req, user, &session, tr_s, ap_s, wa_s, r_s);
+    let mut context_data = get_context_data(
+        ROUTE_NAME,
+        &req,
+        user,
+        &session,
+        translator_service,
+        app_service,
+        web_auth_service,
+        role_service,
+    );
 
     let lang = &context_data.lang;
 
-    let name_str = tr_s.translate(lang, "page.files.create.fields.name");
-    let local_path_str = tr_s.translate(lang, "page.files.create.fields.local_path");
+    let name_str = translator_service.translate(lang, "page.files.create.fields.name");
+    let local_path_str = translator_service.translate(lang, "page.files.create.fields.local_path");
 
     let (title, heading, action) = if let Some(edit_file) = &edit_file {
         let mut vars: HashMap<&str, &str> = HashMap::new();
@@ -176,14 +232,14 @@ pub fn invoke(
         vars.insert("name", name_);
 
         (
-            tr_s.variables(lang, "page.files.edit.title", &vars),
-            tr_s.variables(lang, "page.files.edit.header", &vars),
+            translator_service.variables(lang, "page.files.edit.title", &vars),
+            translator_service.variables(lang, "page.files.edit.header", &vars),
             get_edit_url(edit_file.id.to_string().as_str()),
         )
     } else {
         (
-            tr_s.translate(lang, "page.files.create.title"),
-            tr_s.translate(lang, "page.files.create.header"),
+            translator_service.translate(lang, "page.files.create.title"),
+            translator_service.translate(lang, "page.files.create.header"),
             get_create_url(),
         )
     };
@@ -196,26 +252,27 @@ pub fn invoke(
     let mut errors = ErrorMessages::default();
 
     if is_post {
-        wa_s.check_csrf_throw_http(&session, &data._token)?;
+        web_auth_service.check_csrf_throw_http(&session, &data._token)?;
 
-        let rate_limit_key = rl_s.make_key_from_request_throw_http(&req, RL_KEY)?;
+        let rate_limit_key = rate_limit_service.make_key_from_request_throw_http(&req, RL_KEY)?;
 
-        let executed = rl_s.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
+        let executed =
+            rate_limit_service.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
 
         if executed {
             errors.local_path = Required::validated(
-                tr_s,
+                translator_service,
                 lang,
                 &data.local_path,
-                |value| MMLS::validate(tr_s, lang, value, 4, 2048, &local_path_str),
+                |value| MMLS::validate(translator_service, lang, value, 4, 2048, &local_path_str),
                 &local_path_str,
             );
 
             errors.name = Required::validated(
-                tr_s,
+                translator_service,
                 lang,
                 &data.name,
-                |value| MMLS::validate(tr_s, lang, value, 4, 255, &name_str),
+                |value| MMLS::validate(translator_service, lang, value, 4, 255, &name_str),
                 &name_str,
             );
 
@@ -230,30 +287,34 @@ pub fn invoke(
                 file_data.name = data.name.clone().unwrap();
                 file_data.local_path = data.local_path.clone().unwrap();
 
-                let columns: Option<Vec<FileColumn>> = Some(vec![
-                    FileColumn::Name,
-                    FileColumn::LocalPath,
-                ]);
+                let columns: Option<Vec<FileColumn>> =
+                    Some(vec![FileColumn::Name, FileColumn::LocalPath]);
 
-                let result = f_s.upsert(&mut file_data, &columns);
+                let result = file_service.upsert(&mut file_data, &columns);
 
                 if let Err(error) = result {
                     if error.eq(&FileServiceError::DuplicateLocalPath) {
-                        errors.local_path.push(error.translate(lang, tr_s));
+                        errors
+                            .local_path
+                            .push(error.translate(lang, translator_service));
                     } else {
-                        errors.form.push(error.translate(lang, tr_s));
+                        errors.form.push(error.translate(lang, translator_service));
                     }
                 } else {
                     is_done = true;
                 }
             }
         } else {
-            let ttl_message = rl_s.ttl_message_throw_http(tr_s, lang, &rate_limit_key)?;
+            let ttl_message = rate_limit_service.ttl_message_throw_http(
+                translator_service,
+                lang,
+                &rate_limit_key,
+            )?;
             errors.form.push(ttl_message)
         }
 
         if is_done {
-            rl_s.clear_throw_http(&rate_limit_key)?;
+            rate_limit_service.clear_throw_http(&rate_limit_key)?;
         }
     }
 
@@ -266,12 +327,12 @@ pub fn invoke(
         let mut id: String = "".to_string();
 
         if let Some(edit_file) = &edit_file {
-            let file = f_s.first_by_id_throw_http(edit_file.id)?;
+            let file = file_service.first_by_id_throw_http(edit_file.id)?;
             id = file.id.to_string();
             let name_ = file.name;
             alert_variants.push(AlertVariant::FilesUpdateSuccess(name_))
         } else if let Some(local_path_) = &data.local_path {
-            let file = f_s.first_by_local_path_throw_http(&Disk::Local, local_path_)?;
+            let file = file_service.first_by_local_path_throw_http(&Disk::Local, local_path_)?;
             id = file.id.to_string();
             let name_ = file.name;
             alert_variants.push(AlertVariant::FilesCreateSuccess(name_))
@@ -303,7 +364,7 @@ pub fn invoke(
     for variant in &alert_variants {
         context_data
             .alerts
-            .push(Alert::from_variant(tr_s, lang, variant));
+            .push(Alert::from_variant(translator_service, lang, variant));
     }
 
     let layout_ctx = get_template_context(&context_data);
@@ -317,26 +378,26 @@ pub fn invoke(
         "ctx": layout_ctx,
         "heading": &heading,
         "tabs": {
-            "main": tr_s.translate(lang, "page.files.create.tabs.main")
+            "main": translator_service.translate(lang, "page.files.create.tabs.main")
         },
         "breadcrumbs": [
-            {"href": "/", "label": tr_s.translate(lang, "page.home.header")},
-            {"href": "/files", "label": tr_s.translate(lang, "page.files.index.header")},
+            {"href": "/", "label": translator_service.translate(lang, "page.home.header")},
+            {"href": "/files", "label": translator_service.translate(lang, "page.files.index.header")},
             {"label": &heading},
         ],
         "form": {
             "action": &action,
             "method": "post",
             "fields": fields,
-            "save": tr_s.translate(lang, "Save"),
-            "save_and_close": tr_s.translate(lang, "Save and close"),
+            "save": translator_service.translate(lang, "Save"),
+            "save_and_close": translator_service.translate(lang, "Save and close"),
             "close": {
-                "label": tr_s.translate(lang, "Close"),
+                "label": translator_service.translate(lang, "Close"),
                 "href": "/files"
             },
         },
     });
-    let s = tm_s.render_throw_http("pages/files/create-update.hbs", &ctx)?;
+    let s = template_service.render_throw_http("pages/files/create-update.hbs", &ctx)?;
     Ok(HttpResponse::Ok()
         .clear_alerts()
         .content_type(mime::TEXT_HTML_UTF_8.as_ref())
@@ -364,8 +425,6 @@ impl PostData {
 
 impl ErrorMessages {
     pub fn is_empty(&self) -> bool {
-        self.form.len() == 0
-            && self.name.len() == 0
-            && self.local_path.len() == 0
+        self.form.len() == 0 && self.name.len() == 0 && self.local_path.len() == 0
     }
 }

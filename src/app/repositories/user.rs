@@ -408,7 +408,7 @@ mod tests {
             let user = user_rep.first_by_email(email);
             let mut is_not_exists = true;
             if let Ok(user) = user {
-                if let Some(user) = user {
+                if let Some(_) = user {
                     is_not_exists = false;
                 }
             }
@@ -448,7 +448,7 @@ mod tests {
             let user = user_rep.first_by_email(email);
             let mut is_not_exists = true;
             if let Ok(user) = user {
-                if let Some(user) = user {
+                if let Some(_) = user {
                     is_not_exists = false;
                 }
             }

@@ -125,8 +125,8 @@ pub fn get_context_data<'a>(
 
 pub fn get_template_context<'a>(data: &'a ContextData) -> Value {
     let lang = &data.lang;
-    let t_s = data.translator_service;
-    let a_s = data.app_service;
+    let translator_service = data.translator_service;
+    let app_service = data.app_service;
     let user = data.user;
     let role_service = data.role_service;
 
@@ -138,40 +138,42 @@ pub fn get_template_context<'a>(data: &'a ContextData) -> Value {
     if let Ok(roles) = role_service.get_all() {
         let is_users_show = UserPolicy::can_show(user, &roles);
         if is_users_show {
-            sidebar_users_index = Some(t_s.translate(lang, "layout.sidebar.users.index"));
+            sidebar_users_index =
+                Some(translator_service.translate(lang, "layout.sidebar.users.index"));
         }
         let is_roles_show = RolePolicy::can_show(user, &roles);
         if is_roles_show {
-            sidebar_roles_index = Some(t_s.translate(lang, "layout.sidebar.users.roles"));
+            sidebar_roles_index =
+                Some(translator_service.translate(lang, "layout.sidebar.users.roles"));
         }
         is_sidebar_users_dropdown = is_users_show && is_roles_show;
 
         if FilePolicy::can_show(user, &roles) {
-            sidebar_files = Some(t_s.translate(lang, "layout.sidebar.files"));
+            sidebar_files = Some(translator_service.translate(lang, "layout.sidebar.files"));
         }
     }
 
     json!({
         "route_name": &data.route_name,
-        "site_url": a_s.url().to_string(),
+        "site_url": app_service.url().to_string(),
         "title": &data.title,
-        "brand": t_s.translate(lang, "layout.brand"),
+        "brand": translator_service.translate(lang, "layout.brand"),
         "sidebar": {
-            "home": t_s.translate(lang, "layout.sidebar.home"),
+            "home": translator_service.translate(lang, "layout.sidebar.home"),
             "users": {
               "is_dropdown": is_sidebar_users_dropdown,
               "index": sidebar_users_index,
               "roles": sidebar_roles_index,
             },
             "files": sidebar_files,
-            "profile": t_s.translate(lang, "layout.sidebar.profile"),
-            "logout": t_s.translate(lang, "layout.sidebar.logout"),
+            "profile": translator_service.translate(lang, "layout.sidebar.profile"),
+            "logout": translator_service.translate(lang, "layout.sidebar.logout"),
         },
         "dark_mode": {
             "value": &data.dark_mode,
-            "dark": t_s.translate(lang, "layout.dark_mode.dark"),
-            "light": t_s.translate(lang, "layout.dark_mode.light"),
-            "auto": t_s.translate(lang, "layout.dark_mode.auto"),
+            "dark": translator_service.translate(lang, "layout.dark_mode.dark"),
+            "light": translator_service.translate(lang, "layout.dark_mode.light"),
+            "auto": translator_service.translate(lang, "layout.dark_mode.auto"),
         },
         "locale": &data.locale,
         "locales": &data.locales,

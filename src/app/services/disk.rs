@@ -25,10 +25,10 @@ pub enum DiskServiceError {
 }
 
 impl TranslatableError for DiskServiceError {
-    fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
+    fn translate(&self, lang: &str, translator_service: &TranslatorService) -> String {
         match self {
-            Self::NotFound => translate_service.translate(lang, "error.DiskServiceError.NotFound"),
-            _ => translate_service.translate(lang, "error.DiskServiceError.Fail"),
+            Self::NotFound => translator_service.translate(lang, "error.DiskServiceError.NotFound"),
+            _ => translator_service.translate(lang, "error.DiskServiceError.Fail"),
         }
     }
 }

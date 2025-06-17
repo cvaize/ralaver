@@ -26,31 +26,32 @@ pub async fn invoke(
     data: Form<MassActionsData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    u_s: Data<UserService>,
-    l_s: Data<LocaleService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    tr_s: Data<TranslatorService>,
-    r_s: Data<RoleService>,
+    user_service: Data<UserService>,
+    locale_service: Data<LocaleService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    translator_service: Data<TranslatorService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let wa_s = wa_s.get_ref();
-    let rl_s = rl_s.get_ref();
-    let l_s = l_s.get_ref();
-    let u_s = u_s.get_ref();
-    let tr_s = tr_s.get_ref();
-    let r_s = r_s.get_ref();
+    let web_auth_service = web_auth_service.get_ref();
+    let rate_limit_service = rate_limit_service.get_ref();
+    let locale_service = locale_service.get_ref();
+    let user_service = user_service.get_ref();
+    let translator_service = translator_service.get_ref();
+    let role_service = role_service.get_ref();
 
-    wa_s.check_csrf_throw_http(&session, &data._token)?;
+    web_auth_service.check_csrf_throw_http(&session, &data._token)?;
 
-    let roles = r_s.get_all_throw_http()?;
+    let roles = role_service.get_all_throw_http()?;
 
     let user = user.as_ref();
-    let lang: String = l_s.get_locale_code(Some(&req), Some(&user));
+    let lang: String = locale_service.get_locale_code(Some(&req), Some(&user));
 
-    let rate_limit_key = rl_s.make_key_from_request_throw_http(&req, RL_KEY)?;
+    let rate_limit_key = rate_limit_service.make_key_from_request_throw_http(&req, RL_KEY)?;
 
     let mut alert_variants = Vec::new();
-    let executed = rl_s.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
+    let executed =
+        rate_limit_service.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
 
     if executed {
         if data.action.is_some() && data.selected.is_some() {
@@ -61,7 +62,7 @@ pub async fn invoke(
                     if !UserPolicy::can_delete(&user, &roles) {
                         return Err(error::ErrorForbidden(""));
                     }
-                    u_s.delete_by_ids_throw_http(ids)?;
+                    user_service.delete_by_ids_throw_http(ids)?;
                     alert_variants.push(AlertVariant::UsersMassDeleteSuccess(
                         ids.iter()
                             .map(|id| id.to_string())
@@ -72,7 +73,11 @@ pub async fn invoke(
             }
         }
     } else {
-        let alert_variant = rl_s.alert_variant_throw_http(tr_s, &lang, &rate_limit_key)?;
+        let alert_variant = rate_limit_service.alert_variant_throw_http(
+            translator_service,
+            &lang,
+            &rate_limit_key,
+        )?;
         alert_variants.push(alert_variant);
     }
 

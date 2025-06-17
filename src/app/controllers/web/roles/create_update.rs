@@ -3,9 +3,9 @@ use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString a
 use crate::app::validator::rules::required::Required;
 use crate::libs::actix_web::types::form::Form;
 use crate::{
-    prepare_value, Alert, AlertVariant, AppService, Permission,
-    RateLimitService, Role, RoleColumn, RolePolicy, RoleService, RoleServiceError, Session,
-    TemplateService, TranslatableError, TranslatorService, User, WebAuthService, WebHttpResponse,
+    prepare_value, Alert, AlertVariant, AppService, Permission, RateLimitService, Role, RoleColumn,
+    RolePolicy, RoleService, RoleServiceError, Session, TemplateService, TranslatableError,
+    TranslatorService, User, WebAuthService, WebHttpResponse,
 };
 use actix_web::web::Path;
 use actix_web::web::{Data, ReqData};
@@ -46,20 +46,30 @@ pub async fn create(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    r_s: Data<RoleService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = r_s.get_all_throw_http()?;
+    let roles = role_service.get_all_throw_http()?;
     if !RolePolicy::can_create(&user, &roles) {
         return Err(error::ErrorForbidden(""));
     }
     let data = Form(PostData::default());
     invoke(
-        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s,
+        None,
+        req,
+        data,
+        user,
+        session,
+        translator_service,
+        template_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        role_service,
     )
 }
 
@@ -68,19 +78,29 @@ pub async fn store(
     data: Form<PostData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    r_s: Data<RoleService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = r_s.get_all_throw_http()?;
+    let roles = role_service.get_all_throw_http()?;
     if !RolePolicy::can_create(&user, &roles) {
         return Err(error::ErrorForbidden(""));
     }
     invoke(
-        None, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s,
+        None,
+        req,
+        data,
+        user,
+        session,
+        translator_service,
+        template_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        role_service,
     )
 }
 
@@ -89,19 +109,19 @@ pub async fn edit(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    r_s: Data<RoleService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = r_s.get_all_throw_http()?;
+    let roles = role_service.get_all_throw_http()?;
     if !RolePolicy::can_update(&user, &roles) {
         return Err(error::ErrorForbidden(""));
     }
     let role_id = path.into_inner();
-    let edit_role = r_s.get_ref().first_by_id_throw_http(role_id)?;
+    let edit_role = role_service.get_ref().first_by_id_throw_http(role_id)?;
     let post_data = PostData {
         _token: None,
         action: None,
@@ -113,7 +133,17 @@ pub async fn edit(
     let edit_role = Some(edit_role);
     let data = Form(post_data);
     invoke(
-        edit_role, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s,
+        edit_role,
+        req,
+        data,
+        user,
+        session,
+        translator_service,
+        template_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        role_service,
     )
 }
 
@@ -123,21 +153,31 @@ pub async fn update(
     data: Form<PostData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    r_s: Data<RoleService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = r_s.get_all_throw_http()?;
+    let roles = role_service.get_all_throw_http()?;
     if !RolePolicy::can_update(&user, &roles) {
         return Err(error::ErrorForbidden(""));
     }
     let role_id = path.into_inner();
-    let edit_role = Some(r_s.get_ref().first_by_id_throw_http(role_id)?);
+    let edit_role = Some(role_service.get_ref().first_by_id_throw_http(role_id)?);
     invoke(
-        edit_role, req, data, user, session, tr_s, tm_s, ap_s, wa_s, rl_s, r_s,
+        edit_role,
+        req,
+        data,
+        user,
+        session,
+        translator_service,
+        template_service,
+        app_service,
+        web_auth_service,
+        rate_limit_service,
+        role_service,
     )
 }
 
@@ -147,35 +187,43 @@ pub fn invoke(
     mut data: Form<PostData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    tr_s: Data<TranslatorService>,
-    tm_s: Data<TemplateService>,
-    ap_s: Data<AppService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    r_s: Data<RoleService>,
+    translator_service: Data<TranslatorService>,
+    template_service: Data<TemplateService>,
+    app_service: Data<AppService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
     data.prepare();
     //
-    let tr_s = tr_s.get_ref();
-    let tm_s = tm_s.get_ref();
-    let ap_s = ap_s.get_ref();
-    let wa_s = wa_s.get_ref();
-    let rl_s = rl_s.get_ref();
-    let r_s = r_s.get_ref();
+    let translator_service = translator_service.get_ref();
+    let template_service = template_service.get_ref();
+    let app_service = app_service.get_ref();
+    let web_auth_service = web_auth_service.get_ref();
+    let rate_limit_service = rate_limit_service.get_ref();
+    let role_service = role_service.get_ref();
 
     //
     let user = user.as_ref();
 
     let mut alert_variants: Vec<AlertVariant> = Vec::new();
-    let mut context_data =
-        get_context_data(ROUTE_NAME, &req, user, &session, tr_s, ap_s, wa_s, r_s);
+    let mut context_data = get_context_data(
+        ROUTE_NAME,
+        &req,
+        user,
+        &session,
+        translator_service,
+        app_service,
+        web_auth_service,
+        role_service,
+    );
 
     let lang = &context_data.lang;
 
-    let code_str = tr_s.translate(lang, "page.roles.create.fields.code");
-    let name_str = tr_s.translate(lang, "page.roles.create.fields.name");
-    let description_str = tr_s.translate(lang, "page.roles.create.fields.description");
-    let permissions_str = tr_s.translate(lang, "page.roles.create.fields.permissions");
+    let code_str = translator_service.translate(lang, "page.roles.create.fields.code");
+    let name_str = translator_service.translate(lang, "page.roles.create.fields.name");
+    let description_str = translator_service.translate(lang, "page.roles.create.fields.description");
+    let permissions_str = translator_service.translate(lang, "page.roles.create.fields.permissions");
 
     let (title, heading, action) = if let Some(edit_role) = &edit_role {
         let mut vars: HashMap<&str, &str> = HashMap::new();
@@ -183,14 +231,14 @@ pub fn invoke(
         vars.insert("name", name_);
 
         (
-            tr_s.variables(lang, "page.roles.edit.title", &vars),
-            tr_s.variables(lang, "page.roles.edit.header", &vars),
+            translator_service.variables(lang, "page.roles.edit.title", &vars),
+            translator_service.variables(lang, "page.roles.edit.header", &vars),
             get_edit_url(edit_role.id.to_string().as_str()),
         )
     } else {
         (
-            tr_s.translate(lang, "page.roles.create.title"),
-            tr_s.translate(lang, "page.roles.create.header"),
+            translator_service.translate(lang, "page.roles.create.title"),
+            translator_service.translate(lang, "page.roles.create.header"),
             get_create_url(),
         )
     };
@@ -203,32 +251,33 @@ pub fn invoke(
     let mut errors = ErrorMessages::default();
 
     if is_post {
-        wa_s.check_csrf_throw_http(&session, &data._token)?;
+        web_auth_service.check_csrf_throw_http(&session, &data._token)?;
 
-        let rate_limit_key = rl_s.make_key_from_request_throw_http(&req, RL_KEY)?;
+        let rate_limit_key = rate_limit_service.make_key_from_request_throw_http(&req, RL_KEY)?;
 
-        let executed = rl_s.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
+        let executed =
+            rate_limit_service.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
 
         if executed {
             errors.code = Required::validated(
-                tr_s,
+                translator_service,
                 lang,
                 &data.code,
-                |value| MMLS::validate(tr_s, lang, value, 4, 255, &code_str),
+                |value| MMLS::validate(translator_service, lang, value, 4, 255, &code_str),
                 &code_str,
             );
 
             errors.name = Required::validated(
-                tr_s,
+                translator_service,
                 lang,
                 &data.name,
-                |value| MMLS::validate(tr_s, lang, value, 4, 255, &name_str),
+                |value| MMLS::validate(translator_service, lang, value, 4, 255, &name_str),
                 &name_str,
             );
 
             if let Some(description) = &data.description {
                 errors.description =
-                    MaxLengthString::validate(tr_s, lang, description, 255, &description_str);
+                    MaxLengthString::validate(translator_service, lang, description, 255, &description_str);
             }
 
             if errors.is_empty() {
@@ -251,25 +300,26 @@ pub fn invoke(
                     RoleColumn::Permissions,
                 ]);
 
-                let result = r_s.upsert(&mut role_data, &columns);
+                let result = role_service.upsert(&mut role_data, &columns);
 
                 if let Err(error) = result {
                     if error.eq(&RoleServiceError::DuplicateCode) {
-                        errors.code.push(error.translate(lang, tr_s));
+                        errors.code.push(error.translate(lang, translator_service));
                     } else {
-                        errors.form.push(error.translate(lang, tr_s));
+                        errors.form.push(error.translate(lang, translator_service));
                     }
                 } else {
                     is_done = true;
                 }
             }
         } else {
-            let ttl_message = rl_s.ttl_message_throw_http(tr_s, lang, &rate_limit_key)?;
+            let ttl_message =
+                rate_limit_service.ttl_message_throw_http(translator_service, lang, &rate_limit_key)?;
             errors.form.push(ttl_message)
         }
 
         if is_done {
-            rl_s.clear_throw_http(&rate_limit_key)?;
+            rate_limit_service.clear_throw_http(&rate_limit_key)?;
         }
     }
 
@@ -282,12 +332,12 @@ pub fn invoke(
         let mut id: String = "".to_string();
 
         if let Some(edit_role) = &edit_role {
-            let user = r_s.first_by_id_throw_http(edit_role.id)?;
+            let user = role_service.first_by_id_throw_http(edit_role.id)?;
             id = user.id.to_string();
             let name_ = user.name;
             alert_variants.push(AlertVariant::RolesUpdateSuccess(name_))
         } else if let Some(code_) = &data.code {
-            let user = r_s.first_by_code_throw_http(code_)?;
+            let user = role_service.first_by_code_throw_http(code_)?;
             id = user.id.to_string();
             let name_ = user.name;
             alert_variants.push(AlertVariant::RolesCreateSuccess(name_))
@@ -319,7 +369,7 @@ pub fn invoke(
     for variant in &alert_variants {
         context_data
             .alerts
-            .push(Alert::from_variant(tr_s, lang, variant));
+            .push(Alert::from_variant(translator_service, lang, variant));
     }
 
     let layout_ctx = get_template_context(&context_data);
@@ -336,7 +386,7 @@ pub fn invoke(
             }
         }
         permissions.push(json!({
-            "label": tr_s.translate(lang, &key),
+            "label": translator_service.translate(lang, &key),
             "value": variant,
             "checked": checked
         }));
@@ -353,27 +403,27 @@ pub fn invoke(
         "ctx": layout_ctx,
         "heading": &heading,
         "tabs": {
-            "main": tr_s.translate(lang, "page.roles.create.tabs.main"),
-            "permissions": tr_s.translate(lang, "page.roles.create.tabs.permissions"),
+            "main": translator_service.translate(lang, "page.roles.create.tabs.main"),
+            "permissions": translator_service.translate(lang, "page.roles.create.tabs.permissions"),
         },
         "breadcrumbs": [
-            {"href": "/", "label": tr_s.translate(lang, "page.home.header")},
-            {"href": "/roles", "label": tr_s.translate(lang, "page.roles.index.header")},
+            {"href": "/", "label": translator_service.translate(lang, "page.home.header")},
+            {"href": "/roles", "label": translator_service.translate(lang, "page.roles.index.header")},
             {"label": &heading},
         ],
         "form": {
             "action": &action,
             "method": "post",
             "fields": fields,
-            "save": tr_s.translate(lang, "Save"),
-            "save_and_close": tr_s.translate(lang, "Save and close"),
+            "save": translator_service.translate(lang, "Save"),
+            "save_and_close": translator_service.translate(lang, "Save and close"),
             "close": {
-                "label": tr_s.translate(lang, "Close"),
+                "label": translator_service.translate(lang, "Close"),
                 "href": "/roles"
             },
         },
     });
-    let s = tm_s.render_throw_http("pages/roles/create-update.hbs", &ctx)?;
+    let s = template_service.render_throw_http("pages/roles/create-update.hbs", &ctx)?;
     Ok(HttpResponse::Ok()
         .clear_alerts()
         .content_type(mime::TEXT_HTML_UTF_8.as_ref())

@@ -173,16 +173,16 @@ pub enum RoleServiceError {
 }
 
 impl TranslatableError for RoleServiceError {
-    fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
+    fn translate(&self, lang: &str, translator_service: &TranslatorService) -> String {
         match self {
             Self::DbConnectionFail => {
-                translate_service.translate(lang, "error.RoleServiceError.DbConnectionFail")
+                translator_service.translate(lang, "error.RoleServiceError.DbConnectionFail")
             }
             Self::DuplicateCode => {
-                translate_service.translate(lang, "error.RoleServiceError.DuplicateCode")
+                translator_service.translate(lang, "error.RoleServiceError.DuplicateCode")
             }
-            Self::NotFound => translate_service.translate(lang, "error.RoleServiceError.NotFound"),
-            _ => translate_service.translate(lang, "error.RoleServiceError.Fail"),
+            Self::NotFound => translator_service.translate(lang, "error.RoleServiceError.NotFound"),
+            _ => translator_service.translate(lang, "error.RoleServiceError.Fail"),
         }
     }
 }

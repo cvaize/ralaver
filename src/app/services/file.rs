@@ -157,16 +157,16 @@ pub enum FileServiceError {
 }
 
 impl TranslatableError for FileServiceError {
-    fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
+    fn translate(&self, lang: &str, translator_service: &TranslatorService) -> String {
         match self {
             Self::DbConnectionFail => {
-                translate_service.translate(lang, "error.FileServiceError.DbConnectionFail")
+                translator_service.translate(lang, "error.FileServiceError.DbConnectionFail")
             }
             Self::DuplicateLocalPath => {
-                translate_service.translate(lang, "error.FileServiceError.DuplicateLocalPath")
+                translator_service.translate(lang, "error.FileServiceError.DuplicateLocalPath")
             }
-            Self::NotFound => translate_service.translate(lang, "error.FileServiceError.NotFound"),
-            _ => translate_service.translate(lang, "error.FileServiceError.Fail"),
+            Self::NotFound => translator_service.translate(lang, "error.FileServiceError.NotFound"),
+            _ => translator_service.translate(lang, "error.FileServiceError.Fail"),
         }
     }
 }

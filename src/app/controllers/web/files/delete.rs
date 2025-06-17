@@ -24,43 +24,48 @@ pub async fn invoke(
     data: Form<DeleteData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    f_s: Data<FileService>,
-    r_s: Data<RoleService>,
-    l_s: Data<LocaleService>,
-    wa_s: Data<WebAuthService>,
-    rl_s: Data<RateLimitService>,
-    tr_s: Data<TranslatorService>,
+    file_service: Data<FileService>,
+    role_service: Data<RoleService>,
+    locale_service: Data<LocaleService>,
+    web_auth_service: Data<WebAuthService>,
+    rate_limit_service: Data<RateLimitService>,
+    translator_service: Data<TranslatorService>,
 ) -> Result<HttpResponse, Error> {
-    let wa_s = wa_s.get_ref();
-    let rl_s = rl_s.get_ref();
-    let l_s = l_s.get_ref();
-    let r_s = r_s.get_ref();
-    let f_s = f_s.get_ref();
-    let tr_s = tr_s.get_ref();
+    let web_auth_service = web_auth_service.get_ref();
+    let rate_limit_service = rate_limit_service.get_ref();
+    let locale_service = locale_service.get_ref();
+    let role_service = role_service.get_ref();
+    let file_service = file_service.get_ref();
+    let translator_service = translator_service.get_ref();
 
-    wa_s.check_csrf_throw_http(&session, &data._token)?;
+    web_auth_service.check_csrf_throw_http(&session, &data._token)?;
 
-    let user_roles = r_s.get_all_throw_http()?;
+    let user_roles = role_service.get_all_throw_http()?;
     if !FilePolicy::can_delete(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
 
     let file_id = path.into_inner();
     let user = user.as_ref();
-    let lang: String = l_s.get_locale_code(Some(&req), Some(&user));
-    let delete_file = f_s.first_by_id_throw_http(file_id)?;
+    let lang: String = locale_service.get_locale_code(Some(&req), Some(&user));
+    let delete_file = file_service.first_by_id_throw_http(file_id)?;
 
-    let rate_limit_key = rl_s.make_key_from_request_throw_http(&req, RL_KEY)?;
+    let rate_limit_key = rate_limit_service.make_key_from_request_throw_http(&req, RL_KEY)?;
 
     let mut alert_variants = Vec::new();
-    let executed = rl_s.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
+    let executed =
+        rate_limit_service.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
 
     if executed {
-        f_s.delete_by_id_throw_http(delete_file.id)?;
+        file_service.delete_by_id_throw_http(delete_file.id)?;
         let name = delete_file.name;
         alert_variants.push(AlertVariant::FilesDeleteSuccess(name));
     } else {
-        let alert_variant = rl_s.alert_variant_throw_http(tr_s, &lang, &rate_limit_key)?;
+        let alert_variant = rate_limit_service.alert_variant_throw_http(
+            translator_service,
+            &lang,
+            &rate_limit_key,
+        )?;
         alert_variants.push(alert_variant);
     }
 

@@ -44,74 +44,74 @@ impl Alert {
     pub fn error(content: String) -> Self {
         Self::new("error".to_string(), content)
     }
-    pub fn from_variant(t_s: &TranslatorService, lang: &str, variant: &AlertVariant) -> Self {
+    pub fn from_variant(translator_service: &TranslatorService, lang: &str, variant: &AlertVariant) -> Self {
         match variant {
             AlertVariant::LoginSuccess => {
-                Self::success(t_s.translate(&lang, "alert.login.success"))
+                Self::success(translator_service.translate(&lang, "alert.login.success"))
             }
             AlertVariant::LogoutSuccess => {
-                Self::success(t_s.translate(&lang, "alert.logout.success"))
+                Self::success(translator_service.translate(&lang, "alert.logout.success"))
             }
             AlertVariant::RegisterSuccess => {
-                Self::success(t_s.translate(&lang, "alert.register.success"))
+                Self::success(translator_service.translate(&lang, "alert.register.success"))
             }
             AlertVariant::ResetPasswordConfirmSuccess => {
-                Self::success(t_s.translate(&lang, "alert.reset_password_confirm.success"))
+                Self::success(translator_service.translate(&lang, "alert.reset_password_confirm.success"))
             }
             AlertVariant::ResetPasswordConfirmCodeNotEqual => {
-                Self::error(t_s.translate(&lang, "alert.reset_password_confirm.code_not_equal"))
+                Self::error(translator_service.translate(&lang, "alert.reset_password_confirm.code_not_equal"))
             }
             AlertVariant::UsersCreateSuccess(name) => {
                 let vars = one_variables!("name", name);
-                Self::success(t_s.variables(&lang, "alert.users.create.success", &vars))
+                Self::success(translator_service.variables(&lang, "alert.users.create.success", &vars))
             }
             AlertVariant::UsersUpdateSuccess(name) => {
                 let vars = one_variables!("name", name);
-                Self::success(t_s.variables(&lang, "alert.users.update.success", &vars))
+                Self::success(translator_service.variables(&lang, "alert.users.update.success", &vars))
             }
             AlertVariant::UsersDeleteSuccess(name) => {
                 let vars = one_variables!("name", name);
-                Self::success(t_s.variables(&lang, "alert.users.delete.success", &vars))
+                Self::success(translator_service.variables(&lang, "alert.users.delete.success", &vars))
             }
             AlertVariant::UsersMassDeleteSuccess(ids) => {
                 let vars = one_variables!("ids", ids);
-                Self::success(t_s.variables(&lang, "alert.users.mass_delete.success", &vars))
+                Self::success(translator_service.variables(&lang, "alert.users.mass_delete.success", &vars))
             }
             AlertVariant::ValidationRateLimitError(seconds, unit) => {
                 let vars = two_variables!("seconds", seconds, "unit", unit);
-                Self::success(t_s.variables(&lang, "validation.rate_limit", &vars))
+                Self::success(translator_service.variables(&lang, "validation.rate_limit", &vars))
             }
             AlertVariant::RolesCreateSuccess(name) => {
                 let vars = one_variables!("name", name);
-                Self::success(t_s.variables(&lang, "alert.roles.create.success", &vars))
+                Self::success(translator_service.variables(&lang, "alert.roles.create.success", &vars))
             }
             AlertVariant::RolesUpdateSuccess(name) => {
                 let vars = one_variables!("name", name);
-                Self::success(t_s.variables(&lang, "alert.roles.update.success", &vars))
+                Self::success(translator_service.variables(&lang, "alert.roles.update.success", &vars))
             }
             AlertVariant::RolesDeleteSuccess(name) => {
                 let vars = one_variables!("name", name);
-                Self::success(t_s.variables(&lang, "alert.roles.delete.success", &vars))
+                Self::success(translator_service.variables(&lang, "alert.roles.delete.success", &vars))
             }
             AlertVariant::RolesMassDeleteSuccess(ids) => {
                 let vars = one_variables!("ids", ids);
-                Self::success(t_s.variables(&lang, "alert.roles.mass_delete.success", &vars))
+                Self::success(translator_service.variables(&lang, "alert.roles.mass_delete.success", &vars))
             }
             AlertVariant::FilesCreateSuccess(name) => {
                 let vars = one_variables!("name", name);
-                Self::success(t_s.variables(&lang, "alert.files.create.success", &vars))
+                Self::success(translator_service.variables(&lang, "alert.files.create.success", &vars))
             }
             AlertVariant::FilesUpdateSuccess(name) => {
                 let vars = one_variables!("name", name);
-                Self::success(t_s.variables(&lang, "alert.files.update.success", &vars))
+                Self::success(translator_service.variables(&lang, "alert.files.update.success", &vars))
             }
             AlertVariant::FilesDeleteSuccess(name) => {
                 let vars = one_variables!("name", name);
-                Self::success(t_s.variables(&lang, "alert.files.delete.success", &vars))
+                Self::success(translator_service.variables(&lang, "alert.files.delete.success", &vars))
             }
             AlertVariant::FilesMassDeleteSuccess(ids) => {
                 let vars = one_variables!("ids", ids);
-                Self::success(t_s.variables(&lang, "alert.files.mass_delete.success", &vars))
+                Self::success(translator_service.variables(&lang, "alert.files.mass_delete.success", &vars))
             }
         }
     }

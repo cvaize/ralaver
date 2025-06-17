@@ -165,7 +165,7 @@
       "columns": {
         "id": "ID",
         "name": "Name",
-        "url": "URL",
+        "local_path": "Local path",
         "is_deleted": "Is deleted?",
         "actions": "Actions"
       }
@@ -175,7 +175,7 @@
       "header": "Create file",
       "fields": {
         "name": "Name",
-        "url": "URL",
+        "local_path": "Local path",
         "is_deleted": "Is deleted?"
       },
       "tabs": {

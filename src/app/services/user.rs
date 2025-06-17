@@ -187,19 +187,19 @@ pub enum UserServiceError {
 }
 
 impl TranslatableError for UserServiceError {
-    fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
+    fn translate(&self, lang: &str, translator_service: &TranslatorService) -> String {
         match self {
             Self::DbConnectionFail => {
-                translate_service.translate(lang, "error.UserServiceError.DbConnectionFail")
+                translator_service.translate(lang, "error.UserServiceError.DbConnectionFail")
             }
             Self::DuplicateEmail => {
-                translate_service.translate(lang, "error.UserServiceError.DuplicateEmail")
+                translator_service.translate(lang, "error.UserServiceError.DuplicateEmail")
             }
             Self::PasswordHashFail => {
-                translate_service.translate(lang, "error.UserServiceError.PasswordHashFail")
+                translator_service.translate(lang, "error.UserServiceError.PasswordHashFail")
             }
-            Self::NotFound => translate_service.translate(lang, "error.UserServiceError.NotFound"),
-            _ => translate_service.translate(lang, "error.UserServiceError.Fail"),
+            Self::NotFound => translator_service.translate(lang, "error.UserServiceError.NotFound"),
+            _ => translator_service.translate(lang, "error.UserServiceError.Fail"),
         }
     }
 }

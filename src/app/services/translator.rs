@@ -279,7 +279,7 @@ fn choices_rule_en(value: i64, _: usize) -> usize {
 }
 
 pub trait TranslatableError {
-    fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String;
+    fn translate(&self, lang: &str, translator_service: &TranslatorService) -> String;
 }
 
 #[cfg(test)]

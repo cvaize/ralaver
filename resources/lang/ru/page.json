@@ -165,7 +165,7 @@
       "columns": {
         "id": "ID",
         "name": "Название",
-        "url": "URL",
+        "local_path": "Файл сохранён по пути",
         "is_deleted": "Удалён?",
         "actions": "Действия"
       }
@@ -175,7 +175,7 @@
       "header": "Создание файла",
       "fields": {
         "name": "Название",
-        "url": "URL",
+        "local_path": "Файл сохранён по пути",
         "is_deleted": "Удалён?"
       },
       "tabs": {

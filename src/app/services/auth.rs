@@ -218,24 +218,24 @@ pub enum AuthServiceError {
 }
 
 impl TranslatableError for AuthServiceError {
-    fn translate(&self, lang: &str, translate_service: &TranslatorService) -> String {
+    fn translate(&self, lang: &str, translator_service: &TranslatorService) -> String {
         match self {
             Self::CredentialsInvalid => {
-                translate_service.translate(lang, "error.AuthServiceError.CredentialsInvalid")
+                translator_service.translate(lang, "error.AuthServiceError.CredentialsInvalid")
             }
             Self::DbConnectionFail => {
-                translate_service.translate(lang, "error.AuthServiceError.DbConnectionFail")
+                translator_service.translate(lang, "error.AuthServiceError.DbConnectionFail")
             }
             Self::DuplicateEmail => {
-                translate_service.translate(lang, "error.AuthServiceError.DuplicateEmail")
+                translator_service.translate(lang, "error.AuthServiceError.DuplicateEmail")
             }
             Self::InsertNewUserFail => {
-                translate_service.translate(lang, "error.AuthServiceError.InsertNewUserFail")
+                translator_service.translate(lang, "error.AuthServiceError.InsertNewUserFail")
             }
             Self::PasswordHashFail => {
-                translate_service.translate(lang, "error.AuthServiceError.PasswordHashFail")
+                translator_service.translate(lang, "error.AuthServiceError.PasswordHashFail")
             }
-            _ => translate_service.translate(lang, "error.AuthServiceError.Fail"),
+            _ => translator_service.translate(lang, "error.AuthServiceError.Fail"),
         }
     }
 }
