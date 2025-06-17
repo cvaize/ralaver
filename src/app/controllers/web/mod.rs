@@ -431,6 +431,20 @@ macro_rules! prepare_value {
 }
 
 #[macro_export]
+macro_rules! prepare_upload_text_value {
+    ($t:expr) => {
+        if let Some(Text(value)) = &$t {
+            let value_ = value.trim();
+            if value_.len() == 0 {
+                $t = None;
+            } else if value_.len() != value.len() {
+                $t = Some(Text(value_.to_owned()));
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! prepare_paginate {
     ($page:expr, $per_page:expr, $default_per_page:expr, $max_per_page:expr) => {
         let page = std::cmp::max($page.unwrap_or(1), 1);

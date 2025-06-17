@@ -174,12 +174,21 @@
       "title": "{{page.files.create.header}} - {{app.name}}",
       "header": "Create file",
       "fields": {
-        "name": "Name",
-        "local_path": "Local path",
-        "is_deleted": "Is deleted?"
+        "name": "File name (without extension)",
+        "file": "Select a file",
+        "is_public": "A public file?",
+        "disk": {
+          "label": "Save:",
+          "options": {
+            "local": "to disk",
+            "external": "just the URL, without downloading the content"
+          }
+        },
+        "url":  "URL"
       },
       "tabs": {
-        "main": "Main"
+        "upload": "Upload from computer",
+        "external": "Save by link"
       }
     },
     "edit": {

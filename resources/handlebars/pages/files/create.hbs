@@ -1,0 +1,185 @@
+{{#> components/layout.hbs }}
+    {{> components/alerts.hbs }}
+    {{> components/breadcrumb.hbs }}
+    {{> components/heading.hbs }}
+
+    <div class="admin-tabs admin-tabs--menu-mod-xs">
+        <input id="admin-tabs__0" class="admin-tabs__checkbox" type="radio" name="admin-tabs__1" hidden
+            {{#if (eq form.type "multipart_file")}} checked {{/if}}
+        >
+        <input id="admin-tabs__1" class="admin-tabs__checkbox" type="radio" name="admin-tabs__1" hidden
+            {{#if (eq form.type "external_file")}} checked {{/if}}
+        >
+        <input id="admin-tabs--menu-checkbox" class="admin-tabs__menu-checkbox" type="checkbox" hidden>
+        <label for="admin-tabs--menu-checkbox" class="admin-tabs__menu-label">
+            <span class="admin-tabs__burger"></span>
+        </label>
+        <nav class="admin-tabs__nav">
+            <label for="admin-tabs__0" class="admin-tabs__link">{{tabs.upload}}</label>
+            <label for="admin-tabs__1" class="admin-tabs__link">{{tabs.external}}</label>
+        </nav>
+        <div class="admin-tabs__content">
+            <div class="admin-tabs__pane">
+                <form id="admin-upload-file-form" action="{{form.upload_action}}" method="post" enctype="multipart/form-data" autocomplete="off" style="display: block;">
+                    <input type="hidden" name="_token" value="{{ctx.csrf}}">
+
+                    <div style="margin-bottom: 0.5rem;">
+                        {{> components/checkbox.hbs
+                                label=form.fields.is_public.label
+                                value="1"
+                                checked=form.fields.is_public.value
+                                form="admin-upload-file-form"
+                                name="is_public"
+                        }}
+
+                        {{#if form.fields.is_public.errors}}
+                            {{#each form.fields.is_public.errors}}
+                                <span class="admin-text--mini admin-text--danger">{{this}}</span>
+                            {{/each}}
+                        {{/if}}
+                    </div>
+
+                    {{#if form.fields.upload_disk.options}}
+                        <div style="margin-bottom: 0.5rem;">
+                            <label style="display: block;">{{form.fields.upload_disk.label}}</label>
+
+                            {{#each form.fields.upload_disk.options as |option|}}
+                                {{#if (eq ../form.fields.upload_disk.value option.value) }}
+                                    {{> components/radio.hbs
+                                            label=option.label
+                                            value=option.value
+                                            checked=true
+                                            form="admin-upload-file-form"
+                                            name="upload_disk"
+                                    }}
+                                {{else}}
+                                    {{> components/radio.hbs
+                                            label=option.label
+                                            value=option.value
+                                            checked=false
+                                            form="admin-upload-file-form"
+                                            name="upload_disk"
+                                    }}
+                                {{/if}}
+                            {{/each}}
+
+                            {{#if form.fields.upload_disk.errors}}
+                                {{#each form.fields.upload_disk.errors}}
+                                    <span class="admin-text--mini admin-text--danger">{{this}}</span>
+                                {{/each}}
+                            {{/if}}
+                        </div>
+                    {{/if}}
+
+                    {{> components/field.hbs
+                            form="admin-upload-file-form"
+                            label=form.fields.file.label
+                            value=""
+                            errors=form.fields.file.errors
+                            name="file"
+                            type="file"
+                            required=true
+                            style="margin-bottom: 0.5rem;"
+                    }}
+
+                    {{> components/field.hbs
+                            label=form.fields.name.label
+                            value=form.fields.name.value
+                            errors=form.fields.name.errors
+                            form="admin-upload-file-form"
+                            name="name"
+                            type="text"
+                            style="margin-bottom: 0.5rem;"
+                    }}
+
+                    <div style="margin-top: 1rem;">
+                        <button type="submit" class="admin-btn admin-success" name="action" value="save">{{form.save}}</button>
+                        <button type="submit" class="admin-btn admin-success" name="action" value="save_and_close">{{form.save_and_close}}</button>
+                        <a href="{{form.close.href}}" class="admin-btn">{{form.close.label}}</a>
+                    </div>
+                </form>
+            </div>
+            <div class="admin-tabs__pane">
+                <form id="admin-create-file-from-external-url-form" action="{{form.external_action}}" method="post" autocomplete="off" style="display: block;">
+                    <input type="hidden" name="_token" value="{{ctx.csrf}}">
+                    <div style="margin-bottom: 0.5rem;">
+                        {{> components/checkbox.hbs
+                                label=form.fields.is_public.label
+                                value="1"
+                                checked=form.fields.is_public.value
+                                form="admin-create-file-from-external-url-form"
+                                name="is_public"
+                        }}
+
+                        {{#if form.fields.is_public.errors}}
+                            {{#each form.fields.is_public.errors}}
+                                <span class="admin-text--mini admin-text--danger">{{this}}</span>
+                            {{/each}}
+                        {{/if}}
+                    </div>
+
+                    {{#if form.fields.external_disk.options}}
+                        <div style="margin-bottom: 0.5rem;">
+                            <label style="display: block;">{{form.fields.external_disk.label}}</label>
+
+                            {{#each form.fields.external_disk.options as |option|}}
+                                <div>
+                                    {{#if (eq ../form.fields.external_disk.value option.value) }}
+                                        {{> components/radio.hbs
+                                                label=option.label
+                                                value=option.value
+                                                checked=true
+                                                form="admin-create-file-from-external-url-form"
+                                                name="external_disk"
+                                        }}
+                                    {{else}}
+                                        {{> components/radio.hbs
+                                                label=option.label
+                                                value=option.value
+                                                checked=false
+                                                form="admin-create-file-from-external-url-form"
+                                                name="external_disk"
+                                        }}
+                                    {{/if}}
+                                </div>
+                            {{/each}}
+
+                            {{#if form.fields.external_disk.errors}}
+                                {{#each form.fields.external_disk.errors}}
+                                    <span class="admin-text--mini admin-text--danger">{{this}}</span>
+                                {{/each}}
+                            {{/if}}
+                        </div>
+                    {{/if}}
+
+                    {{> components/field.hbs
+                            label=form.fields.url.label
+                            value=form.fields.url.value
+                            errors=form.fields.url.errors
+                            form="admin-create-file-from-external-url-form"
+                            name="url"
+                            type="textarea"
+                            style="margin-bottom: 0.5rem;"
+                            required=true
+                    }}
+
+                    {{> components/field.hbs
+                            label=form.fields.name.label
+                            value=form.fields.name.value
+                            errors=form.fields.name.errors
+                            form="admin-create-file-from-external-url-form"
+                            name="name"
+                            type="text"
+                            style="margin-bottom: 0.5rem;"
+                    }}
+
+                    <div style="margin-top: 1rem;">
+                        <button type="submit" class="admin-btn admin-success" name="action" value="save">{{form.save}}</button>
+                        <button type="submit" class="admin-btn admin-success" name="action" value="save_and_close">{{form.save_and_close}}</button>
+                        <a href="{{form.close.href}}" class="admin-btn">{{form.close.label}}</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{{/components/layout.hbs}}

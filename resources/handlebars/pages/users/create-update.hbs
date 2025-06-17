@@ -6,16 +6,6 @@
     <form id="admin-create-form" action="{{form.action}}" method="{{form.method}}" autocomplete="off"
           style="display: block;">
         <input type="hidden" name="_token" value="{{ctx.csrf}}">
-        <div style="margin-bottom: 1rem;">
-            <button type="submit" class="admin-btn admin-success" name="action" value="save">{{form.save}}</button>
-            {{#if form.save_and_close}}
-                <button type="submit" class="admin-btn admin-success" name="action"
-                        value="save_and_close">{{form.save_and_close}}</button>
-            {{/if}}
-            {{#if form.close}}
-                <a href="{{form.close.href}}" class="admin-btn">{{form.close.label}}</a>
-            {{/if}}
-        </div>
         <div class="admin-tabs admin-tabs--menu-mod-xs">
             <input id="admin-tabs__0" class="admin-tabs__checkbox" type="radio" name="admin-tabs__1" hidden checked>
             <input id="admin-tabs__1" class="admin-tabs__checkbox" type="radio" name="admin-tabs__1" hidden>
@@ -138,6 +128,16 @@
                     {{/if}}
                 </div>
             </div>
+        </div>
+        <div style="margin-top: 1rem;">
+            <button type="submit" class="admin-btn admin-success" name="action" value="save">{{form.save}}</button>
+            {{#if form.save_and_close}}
+                <button type="submit" class="admin-btn admin-success" name="action"
+                        value="save_and_close">{{form.save_and_close}}</button>
+            {{/if}}
+            {{#if form.close}}
+                <a href="{{form.close.href}}" class="admin-btn">{{form.close.label}}</a>
+            {{/if}}
         </div>
     </form>
 {{/components/layout.hbs}}

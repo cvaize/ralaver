@@ -15,6 +15,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
+use crate::app::controllers::web::files::create::get_upload_url;
 
 const PAGE_URL: &'static str = "/files?";
 
@@ -136,7 +137,7 @@ pub async fn invoke(
     if FilePolicy::can_create(&user, &user_roles) {
         create = Some(json!({
             "label": translator_service.translate(lang, "Create file"),
-            "href": "/files/create"
+            "href": get_upload_url()
         }));
     }
 
