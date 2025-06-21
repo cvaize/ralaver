@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::env;
+use std::path::MAIN_SEPARATOR_STR;
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -119,9 +120,15 @@ impl Config {
         let root_dir = root.to_str().unwrap();
 
         let mut storage_local_root = root_dir.to_string();
+        if !storage_local_root.ends_with(MAIN_SEPARATOR_STR) {
+            storage_local_root.push_str(MAIN_SEPARATOR_STR);
+        }
         storage_local_root.push_str("storage/app");
 
         let mut storage_local_public_root = root_dir.to_string();
+        if !storage_local_public_root.ends_with(MAIN_SEPARATOR_STR) {
+            storage_local_public_root.push_str(MAIN_SEPARATOR_STR);
+        }
         storage_local_public_root.push_str("public/storage");
 
         Self {

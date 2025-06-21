@@ -191,8 +191,11 @@ impl FromMysqlDto for File {
                 row,
                 FileColumn::CreatorUserId.to_string().as_str(),
             )?,
-            created_at: take_from_mysql_row(row, FileColumn::CreatedAt.to_string().as_str())?,
-            updated_at: take_from_mysql_row(row, FileColumn::UpdatedAt.to_string().as_str())?,
+            // TODO:
+            // created_at: take_from_mysql_row(row, FileColumn::CreatedAt.to_string().as_str())?,
+            // updated_at: take_from_mysql_row(row, FileColumn::UpdatedAt.to_string().as_str())?,
+            created_at: None,
+            updated_at: None,
             file_delete_at: take_from_mysql_row(
                 row,
                 FileColumn::FileDeleteAt.to_string().as_str(),

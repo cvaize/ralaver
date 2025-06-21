@@ -1,4 +1,4 @@
-use std::path::MAIN_SEPARATOR;
+use crate::helpers::now_date_time_str;
 use crate::{
     AppError, CryptServiceError, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository,
     File, FileColumn, FileMysqlRepository, FilePaginateParams, HashService, MysqlRepository,
@@ -7,8 +7,9 @@ use crate::{
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use mime::Mime;
+use std::fmt::format;
+use std::path::MAIN_SEPARATOR;
 use strum_macros::{Display, EnumString};
-use crate::helpers::now_date_time_str;
 
 pub const FILE_DEFAULT_IS_PUBLIC: bool = false;
 pub const FILE_DIRECTORY: &'static str = "files";
@@ -206,6 +207,7 @@ impl FileService {
     }
 
     pub fn upload(&self, data: UploadData) -> Result<(), FileServiceError> {
+        // TODO: Разобраться с названием файла. По хорошему нужно распространять файл по его названию. А это значит, что нужно создавать публичную директорию, а в неё помещать файл по названию.
         let file_repository = self.file_repository.get_ref();
 
         let path = data.path;
@@ -218,87 +220,96 @@ impl FileService {
         let from_disk_repository: &dyn DiskRepository = self.get_disk_repository(&from_disk);
         let to_disk_repository: &dyn DiskRepository = self.get_disk_repository(&to_disk);
 
-        let from_disk_path = from_disk_repository.path(&path).map_err(|e| {
-            self.log_error(
-                "upload_from_local_disk",
-                e.to_string(),
-                FileServiceError::Fail,
-            )
-        })?;
+        let from_disk_path: String = if from_disk.eq(&Disk::Local) && to_disk.eq(&Disk::Local) {
+            path.to_owned()
+        } else {
+            from_disk_repository
+                .path(&path)
+                .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?
+        };
 
-        let is_exists = from_disk_repository.exists(&from_disk_path).map_err(|e| {
-            self.log_error(
-                "upload_from_local_disk",
-                e.to_string(),
-                FileServiceError::Fail,
-            )
-        })?;
+        let is_exists = from_disk_repository
+            .exists(&from_disk_path)
+            .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?;
         if !is_exists {
-            return Err(FileServiceError::NotFound);
+            return Err(self.log_error(
+                "upload",
+                format!("File not found {}", &from_disk_path),
+                FileServiceError::NotFound,
+            ));
         }
 
-        let hash = from_disk_repository.hash(&from_disk_path).map_err(|e| {
-            self.log_error(
-                "upload_from_local_disk",
-                e.to_string(),
-                FileServiceError::Fail,
-            )
-        })?;
+        let hash = from_disk_repository
+            .hash(&from_disk_path)
+            .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?;
 
-        dbg!(hash.len());
+        let mime: Option<Mime> = if data.mime.is_none() {
+            mime_guess::from_path(path).first()
+        } else {
+            data.mime
+        };
 
-        let mut mime: Option<Mime> = data.mime;
-
-        if mime.is_none() {
-            mime = mime_guess::from_path(path).first();
-        }
-
-        let mut mime_str: Option<String> = None;
-
-        if let Some(mime) = mime {
-            mime_str = Some(mime.to_string());
-        }
-
-        dbg!(&mime_str);
+        let mime_str: Option<String> = if let Some(mime) = mime {
+            Some(mime.to_string())
+        } else {
+            None
+        };
 
         let uuid_filename = self.make_uuid_filename(&hash, &mime_str);
 
-        if filename.is_none() {
+        if let Some(filename_) = &filename {
+            if let Some(mime) = &mime_str {
+                if let Some(extension) = mime2ext::mime2ext(mime) {
+                    if !filename_.to_lowercase().ends_with(extension) {
+                        let mut filename__ = filename_.to_string();
+                        filename__.push('.');
+                        filename__.push_str(&extension);
+                        filename = Some(filename__);
+                    }
+                }
+            }
+        } else {
             filename = Some(uuid_filename.to_owned());
         }
 
-        dbg!(&uuid_filename);
-
         let uuid_path: String = self.make_local_path(&uuid_filename);
-        let local_path: String = to_disk_repository.path(&uuid_path).map_err(|e| {
-            self.log_error(
-                "upload_from_local_disk",
-                e.to_string(),
-                FileServiceError::Fail,
-            )
-        })?;
-        let mut public_path: Option<String> = None;
-        if is_public {
-            let public_path_: String = to_disk_repository.public_path(&uuid_path).map_err(|e| {
-                self.log_error(
-                    "upload_from_local_disk",
-                    e.to_string(),
-                    FileServiceError::Fail,
-                )
-            })?;
-            public_path = Some(public_path_);
+        let local_path: String = to_disk_repository
+            .path(&uuid_path)
+            .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?;
+
+        let is_exists_in_fs = to_disk_repository
+            .exists(&local_path)
+            .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?;
+
+        let old_file = file_repository
+            .first_by_local_path(&to_disk, &local_path)
+            .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?;
+
+        if is_exists_in_fs {
+            let p = vec![local_path.to_owned()];
+            to_disk_repository
+                .delete(&p)
+                .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?;
         }
 
         if size.is_none() {
-            let s = from_disk_repository.size(&from_disk_path).map_err(|e| {
-                self.log_error(
-                    "upload_from_local_disk",
-                    e.to_string(),
-                    FileServiceError::Fail,
-                )
-            })?;
+            let s = from_disk_repository
+                .size(&from_disk_path)
+                .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?;
             size = Some(s);
         }
+
+        let content = from_disk_repository
+            .get(&from_disk_path)
+            .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?;
+
+        to_disk_repository
+            .put(&local_path, content)
+            .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?;
+
+        let public_path: Option<String> = to_disk_repository
+            .set_public(&local_path, is_public)
+            .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?;
 
         let mut file = File::default();
         file.name = filename;
@@ -313,50 +324,21 @@ impl FileService {
         file.is_public = is_public;
         file.disk = to_disk.to_string();
 
-        dbg!(&file);
-
-        if from_disk.eq(&Disk::Local) && to_disk.eq(&Disk::Local) {
-            to_disk_repository.mv(&from_disk_path, &local_path).map_err(|e| {
-                self.log_error(
-                    "upload_from_local_disk",
-                    e.to_string(),
-                    FileServiceError::Fail,
-                )
-            })?;
-        } else {
-            let content = from_disk_repository.get(&from_disk_path).map_err(|e| {
-                self.log_error(
-                    "upload_from_local_disk",
-                    e.to_string(),
-                    FileServiceError::Fail,
-                )
-            })?;
-
-            to_disk_repository.put(&local_path, content).map_err(|e| {
-                self.log_error(
-                    "upload_from_local_disk",
-                    e.to_string(),
-                    FileServiceError::Fail,
-                )
-            })?;
+        if let Some(old_file) = old_file {
+            file.id = old_file.id;
         }
 
-        let result = file_repository.insert_one(&file);
+        let result = self.upsert(&mut file, &None);
 
         if let Err(e) = result {
-            let p = vec![local_path];
-            to_disk_repository.delete(&p).map_err(|e| {
-                self.log_error(
-                    "upload_from_local_disk",
-                    e.to_string(),
-                    FileServiceError::Fail,
-                )
-            })?;
-            return Err(self.log_error(
-                "upload_from_local_disk",
-                e.to_string(),
-                FileServiceError::Fail,
-            ));
+            let p = vec![local_path.to_owned()];
+            to_disk_repository
+                .delete(&p)
+                .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?;
+            file_repository
+                .delete_by_local_path(&to_disk, &local_path)
+                .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?;
+            return Err(self.log_error("upload", e.to_string(), FileServiceError::Fail));
         }
 
         Ok(())

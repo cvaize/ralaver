@@ -2,7 +2,7 @@ use crate::app::controllers::web::{get_context_data, get_template_context};
 use crate::app::validator::rules::length::MinMaxLengthString as MMLS;
 use crate::app::validator::rules::required::Required;
 use crate::libs::actix_web::types::form::Form;
-use crate::{prepare_upload_text_value, prepare_value, Alert, AlertVariant, AppService, Disk, File, FileColumn, FilePolicy, FileService, FileServiceError, RateLimitService, Role, RoleService, Session, TemplateService, TranslatableError, TranslatorService, User, WebAuthService, WebHttpResponse};
+use crate::{prepare_upload_text_value, prepare_value, Alert, AlertVariant, AppService, Disk, File, FileColumn, FilePolicy, FileService, FileServiceError, RateLimitService, Role, RoleService, Session, TemplateService, TranslatableError, TranslatorService, UploadData, User, UserServiceError, WebAuthService, WebHttpResponse};
 use actix_multipart::form::tempfile::TempFile;
 use actix_multipart::form::text::Text;
 use actix_multipart::form::MultipartForm;
@@ -292,12 +292,55 @@ pub fn invoke(
 
             if errors.is_empty() {
                 if let Some(form) = &upload_form {
-                    let mime = Mime::from_str("");
-                    dbg!(form);
-                    // file_service.upload_from_local_disk(path, meta);
+                    let path = form.file.file.path().to_str().ok_or(error::ErrorInternalServerError(""))?;
+
+                    let to_disk = upload_disk_value.to_owned().ok_or(error::ErrorInternalServerError(""))?;
+                    let to_disk = Disk::from_str(&to_disk).map_err(|_| error::ErrorInternalServerError(""))?;
+
+                    let filename = if name_value.is_some() {
+                        name_value.to_owned()
+                    } else {
+                        form.file.file_name.to_owned()
+                    };
+                    let upload_data = UploadData {
+                        path: path.to_string(),
+                        mime: form.file.content_type.to_owned(),
+                        filename,
+                        size: None,
+                        is_public: Some(is_public_value),
+                        from_disk: Some(Disk::Local),
+                        to_disk: Some(to_disk),
+                        creator_user_id: Some(user.id),
+                    };
+                    let result = file_service.upload(upload_data);
+
+                    if let Err(error) = result {
+                        if error.ne(&FileServiceError::DuplicateLocalPath) {
+                            errors.form.push(error.translate(lang, translator_service));
+                        }
+                    }
+
                     is_done = true;
                 } else if let Some(form) = &post_form {
                     dbg!(form);
+
+                    let path = url_value.to_owned().ok_or(error::ErrorInternalServerError(""))?;
+
+                    let to_disk = external_disk_value.to_owned().ok_or(error::ErrorInternalServerError(""))?;
+                    let to_disk = Disk::from_str(&to_disk).map_err(|_| error::ErrorInternalServerError(""))?;
+
+                    let upload_data = UploadData {
+                        path,
+                        mime: None,
+                        filename: None,
+                        size: None,
+                        is_public: Some(is_public_value),
+                        from_disk: Some(Disk::External),
+                        to_disk: Some(to_disk),
+                        creator_user_id: Some(user.id),
+                    };
+                    dbg!(&upload_data);
+                    file_service.upload(upload_data).map_err(|_| error::ErrorInternalServerError(""))?;
                     is_done = true;
                 }
             }

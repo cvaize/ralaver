@@ -23,6 +23,10 @@ pub trait DiskRepository {
         Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
     }
     #[allow(unused_variables)]
+    fn set_public(&self, path: &str, is_public: bool) -> io::Result<Option<String>> {
+        Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
+    }
+    #[allow(unused_variables)]
     fn hash(&self, file_path: &str) -> io::Result<String> {
         Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
     }
@@ -127,13 +131,36 @@ fn make_local_path(path: &str, root: &str, separator: &str) -> io::Result<String
     Ok(result)
 }
 
+fn delete_from_local_path(path: &str) -> io::Result<()> {
+    if fs::exists(&path)? {
+        if fs::metadata(&path)?.is_dir() {
+            fs::remove_dir_all(&path)?;
+        } else {
+            fs::remove_file(&path)?;
+        }
+    }
+    Ok(())
+}
+
 // impl DiskRepository<File> for DiskLocalRepository {
 impl DiskRepository for DiskLocalRepository {
     fn path(&self, path: &str) -> io::Result<String> {
         make_local_path(path, &self.root, &self.separator)
     }
     fn public_path(&self, path: &str) -> io::Result<String> {
-        make_local_path(path, &self.public_root, &self.separator)
+        let path = path.replace(&self.root, "");
+        make_local_path(&path, &self.public_root, &self.separator)
+    }
+    fn set_public(&self, path: &str, is_public: bool) -> io::Result<Option<String>> {
+        let public_path = self.public_path(path)?;
+        create_dir_all_for_file(&public_path, &self.separator)?;
+        delete_from_local_path(&public_path)?;
+
+        if is_public {
+            fs::hard_link(path, &public_path)?;
+            return Ok(Some(public_path));
+        }
+        Ok(None)
     }
     fn hash(&self, file_path: &str) -> io::Result<String> {
         let hash = Command::new("sha256sum").args([file_path]).output()?.stdout;
@@ -176,7 +203,9 @@ impl DiskRepository for DiskLocalRepository {
     }
     fn delete(&self, paths: &Vec<String>) -> io::Result<()> {
         for path in paths {
-            fs::remove_dir_all(&path)?;
+            let public_path = self.public_path(path)?;
+            delete_from_local_path(&public_path)?;
+            delete_from_local_path(&path)?;
         }
         Ok(())
     }
