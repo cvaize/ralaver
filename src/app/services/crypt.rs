@@ -66,7 +66,7 @@ impl CryptService {
         s.push_str(value);
         s.push_str(key);
         let hash_service = self.hash_service.get_ref();
-        let hash = hash_service.hash(s);
+        let hash = hash_service.hash_vec(s);
         hash_service.to_base64(hash).map_err(|e| {
             log::error!("CryptService::hash - {e}");
             CryptServiceError::Fail

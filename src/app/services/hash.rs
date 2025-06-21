@@ -30,21 +30,16 @@ impl HashService {
         salt
     }
 
-    pub fn hash<T: AsRef<[u8]>>(&self, value: T) -> Vec<u8> {
+    pub fn hash_vec<T: AsRef<[u8]>>(&self, value: T) -> Vec<u8> {
         let mut hasher = Sha256::new();
         hasher.update(value);
         let result = hasher.finalize();
         result.to_vec()
     }
 
-    pub fn hex_hash<T: AsRef<[u8]>>(&self, value: T) -> String {
-        let value = self.hash(value);
+    pub fn hash<T: AsRef<[u8]>>(&self, value: T) -> String {
+        let value = self.hash_vec(value);
         hex::encode(value)
-    }
-
-    pub fn base64_hash<T: AsRef<[u8]>>(&self, value: T) -> Result<String, HashServiceError> {
-        let value = self.hash(value);
-        self.to_base64(value)
     }
 
     pub fn to_base64<T: AsRef<[u8]>>(&self, value: T) -> Result<String, HashServiceError> {
@@ -177,17 +172,7 @@ mod tests {
         let hash = all_services.hash_service.get_ref();
 
         let value = "password123".to_string();
-        b.iter(|| hash.hex_hash(&value));
-    }
-
-    #[bench]
-    fn bench_base64_hash(b: &mut Bencher) {
-        // 257.92 ns/iter (+/- 9.32)
-        let (_, all_services) = preparation();
-        let hash = all_services.hash_service.get_ref();
-
-        let value = "password123".to_string();
-        b.iter(|| hash.base64_hash(&value));
+        b.iter(|| hash.hash(&value));
     }
 
     #[test]

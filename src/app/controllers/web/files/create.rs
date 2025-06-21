@@ -14,7 +14,9 @@ use serde::Deserialize;
 use serde_derive::Serialize;
 use serde_json::json;
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::Arc;
+use mime::Mime;
 use strum_macros::{Display, EnumString};
 
 // TODO: Remove temp file if error exists
@@ -247,7 +249,6 @@ pub fn invoke(
 
         if executed {
             if let Some(form) = &upload_form {
-                dbg!(form);
                 if let Some(Text(value)) = &form.action {
                     action_value = Some(value.to_owned());
                 }
@@ -264,7 +265,6 @@ pub fn invoke(
                 errors.upload_disk =
                     Required::validate(translator_service, lang, &upload_disk_value, &disk_str);
             } else if let Some(form) = &post_form {
-                dbg!(form);
                 form_type = "external_file";
                 action_value = form.action.to_owned();
                 name_value = form.name.to_owned();
@@ -291,10 +291,13 @@ pub fn invoke(
             }
 
             if errors.is_empty() {
-                if upload_form.is_some() {
-                    // file_service
+                if let Some(form) = &upload_form {
+                    let mime = Mime::from_str("");
+                    dbg!(form);
+                    // file_service.upload_from_local_disk(path, meta);
                     is_done = true;
-                } else if post_form.is_some() {
+                } else if let Some(form) = &post_form {
+                    dbg!(form);
                     is_done = true;
                 }
             }

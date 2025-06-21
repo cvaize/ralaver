@@ -47,6 +47,8 @@ cfg-if = "1.0.0"
 actix-rt = "2.10.0"
 ureq = "3.0.11"
 actix-multipart = "0.7.2"
+mime2ext = "0.1.54"
+mime_guess = "2.0.5"
 
 [[bin]]
 name = "migrate"

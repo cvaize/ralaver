@@ -7,8 +7,9 @@ use chrono::{DateTime, NaiveDateTime, TimeDelta, Utc};
 use std::borrow::Cow;
 use std::ops::Add;
 use strum_macros::{Display, EnumString};
+use crate::helpers::DATE_TIME_FORMAT;
 
-const FORMAT: &'static str = "%Y.%m.%d %H:%M:%S";
+const FORMAT: &'static str = DATE_TIME_FORMAT;
 
 pub const CSRF_ERROR_MESSAGE: &'static str = "CSRF token mismatch.";
 
@@ -348,7 +349,7 @@ impl WebAuthService {
         let hash_service = self.hash_service.get_ref();
         let mut csrf = token.to_owned();
         csrf.push_str(&config.app.key);
-        hash_service.hex_hash(csrf)
+        hash_service.hash(csrf)
     }
 
     pub fn new_csrf(&self, session: &Session) -> String {

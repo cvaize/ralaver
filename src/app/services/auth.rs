@@ -105,10 +105,7 @@ impl AuthService {
         code: &str,
     ) -> Result<String, KeyValueServiceError> {
         let hash_service = self.hash_service.get_ref();
-        let email = hash_service.base64_hash(email).map_err(|e| {
-            log::error!("AuthService::make_reset_password_store_key - {e}");
-            KeyValueServiceError::Fail
-        })?;
+        let email = hash_service.hash(email);
 
         let mut key = RESET_PASSWORD_CODE_KEY.to_string();
         key.push('.');

@@ -1,8 +1,11 @@
 #![allow(dead_code)]
 
-use std::{fs, io};
-use std::path::{Path, PathBuf};
+use chrono::Utc;
 use std::convert::TryInto;
+use std::path::{Path, PathBuf};
+use std::{fs, io};
+
+pub const DATE_TIME_FORMAT: &'static str = "%Y.%m.%d %H:%M:%S";
 
 pub const CONVERSION_PATH_TO_STR_ERROR_MESSAGE: &'static str = "The conversion of the path to a string failed.";
 
@@ -11,6 +14,10 @@ pub fn print_type_of<T>(_: &T) {
 }
 pub fn dbg_type_of<T>(_: &T) {
     dbg!(std::any::type_name::<T>());
+}
+
+pub fn now_date_time_str() -> String {
+    Utc::now().format(DATE_TIME_FORMAT).to_string()
 }
 
 pub fn none_if_empty(v: &Option<String>) -> Option<String> {

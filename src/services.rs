@@ -1,11 +1,13 @@
 use crate::connections::Connections;
 use crate::{
-    AppService, AuthService, Config, CryptService, FileMysqlRepository, FileService, HashService,
-    KeyValueService, LocaleService, MailService, RandomService, RateLimitService,
-    RoleMysqlRepository, RoleService, TemplateService, TranslatorService, UserMysqlRepository,
-    UserService, WebAuthService,
+    AppService, AuthService, Config, CryptService, DiskExternalRepository, DiskLocalRepository,
+    FileMysqlRepository, FileService, HashService, KeyValueService, LocaleService, MailService,
+    RandomService, RateLimitService, RoleMysqlRepository, RoleService, TemplateService,
+    TranslatorService, UserMysqlRepository, UserService, WebAuthService,
 };
 use actix_web::web::Data;
+use std::env;
+use std::path::MAIN_SEPARATOR_STR;
 
 pub struct BaseServices {
     pub config: Data<Config>,
@@ -34,11 +36,14 @@ pub struct AdvancedServices {
     pub user_mysql_repository: Data<UserMysqlRepository>,
     pub role_service: Data<RoleService>,
     pub role_mysql_repository: Data<RoleMysqlRepository>,
+    pub disk_local_repository: Data<DiskLocalRepository>,
+    pub disk_external_repository: Data<DiskExternalRepository>,
     pub file_service: Data<FileService>,
     pub file_mysql_repository: Data<FileMysqlRepository>,
 }
 
 pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
+    let config_ref = s.config.get_ref();
     let key_value_service = Data::new(KeyValueService::new(c.redis.clone()));
     let translator_service = Data::new(
         TranslatorService::new_from_files(s.config.clone())
@@ -84,8 +89,19 @@ pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
     let role_mysql_repository = Data::new(RoleMysqlRepository::new(c.mysql.clone()));
     let role_service = Data::new(RoleService::new(role_mysql_repository.clone()));
 
+    let disk_local_repository = Data::new(DiskLocalRepository::new(
+        &config_ref.filesystem.disks.local.root,
+        MAIN_SEPARATOR_STR,
+        &config_ref.filesystem.disks.local.public_root,
+    ));
+    let disk_external_repository = Data::new(DiskExternalRepository::new());
+
     let file_mysql_repository = Data::new(FileMysqlRepository::new(c.mysql.clone()));
-    let file_service = Data::new(FileService::new(file_mysql_repository.clone()));
+    let file_service = Data::new(FileService::new(
+        file_mysql_repository.clone(),
+        disk_local_repository.clone(),
+        disk_external_repository.clone(),
+    ));
 
     AdvancedServices {
         key_value_service,
@@ -104,6 +120,8 @@ pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
         user_mysql_repository,
         role_service,
         role_mysql_repository,
+        disk_local_repository,
+        disk_external_repository,
         file_service,
         file_mysql_repository,
     }
@@ -127,6 +145,8 @@ pub struct Services {
     pub user_mysql_repository: Data<UserMysqlRepository>,
     pub role_service: Data<RoleService>,
     pub role_mysql_repository: Data<RoleMysqlRepository>,
+    pub disk_local_repository: Data<DiskLocalRepository>,
+    pub disk_external_repository: Data<DiskExternalRepository>,
     pub file_service: Data<FileService>,
     pub file_mysql_repository: Data<FileMysqlRepository>,
 }
@@ -150,6 +170,8 @@ pub fn join_to_all(base: BaseServices, advanced: AdvancedServices) -> Services {
         user_mysql_repository: advanced.user_mysql_repository,
         role_service: advanced.role_service,
         role_mysql_repository: advanced.role_mysql_repository,
+        disk_local_repository: advanced.disk_local_repository,
+        disk_external_repository: advanced.disk_external_repository,
         file_service: advanced.file_service,
         file_mysql_repository: advanced.file_mysql_repository,
     }

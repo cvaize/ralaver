@@ -4,7 +4,7 @@ use strum_macros::{Display, EnumIter, EnumString, VariantNames};
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct File {
     pub id: u64,
-    pub name: String,
+    pub name: Option<String>,
     pub public_path: Option<String>,
     pub local_path: String,
     pub mime: Option<String>,
@@ -16,6 +16,7 @@ pub struct File {
     pub file_delete_at: Option<String>,
     pub file_deleted_at: Option<String>,
     pub deleted_at: Option<String>,
+    pub is_deleted: bool,
     pub is_public: bool,
     pub disk: String,
 }
@@ -49,5 +50,6 @@ pub enum FileColumn {
     FileDeletedAt,
     DeletedAt,
     IsPublic,
+    IsDeleted,
     Disk,
 }

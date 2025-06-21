@@ -59,6 +59,7 @@ pub struct AppConfig {
     pub fallback_locale: String,
     pub dark_mode_cookie_key: String,
     pub locale_cookie_key: String,
+    pub root_dir: String,
 }
 
 #[derive(Debug, Clone)]
@@ -114,6 +115,15 @@ pub struct MailSmtpConfig {
 impl Config {
     pub fn new() -> Self {
         dotenv::dotenv().ok();
+        let root = env::current_dir().unwrap();
+        let root_dir = root.to_str().unwrap();
+
+        let mut storage_local_root = root_dir.to_string();
+        storage_local_root.push_str("storage/app");
+
+        let mut storage_local_public_root = root_dir.to_string();
+        storage_local_public_root.push_str("public/storage");
+
         Self {
             app: AppConfig {
                 key: env::var("APP_KEY")
@@ -138,6 +148,10 @@ impl Config {
                     .to_string(),
                 locale_cookie_key: env::var("APP_LOCALE_COOKIE_KEY")
                     .unwrap_or("locale".to_string())
+                    .trim()
+                    .to_string(),
+                root_dir: env::var("APP_ROOT_DIR")
+                    .unwrap_or(root_dir.to_string())
                     .trim()
                     .to_string(),
             },
@@ -264,10 +278,10 @@ impl Config {
                     .to_string(),
                 disks: FilesystemDisksConfig {
                     local: FilesystemLocalDiskConfig {
-                        root: "storage/app".to_string(),
-                        public_root: "public/storage".to_string(),
+                        root: storage_local_root,
+                        public_root: storage_local_public_root,
                         url: "/storage".to_string(),
-                    }
+                    },
                 }
             }
         }

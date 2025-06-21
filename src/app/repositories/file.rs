@@ -161,6 +161,9 @@ impl ToMysqlDto<FileColumn> for File {
             FileColumn::DeletedAt => {
                 params.push((column.to_string(), Value::from(self.deleted_at.to_owned())))
             }
+            FileColumn::IsDeleted => {
+                params.push((column.to_string(), Value::from(self.is_deleted.to_owned())))
+            }
             FileColumn::IsPublic => {
                 params.push((column.to_string(), Value::from(self.is_public.to_owned())))
             }
@@ -200,6 +203,7 @@ impl FromMysqlDto for File {
             )?,
             deleted_at: take_from_mysql_row(row, FileColumn::DeletedAt.to_string().as_str())?,
             is_public: take_from_mysql_row(row, FileColumn::IsPublic.to_string().as_str())?,
+            is_deleted: take_from_mysql_row(row, FileColumn::IsDeleted.to_string().as_str())?,
             disk: take_from_mysql_row(row, FileColumn::Disk.to_string().as_str())?,
         })
     }
