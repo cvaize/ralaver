@@ -6,9 +6,9 @@ use crate::{
     UserCredentialsColumn,
 };
 use actix_web::web::Data;
-use r2d2_mysql::mysql::prelude::Queryable;
-use r2d2_mysql::mysql::Value;
-use r2d2_mysql::mysql::{params, Row};
+use mysql::prelude::Queryable;
+use mysql::Value;
+use mysql::{params, Row};
 use strum_macros::{Display, EnumIter, EnumString};
 
 pub struct UserMysqlRepository {

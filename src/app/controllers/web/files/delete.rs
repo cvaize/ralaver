@@ -58,7 +58,7 @@ pub async fn invoke(
 
     if executed {
         file_service.delete_by_id_throw_http(delete_file.id)?;
-        let name = delete_file.name.unwrap_or(delete_file.local_path);
+        let name = delete_file.filename.unwrap_or(delete_file.local_path);
         alert_variants.push(AlertVariant::FilesDeleteSuccess(name));
     } else {
         let alert_variant = rate_limit_service.alert_variant_throw_http(

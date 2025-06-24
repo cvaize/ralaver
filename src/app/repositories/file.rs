@@ -1,11 +1,12 @@
-use crate::{
-    take_from_mysql_row, AppError, Disk, File, FileColumn, FromMysqlDto, MysqlColumnEnum,
-    MysqlIdColumn, MysqlPool, MysqlQueryBuilder, MysqlRepository, PaginateParams, ToMysqlDto,
-};
+use std::str::FromStr;
+use actix_web::cookie::time::{format_description, PrimitiveDateTime};
+use crate::{take_from_mysql_row, take_some_datetime_from_mysql_row, AppError, Disk, File, FileColumn, FromMysqlDto, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder, MysqlRepository, PaginateParams, ToMysqlDto};
 use actix_web::web::Data;
-use r2d2_mysql::mysql::Row;
-use r2d2_mysql::mysql::Value;
+use chrono::{DateTime, Utc};
+use mysql::Row;
+use mysql::Value;
 use strum_macros::{Display, EnumIter, EnumString};
+use crate::helpers::DATE_TIME_FORMAT;
 
 pub struct FileMysqlRepository {
     db_pool: Data<MysqlPool>,
@@ -30,7 +31,7 @@ impl FileMysqlRepository {
         Self { db_pool }
     }
 
-    pub fn first_by_local_path(
+    pub fn first_by_disk_and_local_path(
         &self,
         disk: &Disk,
         local_path: &str,
@@ -42,7 +43,7 @@ impl FileMysqlRepository {
         self.first_by_filters(&filters)
     }
 
-    pub fn exists_by_local_path(&self, disk: &Disk, local_path: &str) -> Result<bool, AppError> {
+    pub fn exists_by_disk_and_local_path(&self, disk: &Disk, local_path: &str) -> Result<bool, AppError> {
         let filters: Vec<FileFilter> = vec![
             FileFilter::Disk(disk.to_string()),
             FileFilter::LocalPath(local_path.to_string()),
@@ -50,7 +51,7 @@ impl FileMysqlRepository {
         self.exists_by_filters(&filters)
     }
 
-    pub fn delete_by_local_path(&self, disk: &Disk, local_path: &str) -> Result<(), AppError> {
+    pub fn delete_by_disk_and_local_path(&self, disk: &Disk, local_path: &str) -> Result<(), AppError> {
         let filters: Vec<FileFilter> = vec![
             FileFilter::Disk(disk.to_string()),
             FileFilter::LocalPath(local_path.to_string()),
@@ -122,8 +123,8 @@ impl ToMysqlDto<FileColumn> for File {
     fn push_mysql_param_to_vec(&self, column: &FileColumn, params: &mut Vec<(String, Value)>) {
         match column {
             FileColumn::Id => params.push((column.to_string(), Value::from(self.id.to_owned()))),
-            FileColumn::Name => {
-                params.push((column.to_string(), Value::from(self.name.to_owned())))
+            FileColumn::Filename => {
+                params.push((column.to_string(), Value::from(self.filename.to_owned())))
             }
             FileColumn::PublicPath => {
                 params.push((column.to_string(), Value::from(self.public_path.to_owned())))
@@ -181,7 +182,7 @@ impl FromMysqlDto for File {
     fn take_from_mysql_row(row: &mut Row) -> Result<Self, AppError> {
         Ok(Self {
             id: take_from_mysql_row(row, FileColumn::Id.to_string().as_str())?,
-            name: take_from_mysql_row(row, FileColumn::Name.to_string().as_str())?,
+            filename: take_from_mysql_row(row, FileColumn::Filename.to_string().as_str())?,
             public_path: take_from_mysql_row(row, FileColumn::PublicPath.to_string().as_str())?,
             local_path: take_from_mysql_row(row, FileColumn::LocalPath.to_string().as_str())?,
             mime: take_from_mysql_row(row, FileColumn::Mime.to_string().as_str())?,
@@ -191,11 +192,8 @@ impl FromMysqlDto for File {
                 row,
                 FileColumn::CreatorUserId.to_string().as_str(),
             )?,
-            // TODO:
-            // created_at: take_from_mysql_row(row, FileColumn::CreatedAt.to_string().as_str())?,
-            // updated_at: take_from_mysql_row(row, FileColumn::UpdatedAt.to_string().as_str())?,
-            created_at: None,
-            updated_at: None,
+            created_at: take_some_datetime_from_mysql_row(row, FileColumn::CreatedAt.to_string().as_str())?,
+            updated_at: take_some_datetime_from_mysql_row(row, FileColumn::UpdatedAt.to_string().as_str())?,
             file_delete_at: take_from_mysql_row(
                 row,
                 FileColumn::FileDeleteAt.to_string().as_str(),

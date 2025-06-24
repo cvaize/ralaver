@@ -1,10 +1,12 @@
-use serde_derive::{Deserialize, Serialize};
+use serde::de::{Error, Visitor};
+use serde::{Deserialize, Deserializer, Serialize};
+use std::str::FromStr;
 use strum_macros::{Display, EnumIter, EnumString, VariantNames};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct File {
     pub id: u64,
-    pub name: Option<String>,
+    pub filename: Option<String>,
     pub public_path: Option<String>,
     pub local_path: String,
     pub mime: Option<String>,
@@ -37,7 +39,7 @@ pub struct File {
 #[strum(serialize_all = "snake_case")]
 pub enum FileColumn {
     Id,
-    Name,
+    Filename,
     PublicPath,
     LocalPath,
     Mime,

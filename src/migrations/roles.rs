@@ -1,4 +1,4 @@
-use r2d2_mysql::mysql::prelude::Queryable;
+use mysql::prelude::Queryable;
 use crate::{Config, MysqlPooledConnection};
 
 pub fn up(_: &Config, connection: &mut MysqlPooledConnection) {

@@ -92,7 +92,6 @@ pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
     let disk_local_repository = Data::new(DiskLocalRepository::new(
         &config_ref.filesystem.disks.local.root,
         MAIN_SEPARATOR_STR,
-        &config_ref.filesystem.disks.local.public_root,
     ));
     let disk_external_repository = Data::new(DiskExternalRepository::new());
 
@@ -101,6 +100,7 @@ pub fn advanced(c: &Connections, s: &BaseServices) -> AdvancedServices {
         file_mysql_repository.clone(),
         disk_local_repository.clone(),
         disk_external_repository.clone(),
+        rand_service.clone(),
     ));
 
     AdvancedServices {

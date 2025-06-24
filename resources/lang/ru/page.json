@@ -174,7 +174,7 @@
       "title": "{{page.files.create.header}} - {{app.name}}",
       "header": "Создание файла",
       "fields": {
-        "name": "Название файла (без расширения)",
+        "name": "Название файла",
         "file": "Выберите файл",
         "is_public": "Публичный файл?",
         "disk": {

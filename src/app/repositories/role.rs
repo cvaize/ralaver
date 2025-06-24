@@ -1,8 +1,8 @@
 
 use crate::{option_take_json_from_mysql_row, option_to_json_string_for_mysql, take_from_mysql_row, AppError, FromMysqlDto, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder, MysqlRepository, PaginateParams, Role, RoleColumn, ToMysqlDto};
 use actix_web::web::Data;
-use r2d2_mysql::mysql::Row;
-use r2d2_mysql::mysql::Value;
+use mysql::Row;
+use mysql::Value;
 use strum_macros::{Display, EnumIter, EnumString};
 
 pub struct RoleMysqlRepository {

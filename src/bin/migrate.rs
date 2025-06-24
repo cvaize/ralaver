@@ -9,8 +9,8 @@ mod migrations;
 
 use config::Config;
 use connections_mysql::{MysqlPool, MysqlPooledConnection};
-use r2d2_mysql::mysql::prelude::Queryable;
-use r2d2_mysql::mysql::{params, Row};
+use mysql::prelude::Queryable;
+use mysql::{params, Row};
 use std::collections::HashMap;
 use std::env;
 

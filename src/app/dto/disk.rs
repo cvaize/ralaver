@@ -11,20 +11,18 @@ pub enum Disk {
     External,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct UploadData {
-    pub path: String,
     pub mime: Option<Mime>,
     pub filename: Option<String>,
     pub size: Option<u64>,
     pub is_public: Option<bool>,
-    pub from_disk: Option<Disk>,
-    pub to_disk: Option<Disk>,
+    pub hash: Option<String>,
     pub creator_user_id: Option<u64>,
 }
 
-impl Disk {
-    pub fn default() ->  Self {
-        Self::Local
+impl Default for Disk {
+    fn default() -> Disk {
+        Disk::Local
     }
 }

@@ -1,10 +1,13 @@
 use crate::{AppError, MysqlPool, MysqlPooledConnection, PaginateParams, PaginationResult};
-use r2d2_mysql::mysql::prelude::{FromValue, Queryable};
-use r2d2_mysql::mysql::{Params, Row, Value};
+use mysql::prelude::{FromValue, Queryable};
+use mysql::{Params, Row, Value};
 use serde::de::DeserializeOwned;
 use serde::{Serialize};
 use std::fmt::Display;
+use actix_web::cookie::time::{format_description, PrimitiveDateTime};
+use chrono::{DateTime, NaiveDateTime};
 use strum::{IntoEnumIterator, VariantNames};
+use crate::helpers::DATE_TIME_FORMAT;
 
 impl<Filter, Sort> MysqlPaginateParams <Filter, Sort> for PaginateParams<Filter, Sort>
 where
@@ -635,6 +638,36 @@ pub fn take_from_mysql_row<T: FromValue>(row: &mut Row, name: &str) -> Result<T,
     }
     Err(AppError(Some(format!(
         "take_from_mysql_row {} not found",
+        name
+    ))))
+}
+
+pub fn take_datetime_from_mysql_row(row: &mut Row, name: &str) -> Result<String, AppError> {
+    if let Some(val) = row.take_opt::<NaiveDateTime, &str>(name) {
+        return match val {
+            Ok(val) => {
+                Ok(val.format(DATE_TIME_FORMAT).to_string())
+            },
+            Err(val) => Err(AppError(Some(val.to_string()))),
+        };
+    }
+    Err(AppError(Some(format!(
+        "take_datetime_from_mysql_row {} not found",
+        name
+    ))))
+}
+
+pub fn take_some_datetime_from_mysql_row(row: &mut Row, name: &str) -> Result<Option<String>, AppError> {
+    if let Some(val) = row.take_opt::<NaiveDateTime, &str>(name) {
+        return match val {
+            Ok(val) => {
+                Ok(Some(val.format(DATE_TIME_FORMAT).to_string()))
+            },
+            Err(val) => Err(AppError(Some(val.to_string()))),
+        };
+    }
+    Err(AppError(Some(format!(
+        "take_some_datetime_from_mysql_row {} not found",
         name
     ))))
 }

@@ -1,10 +1,10 @@
-use r2d2_mysql::mysql::prelude::Queryable;
+use mysql::prelude::Queryable;
 use crate::{Config, MysqlPooledConnection};
 
 pub fn up(_: &Config, connection: &mut MysqlPooledConnection) {
     let query = "CREATE TABLE `files` (
    `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-   `name` VARCHAR(255) NULL DEFAULT NULL,
+   `filename` VARCHAR(255) NULL DEFAULT NULL,
    `public_path` VARCHAR(2048) CHARACTER SET ascii COLLATE ascii_bin NULL DEFAULT NULL,
    `local_path` VARCHAR(2048) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
    `mime` VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NULL DEFAULT NULL,

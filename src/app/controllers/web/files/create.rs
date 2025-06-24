@@ -292,6 +292,7 @@ pub fn invoke(
 
             if errors.is_empty() {
                 if let Some(form) = &upload_form {
+                    dbg!(form);
                     let path = form.file.file.path().to_str().ok_or(error::ErrorInternalServerError(""))?;
 
                     let to_disk = upload_disk_value.to_owned().ok_or(error::ErrorInternalServerError(""))?;
@@ -303,46 +304,53 @@ pub fn invoke(
                         form.file.file_name.to_owned()
                     };
                     let upload_data = UploadData {
-                        path: path.to_string(),
                         mime: form.file.content_type.to_owned(),
                         filename,
                         size: None,
+                        hash: None,
                         is_public: Some(is_public_value),
-                        from_disk: Some(Disk::Local),
-                        to_disk: Some(to_disk),
                         creator_user_id: Some(user.id),
                     };
-                    let result = file_service.upload(upload_data);
 
-                    if let Err(error) = result {
-                        if error.ne(&FileServiceError::DuplicateLocalPath) {
-                            errors.form.push(error.translate(lang, translator_service));
+
+                    if to_disk.eq(&Disk::Local) {
+                        let result = file_service.upload_local_file_to_local_disk(path, upload_data);
+
+                        if let Err(error) = result {
+                            if error.ne(&FileServiceError::DuplicateLocalPath) {
+                                errors.form.push(error.translate(lang, translator_service));
+                            }
                         }
                     }
 
-                    is_done = true;
                 } else if let Some(form) = &post_form {
                     dbg!(form);
 
-                    let path = url_value.to_owned().ok_or(error::ErrorInternalServerError(""))?;
+                    let url = url_value.to_owned().ok_or(error::ErrorInternalServerError(""))?;
 
                     let to_disk = external_disk_value.to_owned().ok_or(error::ErrorInternalServerError(""))?;
                     let to_disk = Disk::from_str(&to_disk).map_err(|_| error::ErrorInternalServerError(""))?;
 
                     let upload_data = UploadData {
-                        path,
                         mime: None,
                         filename: None,
                         size: None,
+                        hash: None,
                         is_public: Some(is_public_value),
-                        from_disk: Some(Disk::External),
-                        to_disk: Some(to_disk),
                         creator_user_id: Some(user.id),
                     };
-                    dbg!(&upload_data);
-                    file_service.upload(upload_data).map_err(|_| error::ErrorInternalServerError(""))?;
-                    is_done = true;
+
+                    if to_disk.eq(&Disk::External) {
+                        let result = file_service.upload_external_file_to_external_disk(&url, upload_data);
+
+                        if let Err(error) = result {
+                            if error.ne(&FileServiceError::DuplicateLocalPath) {
+                                errors.form.push(error.translate(lang, translator_service));
+                            }
+                        }
+                    }
                 }
+                is_done = errors.is_empty();
             }
         } else {
             let ttl_message = rate_limit_service.ttl_message_throw_http(
@@ -406,10 +414,6 @@ pub fn invoke(
     ]);
 
     let external_disk_options = json!([
-        {
-            "label": translator_service.translate(lang, "page.files.create.fields.disk.options.local"),
-            "value": Disk::Local.to_string(),
-        },
         {
             "label": translator_service.translate(lang, "page.files.create.fields.disk.options.external"),
             "value": Disk::External.to_string(),
