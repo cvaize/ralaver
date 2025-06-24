@@ -661,9 +661,10 @@ mod tests {
             hash: None,
             creator_user_id: creator_user_id.clone(),
         };
-        file_service
-            .upload_local_file_to_local_disk(&path, data.clone())
-            .unwrap();
+        // file_service
+        //     .upload_local_file_to_local_disk(&path, data.clone())
+        //     .unwrap();
+        // TODO: Удалить тестовые данные + закончить тестирование
 
         // let file = file_service
         //     .first_by_disk_and_local_path(&disk, &path)

@@ -184,7 +184,7 @@ pub async fn invoke(
         "selected": selected,
         "columns": {
             "id": translator_service.translate(lang, "page.files.index.columns.id"),
-            "name": translator_service.translate(lang, "page.files.index.columns.name"),
+            "filename": translator_service.translate(lang, "page.files.index.columns.filename"),
             "local_path": translator_service.translate(lang, "page.files.index.columns.local_path"),
             "is_deleted": translator_service.translate(lang, "page.files.index.columns.is_deleted"),
             "actions": translator_service.translate(lang, "page.files.index.columns.actions")

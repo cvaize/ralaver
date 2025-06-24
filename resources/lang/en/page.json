@@ -164,7 +164,7 @@
       },
       "columns": {
         "id": "ID",
-        "name": "Name",
+        "filename": "File name",
         "local_path": "Local path",
         "is_deleted": "Is deleted?",
         "actions": "Actions"
