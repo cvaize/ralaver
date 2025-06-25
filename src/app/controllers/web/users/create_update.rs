@@ -1,5 +1,5 @@
 use crate::app::controllers::web::profile::{
-    get_url as get_profile_url, ROUTE_NAME as PROFILE_ROUTE_NAME,
+    get_url as get_profile_url,
 };
 use crate::app::controllers::web::{get_context_data, get_template_context};
 use crate::app::validator::rules::confirmed::Confirmed;
@@ -24,8 +24,6 @@ use std::sync::Arc;
 const RL_MAX_ATTEMPTS: u64 = 10;
 const RL_TTL: u64 = 60;
 const RL_KEY: &'static str = "users_create_update";
-
-const ROUTE_NAME: &'static str = "users_create_update";
 
 #[derive(Deserialize, Default, Debug)]
 pub struct PostData {
@@ -242,13 +240,7 @@ pub fn invoke(
     let user = user.as_ref();
 
     let mut alert_variants: Vec<AlertVariant> = Vec::new();
-    let route_name = if is_profile {
-        PROFILE_ROUTE_NAME
-    } else {
-        ROUTE_NAME
-    };
     let mut context_data = get_context_data(
-        route_name,
         &req,
         user,
         &session,

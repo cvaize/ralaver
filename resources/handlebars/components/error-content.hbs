@@ -1,0 +1,19 @@
+<div class="admin-login">
+    <div class="admin-container admin-login__container">
+        <div class="admin-login__card">
+            {{#if status_code}}
+                <h1 class="admin-login__header">{{status_code}}</h1>
+            {{/if}}
+            {{#if error_message}}
+                {{error_message}}
+            {{/if}}
+            {{#if back}}
+                <div style="margin-top: 1rem; text-align: right">
+                    <a href="/" class="admin-btn admin-btn--link" style="text-decoration: underline;">
+                        {{back}}
+                    </a>
+                </div>
+            {{/if}}
+        </div>
+    </div>
+</div>

@@ -45,8 +45,6 @@ const RL_MAX_ATTEMPTS: u64 = 10;
 const RL_TTL: u64 = 60;
 const RL_KEY: &'static str = "files_create";
 
-const ROUTE_NAME: &'static str = "files_create";
-
 #[derive(Deserialize, Default, Debug)]
 struct ErrorMessages {
     pub form: Vec<String>,
@@ -201,7 +199,6 @@ pub fn invoke(
 
     let mut alert_variants: Vec<AlertVariant> = Vec::new();
     let mut context_data = get_context_data(
-        ROUTE_NAME,
         &req,
         user,
         &session,

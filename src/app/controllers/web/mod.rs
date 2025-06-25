@@ -78,7 +78,6 @@ fn string_to_alerts(s: &str, translator_service: &TranslatorService, lang: &str)
 }
 
 pub struct ContextData<'a> {
-    route_name: &'a str,
     user: &'a User,
     translator_service: &'a TranslatorService,
     app_service: &'a AppService,
@@ -90,10 +89,10 @@ pub struct ContextData<'a> {
     csrf: String,
     alerts: Vec<Alert>,
     title: String,
+    path: String,
 }
 
 pub fn get_context_data<'a>(
-    route_name: &'a str,
     req: &'a HttpRequest,
     user: &'a User,
     session: &'a Session,
@@ -102,13 +101,13 @@ pub fn get_context_data<'a>(
     web_auth_service: &'a WebAuthService,
     role_service: &'a RoleService,
 ) -> ContextData<'a> {
+    let path = req.path().to_string();
     let dark_mode: Option<String> = app_service.dark_mode(&req);
     let (lang, locale, locales) = app_service.locale(Some(&req), Some(user));
     let csrf: String = web_auth_service.new_csrf(&session);
     let alerts: Vec<Alert> = req.get_alerts(&translator_service, &lang);
     let title = translator_service.translate(&lang, "app.name");
     ContextData {
-        route_name,
         user,
         translator_service,
         app_service,
@@ -120,6 +119,7 @@ pub fn get_context_data<'a>(
         alerts,
         title,
         role_service,
+        path,
     }
 }
 
@@ -154,7 +154,6 @@ pub fn get_template_context<'a>(data: &'a ContextData) -> Value {
     }
 
     json!({
-        "route_name": &data.route_name,
         "site_url": app_service.url().to_string(),
         "title": &data.title,
         "brand": translator_service.translate(lang, "layout.brand"),
@@ -179,7 +178,8 @@ pub fn get_template_context<'a>(data: &'a ContextData) -> Value {
         "locales": &data.locales,
         "user" : &data.user,
         "alerts": &data.alerts,
-        "csrf": &data.csrf
+        "csrf": &data.csrf,
+        "path": &data.path
     })
 }
 

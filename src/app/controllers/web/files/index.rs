@@ -23,8 +23,6 @@ pub const DEFAULT_PER_PAGE: i64 = 15;
 pub const MAX_PER_PAGE: i64 = 100;
 pub const PER_PAGES: [i64; 7] = [10, 15, 20, 30, 40, 50, 100];
 
-const ROUTE_NAME: &'static str = "files_index";
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct IndexQuery {
     pub page: Option<i64>,
@@ -82,7 +80,6 @@ pub async fn invoke(
     let total_pages_str = total_pages.to_string();
 
     let mut context_data = get_context_data(
-        ROUTE_NAME,
         &req,
         user,
         &session,

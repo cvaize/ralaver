@@ -1,14 +1,12 @@
-{{#> components/login.hbs lang=locale.code dark_mode=dark_mode title=title }}
-    <div class="admin-login">
-        <div class="admin-container admin-login__container">
-            <div class="admin-login__card">
-                {{#if status_code}}
-                    <h1 class="admin-login__header">{{status_code}}</h1>
-                {{/if}}
-                {{#if error_message}}
-                    {{error_message}}
-                {{/if}}
-            </div>
-        </div>
-    </div>
-{{/components/login.hbs}}
+{{#if ctx.user}}
+    {{#> components/layout.hbs }}
+        {{> components/alerts.hbs }}
+        {{> components/error-content.hbs }}
+    {{/components/layout.hbs}}
+{{else}}
+    {{#> components/auth-layout.hbs }}
+        {{> components/alerts.hbs }}
+        {{> components/error-content.hbs }}
+    {{/components/auth-layout.hbs}}
+{{/if}}
+

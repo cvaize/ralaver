@@ -11,8 +11,6 @@ use actix_web::web::{Data, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use std::sync::Arc;
 
-pub const ROUTE_NAME: &'static str = "profile_index";
-
 pub async fn index(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
