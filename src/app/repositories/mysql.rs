@@ -116,19 +116,59 @@ where
         Ok(ids)
     }
 
-    fn get_all(&self) -> Result<Vec<Entity>, AppError> {
+    fn get_all(&self, filters: Option<&Vec<Filter>>, sorts: Option<&Vec<Sort>>) -> Result<Vec<Entity>, AppError> {
         let table = self.get_table();
         let columns: String = EntityColumn::mysql_all_select_columns();
-        let query = make_select_mysql_query(table, &columns, "", "");
+
+        let mut mysql_where: String = String::new();
+        let mut mysql_order: String = String::new();
+        let mut mysql_params: Vec<(String, Value)> = vec![];
+
+        if let Some(filters) = filters {
+            let mut is_and = false;
+            for filter in filters {
+                if is_and {
+                    mysql_where.push_str(" AND ")
+                }
+                filter.push_params_to_vec(&mut mysql_params);
+                filter.push_params_to_mysql_query(&mut mysql_where);
+                is_and = true;
+            }
+        }
+
+        if let Some(sorts) = sorts {
+            let mut is_and = false;
+            for sort in sorts {
+                if is_and {
+                    mysql_order.push_str(", ")
+                }
+                sort.push_params_to_vec(&mut mysql_params);
+                sort.push_params_to_mysql_query(&mut mysql_order);
+                is_and = true;
+            }
+        }
+
+        let query = make_select_mysql_query(table, &columns, &mysql_where, &mysql_order);
         let mut conn = self.connection()?;
-        let rows = conn
-            .query_iter(query)
-            .map_err(|e| self.log_error("get_all", e.to_string()))?;
 
         let mut records: Vec<Entity> = Vec::new();
-        for mut row in rows.into_iter() {
-            if let Ok(row) = &mut row {
-                records.push(self.row_to_entity(row)?);
+        if mysql_params.is_empty() {
+            let rows = conn
+                .query_iter(query)
+                .map_err(|e| self.log_error("get_all", e.to_string()))?;
+            for mut row in rows.into_iter() {
+                if let Ok(row) = &mut row {
+                    records.push(self.row_to_entity(row)?);
+                }
+            }
+        } else {
+            let rows = conn
+                .exec_iter(query, Params::from(mysql_params))
+                .map_err(|e| self.log_error("get_all", e.to_string()))?;
+            for mut row in rows.into_iter() {
+                if let Ok(row) = &mut row {
+                    records.push(self.row_to_entity(row)?);
+                }
             }
         }
 

@@ -52,13 +52,13 @@
   },
   "files": {
     "create": {
-      "success": "Файл \":name\" успешно создана."
+      "success": "Файл \":name\" успешно создан."
     },
     "update": {
-      "success": "Файл \":name\" успешно изменена."
+      "success": "Файл \":name\" успешно изменен."
     },
     "delete": {
-      "success": "Файл \":name\" успешно удалена."
+      "success": "Файл \":name\" успешно удален."
     },
     "mass_delete": {
       "success": "Файлы IDs:\":ids\" успешно удалены."

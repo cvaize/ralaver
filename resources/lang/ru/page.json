@@ -174,21 +174,8 @@
       "title": "{{page.files.create.header}} - {{app.name}}",
       "header": "Создание файла",
       "fields": {
-        "name": "Название файла",
         "file": "Выберите файл",
-        "is_public": "Публичный файл?",
-        "disk": {
-          "label": "Сохранить:",
-          "options": {
-            "local": "на диск",
-            "external": "только ссылку, не загружая контент"
-          }
-        },
-        "url":  "URL"
-      },
-      "tabs": {
-        "upload": "Загрузить с компьютера",
-        "external": "Сохранить по ссылке"
+        "is_public": "Публичный файл?"
       }
     },
     "edit": {

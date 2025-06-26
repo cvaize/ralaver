@@ -8,7 +8,6 @@ use strum_macros::{Display, EnumString};
 #[strum(serialize_all = "snake_case")]
 pub enum Disk {
     Local,
-    External,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -18,7 +17,7 @@ pub struct UploadData {
     pub size: Option<u64>,
     pub is_public: Option<bool>,
     pub hash: Option<String>,
-    pub creator_user_id: Option<u64>,
+    pub user_id: Option<u64>,
 }
 
 impl Default for Disk {

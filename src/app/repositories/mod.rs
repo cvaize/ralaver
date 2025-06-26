@@ -3,11 +3,13 @@ mod disk;
 mod file;
 mod role;
 mod user;
+mod user_file;
 
 pub use self::disk::*;
 pub use self::file::*;
 pub use self::role::*;
 pub use self::user::*;
+pub use self::user_file::*;
 pub use self::mysql::*;
 use serde::{Deserialize, Serialize};
 

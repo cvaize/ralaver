@@ -3,35 +3,30 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
 use strum_macros::{Display, EnumIter, EnumString, VariantNames};
 
+// Files belonging to users.
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct File {
+pub struct UserFile {
     pub id: u64,
-    // The file name is made up of the hash, size, and extensions obtained when uploading the file, by mask: [hash]-[size].[extensions].
+    // The user who uploaded the file.
+    pub user_id: u64,
+    // Relation to the files table.
+    pub file_id: u64,
+    // The filename received during the upload.
     pub filename: String,
-    // The path where the file is saved on disk.
+    // The path or url where you can get the file.
     pub path: String,
-    // The file type.
+    // The file type received during the upload.
     pub mime: Option<String>,
-    // Hash of the sha256 file.
-    pub hash: Option<String>,
-    // The file size in bytes.
-    pub size: Option<u64>,
-    // The first user to upload the file.
-    pub creator_user_id: Option<u64>,
     // The datetime of the file creation.
     pub created_at: Option<String>,
     // The datetime of the last file update.
     pub updated_at: Option<String>,
-    // After this time, the file must be deleted.
-    pub delete_at: Option<String>,
     // The datetime when the file was deleted.
     pub deleted_at: Option<String>,
-    // Label: whether the file needs to be deleted.
-    pub is_delete: bool,
     // Label: whether the file has been deleted.
     pub is_deleted: bool,
-    // The disk where the file is stored.
-    pub disk: String,
+    // Label: public file or not.
+    pub is_public: bool,
 }
 
 #[derive(
@@ -48,19 +43,16 @@ pub struct File {
     PartialEq,
 )]
 #[strum(serialize_all = "snake_case")]
-pub enum FileColumn {
+pub enum UserFileColumn {
     Id,
+    UserId,
+    FileId,
     Filename,
     Path,
     Mime,
-    Hash,
-    Size,
-    CreatorUserId,
     CreatedAt,
     UpdatedAt,
-    DeleteAt,
     DeletedAt,
-    IsDelete,
     IsDeleted,
-    Disk,
+    IsPublic,
 }

@@ -30,7 +30,7 @@ impl RoleService {
     pub fn get_all(&self) -> Result<Vec<Role>, RoleServiceError> {
         self.role_repository
             .get_ref()
-            .get_all()
+            .get_all(None, None)
             .map_err(|e| self.match_error(e))
     }
 
