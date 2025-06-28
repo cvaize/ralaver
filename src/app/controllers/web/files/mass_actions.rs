@@ -62,7 +62,7 @@ pub async fn invoke(
                     if !FilePolicy::can_delete(&user, &user_roles) {
                         return Err(error::ErrorForbidden(""));
                     }
-                    file_service.delete_by_ids_throw_http(ids)?;
+                    file_service.delete_files_by_ids_throw_http(ids)?;
                     alert_variants.push(AlertVariant::FilesMassDeleteSuccess(
                         ids.iter()
                             .map(|id| id.to_string())

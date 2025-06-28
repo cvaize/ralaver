@@ -48,7 +48,7 @@ pub async fn invoke(
     let file_id = path.into_inner();
     let user = user.as_ref();
     let lang: String = locale_service.get_locale_code(Some(&req), Some(&user));
-    let delete_file = file_service.first_by_id_throw_http(file_id)?;
+    let delete_file = file_service.first_file_by_id_throw_http(file_id)?;
 
     let rate_limit_key = rate_limit_service.make_key_from_request_throw_http(&req, RL_KEY)?;
 
@@ -57,7 +57,7 @@ pub async fn invoke(
         rate_limit_service.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
 
     if executed {
-        file_service.delete_by_id_throw_http(delete_file.id)?;
+        file_service.delete_file_by_id_throw_http(delete_file.id)?;
         let name = delete_file.filename;
         alert_variants.push(AlertVariant::FilesDeleteSuccess(name));
     } else {

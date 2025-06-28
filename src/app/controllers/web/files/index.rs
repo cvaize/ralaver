@@ -75,7 +75,7 @@ pub async fn invoke(
     let filters: Vec<FileFilter> = query.get_filters();
     let sorts: Vec<FileSort> = query.get_sorts();
     let pagination_params = FilePaginateParams::new(page, per_page, filters, sorts);
-    let files = file_service.paginate_throw_http(&pagination_params)?;
+    let files = file_service.paginate_files_throw_http(&pagination_params)?;
     let total_pages = max(files.total_pages, 1);
     let total_pages_str = total_pages.to_string();
 

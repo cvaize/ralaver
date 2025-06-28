@@ -8,6 +8,7 @@ use crate::{
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use mime::Mime;
+use mime2ext::mime2ext;
 use std::fmt::format;
 use std::path::{MAIN_SEPARATOR, MAIN_SEPARATOR_STR};
 use strum_macros::{Display, EnumString};
@@ -54,16 +55,23 @@ impl FileService {
         e
     }
 
-    pub fn first_by_id(&self, file_id: u64) -> Result<Option<File>, FileServiceError> {
+    pub fn first_file_by_id(&self, file_id: u64) -> Result<Option<File>, FileServiceError> {
         self.file_repository
             .get_ref()
             .first_by_id(file_id)
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn first_by_id_throw_http(&self, file_id: u64) -> Result<File, Error> {
-        let user = self
+    pub fn first_user_file_by_id(&self, file_id: u64) -> Result<Option<UserFile>, FileServiceError> {
+        self.user_file_repository
+            .get_ref()
             .first_by_id(file_id)
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn first_file_by_id_throw_http(&self, file_id: u64) -> Result<File, Error> {
+        let user = self
+            .first_file_by_id(file_id)
             .map_err(|_| error::ErrorInternalServerError(""))?;
         if let Some(user) = user {
             return Ok(user);
@@ -71,7 +79,7 @@ impl FileService {
         Err(error::ErrorNotFound(""))
     }
 
-    pub fn first_by_disk_and_path(
+    pub fn first_file_by_disk_and_path(
         &self,
         disk: &Disk,
         path: &str,
@@ -82,9 +90,9 @@ impl FileService {
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn first_by_path_throw_http(&self, disk: &Disk, path: &str) -> Result<File, Error> {
+    pub fn first_file_by_disk_and_path_throw_http(&self, disk: &Disk, path: &str) -> Result<File, Error> {
         let user = self
-            .first_by_disk_and_path(disk, path)
+            .first_file_by_disk_and_path(disk, path)
             .map_err(|_| error::ErrorInternalServerError(""))?;
         if let Some(user) = user {
             return Ok(user);
@@ -105,24 +113,6 @@ impl FileService {
         }
 
         FileServiceError::Fail
-    }
-
-    pub fn create(&self, data: &mut File) -> Result<(), FileServiceError> {
-        self.file_repository
-            .get_ref()
-            .insert_one(data)
-            .map_err(|e| self.match_error(e))
-    }
-
-    pub fn update(
-        &self,
-        data: &mut File,
-        columns: &Option<Vec<FileColumn>>,
-    ) -> Result<(), FileServiceError> {
-        self.file_repository
-            .get_ref()
-            .update_one(data, columns)
-            .map_err(|e| self.match_error(e))
     }
 
     pub fn upsert_file(
@@ -175,31 +165,38 @@ impl FileService {
         }
     }
 
-    pub fn delete_by_id(&self, id: u64) -> Result<(), FileServiceError> {
+    pub fn delete_file_by_id(&self, id: u64) -> Result<(), FileServiceError> {
         self.file_repository
             .get_ref()
             .delete_by_id(id)
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn delete_by_id_throw_http(&self, id: u64) -> Result<(), Error> {
-        self.delete_by_id(id)
+    pub fn delete_user_file_by_id(&self, id: u64) -> Result<(), FileServiceError> {
+        self.user_file_repository
+            .get_ref()
+            .delete_by_id(id)
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn delete_file_by_id_throw_http(&self, id: u64) -> Result<(), Error> {
+        self.delete_file_by_id(id)
             .map_err(|_| error::ErrorInternalServerError(""))
     }
 
-    pub fn delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), FileServiceError> {
+    pub fn delete_files_by_ids(&self, ids: &Vec<u64>) -> Result<(), FileServiceError> {
         self.file_repository
             .get_ref()
             .delete_by_ids(ids)
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn delete_by_ids_throw_http(&self, ids: &Vec<u64>) -> Result<(), Error> {
-        self.delete_by_ids(ids)
+    pub fn delete_files_by_ids_throw_http(&self, ids: &Vec<u64>) -> Result<(), Error> {
+        self.delete_files_by_ids(ids)
             .map_err(|_| error::ErrorInternalServerError(""))
     }
 
-    pub fn paginate(
+    pub fn paginate_files(
         &self,
         params: &FilePaginateParams,
     ) -> Result<PaginationResult<File>, FileServiceError> {
@@ -209,11 +206,11 @@ impl FileService {
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn paginate_throw_http(
+    pub fn paginate_files_throw_http(
         &self,
         params: &FilePaginateParams,
     ) -> Result<PaginationResult<File>, Error> {
-        self.paginate(params)
+        self.paginate_files(params)
             .map_err(|_| error::ErrorInternalServerError(""))
     }
 
@@ -222,59 +219,6 @@ impl FileService {
         str.push(MAIN_SEPARATOR);
         str.push_str(filename);
         str
-    }
-
-    pub fn generate_uuid_path(
-        &self,
-        mime: &Option<String>,
-        disk_repository: &dyn DiskRepository,
-    ) -> Result<(String, String), FileServiceError> {
-        let random_repository = self.random_repository.get_ref();
-        let mut extension: Option<&str> = None;
-        if let Some(mime) = mime {
-            extension = mime2ext::mime2ext(mime);
-        }
-
-        let mut uuid_filename: Option<String> = None;
-        let mut path: Option<String> = None;
-        for _ in 0..100 {
-            let mut uuid_filename_: String = random_repository.str(32);
-
-            if let Some(extension) = extension {
-                uuid_filename_.push('.');
-                uuid_filename_.push_str(&extension);
-            }
-
-            let path_: String = disk_repository
-                .path(self.make_path(&uuid_filename_).as_str())
-                .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?;
-            let is: bool = disk_repository
-                .exists(&path_)
-                .map_err(|e| self.log_error("upload", e.to_string(), FileServiceError::Fail))?;
-            if !is {
-                uuid_filename = Some(uuid_filename_);
-                path = Some(path_);
-                break;
-            }
-        }
-
-        if path.is_none() {
-            return Err(self.log_error(
-                "upload",
-                "Couldn't find the path for the new file".to_string(),
-                FileServiceError::NotFound,
-            ));
-        }
-
-        let uuid_filename: String = uuid_filename.unwrap();
-        let path: String = path.unwrap();
-        Ok((uuid_filename, path))
-    }
-
-    pub fn get_disk_repository(&self, disk: &Disk) -> &dyn DiskRepository {
-        match disk {
-            Disk::Local => self.disk_local_repository.get_ref(),
-        }
     }
 
     fn is_exists_local_file_throw(&self, path: &str, method: &str) -> Result<(), FileServiceError> {
@@ -342,8 +286,15 @@ impl FileService {
 
         let upload_path_ = upload_path.to_lowercase();
         let last_path = upload_path_.split(MAIN_SEPARATOR_STR).last();
+        let mut i = 0;
         if let Some(last_path) = last_path {
             for path_ in last_path.split('.') {
+                i += 1;
+                if i > 20 {
+                    // A stub in case of an attack through multiple file extensions.
+                    mimes_from_path = Vec::new();
+                    break;
+                }
                 let g_mime: Option<Mime> = mime_guess::from_ext(path_.trim()).first();
                 if let Some(mime_) = g_mime {
                     mimes_from_path.push(mime_);
@@ -360,9 +311,15 @@ impl FileService {
                 mimes_from_path.push(mime.to_owned());
             }
         }
-
-        let extensions: Vec<String> = mimes_from_path.iter().map(|m| m.to_string()).collect();
-        let extensions: String = extensions.join(".");
+        let mut extensions: String = "".to_string();
+        for mime_ in mimes_from_path {
+            if let Some(ext) = mime2ext(mime_) {
+                if !extensions.is_empty() {
+                    extensions.push('.');
+                }
+                extensions.push_str(ext.trim());
+            }
+        }
 
         // [hash]-[size].[extensions]
         let mut filename = hash.to_owned();
@@ -684,7 +641,7 @@ impl TranslatableError for FileServiceError {
 mod tests {
     use crate::{preparation, Disk};
     use mime::Mime;
-    use std::env;
+    use std::{env, fs};
     use std::path::MAIN_SEPARATOR_STR;
     use test::Bencher;
 
@@ -700,12 +657,13 @@ mod tests {
         let disk = Disk::Local;
         let user_id = 1;
         let is_public = true;
+        // TODO: Make test file, and remove after test
+        let user_filename = "Readme.md";
 
         let mut upload_path = root_dir.to_string();
         if !upload_path.ends_with(MAIN_SEPARATOR_STR) {
             upload_path.push_str(MAIN_SEPARATOR_STR);
         }
-        let user_filename = "Readme.md";
         upload_path.push_str(user_filename);
         let mime: Option<Mime> = mime_guess::from_path(&upload_path).first();
 
@@ -720,12 +678,13 @@ mod tests {
             .unwrap();
 
         let file = file_service
-            .first_by_id(user_file.file_id)
+            .first_file_by_id(user_file.file_id)
             .unwrap()
             .unwrap();
 
-        dbg!(&file);
-        dbg!(&user_file);
+        fs::remove_file(&file.path).unwrap();
+        file_service.delete_user_file_by_id(user_file.id).unwrap();
+        file_service.delete_file_by_id(file.id).unwrap();
     }
 
     // #[bench]
