@@ -7,9 +7,8 @@ use chrono::{DateTime, NaiveDateTime, TimeDelta, Utc};
 use std::borrow::Cow;
 use std::ops::Add;
 use strum_macros::{Display, EnumString};
-use crate::helpers::DATE_TIME_FORMAT;
 
-const FORMAT: &'static str = DATE_TIME_FORMAT;
+const FORMAT: &'static str = "%Y.%m.%d %H:%M:%S";
 
 pub const CSRF_ERROR_MESSAGE: &'static str = "CSRF token mismatch.";
 
