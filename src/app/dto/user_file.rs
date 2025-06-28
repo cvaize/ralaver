@@ -12,6 +12,8 @@ pub struct UserFile {
     // Relation to the files table.
     pub file_id: u64,
     // The filename received during the upload.
+    pub upload_filename: Option<String>,
+    // The file name.
     pub filename: String,
     // The path or url where you can get the file.
     pub path: String,
@@ -48,6 +50,7 @@ pub enum UserFileColumn {
     UserId,
     FileId,
     Filename,
+    UploadFilename,
     Path,
     Mime,
     CreatedAt,

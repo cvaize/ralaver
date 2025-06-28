@@ -2,13 +2,13 @@ use crate::helpers::{
     collect_directories_from_dir_into_str_vec, collect_files_from_dir_into_str_vec,
     create_dir_all_for_file,
 };
+use actix_web::ResponseError;
 use std::fs;
 use std::io;
 use std::io::ErrorKind;
 use std::os::unix::fs::MetadataExt;
 use std::process::Command;
 use std::time::SystemTime;
-use actix_web::ResponseError;
 use ureq::http::StatusCode;
 
 const FUN_NOT_DEFINED_ERROR_MESSAGE: &'static str = "The function is not defined.";
@@ -19,14 +19,14 @@ pub trait DiskRepository {
     // pub trait DiskRepository {
     // Get the full path to the file that exists at the given relative path.
     fn path(&self, path: &str) -> io::Result<String>;
-    #[allow(unused_variables)]
-    fn public_path(&self, path: &str) -> io::Result<String> {
-        Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
-    }
-    #[allow(unused_variables)]
-    fn set_public(&self, path: &str, is_public: bool) -> io::Result<Option<String>> {
-        Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
-    }
+    // #[allow(unused_variables)]
+    // fn public_path(&self, path: &str) -> io::Result<String> {
+    //     Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
+    // }
+    // #[allow(unused_variables)]
+    // fn set_public(&self, path: &str, is_public: bool) -> io::Result<Option<String>> {
+    //     Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
+    // }
     #[allow(unused_variables)]
     fn hash(&self, file_path: &str) -> io::Result<String> {
         Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
@@ -125,9 +125,48 @@ impl DiskLocalRepository {
             public_root,
         }
     }
+    fn public_path(&self, path: &str) -> io::Result<String> {
+        if path.starts_with(&self.root) {
+            let path = path.replace(&self.root, "");
+            make_local_path(&path, &self.public_root, &self.separator)
+        } else {
+            make_local_path(path, &self.public_root, &self.separator)
+        }
+    }
+    pub fn link(&self, original: &str, link: &str) -> io::Result<()> {
+        let result = fs::hard_link(original, link);
+
+        if let Err(e) = result {
+            if e.kind().eq(&ErrorKind::NotFound) {
+                create_dir_all_for_file(link, &self.separator)?;
+            }
+            fs::hard_link(original, link)?;
+        }
+
+        Ok(())
+    }
+    pub fn set_public(
+        &self,
+        path: &str,
+        is_public: bool,
+        new_filename: Option<String>,
+    ) -> io::Result<Option<String>> {
+        let public_path = if let Some(new_filename) = &new_filename {
+            self.public_path(new_filename)?
+        } else {
+            self.public_path(path)?
+        };
+        delete_from_local_path(public_path.as_str())?;
+        if is_public {
+            self.link(path, &public_path)?;
+            Ok(Some(public_path))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
-fn make_local_path(path: &str, root: &str, separator: &str) -> io::Result<String>{
+fn make_local_path(path: &str, root: &str, separator: &str) -> io::Result<String> {
     let mut result = root.to_owned();
     let path = path.trim();
 
@@ -154,14 +193,6 @@ fn delete_from_local_path(path: &str) -> io::Result<()> {
 impl DiskRepository for DiskLocalRepository {
     fn path(&self, path: &str) -> io::Result<String> {
         make_local_path(path, &self.root, &self.separator)
-    }
-    fn public_path(&self, path: &str) -> io::Result<String> {
-        if path.starts_with(&self.root) {
-            let path = path.replace(&self.root, "");
-            make_local_path(&path, &self.public_root, &self.separator)
-        } else {
-            make_local_path(path, &self.public_root, &self.separator)
-        }
     }
     fn hash(&self, file_path: &str) -> io::Result<String> {
         let hash = Command::new("sha256sum").args([file_path]).output()?.stdout;
@@ -229,24 +260,6 @@ impl DiskRepository for DiskLocalRepository {
     fn delete_directory(&self, directory: &str) -> io::Result<()> {
         fs::remove_dir_all(directory)
     }
-    fn set_public(&self, path: &str, is_public: bool) -> io::Result<Option<String>> {
-        let public_path = self.public_path(path)?;
-        delete_from_local_path(public_path.as_str())?;
-        if is_public {
-            let result = fs::hard_link(path, &public_path);
-
-            if let Err(e) = result {
-                if e.kind().eq(&ErrorKind::NotFound) {
-                    create_dir_all_for_file(&public_path, &self.separator)?;
-                }
-                fs::hard_link(path, &public_path)?;
-            }
-
-            Ok(Some(public_path))
-        } else {
-            Ok(None)
-        }
-    }
 }
 
 pub struct DiskExternalRepository {}
@@ -286,13 +299,6 @@ impl DiskRepository for DiskExternalRepository {
             ErrorKind::NotFound,
             ErrorKind::NotFound.to_string(),
         ))
-    }
-    fn set_public(&self, path: &str, is_public: bool) -> io::Result<Option<String>> {
-        if is_public {
-            Ok(Some(path.to_string()))
-        } else {
-            Ok(None)
-        }
     }
 }
 
@@ -345,8 +351,13 @@ mod tests {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_hash
         fs::write("/app/test_local_disk_call_hash.txt", "123").unwrap();
         let repository = DiskLocalRepository::new("/app", "/app", "/");
-        let hash = repository.hash("/app/test_local_disk_call_hash.txt").unwrap();
-        assert_eq!(hash, "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3");
+        let hash = repository
+            .hash("/app/test_local_disk_call_hash.txt")
+            .unwrap();
+        assert_eq!(
+            hash,
+            "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
+        );
         fs::remove_file("/app/test_local_disk_call_hash.txt").unwrap();
     }
 
@@ -366,7 +377,11 @@ mod tests {
     fn test_local_disk_call_exists() {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_exists
         let root = env::current_dir().unwrap();
-        let repository = DiskLocalRepository::new(root.to_str().unwrap(), root.to_str().unwrap(), MAIN_SEPARATOR_STR);
+        let repository = DiskLocalRepository::new(
+            root.to_str().unwrap(),
+            root.to_str().unwrap(),
+            MAIN_SEPARATOR_STR,
+        );
         let exists_file_path = repository.path(".gitignore").unwrap();
         assert!(repository.exists(&exists_file_path).unwrap());
         let no_exists_file_path = repository.path(".git_ignore").unwrap();
@@ -393,7 +408,11 @@ mod tests {
     fn test_local_disk_call_get() {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_get
         let root = env::current_dir().unwrap();
-        let repository = DiskLocalRepository::new(root.to_str().unwrap(), root.to_str().unwrap(), MAIN_SEPARATOR_STR);
+        let repository = DiskLocalRepository::new(
+            root.to_str().unwrap(),
+            root.to_str().unwrap(),
+            MAIN_SEPARATOR_STR,
+        );
         let path = repository.path(".gitignore").unwrap();
         let content = repository.get(&path).unwrap();
         let content_str = String::from_utf8(content).unwrap();
@@ -430,7 +449,11 @@ mod tests {
     fn test_local_disk_call_put() {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_put
         let root = env::current_dir().unwrap();
-        let repository = DiskLocalRepository::new(root.to_str().unwrap(), root.to_str().unwrap(), MAIN_SEPARATOR_STR);
+        let repository = DiskLocalRepository::new(
+            root.to_str().unwrap(),
+            root.to_str().unwrap(),
+            MAIN_SEPARATOR_STR,
+        );
         let dir_path = repository.path("/test_local_disk_call_put").unwrap();
         let path = repository
             .path("/test_local_disk_call_put/test.txt")

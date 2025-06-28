@@ -27,7 +27,7 @@ pub fn default_error_handler<B>(
     }
 
     let path = req.uri().path();
-    let res = if path.starts_with("/css") || path.starts_with("/js") || path.starts_with("/svg") {
+    let res = if path.starts_with("/storage") || path.starts_with("/css") || path.starts_with("/js") || path.starts_with("/svg") {
         res.set_body("".to_string())
     } else {
         if path.starts_with("/api") {

@@ -199,9 +199,9 @@ pub fn invoke(
                     let result = file_service.upload_local_file_to_local_disk(
                         user.id,
                         path,
+                        is_public_value,
                         form.file.file_name.to_owned(),
                         form.file.content_type.to_owned(),
-                        is_public_value,
                     );
 
                     if let Ok(user_file_) = result {

@@ -7,7 +7,8 @@ fn create_users_files_table(connection: &mut MysqlPooledConnection) {
    `file_id` BIGINT UNSIGNED NOT NULL COMMENT 'Relation to the files table.',
    `path` VARCHAR(2048) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The path or url where you can get the file.',
    `mime` VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NULL DEFAULT NULL COMMENT 'The file type received during the upload.',
-   `filename` VARCHAR(255) NOT NULL COMMENT 'The filename received during the upload.',
+   `upload_filename` VARCHAR(255) NULL DEFAULT NULL COMMENT 'The filename received during the upload.',
+   `filename` VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The file name.',
    `user_id` BIGINT UNSIGNED NOT NULL COMMENT 'The user who uploaded the file.',
    `created_at` DATETIME NULL DEFAULT NULL COMMENT 'The datetime of the file creation.',
    `updated_at` DATETIME NULL DEFAULT NULL COMMENT 'The datetime of the last file update.',
@@ -30,6 +31,9 @@ fn create_users_files_table(connection: &mut MysqlPooledConnection) {
     connection.query_drop(query).unwrap();
 
     let query = "ALTER TABLE `users_files` ADD INDEX `filename_idx` (`filename`);";
+    connection.query_drop(query).unwrap();
+
+    let query = "ALTER TABLE `users_files` ADD INDEX `upload_filename_idx` (`upload_filename`);";
     connection.query_drop(query).unwrap();
 
     let query = "ALTER TABLE `users_files` ADD INDEX `is_public_idx` (`is_public`);";

@@ -214,7 +214,7 @@ impl FileService {
             .map_err(|_| error::ErrorInternalServerError(""))
     }
 
-    pub fn make_public_path(&self, user_id: u64, filename: &str) -> String {
+    pub fn make_public_filename(&self, user_id: u64, filename: &str) -> String {
         let mut str = user_id.to_string();
         str.push('-');
         str.push_str(filename);
@@ -240,9 +240,9 @@ impl FileService {
         &self,
         user_id: u64,
         upload_path: &str,
-        mut user_filename: Option<String>,
-        mut mime: Option<Mime>,
         is_public: bool,
+        mut upload_filename: Option<String>,
+        mut mime: Option<Mime>,
     ) -> Result<UserFile, FileServiceError> {
         let file_repository = self.file_repository.get_ref();
         let user_file_repository = self.user_file_repository.get_ref();
@@ -551,19 +551,19 @@ impl FileService {
             ));
         }
 
-        let filename: String = if let Some(user_filename) = user_filename {
-            user_filename
-        } else {
-            file.filename.to_owned()
-        };
-
-        if filename.ne(&user_file.filename) {
-            user_file.filename = filename;
+        if upload_filename.ne(&user_file.upload_filename) {
+            user_file.upload_filename = upload_filename;
             is_upsert = true;
         }
 
-        // TODO: Добавить в публичный путь признак пользователя, так как метка публичности в user_file
-        let public_path = disk_local_repository.set_public(&file.path, true).map_err(|e| {
+        let filename = self.make_public_filename(user_id, &file.filename);
+
+        if filename.ne(&user_file.filename) {
+            user_file.filename = filename.to_owned();
+            is_upsert = true;
+        }
+
+        let public_path = disk_local_repository.set_public(&file.path, is_public, Some(filename)).map_err(|e| {
             self.log_error(
                 "upload_local_file_to_local_disk",
                 e.to_string(),
@@ -683,9 +683,9 @@ mod tests {
             .upload_local_file_to_local_disk(
                 user_id,
                 &upload_path,
+                is_public,
                 Some(user_filename.to_owned()),
                 Some(mime.to_owned()),
-                is_public,
             )
             .unwrap();
 
@@ -704,7 +704,7 @@ mod tests {
         if !path.ends_with(MAIN_SEPARATOR_STR) {
             path.push_str(MAIN_SEPARATOR_STR);
         }
-        path.push_str(format!("{}-4.tar.gz", &hash).as_str());
+        path.push_str(format!("1-{}-4.tar.gz", &hash).as_str());
         assert_eq!(user_file.path.as_str(), path.as_str());
         let m = Some(mime.to_string());
         assert_eq!(&user_file.mime, &m);
