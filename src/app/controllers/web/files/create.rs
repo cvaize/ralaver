@@ -1,23 +1,19 @@
 use crate::app::controllers::web::{get_context_data, get_template_context};
-use crate::app::validator::rules::length::MinMaxLengthString as MMLS;
-use crate::app::validator::rules::required::Required;
-use crate::libs::actix_web::types::form::Form;
-use crate::{prepare_upload_text_value, prepare_value, Alert, AlertVariant, AppService, Disk, File, FileColumn, FilePolicy, FileService, FileServiceError, RateLimitService, Role, RoleService, Session, TemplateService, TranslatableError, TranslatorService, UploadData, User, UserFile, UserServiceError, WebAuthService, WebHttpResponse};
+use crate::{
+    prepare_upload_text_value, Alert, AlertVariant, AppService, FilePolicy, FileService,
+    FileServiceError, RateLimitService, Role, RoleService, Session, TemplateService,
+    TranslatableError, TranslatorService, User, UserFile, WebAuthService, WebHttpResponse,
+};
 use actix_multipart::form::tempfile::TempFile;
 use actix_multipart::form::text::Text;
 use actix_multipart::form::MultipartForm;
-use actix_web::web::Path;
 use actix_web::web::{Data, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
-use mime::Mime;
 use serde::Deserialize;
-use serde_derive::Serialize;
 use serde_json::json;
-use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
-use strum_macros::{Display, EnumString};
 
 // TODO: Remove temp file if error exists
 #[derive(Debug, MultipartForm)]
@@ -160,7 +156,7 @@ pub fn invoke(
 
     //
     let is_post = req.method().eq(&Method::POST);
-    let mut user_file:  Option<UserFile> = None;
+    let mut user_file: Option<UserFile> = None;
     let mut is_done = false;
     let mut errors = ErrorMessages::default();
 
@@ -209,7 +205,7 @@ pub fn invoke(
                     );
 
                     if let Ok(user_file_) = result {
-                        user_file =  Some(user_file_);
+                        user_file = Some(user_file_);
                     } else if let Err(error) = result {
                         if error.ne(&FileServiceError::DuplicateFile) {
                             errors.form.push(error.translate(lang, translator_service));

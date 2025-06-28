@@ -2,7 +2,7 @@ use crate::helpers::now_date_time_str;
 use crate::{
     AppError, CryptServiceError, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository,
     File, FileColumn, FileMysqlRepository, FilePaginateParams, HashService, MysqlRepository,
-    PaginationResult, RandomService, TranslatableError, TranslatorService, UploadData, UserFile,
+    PaginationResult, RandomService, TranslatableError, TranslatorService, UserFile,
     UserFileColumn, UserFileMysqlRepository,
 };
 use actix_web::web::Data;
@@ -682,7 +682,8 @@ impl TranslatableError for FileServiceError {
 
 #[cfg(test)]
 mod tests {
-    use crate::{preparation, Disk, UploadData};
+    use crate::{preparation, Disk};
+    use mime::Mime;
     use std::env;
     use std::path::MAIN_SEPARATOR_STR;
     use test::Bencher;
@@ -697,33 +698,34 @@ mod tests {
         let root_dir = root.to_str().unwrap();
 
         let disk = Disk::Local;
-        let creator_user_id = Some(1);
+        let user_id = 1;
+        let is_public = true;
 
-        let mut path = root_dir.to_string();
-        if !path.ends_with(MAIN_SEPARATOR_STR) {
-            path.push_str(MAIN_SEPARATOR_STR);
+        let mut upload_path = root_dir.to_string();
+        if !upload_path.ends_with(MAIN_SEPARATOR_STR) {
+            upload_path.push_str(MAIN_SEPARATOR_STR);
         }
-        path.push_str("Readme.md");
+        let user_filename = "Readme.md";
+        upload_path.push_str(user_filename);
+        let mime: Option<Mime> = mime_guess::from_path(&upload_path).first();
 
-        let data = UploadData {
-            mime: None,
-            filename: Some("Readme.md".to_string()),
-            size: None,
-            is_public: Some(false),
-            hash: None,
-            user_id: creator_user_id.clone(),
-        };
-        // file_service
-        //     .upload_local_file_to_local_disk(&path, data.clone())
-        //     .unwrap();
-        // TODO: Удалить тестовые данные + закончить тестирование
+        let user_file = file_service
+            .upload_local_file_to_local_disk(
+                user_id,
+                &upload_path,
+                Some(user_filename.to_owned()),
+                mime,
+                is_public,
+            )
+            .unwrap();
 
-        // let file = file_service
-        //     .first_by_disk_and_path(&disk, &path)
-        //     .unwrap()
-        //     .unwrap();
-        //
-        // dbg!(&file);
+        let file = file_service
+            .first_by_id(user_file.file_id)
+            .unwrap()
+            .unwrap();
+
+        dbg!(&file);
+        dbg!(&user_file);
     }
 
     // #[bench]

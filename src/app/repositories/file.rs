@@ -174,6 +174,7 @@ impl ToMysqlDto<FileColumn> for File {
 
 impl FromMysqlDto for File {
     fn take_from_mysql_row(row: &mut Row) -> Result<Self, AppError> {
+        dbg!(&row);
         Ok(Self {
             id: take_from_mysql_row(row, FileColumn::Id.to_string().as_str())?,
             filename: take_from_mysql_row(row, FileColumn::Filename.to_string().as_str())?,

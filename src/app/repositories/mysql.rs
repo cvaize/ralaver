@@ -698,10 +698,14 @@ pub fn take_datetime_from_mysql_row(row: &mut Row, name: &str) -> Result<String,
 }
 
 pub fn take_some_datetime_from_mysql_row(row: &mut Row, name: &str) -> Result<Option<String>, AppError> {
-    if let Some(val) = row.take_opt::<NaiveDateTime, &str>(name) {
+    if let Some(val) = row.take_opt::<Option<NaiveDateTime>, &str>(name) {
         return match val {
             Ok(val) => {
-                Ok(Some(val.format(DATE_TIME_FORMAT).to_string()))
+                if let Some(val) = val {
+                    Ok(Some(val.format(DATE_TIME_FORMAT).to_string()))
+                } else {
+                    Ok(None)
+                }
             },
             Err(val) => Err(AppError(Some(val.to_string()))),
         };
