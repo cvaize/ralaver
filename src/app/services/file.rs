@@ -649,6 +649,7 @@ mod tests {
     fn test_upload_local_file_to_local_disk() {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::services::file::tests::test_upload_local_file_to_local_disk
         let (_, all_services) = preparation();
+        let config = all_services.config.get_ref();
         let file_service = all_services.file_service.get_ref();
 
         let root = env::current_dir().unwrap();
@@ -657,22 +658,25 @@ mod tests {
         let disk = Disk::Local;
         let user_id = 1;
         let is_public = true;
-        // TODO: Make test file, and remove after test
-        let user_filename = "Readme.md";
+        let user_filename = "test_upload_local_file_to_local_disk.test.tar.gz";
+        let hash = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08".to_string();
 
         let mut upload_path = root_dir.to_string();
         if !upload_path.ends_with(MAIN_SEPARATOR_STR) {
             upload_path.push_str(MAIN_SEPARATOR_STR);
         }
         upload_path.push_str(user_filename);
-        let mime: Option<Mime> = mime_guess::from_path(&upload_path).first();
+
+        fs::write(&user_filename, "test").unwrap();
+
+        let mime: Mime = mime_guess::from_path(&upload_path).first().unwrap();
 
         let user_file = file_service
             .upload_local_file_to_local_disk(
                 user_id,
                 &upload_path,
                 Some(user_filename.to_owned()),
-                mime,
+                Some(mime.to_owned()),
                 is_public,
             )
             .unwrap();
@@ -682,6 +686,30 @@ mod tests {
             .unwrap()
             .unwrap();
 
+        dbg!(&user_file);
+        dbg!(&file);
+
+        assert_eq!(user_file.user_id, user_id);
+        assert_eq!(user_file.file_id, file.id);
+        assert_eq!(user_file.path.as_str(), format!("{}-4.tar.gz", &hash).as_str());
+        let m = Some(mime.to_string());
+        assert_eq!(&user_file.mime, &m);
+        assert_eq!(user_file.is_public, is_public);
+        assert_eq!(file.filename.as_str(), format!("{}-4.tar.gz", &hash).as_str());
+
+        let mut path = config.filesystem.disks.local.root.to_owned();
+        if !path.ends_with(MAIN_SEPARATOR_STR) {
+            path.push_str(MAIN_SEPARATOR_STR);
+        }
+        path.push_str(file_service.make_path(format!("{}-4.tar.gz", &hash).as_str()).as_str());
+        assert_eq!(file.path.as_str(), path.as_str());
+        let m = Some(mime.to_string());
+        assert_eq!(&file.mime, &m);
+        let s = Some(4);
+        assert_eq!(&file.size, &s);
+        assert_eq!(&file.disk, disk.to_string().as_str());
+
+        fs::remove_file(&user_filename).unwrap();
         fs::remove_file(&file.path).unwrap();
         file_service.delete_user_file_by_id(user_file.id).unwrap();
         file_service.delete_file_by_id(file.id).unwrap();

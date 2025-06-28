@@ -5,7 +5,7 @@ use std::convert::TryInto;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 
-pub const DATE_TIME_FORMAT: &'static str = "%Y.%m.%d %H:%M:%S";
+pub const DATE_TIME_FORMAT: &'static str = "%Y-%m-%d %H:%M:%S";
 
 pub const CONVERSION_PATH_TO_STR_ERROR_MESSAGE: &'static str = "The conversion of the path to a string failed.";
 
