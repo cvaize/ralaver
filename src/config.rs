@@ -122,7 +122,7 @@ impl Config {
         if !storage_local_root.ends_with(MAIN_SEPARATOR_STR) {
             storage_local_root.push_str(MAIN_SEPARATOR_STR);
         }
-        storage_local_root.push_str("storage/app");
+        storage_local_root.push_str("storage/files");
 
         let mut storage_local_public_root = root_dir.to_string();
         if !storage_local_public_root.ends_with(MAIN_SEPARATOR_STR) {

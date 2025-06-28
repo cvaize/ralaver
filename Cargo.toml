@@ -49,6 +49,7 @@ mime2ext = "0.1.54"
 mime_guess = "2.0.5"
 mysql = { version = "26.0.0", features = ["chrono"] }
 r2d2 = "0.8.10"
+actix-files = "0.6.6"
 
 [[bin]]
 name = "migrate"

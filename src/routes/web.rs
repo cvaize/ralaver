@@ -112,4 +112,9 @@ pub fn register(cfg: &mut web::ServiceConfig) {
             .wrap(WebAuthMiddleware)
             .route(web::post().to(controllers::web::files::delete::invoke)),
     );
+    cfg.service(
+        web::resource("/storage/files/{filename}")
+            .wrap(WebAuthMiddleware)
+            .route(web::get().to(controllers::web::files::public::invoke)),
+    );
 }

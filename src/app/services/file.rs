@@ -214,9 +214,9 @@ impl FileService {
             .map_err(|_| error::ErrorInternalServerError(""))
     }
 
-    pub fn make_path(&self, filename: &str) -> String {
-        let mut str = FILE_DIRECTORY.to_string();
-        str.push(MAIN_SEPARATOR);
+    pub fn make_public_path(&self, user_id: u64, filename: &str) -> String {
+        let mut str = user_id.to_string();
+        str.push('-');
         str.push_str(filename);
         str
     }
@@ -333,7 +333,7 @@ impl FileService {
 
         // 2) Make path = [root]/[service_folder]/[filename]
         let path: String = disk_local_repository
-            .path(self.make_path(&filename).as_str())
+            .path(&filename)
             .map_err(|e| {
                 self.log_error(
                     "upload_local_file_to_local_disk",
@@ -562,6 +562,7 @@ impl FileService {
             is_upsert = true;
         }
 
+        // TODO: Добавить в публичный путь признак пользователя, так как метка публичности в user_file
         let public_path = disk_local_repository.set_public(&file.path, true).map_err(|e| {
             self.log_error(
                 "upload_local_file_to_local_disk",
@@ -703,7 +704,7 @@ mod tests {
         if !path.ends_with(MAIN_SEPARATOR_STR) {
             path.push_str(MAIN_SEPARATOR_STR);
         }
-        path.push_str(file_service.make_path(format!("{}-4.tar.gz", &hash).as_str()).as_str());
+        path.push_str(format!("{}-4.tar.gz", &hash).as_str());
         assert_eq!(user_file.path.as_str(), path.as_str());
         let m = Some(mime.to_string());
         assert_eq!(&user_file.mime, &m);
@@ -714,7 +715,7 @@ mod tests {
         if !path.ends_with(MAIN_SEPARATOR_STR) {
             path.push_str(MAIN_SEPARATOR_STR);
         }
-        path.push_str(file_service.make_path(format!("{}-4.tar.gz", &hash).as_str()).as_str());
+        path.push_str(format!("{}-4.tar.gz", &hash).as_str());
         assert_eq!(file.path.as_str(), path.as_str());
         let m = Some(mime.to_string());
         assert_eq!(&file.mime, &m);
