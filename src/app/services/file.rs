@@ -562,8 +562,15 @@ impl FileService {
             is_upsert = true;
         }
 
-        if user_file.path.ne(&file.filename) {
-            user_file.path = file.filename.to_owned();
+        let public_path = disk_local_repository.set_public(&file.path, true).map_err(|e| {
+            self.log_error(
+                "upload_local_file_to_local_disk",
+                e.to_string(),
+                FileServiceError::Fail,
+            )
+        })?.unwrap_or(file.filename.to_owned());
+        if user_file.path.ne(&public_path) {
+            user_file.path = public_path;
             is_upsert = true;
         }
 
@@ -686,12 +693,18 @@ mod tests {
             .unwrap()
             .unwrap();
 
-        dbg!(&user_file);
-        dbg!(&file);
+        // dbg!(&user_file);
+        // dbg!(&file);
 
         assert_eq!(user_file.user_id, user_id);
         assert_eq!(user_file.file_id, file.id);
-        assert_eq!(user_file.path.as_str(), format!("{}-4.tar.gz", &hash).as_str());
+
+        let mut path = config.filesystem.disks.local.public_root.to_owned();
+        if !path.ends_with(MAIN_SEPARATOR_STR) {
+            path.push_str(MAIN_SEPARATOR_STR);
+        }
+        path.push_str(file_service.make_path(format!("{}-4.tar.gz", &hash).as_str()).as_str());
+        assert_eq!(user_file.path.as_str(), path.as_str());
         let m = Some(mime.to_string());
         assert_eq!(&user_file.mime, &m);
         assert_eq!(user_file.is_public, is_public);
@@ -710,6 +723,7 @@ mod tests {
         assert_eq!(&file.disk, disk.to_string().as_str());
 
         fs::remove_file(&user_filename).unwrap();
+        fs::remove_file(&user_file.path).unwrap();
         fs::remove_file(&file.path).unwrap();
         file_service.delete_user_file_by_id(user_file.id).unwrap();
         file_service.delete_file_by_id(file.id).unwrap();

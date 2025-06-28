@@ -8,6 +8,7 @@ use std::io::ErrorKind;
 use std::os::unix::fs::MetadataExt;
 use std::process::Command;
 use std::time::SystemTime;
+use actix_web::ResponseError;
 use ureq::http::StatusCode;
 
 const FUN_NOT_DEFINED_ERROR_MESSAGE: &'static str = "The function is not defined.";
@@ -105,17 +106,23 @@ pub trait DiskRepository {
 pub struct DiskLocalRepository {
     pub root: String,
     pub separator: String,
+    pub public_root: String,
 }
 
 impl DiskLocalRepository {
-    pub fn new(root: &str, separator: &str) -> Self {
+    pub fn new(root: &str, public_root: &str, separator: &str) -> Self {
         let mut root = root.trim().to_string();
         if root.ends_with(separator) && root.len() > 1 {
             root = root[..root.len() - 1].to_string();
         }
+        let mut public_root = public_root.trim().to_string();
+        if public_root.ends_with(separator) && public_root.len() > 1 {
+            public_root = public_root[..public_root.len() - 1].to_string();
+        }
         Self {
             root,
             separator: separator.to_string(),
+            public_root,
         }
     }
 }
@@ -147,6 +154,14 @@ fn delete_from_local_path(path: &str) -> io::Result<()> {
 impl DiskRepository for DiskLocalRepository {
     fn path(&self, path: &str) -> io::Result<String> {
         make_local_path(path, &self.root, &self.separator)
+    }
+    fn public_path(&self, path: &str) -> io::Result<String> {
+        if path.starts_with(&self.root) {
+            let path = path.replace(&self.root, "");
+            make_local_path(&path, &self.public_root, &self.separator)
+        } else {
+            make_local_path(path, &self.public_root, &self.separator)
+        }
     }
     fn hash(&self, file_path: &str) -> io::Result<String> {
         let hash = Command::new("sha256sum").args([file_path]).output()?.stdout;
@@ -188,6 +203,7 @@ impl DiskRepository for DiskLocalRepository {
         fs::write(&path, content)
     }
     fn delete(&self, path: &str) -> io::Result<()> {
+        delete_from_local_path(self.public_path(path)?.as_str())?;
         delete_from_local_path(path)?;
         Ok(())
     }
@@ -212,6 +228,24 @@ impl DiskRepository for DiskLocalRepository {
     }
     fn delete_directory(&self, directory: &str) -> io::Result<()> {
         fs::remove_dir_all(directory)
+    }
+    fn set_public(&self, path: &str, is_public: bool) -> io::Result<Option<String>> {
+        let public_path = self.public_path(path)?;
+        delete_from_local_path(public_path.as_str())?;
+        if is_public {
+            let result = fs::hard_link(path, &public_path);
+
+            if let Err(e) = result {
+                if e.kind().eq(&ErrorKind::NotFound) {
+                    create_dir_all_for_file(&public_path, &self.separator)?;
+                }
+                fs::hard_link(path, &public_path)?;
+            }
+
+            Ok(Some(public_path))
+        } else {
+            Ok(None)
+        }
     }
 }
 
@@ -271,11 +305,11 @@ mod tests {
     #[test]
     fn test_local_disk_call_path() {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_path
-        let repository = DiskLocalRepository::new("/", "/");
+        let repository = DiskLocalRepository::new("/", "/", "/");
         assert_eq!(&repository.root, "/");
-        let repository = DiskLocalRepository::new("/app/", "/");
+        let repository = DiskLocalRepository::new("/app/", "/", "/");
         assert_eq!(&repository.root, "/app");
-        let repository = DiskLocalRepository::new("/app", "/");
+        let repository = DiskLocalRepository::new("/app", "/", "/");
         assert_eq!(&repository.root, "/app");
         assert_eq!(repository.path("/test").unwrap().as_str(), "/app/test");
         assert_eq!(repository.path("/test ").unwrap().as_str(), "/app/test");
@@ -283,11 +317,11 @@ mod tests {
         assert_eq!(repository.path(" test ").unwrap().as_str(), "/app/test");
         assert_eq!(repository.path("test").unwrap().as_str(), "/app/test");
 
-        let repository = DiskLocalRepository::new("C:\\", "\\");
+        let repository = DiskLocalRepository::new("C:\\", "C:\\", "\\");
         assert_eq!(&repository.root, "C:");
-        let repository = DiskLocalRepository::new("C:\\app\\", "\\");
+        let repository = DiskLocalRepository::new("C:\\app\\", "C:\\app\\", "\\");
         assert_eq!(&repository.root, "C:\\app");
-        let repository = DiskLocalRepository::new("C:\\app", "\\");
+        let repository = DiskLocalRepository::new("C:\\app", "C:\\app", "\\");
         assert_eq!(&repository.root, "C:\\app");
         assert_eq!(repository.path("\\test").unwrap().as_str(), "C:\\app\\test");
         assert_eq!(
@@ -310,7 +344,7 @@ mod tests {
     fn test_local_disk_call_hash() {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_hash
         fs::write("/app/test_local_disk_call_hash.txt", "123").unwrap();
-        let repository = DiskLocalRepository::new("/app", "/");
+        let repository = DiskLocalRepository::new("/app", "/app", "/");
         let hash = repository.hash("/app/test_local_disk_call_hash.txt").unwrap();
         assert_eq!(hash, "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3");
         fs::remove_file("/app/test_local_disk_call_hash.txt").unwrap();
@@ -332,7 +366,7 @@ mod tests {
     fn test_local_disk_call_exists() {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_exists
         let root = env::current_dir().unwrap();
-        let repository = DiskLocalRepository::new(root.to_str().unwrap(), MAIN_SEPARATOR_STR);
+        let repository = DiskLocalRepository::new(root.to_str().unwrap(), root.to_str().unwrap(), MAIN_SEPARATOR_STR);
         let exists_file_path = repository.path(".gitignore").unwrap();
         assert!(repository.exists(&exists_file_path).unwrap());
         let no_exists_file_path = repository.path(".git_ignore").unwrap();
@@ -359,7 +393,7 @@ mod tests {
     fn test_local_disk_call_get() {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_get
         let root = env::current_dir().unwrap();
-        let repository = DiskLocalRepository::new(root.to_str().unwrap(), MAIN_SEPARATOR_STR);
+        let repository = DiskLocalRepository::new(root.to_str().unwrap(), root.to_str().unwrap(), MAIN_SEPARATOR_STR);
         let path = repository.path(".gitignore").unwrap();
         let content = repository.get(&path).unwrap();
         let content_str = String::from_utf8(content).unwrap();
@@ -396,7 +430,7 @@ mod tests {
     fn test_local_disk_call_put() {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_put
         let root = env::current_dir().unwrap();
-        let repository = DiskLocalRepository::new(root.to_str().unwrap(), MAIN_SEPARATOR_STR);
+        let repository = DiskLocalRepository::new(root.to_str().unwrap(), root.to_str().unwrap(), MAIN_SEPARATOR_STR);
         let dir_path = repository.path("/test_local_disk_call_put").unwrap();
         let path = repository
             .path("/test_local_disk_call_put/test.txt")
@@ -412,7 +446,7 @@ mod tests {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_directories
         let root = env::current_dir().unwrap();
         let root = root.to_str().unwrap();
-        let repository = DiskLocalRepository::new(root, MAIN_SEPARATOR_STR);
+        let repository = DiskLocalRepository::new(root, root, MAIN_SEPARATOR_STR);
         let test_dir = repository
             .path("/test_local_disk_call_directories")
             .unwrap();
@@ -480,7 +514,7 @@ mod tests {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_files
         let root = env::current_dir().unwrap();
         let root = root.to_str().unwrap();
-        let repository = DiskLocalRepository::new(root, MAIN_SEPARATOR_STR);
+        let repository = DiskLocalRepository::new(root, root, MAIN_SEPARATOR_STR);
         let test_dir = repository.path("/test_local_disk_call_files").unwrap();
 
         let mut paths: Vec<String> = Vec::new();
@@ -535,7 +569,7 @@ mod tests {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_delete
         let root = env::current_dir().unwrap();
         let root = root.to_str().unwrap();
-        let repository = DiskLocalRepository::new(root, MAIN_SEPARATOR_STR);
+        let repository = DiskLocalRepository::new(root, root, MAIN_SEPARATOR_STR);
         let test_dir1 = repository.path("/test_local_disk_call_delete1").unwrap();
         let test_dir2 = repository.path("/test_local_disk_call_delete2").unwrap();
 
@@ -577,7 +611,7 @@ mod tests {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_copy
         let root = env::current_dir().unwrap();
         let root = root.to_str().unwrap();
-        let repository = DiskLocalRepository::new(root, MAIN_SEPARATOR_STR);
+        let repository = DiskLocalRepository::new(root, root, MAIN_SEPARATOR_STR);
         let dir_path = repository.path("/test_local_disk_call_copy").unwrap();
         let dir_path2 = repository.path("test_local_disk_call_copy/test").unwrap();
         let file1_path = repository
@@ -598,7 +632,7 @@ mod tests {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_mv
         let root = env::current_dir().unwrap();
         let root = root.to_str().unwrap();
-        let repository = DiskLocalRepository::new(root, MAIN_SEPARATOR_STR);
+        let repository = DiskLocalRepository::new(root, root, MAIN_SEPARATOR_STR);
         let dir_path = repository.path("/test_local_disk_call_mv").unwrap();
         let dir_path2 = repository.path("/test_local_disk_call_mv/test").unwrap();
         let file1_path = repository
@@ -620,7 +654,7 @@ mod tests {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_size
         let root = env::current_dir().unwrap();
         let root = root.to_str().unwrap();
-        let repository = DiskLocalRepository::new(root, MAIN_SEPARATOR_STR);
+        let repository = DiskLocalRepository::new(root, root, MAIN_SEPARATOR_STR);
         let dir_path = repository.path("/test_local_disk_call_size").unwrap();
         let file1_path = repository
             .path("/test_local_disk_call_size/test1.txt")
@@ -637,7 +671,7 @@ mod tests {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_last_modified
         let root = env::current_dir().unwrap();
         let root = root.to_str().unwrap();
-        let repository = DiskLocalRepository::new(root, MAIN_SEPARATOR_STR);
+        let repository = DiskLocalRepository::new(root, root, MAIN_SEPARATOR_STR);
         let dir_path = repository
             .path("/test_local_disk_call_last_modified")
             .unwrap();

@@ -82,6 +82,7 @@ pub fn build(c: &Connections, config: Data<Config>) -> Services {
 
     let disk_local_repository = Data::new(DiskLocalRepository::new(
         &config.get_ref().filesystem.disks.local.root,
+        &config.get_ref().filesystem.disks.local.public_root,
         MAIN_SEPARATOR_STR,
     ));
     let disk_external_repository = Data::new(DiskExternalRepository::new());
