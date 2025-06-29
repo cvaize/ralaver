@@ -1,7 +1,8 @@
 use crate::app::middlewares::web_auth::REDIRECT_TO;
 use crate::{AlertVariant, WebAuthService, WebHttpResponse};
 use actix_web::web::Data;
-use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result};
+use actix_web::{error, Error, HttpRequest, HttpResponse, Responder, Result, http::{header::{LOCATION}}};
+use actix_web::http::header::HeaderValue;
 
 pub async fn invoke(
     req: HttpRequest,
@@ -18,8 +19,8 @@ pub async fn invoke(
         .cookie(web_auth_service.make_clear_cookie())
         .set_alerts(vec![AlertVariant::LogoutSuccess])
         .insert_header((
-            http::header::LOCATION,
-            http::HeaderValue::from_static(REDIRECT_TO),
+            LOCATION,
+            HeaderValue::from_static(REDIRECT_TO),
         ))
         .finish())
 }

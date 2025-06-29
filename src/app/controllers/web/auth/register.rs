@@ -9,8 +9,8 @@ use crate::{
     AppService, AuthService, AuthServiceError, Credentials, TemplateService, TranslatorService,
 };
 use actix_web::web::{Data, Form};
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
-use http::Method;
+use actix_web::{error, Error, HttpRequest, HttpResponse, Result, http::{Method, header::{LOCATION}}};
+use actix_web::http::header::HeaderValue;
 use serde_derive::Deserialize;
 use serde_json::json;
 
@@ -92,8 +92,8 @@ pub async fn invoke(
         return Ok(HttpResponse::SeeOther()
             .set_alerts(vec![AlertVariant::RegisterSuccess])
             .insert_header((
-                http::header::LOCATION,
-                http::HeaderValue::from_static(REDIRECT_TO),
+                LOCATION,
+                HeaderValue::from_static(REDIRECT_TO),
             ))
             .finish());
     }

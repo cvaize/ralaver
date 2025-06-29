@@ -4,9 +4,8 @@ use actix_web::body::BoxBody;
 use actix_web::web::Data;
 use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    Error, HttpMessage, HttpResponse,
+    Error, HttpMessage, HttpResponse, http::{header::{HeaderValue, LOCATION}, StatusCode}
 };
-use http::{HeaderValue, StatusCode};
 use std::sync::Arc;
 use std::{future::Future, pin::Pin, rc::Rc};
 
@@ -41,7 +40,7 @@ fn unauthorized_redirect(auth_service: &WebAuthService) -> HttpResponse {
     HttpResponse::SeeOther()
         .cookie(auth_service.make_clear_cookie())
         .insert_header((
-            http::header::LOCATION,
+            LOCATION,
             HeaderValue::from_static(REDIRECT_TO),
         ))
         .finish()
@@ -107,7 +106,7 @@ where
                         res_mut.head_mut().status = StatusCode::SEE_OTHER;
 
                         res_mut.headers_mut().insert(
-                            http::header::LOCATION,
+                            LOCATION,
                             HeaderValue::from_static(REDIRECT_TO),
                         );
 

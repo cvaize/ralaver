@@ -8,8 +8,12 @@ use crate::app::validator::rules::required::Required;
 use crate::{prepare_value, AlertVariant, RateLimitService, WebHttpResponse, RESET_PASSWORD_TTL};
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::web::{Data, Form, Query};
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
-use http::Method;
+use actix_web::{
+    error,
+    http::{header::LOCATION, Method},
+    Error, HttpRequest, HttpResponse, Result,
+};
+use actix_web::http::header::HeaderValue;
 use serde_derive::Deserialize;
 use serde_json::json;
 
@@ -124,20 +128,14 @@ pub async fn invoke(
     if is_done {
         return Ok(HttpResponse::SeeOther()
             .set_alerts(vec![AlertVariant::ResetPasswordConfirmSuccess])
-            .insert_header((
-                http::header::LOCATION,
-                http::HeaderValue::from_static(REDIRECT_TO),
-            ))
+            .insert_header((LOCATION, HeaderValue::from_static(REDIRECT_TO)))
             .finish());
     }
 
     if code_errors.len() != 0 || data.email.is_none() || data.code.is_none() {
         return Ok(HttpResponse::SeeOther()
             .set_alerts(vec![AlertVariant::ResetPasswordConfirmCodeNotEqual])
-            .insert_header((
-                http::header::LOCATION,
-                http::HeaderValue::from_static("/reset-password"),
-            ))
+            .insert_header((LOCATION, HeaderValue::from_static("/reset-password")))
             .finish());
     }
 
@@ -234,11 +232,18 @@ async fn post(
             .map_err(|_| error::ErrorInternalServerError(""))?;
 
         if executed {
-            email_errors = Required::validated(translator_service, lang, &data.email, |value| {
-                Email::validate(translator_service, lang, value, &email_str)
-            }, &email_str);
-            password_errors =
-                Required::validated(translator_service, lang, &data.password, |value| {
+            email_errors = Required::validated(
+                translator_service,
+                lang,
+                &data.email,
+                |value| Email::validate(translator_service, lang, value, &email_str),
+                &email_str,
+            );
+            password_errors = Required::validated(
+                translator_service,
+                lang,
+                &data.password,
+                |value| {
                     MinMaxLengthString::validate(
                         translator_service,
                         lang,
@@ -247,9 +252,14 @@ async fn post(
                         255,
                         &password_str,
                     )
-                }, &password_str);
-            confirm_password_errors =
-                Required::validated(translator_service, lang, &data.confirm_password, |value| {
+                },
+                &password_str,
+            );
+            confirm_password_errors = Required::validated(
+                translator_service,
+                lang,
+                &data.confirm_password,
+                |value| {
                     MinMaxLengthString::validate(
                         translator_service,
                         lang,
@@ -258,17 +268,25 @@ async fn post(
                         255,
                         &confirm_password_str,
                     )
-                }, &confirm_password_str);
-            code_errors = Required::validated(translator_service, lang, &data.code, |value| {
-                MinMaxLengthString::validate(
-                    translator_service,
-                    lang,
-                    value,
-                    CODE_LEN,
-                    CODE_LEN,
-                    "code",
-                )
-            }, "code");
+                },
+                &confirm_password_str,
+            );
+            code_errors = Required::validated(
+                translator_service,
+                lang,
+                &data.code,
+                |value| {
+                    MinMaxLengthString::validate(
+                        translator_service,
+                        lang,
+                        value,
+                        CODE_LEN,
+                        CODE_LEN,
+                        "code",
+                    )
+                },
+                "code",
+            );
 
             if password_errors.len() == 0 && confirm_password_errors.len() == 0 {
                 let mut password_errors2: Vec<String> = Confirmed::validate(

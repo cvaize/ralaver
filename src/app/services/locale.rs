@@ -1,8 +1,8 @@
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::{Config, Locale, User};
 use actix_web::web::Data;
+use actix_web::http::header::ACCEPT_LANGUAGE;
 use actix_web::HttpRequest;
-use http::header::ACCEPT_LANGUAGE;
 use std::collections::HashMap;
 
 #[derive(Debug)]

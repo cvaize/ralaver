@@ -2,9 +2,7 @@ use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::Config;
 use actix_web::cookie::Cookie;
 use actix_web::web::{Data, Form};
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
-use http::header::{ORIGIN, REFERER};
-use http::HeaderValue;
+use actix_web::{error, Error, HttpRequest, HttpResponse, Result, http::{header::{ORIGIN, REFERER, LOCATION, HeaderValue}}};
 use serde_derive::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -43,6 +41,6 @@ pub async fn switch(
 
     Ok(HttpResponse::SeeOther()
         .cookie(c)
-        .insert_header((http::header::LOCATION, HeaderValue::from_str(location).unwrap_or(default)))
+        .insert_header((LOCATION, HeaderValue::from_str(location).unwrap_or(default)))
         .finish())
 }

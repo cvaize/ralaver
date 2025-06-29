@@ -7,14 +7,12 @@ use crate::{
     RolePolicy, RoleService, RoleServiceError, Session, TemplateService, TranslatableError,
     TranslatorService, User, WebAuthService, WebHttpResponse,
 };
-use actix_web::web::Path;
-use actix_web::web::{Data, ReqData};
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
-use http::Method;
+use actix_web::{web::{Path, Data, ReqData}, error, Error, HttpRequest, HttpResponse, Result, http::{Method, header::{LOCATION}}};
 use serde_derive::Deserialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
+use actix_web::http::header::HeaderValue;
 use strum::VariantNames;
 
 const RL_MAX_ATTEMPTS: u64 = 10;
@@ -346,8 +344,8 @@ pub fn invoke(
                 return Ok(HttpResponse::SeeOther()
                     .set_alerts(alert_variants)
                     .insert_header((
-                        http::header::LOCATION,
-                        http::HeaderValue::from_str(&url_)
+                        LOCATION,
+                        HeaderValue::from_str(&url_)
                             .map_err(|_| error::ErrorInternalServerError(""))?,
                     ))
                     .finish());
@@ -355,8 +353,8 @@ pub fn invoke(
                 return Ok(HttpResponse::SeeOther()
                     .set_alerts(alert_variants)
                     .insert_header((
-                        http::header::LOCATION,
-                        http::HeaderValue::from_static("/roles"),
+                        LOCATION,
+                        HeaderValue::from_static("/roles"),
                     ))
                     .finish());
             }

@@ -2253,7 +2253,6 @@ dependencies = [
  "futures-util",
  "handlebars",
  "hex",
- "http 0.2.12",
  "lettre",
  "libc 1.0.0-alpha.1",
  "log",

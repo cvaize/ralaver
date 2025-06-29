@@ -12,14 +12,12 @@ use crate::{
     RoleService, Session, TemplateService, TranslatableError, TranslatorService, User, UserColumn,
     UserPolicy, UserService, UserServiceError, WebAuthService, WebHttpResponse,
 };
-use actix_web::web::Path;
-use actix_web::web::{Data, ReqData};
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
-use http::Method;
+use actix_web::{web::{Path, Data, ReqData}, error, Error, HttpRequest, HttpResponse, Result, http::{Method, header::{LOCATION}}};
 use serde_derive::Deserialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
+use actix_web::http::header::HeaderValue;
 
 const RL_MAX_ATTEMPTS: u64 = 10;
 const RL_TTL: u64 = 60;
@@ -463,8 +461,8 @@ pub fn invoke(
                 return Ok(HttpResponse::SeeOther()
                     .set_alerts(alert_variants)
                     .insert_header((
-                        http::header::LOCATION,
-                        http::HeaderValue::from_str(&url_)
+                        LOCATION,
+                        HeaderValue::from_str(&url_)
                             .map_err(|_| error::ErrorInternalServerError(""))?,
                     ))
                     .finish());
@@ -472,8 +470,8 @@ pub fn invoke(
                 return Ok(HttpResponse::SeeOther()
                     .set_alerts(alert_variants)
                     .insert_header((
-                        http::header::LOCATION,
-                        http::HeaderValue::from_static("/users"),
+                        LOCATION,
+                        HeaderValue::from_static("/users"),
                     ))
                     .finish());
             }

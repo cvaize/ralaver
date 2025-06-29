@@ -3,10 +3,7 @@ use crate::{
     AlertVariant, FilePolicy, FileService, LocaleService, RateLimitService, RoleService, Session,
     TranslatorService, User, WebAuthService, WebHttpResponse,
 };
-use actix_web::web::{Data, ReqData};
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
-use http::header::{ORIGIN, REFERER};
-use http::HeaderValue;
+use actix_web::{web::{Data, ReqData}, error, Error, HttpRequest, HttpResponse, Result, http::header::{HeaderValue, ORIGIN, REFERER, LOCATION}};
 use serde_derive::Deserialize;
 use std::sync::Arc;
 
@@ -91,7 +88,7 @@ pub async fn invoke(
     Ok(HttpResponse::SeeOther()
         .set_alerts(alert_variants)
         .insert_header((
-            http::header::LOCATION,
+            LOCATION,
             HeaderValue::from_str(location).unwrap_or(default),
         ))
         .finish())

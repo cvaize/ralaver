@@ -7,12 +7,11 @@ use crate::{
 use actix_multipart::form::tempfile::TempFile;
 use actix_multipart::form::text::Text;
 use actix_multipart::form::MultipartForm;
-use actix_web::web::{Data, ReqData};
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
-use http::Method;
+use actix_web::{web::{Data, ReqData}, error, Error, HttpRequest, HttpResponse, Result, http::{Method, header::{LOCATION}}};
 use serde::Deserialize;
 use serde_json::json;
 use std::sync::Arc;
+use actix_web::http::header::HeaderValue;
 
 // TODO: Remove temp file if error exists
 #[derive(Debug, MultipartForm)]
@@ -243,8 +242,8 @@ pub fn invoke(
                 return Ok(HttpResponse::SeeOther()
                     .set_alerts(alert_variants)
                     .insert_header((
-                        http::header::LOCATION,
-                        http::HeaderValue::from_str(&url_)
+                        LOCATION,
+                        HeaderValue::from_str(&url_)
                             .map_err(|_| error::ErrorInternalServerError(""))?,
                     ))
                     .finish());
@@ -252,8 +251,8 @@ pub fn invoke(
                 return Ok(HttpResponse::SeeOther()
                     .set_alerts(alert_variants)
                     .insert_header((
-                        http::header::LOCATION,
-                        http::HeaderValue::from_static("/files"),
+                        LOCATION,
+                        HeaderValue::from_static("/files"),
                     ))
                     .finish());
             }

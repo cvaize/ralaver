@@ -6,8 +6,8 @@ use crate::{prepare_value, AlertVariant, RateLimitService, Session, WebAuthServi
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::web::Data;
 use actix_web::web::Form;
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
-use http::Method;
+use actix_web::{error, Error, HttpRequest, HttpResponse, Result, http::{Method, header::{LOCATION}}};
+use actix_web::http::header::HeaderValue;
 use serde_derive::Deserialize;
 use serde_json::json;
 
@@ -69,7 +69,7 @@ pub async fn invoke(
         return Ok(HttpResponse::SeeOther()
             .cookie(web_auth_service.make_cookie_throw_http(&token)?)
             .clear_alerts()
-            .insert_header((http::header::LOCATION, http::HeaderValue::from_static("/")))
+            .insert_header((LOCATION, HeaderValue::from_static("/")))
             .finish());
     }
 
@@ -100,7 +100,7 @@ pub async fn invoke(
         return Ok(HttpResponse::SeeOther()
             .cookie(web_auth_service.make_cookie_throw_http(&session)?)
             .set_alerts(vec![AlertVariant::LoginSuccess])
-            .insert_header((http::header::LOCATION, http::HeaderValue::from_static("/")))
+            .insert_header((LOCATION, HeaderValue::from_static("/")))
             .finish());
     }
 

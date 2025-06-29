@@ -6,9 +6,7 @@ use crate::{
     prepare_value, Alert, AppService, AuthService, EmailAddress, EmailMessage, MailService,
     RandomService, TemplateService, TranslatorService, WebHttpResponse, RESET_PASSWORD_TTL,
 };
-use actix_web::web::{Data, Form};
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
-use http::Method;
+use actix_web::{web::{Data, Form}, error, Error, HttpRequest, HttpResponse, Result, http::Method};
 use serde_derive::Deserialize;
 use serde_json::json;
 

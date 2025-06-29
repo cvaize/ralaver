@@ -8,7 +8,6 @@ default-run = "rust-admin-panel"
 [dependencies]
 dotenv = "0.15.0"
 actix-utils = "3.0.1"
-http = "0.2.12"
 flatten_json = "0.1.0"
 accept-language = "3.1.0"
 strum = "0.27.1"
