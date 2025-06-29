@@ -647,7 +647,7 @@ impl TranslatableError for FileServiceError {
 
 #[cfg(test)]
 mod tests {
-    use crate::{preparation, Disk};
+    use crate::{preparation, Disk, MysqlRepository};
     use mime::Mime;
     use std::{env, fs};
     use std::path::MAIN_SEPARATOR_STR;
@@ -659,6 +659,8 @@ mod tests {
         let (_, all_services) = preparation();
         let config = all_services.config.get_ref();
         let file_service = all_services.file_service.get_ref();
+        let file_repository = all_services.file_mysql_repository.get_ref();
+        let user_file_repository = all_services.user_file_mysql_repository.get_ref();
 
         let root = env::current_dir().unwrap();
         let root_dir = root.to_str().unwrap();
@@ -726,8 +728,8 @@ mod tests {
         fs::remove_file(&user_filename).unwrap();
         fs::remove_file(&user_file.path).unwrap();
         fs::remove_file(&file.path).unwrap();
-        file_service.delete_user_file_by_id(user_file.id).unwrap();
-        file_service.delete_file_by_id(file.id).unwrap();
+        user_file_repository.delete_by_id(user_file.id).unwrap();
+        file_repository.delete_by_id(file.id).unwrap();
     }
 
     // #[bench]
