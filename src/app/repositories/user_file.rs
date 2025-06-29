@@ -6,7 +6,6 @@ use crate::{
 use actix_web::web::Data;
 use mysql::Row;
 use mysql::Value;
-use std::str::FromStr;
 use strum_macros::{Display, EnumIter, EnumString};
 
 pub struct UserFileMysqlRepository {

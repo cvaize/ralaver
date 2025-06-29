@@ -2,7 +2,6 @@ use crate::helpers::{
     collect_directories_from_dir_into_str_vec, collect_files_from_dir_into_str_vec,
     create_dir_all_for_file,
 };
-use actix_web::ResponseError;
 use std::fs;
 use std::io;
 use std::io::ErrorKind;

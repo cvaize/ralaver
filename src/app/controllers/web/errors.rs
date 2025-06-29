@@ -3,10 +3,8 @@ use actix_web::dev::ServiceResponse;
 use actix_web::http::header;
 use actix_web::middleware::ErrorHandlerResponse;
 use actix_web::{web, Error, HttpRequest, HttpResponse};
-use std::collections::HashMap;
 use std::sync::Arc;
 use actix_http::HttpMessage;
-use actix_web::web::ReqData;
 use serde_json::json;
 use crate::app::controllers::web::{get_context_data, get_public_context_data, get_public_template_context, get_template_context};
 

@@ -1,15 +1,14 @@
+use crate::helpers::DATE_TIME_FORMAT;
 use crate::{AppError, MysqlPool, MysqlPooledConnection, PaginateParams, PaginationResult};
+use chrono::NaiveDateTime;
 use mysql::prelude::{FromValue, Queryable};
 use mysql::{Params, Row, Value};
 use serde::de::DeserializeOwned;
-use serde::{Serialize};
+use serde::Serialize;
 use std::fmt::Display;
-use actix_web::cookie::time::{format_description, PrimitiveDateTime};
-use chrono::{DateTime, NaiveDateTime};
 use strum::{IntoEnumIterator, VariantNames};
-use crate::helpers::DATE_TIME_FORMAT;
 
-impl<Filter, Sort> MysqlPaginateParams <Filter, Sort> for PaginateParams<Filter, Sort>
+impl<Filter, Sort> MysqlPaginateParams<Filter, Sort> for PaginateParams<Filter, Sort>
 where
     Filter: MysqlQueryBuilder,
     Sort: MysqlQueryBuilder,
@@ -31,7 +30,7 @@ where
 pub trait MysqlRepository<Entity, PaginateParams, EntityColumn, Filter, Sort>
 where
     Entity: FromMysqlDto + ToMysqlDto<EntityColumn>,
-    PaginateParams: MysqlPaginateParams <Filter, Sort>,
+    PaginateParams: MysqlPaginateParams<Filter, Sort>,
     EntityColumn: IntoEnumIterator
         + Display
         + VariantNames
@@ -116,7 +115,11 @@ where
         Ok(ids)
     }
 
-    fn get_all(&self, filters: Option<&Vec<Filter>>, sorts: Option<&Vec<Sort>>) -> Result<Vec<Entity>, AppError> {
+    fn get_all(
+        &self,
+        filters: Option<&Vec<Filter>>,
+        sorts: Option<&Vec<Sort>>,
+    ) -> Result<Vec<Entity>, AppError> {
         let table = self.get_table();
         let columns: String = EntityColumn::mysql_all_select_columns();
 
@@ -434,7 +437,7 @@ where
     }
 }
 
-pub trait MysqlPaginateParams <F: MysqlQueryBuilder, S: MysqlQueryBuilder> {
+pub trait MysqlPaginateParams<F: MysqlQueryBuilder, S: MysqlQueryBuilder> {
     fn get_page(&self) -> i64;
     fn get_per_page(&self) -> i64;
     fn get_filters(&self) -> &Vec<F>;
@@ -685,9 +688,7 @@ pub fn take_from_mysql_row<T: FromValue>(row: &mut Row, name: &str) -> Result<T,
 pub fn take_datetime_from_mysql_row(row: &mut Row, name: &str) -> Result<String, AppError> {
     if let Some(val) = row.take_opt::<NaiveDateTime, &str>(name) {
         return match val {
-            Ok(val) => {
-                Ok(val.format(DATE_TIME_FORMAT).to_string())
-            },
+            Ok(val) => Ok(val.format(DATE_TIME_FORMAT).to_string()),
             Err(val) => Err(AppError(Some(val.to_string()))),
         };
     }
@@ -697,7 +698,10 @@ pub fn take_datetime_from_mysql_row(row: &mut Row, name: &str) -> Result<String,
     ))))
 }
 
-pub fn take_some_datetime_from_mysql_row(row: &mut Row, name: &str) -> Result<Option<String>, AppError> {
+pub fn take_some_datetime_from_mysql_row(
+    row: &mut Row,
+    name: &str,
+) -> Result<Option<String>, AppError> {
     if let Some(val) = row.take_opt::<Option<NaiveDateTime>, &str>(name) {
         return match val {
             Ok(val) => {
@@ -706,7 +710,7 @@ pub fn take_some_datetime_from_mysql_row(row: &mut Row, name: &str) -> Result<Op
                 } else {
                     Ok(None)
                 }
-            },
+            }
             Err(val) => Err(AppError(Some(val.to_string()))),
         };
     }

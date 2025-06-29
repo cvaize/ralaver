@@ -1,7 +1,7 @@
 use crate::helpers::now_date_time_str;
 use crate::{
-    AppError, CryptServiceError, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository,
-    File, FileColumn, FileMysqlRepository, FilePaginateParams, HashService, MysqlRepository,
+    AppError, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository,
+    File, FileColumn, FileMysqlRepository, FilePaginateParams, MysqlRepository,
     PaginationResult, RandomService, TranslatableError, TranslatorService, UserFile,
     UserFileColumn, UserFileMysqlRepository,
 };
@@ -9,8 +9,7 @@ use actix_web::web::Data;
 use actix_web::{error, Error};
 use mime::Mime;
 use mime2ext::mime2ext;
-use std::fmt::format;
-use std::path::{MAIN_SEPARATOR, MAIN_SEPARATOR_STR};
+use std::path::MAIN_SEPARATOR_STR;
 use strum_macros::{Display, EnumString};
 
 pub const FILE_DEFAULT_IS_PUBLIC: bool = false;
@@ -20,7 +19,9 @@ pub struct FileService {
     file_repository: Data<FileMysqlRepository>,
     user_file_repository: Data<UserFileMysqlRepository>,
     disk_local_repository: Data<DiskLocalRepository>,
+    #[allow(dead_code)]
     disk_external_repository: Data<DiskExternalRepository>,
+    #[allow(dead_code)]
     random_repository: Data<RandomService>,
 }
 
@@ -249,6 +250,10 @@ impl FileService {
         let disk_local_repository = self.disk_local_repository.get_ref();
 
         self.is_exists_local_file_throw(upload_path, "upload_local_file_to_local_disk")?;
+
+        if let Some(upload_filename_) = upload_filename {
+            upload_filename = Some(upload_filename_.trim().to_string());
+        }
 
         let disk = Disk::Local;
 

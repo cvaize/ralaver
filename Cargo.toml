@@ -6,26 +6,17 @@ license = "MIT"
 default-run = "rust-admin-panel"
 
 [dependencies]
-actix-web = "4"
 dotenv = "0.15.0"
-serde_json = "1.0.138"
-serde = { version = "1.0.217", features = ["derive"] }
-serde_derive = "1.0.218"
-handlebars = "6.3.1"
 actix-utils = "3.0.1"
 http = "0.2.12"
 flatten_json = "0.1.0"
 accept-language = "3.1.0"
-lettre = "0.11.15"
-rand = "0.9.0"
-redis = { version = "0.31.0", features = ["r2d2"] }
 strum = "0.27.1"
 strum_macros = "0.27.1"
 log = "0.4.27"
 env_logger = "0.11.8"
 serde_bare = "0.5.0"
 libc = "1.0.0-alpha.1"
-openssl = "0.10.72"
 base64-stream = "4.0.0"
 sha2 = "0.10.8"
 hex = "0.4.3"
@@ -33,7 +24,6 @@ sodoken = "0.1.0"
 mime = "0.3.17"
 serde_urlencoded = "0.7.1"
 url = "2.5.4"
-tokio = { version = "1.45.0", features = ["full"] }
 chrono = { version = "0.4.41", features = ["serde"] }
 serde_qs = "0.15.0"
 actix-http = "3.11.0"
@@ -41,15 +31,25 @@ bytes = "1.10.1"
 encoding_rs = "0.8.35"
 futures-core = "0.3.31"
 futures-util = "0.3.31"
-cfg-if = "1.0.0"
 actix-rt = "2.10.0"
-ureq = "3.0.11"
 actix-multipart = "0.7.2"
 mime2ext = "0.1.54"
 mime_guess = "2.0.5"
 mysql = { version = "26.0.0", features = ["chrono"] }
 r2d2 = "0.8.10"
 actix-files = "0.6.6"
+ureq = "3.0.12"
+cfg-if = "1.0.1"
+tokio = { version = "1.45.1", features = ["full"] }
+openssl = "0.10.73"
+redis = { version = "0.32.2", features = ["r2d2"] }
+rand = "0.9.1"
+lettre = "0.11.17"
+handlebars = "6.3.2"
+serde_derive = "1.0.219"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+actix-web = "4.11.0"
 
 [[bin]]
 name = "migrate"

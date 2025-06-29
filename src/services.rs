@@ -6,7 +6,6 @@ use crate::{
     TranslatorService, UserFileMysqlRepository, UserMysqlRepository, UserService, WebAuthService,
 };
 use actix_web::web::Data;
-use std::env;
 use std::path::MAIN_SEPARATOR_STR;
 
 pub struct Services {

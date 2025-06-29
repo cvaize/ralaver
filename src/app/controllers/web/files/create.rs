@@ -12,7 +12,6 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use http::Method;
 use serde::Deserialize;
 use serde_json::json;
-use std::str::FromStr;
 use std::sync::Arc;
 
 // TODO: Remove temp file if error exists
@@ -33,7 +32,6 @@ const RL_KEY: &'static str = "files_create";
 struct ErrorMessages {
     pub form: Vec<String>,
     pub file: Vec<String>,
-    pub url: Vec<String>,
     pub is_public: Vec<String>,
 }
 
