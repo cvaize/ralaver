@@ -294,7 +294,7 @@ pub fn invoke(
             },
         },
     });
-    let s = template_service.render_throw_http("pages/files/create.hbs", &ctx)?;
+    let s = template_service.render_throw_http("pages/files/upload.hbs", &ctx)?;
     Ok(HttpResponse::Ok()
         .clear_alerts()
         .content_type(mime::TEXT_HTML_UTF_8.as_ref())
