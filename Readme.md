@@ -23,7 +23,6 @@ TODO:
 Среда разработки состоит из:
 1) rust:1.82.0
 2) nodejs:22.13.1
-3) diesel_cli - is rust package
 
 ### Команды бекенда
 Перед запуском проекта создайте .env файл с переменными окружения из файла .env.example:
@@ -60,26 +59,18 @@ docker compose -f dev.docker-compose.yaml exec app cargo run
 #### Миграции базы данных
 Команда запуска миграций:
 ```shell
-diesel migration run
+cargo run --bin migrate up
 ```
 ```shell
-docker compose -f dev.docker-compose.yaml exec app diesel migration run
+docker compose -f dev.docker-compose.yaml exec app cargo run --bin migrate up
 ```
 
 Команда отката миграций:
 ```shell
-diesel migration revert
+cargo run --bin migrate down
 ```
 ```shell
-docker compose -f dev.docker-compose.yaml exec app diesel migration revert
-```
-
-Команда создания миграций:
-```shell
-diesel migration generate create_users
-```
-```shell
-docker compose -f dev.docker-compose.yaml exec app diesel migration generate create_users
+docker compose -f dev.docker-compose.yaml exec app cargo run --bin migrate down
 ```
 
 
@@ -99,26 +90,4 @@ docker compose -f dev.docker-compose.yaml exec app npm run build
 Команда для перезаписи root владельца файлов:
 ```shell
 sudo chown -R $UID:$UID .
-```
-
-## Заметки:
-
-Если возникает ошибка diesel: 
-`No function or associated item "as_select" found in the current scope for struct "User"` и подобные, 
-то нужно подключить методы `use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};`. Например:
-```rust
-use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
-
-fn run(){
-    let mut connection = db_pool.get()
-        .map_err(|_| error::ErrorInternalServerError(""))?;
-
-    let results: Vec<User> = crate::schema::users::dsl::users
-        .select(User::as_select())
-        .limit(1)
-        .load::<User>(&mut connection)
-        .map_err(|_| error::ErrorInternalServerError(""))?;
-
-    let result: Option<&User> = results.get(0);
-}
 ```
