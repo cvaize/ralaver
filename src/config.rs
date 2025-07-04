@@ -29,6 +29,7 @@ pub struct FilesystemDisksConfig {
 pub struct FilesystemLocalDiskConfig {
     pub root: String,
     pub public_root: String,
+    pub url_path: String,
 }
 
 #[derive(Debug, Clone)]
@@ -129,6 +130,8 @@ impl Config {
             storage_local_public_root.push_str(MAIN_SEPARATOR_STR);
         }
         storage_local_public_root.push_str("public/storage/files");
+
+        let storage_local_public_url = "/storage/files".to_string();
 
         Self {
             app: AppConfig {
@@ -286,6 +289,7 @@ impl Config {
                     local: FilesystemLocalDiskConfig {
                         root: storage_local_root,
                         public_root: storage_local_public_root,
+                        url_path: storage_local_public_url,
                     },
                 }
             }

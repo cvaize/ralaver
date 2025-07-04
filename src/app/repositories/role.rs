@@ -137,8 +137,7 @@ impl FromMysqlDto for Role {
             id: take_from_mysql_row(row, RoleColumn::Id.to_string().as_str())?,
             name: take_from_mysql_row(row, RoleColumn::Name.to_string().as_str())?,
             code: take_from_mysql_row(row, RoleColumn::Code.to_string().as_str())?,
-            description: take_from_mysql_row(row, RoleColumn::Description.to_string().as_str())
-                .unwrap_or(None),
+            description: take_from_mysql_row(row, RoleColumn::Description.to_string().as_str())?,
             permissions: option_take_json_from_mysql_row(
                 row,
                 RoleColumn::Permissions.to_string().as_str(),

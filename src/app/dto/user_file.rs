@@ -9,12 +9,12 @@ pub struct UserFile {
     pub user_id: u64,
     // Relation to the files table.
     pub file_id: u64,
+    // The file name.
+    pub filename: Option<String>,
+    // The path or url where you can get the file.
+    pub path: Option<String>,
     // The filename received during the upload.
     pub upload_filename: Option<String>,
-    // The file name.
-    pub filename: String,
-    // The path or url where you can get the file.
-    pub path: String,
     // The file type received during the upload.
     pub mime: Option<String>,
     // The datetime of the file creation.
@@ -27,6 +27,7 @@ pub struct UserFile {
     pub is_deleted: bool,
     // Label: public file or not.
     pub is_public: bool,
+    pub disk: String,
 }
 
 #[derive(
@@ -48,12 +49,13 @@ pub enum UserFileColumn {
     UserId,
     FileId,
     Filename,
-    UploadFilename,
     Path,
+    UploadFilename,
     Mime,
     CreatedAt,
     UpdatedAt,
     DeletedAt,
     IsDeleted,
     IsPublic,
+    Disk,
 }

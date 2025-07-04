@@ -5,16 +5,17 @@ fn create_users_files_table(connection: &mut MysqlPooledConnection) {
     let query = "CREATE TABLE `users_files` (
    `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
    `file_id` BIGINT UNSIGNED NOT NULL COMMENT 'Relation to the files table.',
-   `path` VARCHAR(2048) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The path or url where you can get the file.',
-   `mime` VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NULL DEFAULT NULL COMMENT 'The file type received during the upload.',
+   `filename` VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NULL DEFAULT NULL COMMENT 'The file name.',
+   `path` VARCHAR(2048) CHARACTER SET ascii COLLATE ascii_bin NULL DEFAULT NULL COMMENT 'The path or url where you can get the file.',
    `upload_filename` VARCHAR(255) NULL DEFAULT NULL COMMENT 'The filename received during the upload.',
-   `filename` VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The file name.',
+   `mime` VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NULL DEFAULT NULL COMMENT 'The file type received during the upload.',
    `user_id` BIGINT UNSIGNED NOT NULL COMMENT 'The user who uploaded the file.',
    `created_at` DATETIME NULL DEFAULT NULL COMMENT 'The datetime of the file creation.',
    `updated_at` DATETIME NULL DEFAULT NULL COMMENT 'The datetime of the last file update.',
    `deleted_at` DATETIME NULL DEFAULT NULL COMMENT 'The datetime when the file was deleted.',
    `is_deleted` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Label: whether the file has been deleted.',
-   `is_public` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Label: public file or not.'
+   `is_public` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Label: public file or not.',
+   `disk` VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The disk where the file is stored.'
 ) COMMENT 'Files belonging to users.';";
     connection.query_drop(query).unwrap();
 
@@ -37,6 +38,9 @@ fn create_users_files_table(connection: &mut MysqlPooledConnection) {
     connection.query_drop(query).unwrap();
 
     let query = "ALTER TABLE `users_files` ADD INDEX `is_public_idx` (`is_public`);";
+    connection.query_drop(query).unwrap();
+
+    let query = "ALTER TABLE `users_files` ADD INDEX `disk_idx` (`disk`);";
     connection.query_drop(query).unwrap();
 }
 

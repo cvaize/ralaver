@@ -154,14 +154,15 @@ impl ToMysqlDto<UserFileColumn> for UserFile {
             UserFileColumn::UserId => params.push((column.to_string(), Value::from(self.user_id.to_owned()))),
             UserFileColumn::FileId => params.push((column.to_string(), Value::from(self.file_id.to_owned()))),
             UserFileColumn::Filename => params.push((column.to_string(), Value::from(self.filename.to_owned()))),
-            UserFileColumn::UploadFilename => params.push((column.to_string(), Value::from(self.upload_filename.to_owned()))),
             UserFileColumn::Path => params.push((column.to_string(), Value::from(self.path.to_owned()))),
+            UserFileColumn::UploadFilename => params.push((column.to_string(), Value::from(self.upload_filename.to_owned()))),
             UserFileColumn::Mime => params.push((column.to_string(), Value::from(self.mime.to_owned()))),
             UserFileColumn::CreatedAt => params.push((column.to_string(), Value::from(self.created_at.to_owned()))),
             UserFileColumn::UpdatedAt => params.push((column.to_string(), Value::from(self.updated_at.to_owned()))),
             UserFileColumn::DeletedAt => params.push((column.to_string(), Value::from(self.deleted_at.to_owned()))),
             UserFileColumn::IsDeleted => params.push((column.to_string(), Value::from(self.is_deleted.to_owned()))),
             UserFileColumn::IsPublic => params.push((column.to_string(), Value::from(self.is_public.to_owned()))),
+            UserFileColumn::Disk => params.push((column.to_string(), Value::from(self.disk.to_owned()))),
         }
     }
     fn get_id(&self) -> u64 {
@@ -176,14 +177,15 @@ impl FromMysqlDto for UserFile {
             user_id: take_from_mysql_row(row, UserFileColumn::UserId.to_string().as_str())?,
             file_id: take_from_mysql_row(row, UserFileColumn::FileId.to_string().as_str())?,
             filename: take_from_mysql_row(row, UserFileColumn::Filename.to_string().as_str())?,
-            upload_filename: take_from_mysql_row(row, UserFileColumn::UploadFilename.to_string().as_str())?,
             path: take_from_mysql_row(row, UserFileColumn::Path.to_string().as_str())?,
+            upload_filename: take_from_mysql_row(row, UserFileColumn::UploadFilename.to_string().as_str())?,
             mime: take_from_mysql_row(row, UserFileColumn::Mime.to_string().as_str())?,
             created_at: take_some_datetime_from_mysql_row(row, UserFileColumn::CreatedAt.to_string().as_str())?,
             updated_at: take_some_datetime_from_mysql_row(row, UserFileColumn::UpdatedAt.to_string().as_str())?,
             deleted_at: take_some_datetime_from_mysql_row(row, UserFileColumn::DeletedAt.to_string().as_str())?,
             is_deleted: take_from_mysql_row(row, UserFileColumn::IsDeleted.to_string().as_str())?,
             is_public: take_from_mysql_row(row, UserFileColumn::IsPublic.to_string().as_str())?,
+            disk: take_from_mysql_row(row, UserFileColumn::Disk.to_string().as_str())?,
         })
     }
 }

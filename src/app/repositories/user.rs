@@ -230,21 +230,16 @@ impl FromMysqlDto for User {
         Ok(Self {
             id: take_from_mysql_row(row, UserColumn::Id.to_string().as_str())?,
             email: take_from_mysql_row(row, UserColumn::Email.to_string().as_str())?,
-            locale: take_from_mysql_row(row, UserColumn::Locale.to_string().as_str())
-                .unwrap_or(None),
-            surname: take_from_mysql_row(row, UserColumn::Surname.to_string().as_str())
-                .unwrap_or(None),
-            name: take_from_mysql_row(row, UserColumn::Name.to_string().as_str()).unwrap_or(None),
-            patronymic: take_from_mysql_row(row, UserColumn::Patronymic.to_string().as_str())
-                .unwrap_or(None),
-            is_super_admin: take_from_mysql_row(row, UserColumn::IsSuperAdmin.to_string().as_str())
-                .unwrap_or(false),
+            locale: take_from_mysql_row(row, UserColumn::Locale.to_string().as_str())?,
+            surname: take_from_mysql_row(row, UserColumn::Surname.to_string().as_str())?,
+            name: take_from_mysql_row(row, UserColumn::Name.to_string().as_str())?,
+            patronymic: take_from_mysql_row(row, UserColumn::Patronymic.to_string().as_str())?,
+            is_super_admin: take_from_mysql_row(row, UserColumn::IsSuperAdmin.to_string().as_str())?,
             roles_ids: option_take_json_from_mysql_row(
                 row,
                 UserColumn::RolesIds.to_string().as_str(),
             ),
-            avatar_id: take_from_mysql_row(row, UserColumn::AvatarId.to_string().as_str())
-                .unwrap_or(None),
+            avatar_id: take_from_mysql_row(row, UserColumn::AvatarId.to_string().as_str())?,
         })
     }
 }

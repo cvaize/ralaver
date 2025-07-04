@@ -231,7 +231,9 @@ pub fn invoke(
 
     if is_done {
         if let Some(user_file) = user_file {
-            alert_variants.push(AlertVariant::FilesCreateSuccess(user_file.filename));
+            if let Some(upload_filename) = user_file.upload_filename {
+                alert_variants.push(AlertVariant::FilesCreateSuccess(upload_filename));
+            }
         }
 
         if let Some(action) = action_value {
