@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
-use crate::app::controllers::web::files::create::get_upload_url;
+use crate::app::controllers::web::files::upload::get_upload_url;
 
 const PAGE_URL: &'static str = "/files?";
 

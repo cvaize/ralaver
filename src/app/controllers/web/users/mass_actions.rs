@@ -12,7 +12,7 @@ const RL_TTL: u64 = 60;
 const RL_KEY: &'static str = "users_mass_actions";
 
 #[derive(Deserialize, Default, Debug)]
-pub struct MassActionsData {
+pub struct PostData {
     pub _token: Option<String>,
     pub selected: Option<Vec<u64>>,
     pub action: Option<String>,
@@ -20,7 +20,7 @@ pub struct MassActionsData {
 
 pub async fn invoke(
     req: HttpRequest,
-    data: Form<MassActionsData>,
+    data: Form<PostData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
     user_service: Data<UserService>,

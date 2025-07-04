@@ -1,0 +1,32 @@
+{{#> components/layout.hbs }}
+    {{> components/alerts.hbs }}
+    {{> components/breadcrumb.hbs }}
+    {{> components/heading.hbs }}
+
+    <form id="admin-update-file-form" action="{{form.upload_action}}" method="post" autocomplete="off" style="display: block;">
+        <input type="hidden" name="_token" value="{{ctx.csrf}}">
+
+        <div style="margin-bottom: 0.5rem;">
+            {{> components/checkbox.hbs
+                    label=form.fields.is_public.label
+                    value="1"
+                    checked=form.fields.is_public.value
+                    form="admin-update-file-form"
+                    name="is_public"
+            }}
+
+            {{#if form.fields.is_public.errors}}
+                {{#each form.fields.is_public.errors}}
+                    <span class="admin-text--mini admin-text--danger">{{this}}</span>
+                {{/each}}
+            {{/if}}
+        </div>
+
+        <div style="margin-top: 1rem;">
+            <button type="submit" class="admin-btn admin-success" name="action" value="save">{{form.save}}</button>
+            <button type="submit" class="admin-btn admin-success" name="action" value="save_and_close">{{form.save_and_close}}</button>
+            <a href="{{form.close.href}}" class="admin-btn">{{form.close.label}}</a>
+        </div>
+    </form>
+
+{{/components/layout.hbs}}

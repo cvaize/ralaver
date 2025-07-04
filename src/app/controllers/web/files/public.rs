@@ -13,7 +13,5 @@ pub async fn invoke(
     path.push(MAIN_SEPARATOR);
     path.push_str(&filename);
 
-    // TODO: Добавить в публичный путь признак пользователя, так как метка публичности в user_file
-
     Ok(NamedFile::open(path)?)
 }

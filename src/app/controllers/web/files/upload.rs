@@ -7,14 +7,19 @@ use crate::{
 use actix_multipart::form::tempfile::TempFile;
 use actix_multipart::form::text::Text;
 use actix_multipart::form::MultipartForm;
-use actix_web::{web::{Data, ReqData}, error, Error, HttpRequest, HttpResponse, Result, http::{Method, header::{LOCATION}}};
+use actix_web::http::header::HeaderValue;
+use actix_web::{
+    error,
+    http::{header::LOCATION, Method},
+    web::{Data, ReqData},
+    Error, HttpRequest, HttpResponse, Result,
+};
 use serde::Deserialize;
 use serde_json::json;
 use std::sync::Arc;
-use actix_web::http::header::HeaderValue;
 
 #[derive(Debug, MultipartForm)]
-pub struct UploadForm {
+pub struct UploadData {
     #[multipart(limit = "100MB")]
     file: TempFile,
     _token: Option<Text<String>>,
@@ -24,7 +29,7 @@ pub struct UploadForm {
 
 const RL_MAX_ATTEMPTS: u64 = 10;
 const RL_TTL: u64 = 60;
-const RL_KEY: &'static str = "files_create";
+const RL_KEY: &'static str = "files_upload";
 
 #[derive(Deserialize, Default, Debug)]
 struct ErrorMessages {
@@ -33,7 +38,7 @@ struct ErrorMessages {
     pub is_public: Vec<String>,
 }
 
-pub async fn create(
+pub async fn show(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
@@ -66,7 +71,7 @@ pub async fn create(
 
 pub async fn upload(
     req: HttpRequest,
-    MultipartForm(form): MultipartForm<UploadForm>,
+    MultipartForm(form): MultipartForm<UploadData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
     translator_service: Data<TranslatorService>,
@@ -97,7 +102,7 @@ pub async fn upload(
 }
 
 pub fn invoke(
-    mut upload_form: Option<UploadForm>,
+    mut upload_form: Option<UploadData>,
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
@@ -250,10 +255,7 @@ pub fn invoke(
             } else if action.eq("save_and_close") {
                 return Ok(HttpResponse::SeeOther()
                     .set_alerts(alert_variants)
-                    .insert_header((
-                        LOCATION,
-                        HeaderValue::from_static("/files"),
-                    ))
+                    .insert_header((LOCATION, HeaderValue::from_static("/files")))
                     .finish());
             }
         }
@@ -303,7 +305,7 @@ pub fn get_upload_url() -> String {
     "/files/upload".to_string()
 }
 
-impl UploadForm {
+impl UploadData {
     pub fn prepare(&mut self) {
         prepare_upload_text_value!(self._token);
         prepare_upload_text_value!(self.action);

@@ -11,14 +11,14 @@ const RL_TTL: u64 = 60;
 const RL_KEY: &'static str = "users_delete";
 
 #[derive(Deserialize, Default, Debug)]
-pub struct DeleteData {
+pub struct PostData {
     pub _token: Option<String>,
 }
 
 pub async fn invoke(
     req: HttpRequest,
     path: Path<u64>,
-    data: Form<DeleteData>,
+    data: Form<PostData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
     user_service: Data<UserService>,
