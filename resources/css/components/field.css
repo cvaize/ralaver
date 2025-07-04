@@ -25,6 +25,18 @@
     padding: 0;
 }
 
+/* Chrome, Safari, Edge, Opera */
+.admin-field__input::-webkit-outer-spin-button,
+.admin-field__input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+.admin-field__input[type=number] {
+    -moz-appearance: textfield;
+}
+
 select.admin-field__input {
     width: fit-content;
 }

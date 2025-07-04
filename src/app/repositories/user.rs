@@ -215,6 +215,9 @@ impl ToMysqlDto<UserColumn> for User {
                 let roles_ids: Option<String> = option_to_json_string_for_mysql(&self.roles_ids);
                 params.push((column.to_string(), Value::from(roles_ids)))
             }
+            UserColumn::AvatarId => {
+                params.push((column.to_string(), Value::from(self.avatar_id.to_owned())))
+            }
         }
     }
     fn get_id(&self) -> u64 {
@@ -240,6 +243,8 @@ impl FromMysqlDto for User {
                 row,
                 UserColumn::RolesIds.to_string().as_str(),
             ),
+            avatar_id: take_from_mysql_row(row, UserColumn::AvatarId.to_string().as_str())
+                .unwrap_or(None),
         })
     }
 }

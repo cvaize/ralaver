@@ -153,6 +153,7 @@
         "name": "Name",
         "patronymic": "Patronymic",
         "permissions": "Permissions",
-        "roles_ids": "Roles"
+        "roles_ids": "Roles",
+        "avatar_id": "Avatar"
     }
 }

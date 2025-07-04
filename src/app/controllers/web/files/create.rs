@@ -13,7 +13,6 @@ use serde_json::json;
 use std::sync::Arc;
 use actix_web::http::header::HeaderValue;
 
-// TODO: Remove temp file if error exists
 #[derive(Debug, MultipartForm)]
 pub struct UploadForm {
     #[multipart(limit = "100MB")]
@@ -185,7 +184,6 @@ pub fn invoke(
 
             if errors.is_empty() {
                 if let Some(form) = &upload_form {
-                    dbg!(form);
                     let path = form
                         .file
                         .file

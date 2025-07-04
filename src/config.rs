@@ -128,7 +128,7 @@ impl Config {
         if !storage_local_public_root.ends_with(MAIN_SEPARATOR_STR) {
             storage_local_public_root.push_str(MAIN_SEPARATOR_STR);
         }
-        storage_local_public_root.push_str("public/storage");
+        storage_local_public_root.push_str("public/storage/files");
 
         Self {
             app: AppConfig {

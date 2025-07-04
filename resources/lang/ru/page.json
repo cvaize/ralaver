@@ -103,7 +103,8 @@
         "name": "{{validation.attributes.user_name}}",
         "patronymic": "{{validation.attributes.patronymic}}",
         "locale": "{{validation.attributes.locale}}",
-        "roles_ids": "{{validation.attributes.roles_ids}}"
+        "roles_ids": "{{validation.attributes.roles_ids}}",
+        "avatar_id": "{{validation.attributes.avatar_id}}"
       },
       "tabs": {
         "main": "Основные",

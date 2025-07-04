@@ -11,6 +11,7 @@ pub struct User {
     pub patronymic: Option<String>,
     pub is_super_admin: bool,
     pub roles_ids: Option<Vec<u64>>,
+    pub avatar_id: Option<u64>,
 }
 
 #[derive(Debug, Clone, Copy, Display, EnumString, Serialize, Deserialize, VariantNames, EnumIter, Eq, PartialEq)]
@@ -24,6 +25,7 @@ pub enum UserColumn {
     Patronymic,
     IsSuperAdmin,
     RolesIds,
+    AvatarId,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]

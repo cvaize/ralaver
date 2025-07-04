@@ -35,7 +35,7 @@ pub fn register(cfg: &mut web::ServiceConfig) {
             .route(web::post().to(controllers::web::auth::reset_password_confirm::invoke)),
     );
     cfg.service(
-        web::resource("/profile")
+        web::resource(controllers::web::profile::get_url())
             .wrap(WebAuthMiddleware)
             .route(web::get().to(controllers::web::profile::index))
             .route(web::post().to(controllers::web::profile::update)),

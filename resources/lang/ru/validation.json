@@ -155,6 +155,7 @@
         "description": "Описание",
         "code": "Код",
         "permissions": "Разрешения",
-        "roles_ids": "Роли"
+        "roles_ids": "Роли",
+        "avatar_id": "Аватар"
     }
 }

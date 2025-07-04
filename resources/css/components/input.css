@@ -19,6 +19,18 @@
     padding: 0;
 }
 
+/* Chrome, Safari, Edge, Opera */
+.admin-input::-webkit-outer-spin-button,
+.admin-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+.admin-input[type=number] {
+    -moz-appearance: textfield;
+}
+
 select.admin-input {
     width: fit-content;
 }

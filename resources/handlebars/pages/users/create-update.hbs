@@ -20,6 +20,27 @@
             <div class="admin-tabs__content">
                 <div class="admin-tabs__pane">
                     <div class="admin-row">
+                        {{#if form.fields.avatar_id.src}}
+                            <div class="admin-col-auto">
+                                <img src="{{form.fields.avatar_id.src}}"
+                                     alt="Avatar" style="max-width: 3.125rem; max-height: 3.125rem; min-width: 3.125rem; min-height: 3.125rem;border-radius: 50%;">
+                            </div>
+                        {{/if}}
+                        <div class="admin-col-auto">
+                            {{> components/field.hbs
+                                    form="admin-create-form"
+                                    label=form.fields.avatar_id.label
+                                    value=form.fields.avatar_id.value
+                                    errors=form.fields.avatar_id.errors
+                                    name="avatar_id"
+                                    type="number"
+                                    style="margin-bottom: 0.5rem;"
+                                    min="1"
+                                    step="1"
+                            }}
+                        </div>
+                    </div>
+                    <div class="admin-row">
                         <div class="admin-col-auto">
                             {{> components/field.hbs
                                     label=form.fields.email.label

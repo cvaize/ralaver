@@ -35,6 +35,7 @@ pub struct PostData {
     pub name: Option<String>,
     pub patronymic: Option<String>,
     pub roles_ids: Option<Vec<u64>>,
+    pub avatar_id: Option<u64>,
 }
 
 #[derive(Deserialize, Default, Debug)]
@@ -48,12 +49,14 @@ struct ErrorMessages {
     pub name: Vec<String>,
     pub patronymic: Vec<String>,
     pub roles_ids: Vec<String>,
+    pub avatar_id: Vec<String>,
 }
 
 pub async fn create(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
+    // Services
     translator_service: Data<TranslatorService>,
     template_service: Data<TemplateService>,
     app_service: Data<AppService>,
@@ -92,6 +95,7 @@ pub async fn store(
     data: Form<PostData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
+    // Services
     translator_service: Data<TranslatorService>,
     template_service: Data<TemplateService>,
     app_service: Data<AppService>,
@@ -129,6 +133,7 @@ pub async fn edit(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
+    // Services
     translator_service: Data<TranslatorService>,
     template_service: Data<TemplateService>,
     app_service: Data<AppService>,
@@ -172,6 +177,7 @@ pub async fn update(
     data: Form<PostData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
+    // Services
     translator_service: Data<TranslatorService>,
     template_service: Data<TemplateService>,
     app_service: Data<AppService>,
@@ -258,6 +264,7 @@ pub fn invoke(
     let patronymic_str = translator_service.translate(lang, "page.users.create.fields.patronymic");
     let locale_str = translator_service.translate(lang, "page.users.create.fields.locale");
     let roles_ids_str = translator_service.translate(lang, "page.users.create.fields.roles_ids");
+    let avatar_id_str = translator_service.translate(lang, "page.users.create.fields.avatar_id");
 
     let (title, heading, action) = if is_profile {
         let title = translator_service.translate(lang, "page.profile.title");
@@ -375,6 +382,7 @@ pub fn invoke(
                 user_data.surname = data.surname.to_owned();
                 user_data.name = data.name.to_owned();
                 user_data.patronymic = data.patronymic.to_owned();
+                user_data.avatar_id = data.avatar_id.to_owned();
 
                 let mut columns: Vec<UserColumn> = vec![
                     UserColumn::Email,
@@ -382,6 +390,7 @@ pub fn invoke(
                     UserColumn::Surname,
                     UserColumn::Name,
                     UserColumn::Patronymic,
+                    UserColumn::AvatarId,
                 ];
 
                 if UserPolicy::can_set_roles(&user, &user_roles) {
@@ -526,7 +535,8 @@ pub fn invoke(
         "name": { "label": name_str, "value": &data.name, "errors": errors.name },
         "patronymic": { "label": patronymic_str, "value": &data.patronymic, "errors": errors.patronymic },
         "locale": { "label": locale_str, "value": &data.locale, "errors": errors.locale, "options": locales_, "placeholder": translator_service.translate(lang, "Not selected..."), },
-        "roles_ids": field_roles_ids
+        "roles_ids": field_roles_ids,
+        "avatar_id": { "label": avatar_id_str, "value": &data.avatar_id, "errors": errors.avatar_id },
     });
 
     let (breadcrumbs, save_and_close, close) = if is_profile {
@@ -607,6 +617,7 @@ impl ErrorMessages {
             && self.name.len() == 0
             && self.patronymic.len() == 0
             && self.locale.len() == 0
+            && self.avatar_id.len() == 0
     }
 }
 
@@ -622,5 +633,6 @@ pub fn post_data_from_user(user: &User) -> PostData {
         name: user.name.to_owned(),
         patronymic: user.patronymic.to_owned(),
         roles_ids: user.roles_ids.to_owned(),
+        avatar_id: user.avatar_id.to_owned(),
     }
 }

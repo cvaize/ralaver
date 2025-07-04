@@ -1803,6 +1803,18 @@ button, select {
     padding: 0;
 }
 
+/* Chrome, Safari, Edge, Opera */
+.admin-field__input::-webkit-outer-spin-button,
+.admin-field__input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+.admin-field__input[type=number] {
+    -moz-appearance: textfield;
+}
+
 select.admin-field__input {
     width: fit-content;
 }
@@ -1905,6 +1917,18 @@ input.admin-field__input:read-only:focus, input.admin-field__input:disabled:focu
 .admin-input[type="range"] {
     height: 0.2rem;
     padding: 0;
+}
+
+/* Chrome, Safari, Edge, Opera */
+.admin-input::-webkit-outer-spin-button,
+.admin-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+.admin-input[type=number] {
+    -moz-appearance: textfield;
 }
 
 select.admin-input {
