@@ -71,7 +71,7 @@ pub async fn show(
 
 pub async fn upload(
     req: HttpRequest,
-    MultipartForm(form): MultipartForm<UploadData>,
+    MultipartForm(data): MultipartForm<UploadData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
     translator_service: Data<TranslatorService>,
@@ -87,7 +87,7 @@ pub async fn upload(
         return Err(error::ErrorForbidden(""));
     }
     invoke(
-        Some(form),
+        Some(data),
         req,
         user,
         session,

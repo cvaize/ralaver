@@ -3,8 +3,9 @@ use crate::helpers::{
     create_dir_all_for_file,
 };
 use std::fs;
+use std::fs::File;
 use std::io;
-use std::io::ErrorKind;
+use std::io::{BufReader, ErrorKind};
 use std::os::unix::fs::MetadataExt;
 use std::process::Command;
 use std::time::SystemTime;
@@ -35,7 +36,10 @@ pub trait DiskRepository {
     // Get the contents of a file.
     fn get(&self, path: &str) -> io::Result<Vec<u8>>;
     // Get a resource to read the file.
-    // fn read_stream(&self, path: &str) -> io::Result<S>;
+    #[allow(unused_variables)]
+    fn read_stream(&self, path: &str) -> io::Result<BufReader<File>> {
+        Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
+    }
     // Store the uploaded file on the disk.
     #[allow(unused_variables)]
     fn put(&self, path: &str, content: Vec<u8>) -> io::Result<()> {
@@ -206,10 +210,10 @@ impl DiskRepository for DiskLocalRepository {
     fn get(&self, path: &str) -> io::Result<Vec<u8>> {
         fs::read(path)
     }
-    // fn read_stream(&self, path: &str) -> io::Result<BufReader<File>> {
-    //     let file = File::open(path)?;
-    //     Ok(BufReader::new(file))
-    // }
+    fn read_stream(&self, path: &str) -> io::Result<BufReader<File>> {
+        let file = File::open(path)?;
+        Ok(BufReader::new(file))
+    }
     fn size(&self, path: &str) -> io::Result<u64> {
         Ok(fs::metadata(path)?.size())
     }
@@ -305,6 +309,7 @@ impl DiskRepository for DiskExternalRepository {
 mod tests {
     use super::*;
     use std::env;
+    use std::io::{BufRead, Read};
     use std::path::MAIN_SEPARATOR_STR;
 
     #[test]
@@ -704,5 +709,37 @@ mod tests {
         fs::write(&file1_path, "Test data").unwrap();
         let _ = repository.last_modified(&file1_path).unwrap();
         fs::remove_dir_all(&dir_path).unwrap();
+    }
+
+    #[test]
+    fn test_local_disk_call_read_stream() {
+        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_read_stream
+        let root = env::current_dir().unwrap();
+        let root = root.to_str().unwrap();
+        let repository = DiskLocalRepository::new(root, root, MAIN_SEPARATOR_STR);
+        let file_path = repository
+            .path("/test_local_disk_call_read_stream.txt")
+            .unwrap();
+        let content = "Test data1\nTest data2".to_string();
+        fs::write(&file_path, &content).unwrap();
+        let mut read_stream = repository.read_stream(&file_path).unwrap();
+
+        let mut full_line = String::new();
+        let mut line = String::new();
+        while read_stream.read_line(&mut line).unwrap() > 0 {
+            full_line.push_str(&line);
+            line.clear();
+        }
+        assert_eq!(&content, &full_line);
+
+        let mut read_stream = repository.read_stream(&file_path).unwrap();
+        let mut full_buf: Vec<u8> = Vec::new();
+        let mut buf: Vec<u8> = Vec::new();
+        while read_stream.read_to_end(&mut buf).unwrap() > 0 {
+            full_buf.append(&mut buf);
+        }
+        let buf_full_line = String::from_utf8(full_buf).unwrap();
+        assert_eq!(&content, &buf_full_line);
+        fs::remove_file(&file_path).unwrap();
     }
 }
