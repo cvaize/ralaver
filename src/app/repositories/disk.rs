@@ -5,7 +5,7 @@ use crate::helpers::{
 use std::fs;
 use std::fs::File;
 use std::io;
-use std::io::{BufReader, ErrorKind};
+use std::io::{BufReader, BufWriter, ErrorKind};
 use std::os::unix::fs::MetadataExt;
 use std::process::Command;
 use std::time::SystemTime;
@@ -45,8 +45,11 @@ pub trait DiskRepository {
     fn put(&self, path: &str, content: Vec<u8>) -> io::Result<()> {
         Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
     }
-    // // Write a new file using a stream.
-    // fn write_stream(&self, path: &str, resource: &str, options: &str) -> io::Result<S>;
+    // Write a new file using a stream.
+    #[allow(unused_variables)]
+    fn write_stream(&self, path: &str) -> io::Result<BufWriter<File>> {
+        Err(io::Error::other(FUN_NOT_DEFINED_ERROR_MESSAGE))
+    }
     // // Get the visibility for the given path.
     // fn get_visibility(&self, path: &str) -> io::Result<String>;
     // // Set the visibility for the given path.
@@ -214,6 +217,10 @@ impl DiskRepository for DiskLocalRepository {
         let file = File::open(path)?;
         Ok(BufReader::new(file))
     }
+    fn write_stream(&self, path: &str) -> io::Result<BufWriter<File>> {
+        let file = File::create(path)?;
+        Ok(BufWriter::new(file))
+    }
     fn size(&self, path: &str) -> io::Result<u64> {
         Ok(fs::metadata(path)?.size())
     }
@@ -309,7 +316,7 @@ impl DiskRepository for DiskExternalRepository {
 mod tests {
     use super::*;
     use std::env;
-    use std::io::{BufRead, Read};
+    use std::io::{BufRead, Read, Write};
     use std::path::MAIN_SEPARATOR_STR;
 
     #[test]
@@ -717,12 +724,12 @@ mod tests {
         let root = env::current_dir().unwrap();
         let root = root.to_str().unwrap();
         let repository = DiskLocalRepository::new(root, root, MAIN_SEPARATOR_STR);
-        let file_path = repository
+        let path = repository
             .path("/test_local_disk_call_read_stream.txt")
             .unwrap();
         let content = "Test data1\nTest data2".to_string();
-        fs::write(&file_path, &content).unwrap();
-        let mut read_stream = repository.read_stream(&file_path).unwrap();
+        fs::write(&path, &content).unwrap();
+        let mut read_stream = repository.read_stream(&path).unwrap();
 
         let mut full_line = String::new();
         let mut line = String::new();
@@ -732,7 +739,7 @@ mod tests {
         }
         assert_eq!(&content, &full_line);
 
-        let mut read_stream = repository.read_stream(&file_path).unwrap();
+        let mut read_stream = repository.read_stream(&path).unwrap();
         let mut full_buf: Vec<u8> = Vec::new();
         let mut buf: Vec<u8> = Vec::new();
         while read_stream.read_to_end(&mut buf).unwrap() > 0 {
@@ -740,6 +747,33 @@ mod tests {
         }
         let buf_full_line = String::from_utf8(full_buf).unwrap();
         assert_eq!(&content, &buf_full_line);
-        fs::remove_file(&file_path).unwrap();
+        fs::remove_file(&path).unwrap();
+    }
+
+    #[test]
+    fn test_local_disk_call_write_stream() {
+        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::disk::tests::test_local_disk_call_write_stream
+        let root = env::current_dir().unwrap();
+        let root = root.to_str().unwrap();
+        let repository = DiskLocalRepository::new(root, root, MAIN_SEPARATOR_STR);
+        let path = repository
+            .path("/test_local_disk_call_write_stream.txt")
+            .unwrap();
+        let content = "Test data1\nTest data2".to_string();
+        let content1 = "Test data1".to_string();
+        let content2 = "\n".to_string();
+        let content3 = "Test data2".to_string();
+
+        let mut write_stream = repository.write_stream(&path).unwrap();
+
+        write_stream.write_all(content1.as_bytes()).unwrap();
+        write_stream.write_all(content2.as_bytes()).unwrap();
+        write_stream.write_all(content3.as_bytes()).unwrap();
+        write_stream.flush().unwrap();
+
+        let final_content = repository.get(&path).unwrap();
+
+        assert_eq!(String::from_utf8(final_content).unwrap(), content);
+        fs::remove_file(&path).unwrap();
     }
 }
