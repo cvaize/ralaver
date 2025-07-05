@@ -1,3 +1,4 @@
+use std::io::{Read, Write};
 use crate::helpers::now_date_time_str;
 use crate::{AppError, Config, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository, File, FileColumn, FileMysqlRepository, FilePaginateParams, MysqlRepository, PaginationResult, RandomService, TranslatableError, TranslatorService, UserFile, UserFileColumn, UserFileMysqlRepository};
 use actix_web::web::Data;
@@ -516,23 +517,32 @@ impl FileService {
         }
 
         if is_copy {
-            // Copy file. In the future, it should be replaced with a read-write stream.
-            let content = disk_local_repository.get(upload_path).map_err(|e| {
+            let mut read_stream = disk_local_repository.read_stream(upload_path).map_err(|e| {
                 self.log_error(
                     "upload_local_file_to_local_disk",
                     e.to_string(),
                     FileServiceError::Fail,
                 )
             })?;
-            disk_local_repository
-                .put(&file.path, content)
-                .map_err(|e| {
+            let mut write_stream = disk_local_repository.write_stream(&file.path).map_err(|e| {
+                self.log_error(
+                    "upload_local_file_to_local_disk",
+                    e.to_string(),
+                    FileServiceError::Fail,
+                )
+            })?;
+            let mut buf: Vec<u8> = Vec::new();
+            while read_stream.read_to_end(&mut buf).unwrap() > 0 {
+                write_stream.write_all(&buf).map_err(|e| {
                     self.log_error(
                         "upload_local_file_to_local_disk",
                         e.to_string(),
                         FileServiceError::Fail,
                     )
                 })?;
+                buf.clear();
+            }
+            write_stream.flush().unwrap();
         }
 
         // 6) Upsert file meta in db
