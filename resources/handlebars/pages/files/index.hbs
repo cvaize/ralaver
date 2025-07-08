@@ -152,7 +152,6 @@
                         {{/if}}
                         <th class="admin-table__th" scope="col" style="width: 0;">{{columns.id}}</th>
                         <th class="admin-table__th" scope="col"></th>
-                        <th class="admin-table__th" scope="col">{{columns.actions}}</th>
                     </tr>
                     </thead>
                     <tbody class="admin-table__tbody">
@@ -232,6 +231,20 @@
                                 <div>
                                     <b>Is deleted?:</b> {{record.is_deleted}}
                                 </div>
+                                <div>
+                                    <form action="/files/{{record.id}}/delete"
+                                          method="post" style="display: inline-block">
+                                        <input type="hidden" name="_token" value="{{../ctx.csrf}}">
+                                        <button type="submit" class="admin-btn admin-btn--square admin-danger"
+                                                title="Delete user file ID: {{record.id}}"
+                                                onclick="return confirm('Delete user file ID: {{record.id}}?');">
+                                            <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
+                                                 height="24" viewBox="0 0 24 24">
+                                                <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </div>
                                 <div style="margin-top: 0.5rem;border-top: 1px solid;padding-top: 0.25rem;">
                                     <b>Владельцы файла:</b>
                                 </div>
@@ -267,35 +280,30 @@
                                         <div>
                                             <b>Is public?:</b> {{user_file.is_public}}
                                         </div>
+                                        <div>
+                                            <a href="/user-files/{{user_file.id}}/edit"
+                                               class="admin-btn admin-btn--square"
+                                               title="Edit user file ID: {{user_file.id}}">
+                                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
+                                                     height="24" viewBox="0 0 24 24">
+                                                    <path d="m14.06 9.02.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
+                                                </svg>
+                                            </a>
+                                            <form action="/user-files/{{user_file.id}}/delete"
+                                                  method="post" style="display: inline-block">
+                                                <input type="hidden" name="_token" value="{{../../ctx.csrf}}">
+                                                <button type="submit" class="admin-btn admin-btn--square admin-danger"
+                                                        title="Delete user file ID: {{user_file.id}}"
+                                                        onclick="return confirm('Delete user file ID: {{user_file.id}}?');">
+                                                    <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
+                                                         height="24" viewBox="0 0 24 24">
+                                                        <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
+                                                    </svg>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </div>
                                 {{/each}}
-                            </td>
-                            <td class="admin-table__td" style="white-space: nowrap;">
-                                {{#if ../edit}}
-                                    <a href="{{ (replace ../edit.href ":id" record.id) }}"
-                                       class="admin-btn admin-btn--square"
-                                       title="{{../edit.label}}">
-                                        <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                             height="24" viewBox="0 0 24 24">
-                                            <path d="m14.06 9.02.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
-                                        </svg>
-                                    </a>
-                                {{/if}}
-                                {{#if ../delete}}
-                                    <form action="{{ (replace ../delete.action ":id" record.id) }}"
-                                          method="{{../delete.method}}" style="display: inline-block">
-                                        <input type="hidden" name="_token" value="{{../ctx.csrf}}">
-                                        <button type="submit" class="admin-btn admin-btn--square admin-danger"
-                                                title="{{../delete.label}}"
-                                                onclick="return confirm('{{ (replace ../delete.confirm ":id"
-                                                                             record.id) }}');">
-                                            <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24"
-                                                 height="24" viewBox="0 0 24 24">
-                                                <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/>
-                                            </svg>
-                                        </button>
-                                    </form>
-                                {{/if}}
                             </td>
                         </tr>
                     {{/each}}

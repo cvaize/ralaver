@@ -28,7 +28,6 @@ pub struct IndexQuery {
 }
 
 pub async fn invoke(
-    // config: Data<Config>,
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
@@ -41,9 +40,6 @@ pub async fn invoke(
     file_service: Data<FileService>,
     locale_service: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
-
-    // TODO: Remove after testing
-    // let tmpl_service = Data::new(TemplateService::new_from_files(config.clone())?);
 
     let translator_service = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
