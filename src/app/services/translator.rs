@@ -367,9 +367,28 @@ mod tests {
 
     #[bench]
     fn bench_format(b: &mut Bencher) {
-        // 0.23 ns/iter (+/- 0.00)
+        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo bench -- --nocapture --exact app::services::translator::tests::bench_format
+        // 31.64 ns/iter (+/- 1.11)
+        let var1 = "test";
+        let var2 = 123.to_string();
+        let var2 = var2.as_str();
         b.iter(|| {
-            let _ = format!("test test test {key} {value}", key = "test", value = 123);
+            let _ = format!("test test test {var1} {var2}");
+        });
+    }
+
+    #[bench]
+    fn bench_push_str(b: &mut Bencher) {
+        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo bench -- --nocapture --exact app::services::translator::tests::bench_push_str
+        // 40.85 ns/iter (+/- 0.93)
+        let var1 = "test";
+        let var2 = 123.to_string();
+        let var2 = var2.as_str();
+        b.iter(|| {
+            let mut str = "test test test ".to_string();
+            str.push_str(var1);
+            str.push_str(" ");
+            str.push_str(var2);
         });
     }
 

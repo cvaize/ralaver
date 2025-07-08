@@ -151,43 +151,43 @@ impl AlertVariant {
                 "reset_password_confirm_code_not_equal".to_string()
             }
             Self::UsersCreateSuccess(name) => {
-                format!("users_create_success::{}", name)
+                format!("users_create_success::{name}")
             }
             Self::UsersUpdateSuccess(name) => {
-                format!("users_update_success::{}", name)
+                format!("users_update_success::{name}")
             }
             Self::UsersDeleteSuccess(name) => {
-                format!("users_delete_success::{}", name)
+                format!("users_delete_success::{name}")
             }
             Self::UsersMassDeleteSuccess(ids) => {
-                format!("users_mass_delete_success::{}", ids)
+                format!("users_mass_delete_success::{ids}")
             }
             Self::ValidationRateLimitError(seconds, unit) => {
-                format!("validation_rate_limit_error::{}::{}", seconds, unit)
+                format!("validation_rate_limit_error::{seconds}::{unit}")
             }
             Self::RolesCreateSuccess(name) => {
-                format!("roles_create_success::{}", name)
+                format!("roles_create_success::{name}")
             }
             Self::RolesUpdateSuccess(name) => {
-                format!("roles_update_success::{}", name)
+                format!("roles_update_success::{name}")
             }
             Self::RolesDeleteSuccess(name) => {
-                format!("roles_delete_success::{}", name)
+                format!("roles_delete_success::{name}")
             }
             Self::RolesMassDeleteSuccess(ids) => {
-                format!("roles_mass_delete_success::{}", ids)
+                format!("roles_mass_delete_success::{ids}")
             }
             Self::FilesCreateSuccess(name) => {
-                format!("files_create_success::{}", name)
+                format!("files_create_success::{name}")
             }
             Self::FilesUpdateSuccess(name) => {
-                format!("files_update_success::{}", name)
+                format!("files_update_success::{name}")
             }
             Self::FilesDeleteSuccess(name) => {
-                format!("files_delete_success::{}", name)
+                format!("files_delete_success::{name}")
             }
             Self::FilesMassDeleteSuccess(ids) => {
-                format!("files_mass_delete_success::{}", ids)
+                format!("files_mass_delete_success::{ids}")
             }
         }
     }
