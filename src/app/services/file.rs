@@ -47,12 +47,8 @@ impl FileService {
     }
 
     pub fn log_error(&self, method: &str, error: String, e: FileServiceError) -> FileServiceError {
-        let mut result = self.get_service_name().to_string();
-        result.push_str("::");
-        result.push_str(method);
-        result.push_str(" - ");
-        result.push_str(&error);
-        log::error!("{}", result);
+        let service_name = self.get_service_name().to_string();
+        log::error!("{}::{} - {}", service_name, method, error);
         e
     }
 

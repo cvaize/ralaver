@@ -58,12 +58,13 @@ where
         "offset"
     }
     fn log_error(&self, method_name: &str, original_error_message: String) -> AppError {
-        let mut result = self.get_repository_name().to_string();
-        result.push_str("::");
-        result.push_str(method_name);
-        result.push_str(" - ");
-        result.push_str(&original_error_message);
-        log::error!("{}", result);
+        let repository_name = self.get_repository_name().to_string();
+        log::error!(
+            "{}::{} - {}",
+            &repository_name,
+            &method_name,
+            &original_error_message
+        );
         AppError(Some(original_error_message))
     }
     fn connection(&self) -> Result<MysqlPooledConnection, AppError> {
@@ -491,24 +492,13 @@ impl<T: Display + VariantNames + MysqlColumnEnum> MysqlAllColumnEnum for T {
         // (email, locale, surname, name, patronymic) VALUES (:email, :locale, :surname, :name, :patronymic)
         let columns = Self::mysql_all_select_columns();
         let values = T::VARIANTS.join(",:").to_string();
-
-        let mut s = "(".to_string();
-        s.push_str(&columns);
-        s.push_str(") VALUES (:");
-        s.push_str(&values);
-        s.push_str(")");
-        s
+        format!("({}) VALUES (:{})", &columns, &values)
     }
     fn mysql_all_update_columns() -> String {
         // email=:email, locale=:locale, surname=:surname, name=:name, patronymic=:patronymic
         let t: Vec<String> = T::VARIANTS
             .iter()
-            .map(|t| {
-                let mut s = t.to_string();
-                s.push_str("=:");
-                s.push_str(t);
-                s
-            })
+            .map(|t| format!("{}=:{}", t, t))
             .collect();
         t.join(",").to_string()
     }
@@ -537,12 +527,7 @@ where
                 let t: Vec<String> = vec.iter().map(|t| t.to_string()).collect();
                 let values = t.join(",:").to_string();
 
-                let mut s = "(".to_string();
-                s.push_str(&columns);
-                s.push_str(") VALUES (:");
-                s.push_str(&values);
-                s.push_str(")");
-                return s;
+                return format!("({}) VALUES (:{})", &columns, &values);
             }
         }
 
@@ -552,15 +537,7 @@ where
         // email=:email, locale=:locale, surname=:surname, name=:name, patronymic=:patronymic
         if let Some(vec) = self {
             if vec.len() > 0 {
-                let t: Vec<String> = vec
-                    .iter()
-                    .map(|t| {
-                        let mut s = t.to_string();
-                        s.push_str("=:");
-                        s.push_str(t.to_string().as_str());
-                        s
-                    })
-                    .collect();
+                let t: Vec<String> = vec.iter().map(|t| format!("{}=:{}", t, t)).collect();
                 return t.join(",").to_string();
             }
         }
@@ -575,10 +552,10 @@ pub fn make_pagination_mysql_query(
     where_: &str,
     order_: &str,
 ) -> String {
-    let mut sql = "SELECT ".to_string();
-    sql.push_str(columns);
-    sql.push_str(", COUNT(*) OVER () as total_records FROM ");
-    sql.push_str(table);
+    let mut sql = format!(
+        "SELECT {}, COUNT(*) OVER () as total_records FROM {}",
+        columns, table
+    );
     if where_.len() > 0 {
         sql.push_str(" WHERE ");
         sql.push_str(where_);
@@ -592,10 +569,7 @@ pub fn make_pagination_mysql_query(
 }
 
 pub fn make_select_mysql_query(table: &str, columns: &str, where_: &str, order_: &str) -> String {
-    let mut sql = "SELECT ".to_string();
-    sql.push_str(columns);
-    sql.push_str(" FROM ");
-    sql.push_str(table);
+    let mut sql = format!("SELECT {} FROM {}", columns, table);
     if where_.len() > 0 {
         sql.push_str(" WHERE ");
         sql.push_str(where_);
@@ -608,38 +582,19 @@ pub fn make_select_mysql_query(table: &str, columns: &str, where_: &str, order_:
 }
 
 pub fn make_is_exists_mysql_query(table: &str, where_: &str) -> String {
-    let mut sql = "SELECT EXISTS(SELECT 1 FROM ".to_string();
-    sql.push_str(table);
-    sql.push_str(" WHERE ");
-    sql.push_str(where_);
-    sql.push_str(" LIMIT 1) as is_exists");
-    sql
+    format!("SELECT EXISTS(SELECT 1 FROM {} WHERE {} LIMIT 1) as is_exists", table, where_)
 }
 
 pub fn make_insert_mysql_query(table: &str, columns_: &str) -> String {
-    let mut sql = "INSERT INTO ".to_string();
-    sql.push_str(table);
-    sql.push_str(" ");
-    sql.push_str(columns_);
-    sql
+    format!("INSERT INTO {} {}", table, columns_)
 }
 
 pub fn make_update_mysql_query(table: &str, set_: &str, where_: &str) -> String {
-    let mut sql = "UPDATE ".to_string();
-    sql.push_str(table);
-    sql.push_str(" SET ");
-    sql.push_str(set_);
-    sql.push_str(" WHERE ");
-    sql.push_str(where_);
-    sql
+    format!("UPDATE {} SET {} WHERE {}", table, set_, where_)
 }
 
 pub fn make_delete_mysql_query(table: &str, where_: &str) -> String {
-    let mut sql = "DELETE FROM ".to_string();
-    sql.push_str(table);
-    sql.push_str(" WHERE ");
-    sql.push_str(where_);
-    sql
+    format!("DELETE FROM {} WHERE {}", table, where_)
 }
 
 pub fn take_from_mysql_row<T: FromValue>(row: &mut Row, name: &str) -> Result<T, AppError> {

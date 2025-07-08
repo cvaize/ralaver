@@ -104,12 +104,7 @@ impl AuthService {
         let hash_service = self.hash_service.get_ref();
         let email = hash_service.hash(email);
 
-        let mut key = RESET_PASSWORD_CODE_KEY.to_string();
-        key.push('.');
-        key.push_str(&email);
-        key.push('.');
-        key.push_str(code);
-        Ok(key)
+        Ok(format!("{}.{}.{}", RESET_PASSWORD_CODE_KEY, email, code))
     }
 
     pub fn save_reset_password_code(

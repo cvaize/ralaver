@@ -1,4 +1,4 @@
-use crate::helpers::now_date_time_str;
+use crate::helpers::{join_vec, now_date_time_str};
 use crate::{take_from_mysql_row, take_some_datetime_from_mysql_row, AppError, Disk, File, FileColumn, FromMysqlDto, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder, MysqlRepository, PaginateParams, Role, RoleFilter, ToMysqlDto};
 use actix_web::web::Data;
 use mysql::Value;
@@ -130,11 +130,7 @@ impl MysqlQueryBuilder for FileFilter {
         match self {
             Self::Id(_) => query.push_str("id=:id"),
             Self::Ids(value) => {
-                let mut v = "id in (".to_string();
-                let ids: Vec<String> = value.iter().map(|d| d.to_string()).collect();
-                let ids: String = ids.join(",").to_string();
-                v.push_str(&ids);
-                v.push_str(")");
+                let v = format!("id in ({})", join_vec(value, ","));
                 query.push_str(&v)
             },
             Self::CreatorUserId(_) => query.push_str("creator_user_id=:creator_user_id"),

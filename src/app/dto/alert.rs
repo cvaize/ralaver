@@ -151,71 +151,43 @@ impl AlertVariant {
                 "reset_password_confirm_code_not_equal".to_string()
             }
             Self::UsersCreateSuccess(name) => {
-                let mut str = "users_create_success::".to_string();
-                str.push_str(name);
-                str
+                format!("users_create_success::{}", name)
             }
             Self::UsersUpdateSuccess(name) => {
-                let mut str = "users_update_success::".to_string();
-                str.push_str(name);
-                str
+                format!("users_update_success::{}", name)
             }
             Self::UsersDeleteSuccess(name) => {
-                let mut str = "users_delete_success::".to_string();
-                str.push_str(name);
-                str
+                format!("users_delete_success::{}", name)
             }
             Self::UsersMassDeleteSuccess(ids) => {
-                let mut str = "users_mass_delete_success::".to_string();
-                str.push_str(ids);
-                str
+                format!("users_mass_delete_success::{}", ids)
             }
             Self::ValidationRateLimitError(seconds, unit) => {
-                let mut str = "validation_rate_limit_error::".to_string();
-                str.push_str(seconds);
-                str.push_str("::");
-                str.push_str(unit);
-                str
+                format!("validation_rate_limit_error::{}::{}", seconds, unit)
             }
             Self::RolesCreateSuccess(name) => {
-                let mut str = "roles_create_success::".to_string();
-                str.push_str(name);
-                str
+                format!("roles_create_success::{}", name)
             }
             Self::RolesUpdateSuccess(name) => {
-                let mut str = "roles_update_success::".to_string();
-                str.push_str(name);
-                str
+                format!("roles_update_success::{}", name)
             }
             Self::RolesDeleteSuccess(name) => {
-                let mut str = "roles_delete_success::".to_string();
-                str.push_str(name);
-                str
+                format!("roles_delete_success::{}", name)
             }
             Self::RolesMassDeleteSuccess(ids) => {
-                let mut str = "roles_mass_delete_success::".to_string();
-                str.push_str(ids);
-                str
+                format!("roles_mass_delete_success::{}", ids)
             }
             Self::FilesCreateSuccess(name) => {
-                let mut str = "files_create_success::".to_string();
-                str.push_str(name);
-                str
+                format!("files_create_success::{}", name)
             }
             Self::FilesUpdateSuccess(name) => {
-                let mut str = "files_update_success::".to_string();
-                str.push_str(name);
-                str
+                format!("files_update_success::{}", name)
             }
             Self::FilesDeleteSuccess(name) => {
-                let mut str = "files_delete_success::".to_string();
-                str.push_str(name);
-                str
+                format!("files_delete_success::{}", name)
             }
             Self::FilesMassDeleteSuccess(ids) => {
-                let mut str = "files_mass_delete_success::".to_string();
-                str.push_str(ids);
-                str
+                format!("files_mass_delete_success::{}", ids)
             }
         }
     }

@@ -4,6 +4,7 @@ use actix_web::web::Data;
 use mysql::Row;
 use mysql::Value;
 use strum_macros::{Display, EnumIter, EnumString};
+use crate::helpers::join_vec;
 
 pub struct RoleMysqlRepository {
     db_pool: Data<MysqlPool>,
@@ -74,11 +75,7 @@ impl MysqlQueryBuilder for RoleFilter {
         match self {
             Self::Id(_) => query.push_str("id=:id"),
             Self::Ids(value) => {
-                let mut v = "id in (".to_string();
-                let ids: Vec<String> = value.iter().map(|d| d.to_string()).collect();
-                let ids: String = ids.join(",").to_string();
-                v.push_str(&ids);
-                v.push_str(")");
+                let v = format!("id in ({})", join_vec(value, ","));
                 query.push_str(&v)
             },
             Self::Code(_) => query.push_str("code=:code"),

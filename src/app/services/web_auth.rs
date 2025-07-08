@@ -75,14 +75,11 @@ impl WebAuthService {
 
     pub fn encrypt_session(&self, session: &Session) -> Result<String, WebAuthServiceError> {
         let crypt_service = self.crypt_service.get_ref();
-        let mut token: String = "".to_string();
-        token.push_str(session.get_user_id().to_string().as_str());
-        token.push('-');
-        token.push_str(session.get_token_id().to_string().as_str());
-        token.push('-');
-        token.push_str(session.get_token_value());
-        token.push('-');
-        token.push_str(session.get_expires().format(FORMAT).to_string().as_str());
+        let user_id = session.get_user_id().to_string();
+        let token_id = session.get_token_id().to_string();
+        let token_value = session.get_token_value();
+        let expires = session.get_expires().format(FORMAT).to_string();
+        let token: String = format!("{}-{}-{}-{}", user_id, token_id, token_value, expires);
         crypt_service.encrypt_string(&token).map_err(|e| {
             log::error!("WebAuthService::encrypt_session - {e}");
             return WebAuthServiceError::Fail;
@@ -182,21 +179,14 @@ impl WebAuthService {
     }
 
     pub fn get_token_value_key(&self, token: &Session) -> String {
-        let mut key = "auth.".to_string();
-        key.push_str(token.get_user_id().to_string().as_str());
-        key.push_str(".tokens.");
-        key.push_str(token.get_token_id().to_string().as_str());
-        key.push_str(".value");
-        key
+        let user_id = token.get_user_id().to_string();
+        let token_id = token.get_token_id().to_string();
+        format!("auth.{}.tokens.{}.value", user_id, token_id)
     }
 
     #[allow(dead_code)]
     fn make_store_data(&self, token_value: &str, expires: u64) -> String {
-        let mut value = "".to_string();
-        value.push_str(token_value);
-        value.push('-');
-        value.push_str(expires.to_string().as_str());
-        value
+        format!("{}-{}", token_value, expires.to_string())
     }
 
     #[allow(dead_code)]

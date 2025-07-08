@@ -7,6 +7,7 @@ use actix_web::web::Data;
 use mysql::Row;
 use mysql::Value;
 use strum_macros::{Display, EnumIter, EnumString};
+use crate::helpers::join_vec;
 
 pub struct UserFileMysqlRepository {
     db_pool: Data<MysqlPool>,
@@ -90,11 +91,7 @@ impl MysqlQueryBuilder for UserFileFilter {
             Self::UserId(_) => query.push_str("user_id=:user_id"),
             Self::FileId(_) => query.push_str("file_id=:file_id"),
             Self::FileIds(value) => {
-                let mut v = "file_id in (".to_string();
-                let ids: Vec<String> = value.iter().map(|d| d.to_string()).collect();
-                let ids: String = ids.join(",").to_string();
-                v.push_str(&ids);
-                v.push_str(")");
+                let v = format!("file_id in ({})", join_vec(value, ","));
                 query.push_str(&v)
             },
             Self::Path(_) => query.push_str("path=:path"),

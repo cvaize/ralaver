@@ -54,10 +54,7 @@ fn get_error_text<B>(mut response: HttpResponse<B>) -> HttpResponse<String> {
     let error_message: String = get_error_message(&response);
     let status_code: String = response.status().as_str().to_owned();
 
-    let mut title = status_code.to_owned();
-    title.push_str(" - ");
-    title.push_str(&error_message);
-    response.set_body(title)
+    response.set_body(format!("{} - {}", &status_code, &error_message))
 }
 
 fn get_error_json_response<B>(mut response: HttpResponse<B>) -> HttpResponse<String> {
