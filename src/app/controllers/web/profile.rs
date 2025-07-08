@@ -25,7 +25,7 @@ pub async fn index(
     role_service: Data<RoleService>,
     user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = role_service.get_all_throw_http()?;
+    let user_roles = role_service.all_throw_http()?;
     let edit_user = user.as_ref().clone();
     let post_data = post_data_from_user(&edit_user);
     let edit_user = Some(edit_user);
@@ -65,7 +65,7 @@ pub async fn update(
     role_service: Data<RoleService>,
     user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = role_service.get_all_throw_http()?;
+    let user_roles = role_service.all_throw_http()?;
     let edit_user = user.as_ref().clone();
     let edit_user = Some(edit_user);
     users_create_update_invoke(

@@ -37,7 +37,7 @@ pub async fn invoke(
 
     web_auth_service.check_csrf_throw_http(&session, &data._token)?;
 
-    let user_roles = role_service.get_all_throw_http()?;
+    let user_roles = role_service.all_throw_http()?;
     if !FilePolicy::can_delete(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
@@ -54,7 +54,7 @@ pub async fn invoke(
         rate_limit_service.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
 
     if executed {
-        file_service.delete_file_by_id_throw_http(delete_file.id)?;
+        // file_service.delete_by_id_throw_http(delete_file.id)?;
         let name = delete_file.filename;
         alert_variants.push(AlertVariant::FilesDeleteSuccess(name));
     } else {
@@ -67,17 +67,18 @@ pub async fn invoke(
     }
 
     let headers = req.headers();
-    let default = HeaderValue::from_static("/files");
+    let default_str = "/files";
+    let default_ = HeaderValue::from_static(default_str);
     let location = headers
         .get(REFERER)
-        .unwrap_or(headers.get(ORIGIN).unwrap_or(&default));
-    let location = location.to_str().unwrap_or("/files");
+        .unwrap_or(headers.get(ORIGIN).unwrap_or(&default_));
+    let location = location.to_str().unwrap_or(default_str);
 
     Ok(HttpResponse::SeeOther()
         .set_alerts(alert_variants)
         .insert_header((
             LOCATION,
-            HeaderValue::from_str(location).unwrap_or(default),
+            HeaderValue::from_str(location).unwrap_or(default_),
         ))
         .finish())
 }

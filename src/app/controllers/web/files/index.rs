@@ -50,7 +50,7 @@ pub async fn invoke(
     let file_service = file_service.get_ref();
     let user = user.as_ref();
 
-    let user_roles = role_service.get_all_throw_http()?;
+    let user_roles = role_service.all_throw_http()?;
     if !FilePolicy::can_show(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
@@ -72,7 +72,7 @@ pub async fn invoke(
     let filters: Vec<FileFilter> = query.get_filters();
     let sorts: Vec<FileSort> = query.get_sorts();
     let pagination_params = FilePaginateParams::new(page, per_page, filters, sorts);
-    let mut files = file_service.paginate_files_throw_http(&pagination_params)?;
+    let mut files = file_service.paginate_throw_http(&pagination_params)?;
     let total_pages = max(files.total_pages, 1);
     let total_pages_str = total_pages.to_string();
 

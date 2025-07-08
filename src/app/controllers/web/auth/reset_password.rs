@@ -1,7 +1,7 @@
 use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
-use crate::RateLimitService;
+use crate::{RateLimitService, UserService};
 use crate::{
     prepare_value, Alert, AppService, AuthService, EmailAddress, EmailMessage, MailService,
     RandomService, TemplateService, TranslatorService, WebHttpResponse, RESET_PASSWORD_TTL,
@@ -28,6 +28,7 @@ pub async fn show(
     translator_service: Data<TranslatorService>,
     mail_service: Data<MailService>,
     auth_service: Data<AuthService>,
+    user_service: Data<UserService>,
     random_service: Data<RandomService>,
     rate_limit_service: Data<RateLimitService>,
 ) -> Result<HttpResponse, Error> {
@@ -39,6 +40,7 @@ pub async fn show(
         translator_service,
         mail_service,
         auth_service,
+        user_service,
         random_service,
         rate_limit_service,
     )
@@ -53,6 +55,7 @@ pub async fn invoke(
     translator_service: Data<TranslatorService>,
     mail_service: Data<MailService>,
     auth_service: Data<AuthService>,
+    user_service: Data<UserService>,
     random_service: Data<RandomService>,
     rate_limit_service: Data<RateLimitService>,
 ) -> Result<HttpResponse, Error> {
@@ -61,6 +64,7 @@ pub async fn invoke(
     let translator_service = translator_service.get_ref();
     let mail_service = mail_service.get_ref();
     let auth_service = auth_service.get_ref();
+    let user_service = user_service.get_ref();
     let random_service = random_service.get_ref();
     let rate_limit_service = rate_limit_service.get_ref();
 
@@ -82,6 +86,7 @@ pub async fn invoke(
         mail_service,
         tmpl_service,
         app_service,
+        user_service,
         random_service,
         rate_limit_service,
     )
@@ -140,6 +145,7 @@ async fn post(
     mail_service: &MailService,
     tmpl_service: &TemplateService,
     app_service: &AppService,
+    user_service: &UserService,
     random_service: &RandomService,
     rate_limit_service: &RateLimitService,
 ) -> Result<(bool, Vec<String>, Vec<String>), Error> {
@@ -167,8 +173,8 @@ async fn post(
             let email: String = data.email.clone().unwrap_or("".to_string());
 
             if email_errors.len() == 0 {
-                let exists = auth_service
-                    .exists_user_by_email(&email)
+                let exists = user_service
+                    .exists_by_email(&email)
                     .map_err(|_| error::ErrorInternalServerError(""))?;
                 if exists == false {
                     email_errors.push(

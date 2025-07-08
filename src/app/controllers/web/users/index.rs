@@ -53,7 +53,7 @@ pub async fn invoke(
     let role_service = role_service.get_ref();
     let user = user.as_ref();
 
-    let user_roles = role_service.get_all_throw_http()?;
+    let user_roles = role_service.all_throw_http()?;
     if !UserPolicy::can_show(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }

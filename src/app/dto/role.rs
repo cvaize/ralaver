@@ -1,7 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString, VariantNames, EnumIter};
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Role {
     pub id: u64,
     pub code: String,

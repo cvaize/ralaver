@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 pub static ALERTS_KEY: &str = "alerts";
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Alert {
     pub style: String,
     pub content: String,

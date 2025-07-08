@@ -15,7 +15,6 @@ pub struct AuthService {
     key_value_service: Data<KeyValueService>,
     hash_service: Data<HashService>,
     user_service: Data<UserService>,
-    user_repository: Data<UserMysqlRepository>,
 }
 
 impl AuthService {
@@ -23,21 +22,19 @@ impl AuthService {
         key_value_service: Data<KeyValueService>,
         hash_service: Data<HashService>,
         user_service: Data<UserService>,
-        user_repository: Data<UserMysqlRepository>,
     ) -> Self {
         Self {
             key_value_service,
             hash_service,
             user_service,
-            user_repository,
         }
     }
 
     /// Search for a user by the provided credentials and return his id.
     pub fn login_by_password(&self, email: &str, password: &str) -> Result<u64, AuthServiceError> {
         let hash_service = self.hash_service.get_ref();
-        let user_repository = self.user_repository.get_ref();
-        let user = user_repository
+        let user_service = self.user_service.get_ref();
+        let user = user_service
             .first_credentials_by_email(email)
             .map_err(|e| {
                 log::error!("AuthService::login_by_password - {email} - {e}");
@@ -76,7 +73,7 @@ impl AuthService {
 
         let user = User::empty(data.email.to_owned());
 
-        user_service.create(&user).map_err(|e| {
+        user_service.create(user).map_err(|e| {
             log::error!("AuthService::register_by_credentials - {e}");
             match e {
                 UserServiceError::DbConnectionFail => AuthServiceError::DbConnectionFail,
@@ -123,10 +120,12 @@ impl AuthService {
         let key = self.make_reset_password_store_key(email, code)?;
         let key_value_service = self.key_value_service.get_ref();
 
-        key_value_service.set_ex(&key, true, RESET_PASSWORD_TTL).map_err(|e| {
-            log::error!("AuthService::save_reset_password_code - {key} - {e}");
-            e
-        })?;
+        key_value_service
+            .set_ex(&key, true, RESET_PASSWORD_TTL)
+            .map_err(|e| {
+                log::error!("AuthService::save_reset_password_code - {key} - {e}");
+                e
+            })?;
         Ok(())
     }
 
@@ -159,36 +158,6 @@ impl AuthService {
         })?;
 
         Ok(is_stored.unwrap_or(false))
-    }
-
-    pub fn update_password_by_email(
-        &self,
-        email: &str,
-        password: &str,
-    ) -> Result<(), AuthServiceError> {
-        let user_repository = self.user_repository.get_ref();
-        let hash_service = self.hash_service.get_ref();
-
-        let hashed_password = hash_service.hash_password(password).map_err(|e| {
-            log::error!("AuthService::update_password_by_email - {email} - {e}",);
-            AuthServiceError::Fail
-        })?;
-
-        user_repository
-            .update_password_by_email(email, &hashed_password)
-            .map_err(|e| {
-                log::error!("AuthService::update_password_by_email - {email} - {e}",);
-                AuthServiceError::Fail
-            })?;
-
-        Ok(())
-    }
-
-    pub fn exists_user_by_email(&self, email: &str) -> Result<bool, AuthServiceError> {
-        self.user_repository
-            .get_ref()
-            .exists_by_email(email)
-            .map_err(|_| AuthServiceError::Fail)
     }
 }
 
@@ -234,58 +203,5 @@ impl TranslatableError for AuthServiceError {
             }
             _ => translator_service.translate(lang, "error.AuthServiceError.Fail"),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::preparation;
-
-    #[test]
-    fn exists_user_by_email() {
-        let (_, all_services) = preparation();
-
-        assert_eq!(
-            false,
-            all_services
-                .auth_service
-                .exists_user_by_email("null@null.null")
-                .unwrap()
-        );
-        assert_eq!(
-            true,
-            all_services
-                .auth_service
-                .exists_user_by_email("admin@admin.example")
-                .unwrap()
-        );
-    }
-
-    #[test]
-    fn reset_password_code() {
-        let (_, all_services) = preparation();
-
-        let email = "admin@admin.example";
-        let code = all_services.rand_service.get_ref().str(64);
-        all_services
-            .auth_service
-            .save_reset_password_code(email, &code)
-            .unwrap();
-
-        assert_eq!(
-            true,
-            all_services
-                .auth_service
-                .is_exists_reset_password_code(email, &code)
-                .unwrap()
-        );
-        let code = all_services.rand_service.get_ref().str(64);
-        assert_eq!(
-            false,
-            all_services
-                .auth_service
-                .is_exists_reset_password_code(email, &code)
-                .unwrap()
-        );
     }
 }

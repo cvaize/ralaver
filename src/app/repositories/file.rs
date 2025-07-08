@@ -1,11 +1,8 @@
-use crate::{
-    take_from_mysql_row, take_some_datetime_from_mysql_row, AppError, Disk, File, FileColumn,
-    FromMysqlDto, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder, MysqlRepository,
-    PaginateParams, ToMysqlDto,
-};
+use crate::helpers::now_date_time_str;
+use crate::{take_from_mysql_row, take_some_datetime_from_mysql_row, AppError, Disk, File, FileColumn, FromMysqlDto, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder, MysqlRepository, PaginateParams, Role, RoleFilter, ToMysqlDto};
 use actix_web::web::Data;
-use mysql::Row;
 use mysql::Value;
+use mysql::Row;
 use strum_macros::{Display, EnumIter, EnumString};
 
 pub struct FileMysqlRepository {
@@ -31,6 +28,11 @@ impl FileMysqlRepository {
         Self { db_pool }
     }
 
+    pub fn first_by_id(&self, id: u64) -> Result<Option<File>, AppError> {
+        let filters = vec![FileFilter::Id(id)];
+        self.first(&filters)
+    }
+
     pub fn first_by_disk_and_path(
         &self,
         disk: &Disk,
@@ -40,7 +42,7 @@ impl FileMysqlRepository {
             FileFilter::Disk(disk.to_string()),
             FileFilter::Path(path.to_string()),
         ];
-        self.first_by_filters(&filters)
+        self.first(&filters)
     }
 
     pub fn exists_by_disk_and_path(&self, disk: &Disk, path: &str) -> Result<bool, AppError> {
@@ -48,7 +50,7 @@ impl FileMysqlRepository {
             FileFilter::Disk(disk.to_string()),
             FileFilter::Path(path.to_string()),
         ];
-        self.exists_by_filters(&filters)
+        self.exists(&filters)
     }
 
     pub fn delete_by_disk_and_path(&self, disk: &Disk, path: &str) -> Result<(), AppError> {
@@ -56,7 +58,7 @@ impl FileMysqlRepository {
             FileFilter::Disk(disk.to_string()),
             FileFilter::Path(path.to_string()),
         ];
-        self.delete_by_filters(&filters)
+        self.delete(&filters)
     }
 
     pub fn first_by_disk_and_filename(
@@ -68,7 +70,43 @@ impl FileMysqlRepository {
             FileFilter::Filename(filename.to_string()),
             FileFilter::Disk(disk.to_string()),
         ];
-        self.first_by_filters(&filters)
+        self.first(&filters)
+    }
+
+    pub fn soft_delete_by_id(&self, id: u64) -> Result<(), AppError> {
+        let filters = vec![
+            FileFilter::Id(id),
+            FileFilter::IsDeleted(false),
+        ];
+
+        let mut data = File::default();
+        data.delete_at = Some(now_date_time_str());
+        data.is_delete = true;
+
+        let columns: Option<Vec<FileColumn>> = Some(vec![
+            FileColumn::DeleteAt,
+            FileColumn::IsDelete,
+        ]);
+
+        self.update(&filters, &data, &columns)
+    }
+
+    pub fn soft_delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), AppError> {
+        let filters = vec![
+            FileFilter::Ids(ids.clone()),
+            FileFilter::IsDeleted(false),
+        ];
+
+        let mut data = File::default();
+        data.delete_at = Some(now_date_time_str());
+        data.is_delete = true;
+
+        let columns: Option<Vec<FileColumn>> = Some(vec![
+            FileColumn::DeleteAt,
+            FileColumn::IsDelete,
+        ]);
+
+        self.update(&filters, &data, &columns)
     }
 }
 
@@ -77,6 +115,7 @@ pub type FilePaginateParams = PaginateParams<FileFilter, FileSort>;
 #[derive(Debug)]
 pub enum FileFilter {
     Id(u64),
+    Ids(Vec<u64>),
     CreatorUserId(u64),
     Disk(String),
     Path(String),
@@ -90,6 +129,14 @@ impl MysqlQueryBuilder for FileFilter {
     fn push_params_to_mysql_query(&self, query: &mut String) {
         match self {
             Self::Id(_) => query.push_str("id=:id"),
+            Self::Ids(value) => {
+                let mut v = "id in (".to_string();
+                let ids: Vec<String> = value.iter().map(|d| d.to_string()).collect();
+                let ids: String = ids.join(",").to_string();
+                v.push_str(&ids);
+                v.push_str(")");
+                query.push_str(&v)
+            },
             Self::CreatorUserId(_) => query.push_str("creator_user_id=:creator_user_id"),
             Self::Disk(_) => query.push_str("disk=:disk"),
             Self::Path(_) => query.push_str("path=:path"),
@@ -105,6 +152,7 @@ impl MysqlQueryBuilder for FileFilter {
             Self::Id(value) => {
                 params.push(("id".to_string(), Value::from(value)));
             }
+            Self::Ids(_) => {}
             Self::CreatorUserId(value) => {
                 params.push(("creator_user_id".to_string(), Value::from(value)));
             }

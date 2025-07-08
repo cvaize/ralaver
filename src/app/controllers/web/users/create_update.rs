@@ -64,7 +64,7 @@ pub async fn create(
     user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
     let data = Form(PostData::default());
-    let user_roles = role_service.get_all_throw_http()?;
+    let user_roles = role_service.all_throw_http()?;
     if !UserPolicy::can_create(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
@@ -104,7 +104,7 @@ pub async fn store(
     role_service: Data<RoleService>,
     user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = role_service.get_all_throw_http()?;
+    let user_roles = role_service.all_throw_http()?;
     if !UserPolicy::can_create(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
@@ -144,7 +144,7 @@ pub async fn edit(
     role_service: Data<RoleService>,
     user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = role_service.get_all_throw_http()?;
+    let user_roles = role_service.all_throw_http()?;
     if !UserPolicy::can_update(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
@@ -190,7 +190,7 @@ pub async fn update(
     role_service: Data<RoleService>,
     user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = role_service.get_all_throw_http()?;
+    let user_roles = role_service.all_throw_http()?;
     if !UserPolicy::can_update(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
@@ -406,7 +406,7 @@ pub fn invoke(
 
                 let columns: Option<Vec<UserColumn>> = Some(columns);
 
-                let result = user_service.upsert(&user_data, &columns);
+                let result = user_service.upsert(user_data.to_owned(), &columns);
 
                 if let Err(error) = result {
                     if error.eq(&UserServiceError::DuplicateEmail) {

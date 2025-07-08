@@ -50,7 +50,7 @@ pub async fn show(
     role_service: Data<RoleService>,
     file_service: Data<FileService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles: Vec<Role> = role_service.get_all_throw_http()?;
+    let user_roles: Vec<Role> = role_service.all_throw_http()?;
     if !FilePolicy::can_create(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }
@@ -82,7 +82,7 @@ pub async fn upload(
     role_service: Data<RoleService>,
     file_service: Data<FileService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = role_service.get_all_throw_http()?;
+    let user_roles = role_service.all_throw_http()?;
     if !FilePolicy::can_create(&user, &user_roles) {
         return Err(error::ErrorForbidden(""));
     }

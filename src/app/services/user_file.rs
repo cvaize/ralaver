@@ -31,58 +31,28 @@ impl UserFileService {
             .map_err(|e| UserFileServiceError::Fail)
     }
 
-    pub fn get_all_ids(&self) -> Result<Vec<u64>, UserFileServiceError> {
-        self.user_file_repository
-            .get_ref()
-            .get_all_ids()
-            .map_err(|e| UserFileServiceError::Fail)
-    }
-
-    pub fn get_all_ids_throw_http(&self) -> Result<Vec<u64>, Error> {
-        self.get_all_ids()
-            .map_err(|_| error::ErrorInternalServerError(""))
-    }
-
-    pub fn get_all(
+    pub fn all(
         &self,
         filters: Option<&Vec<UserFileFilter>>,
         sorts: Option<&Vec<UserFileSort>>,
     ) -> Result<Vec<UserFile>, UserFileServiceError> {
         self.user_file_repository
             .get_ref()
-            .get_all(filters, sorts)
+            .all(filters, sorts, &None)
             .map_err(|e| UserFileServiceError::Fail)
     }
 
-    pub fn get_all_throw_http(
-        &self,
-        filters: Option<&Vec<UserFileFilter>>,
-        sorts: Option<&Vec<UserFileSort>>,
-    ) -> Result<Vec<UserFile>, Error> {
-        self.get_all(filters, sorts)
-            .map_err(|_| error::ErrorInternalServerError(""))
-    }
-
-    pub fn first_by_id(&self, user_file_id: u64) -> Result<Option<UserFile>, UserFileServiceError> {
+    pub fn first_by_id(&self, id: u64) -> Result<Option<UserFile>, UserFileServiceError> {
+        let filters = vec![UserFileFilter::Id(id)];
         self.user_file_repository
             .get_ref()
-            .first_by_id(user_file_id)
+            .first(&filters)
             .map_err(|e| UserFileServiceError::Fail)
-    }
-
-    pub fn first_by_id_throw_http(&self, user_file_id: u64) -> Result<UserFile, Error> {
-        let user = self
-            .first_by_id(user_file_id)
-            .map_err(|_| error::ErrorInternalServerError(""))?;
-        if let Some(user) = user {
-            return Ok(user);
-        }
-        Err(error::ErrorNotFound(""))
     }
 
     pub fn upsert(
         &self,
-        data: &mut UserFile,
+        mut data: UserFile,
         columns: &Option<Vec<UserFileColumn>>,
     ) -> Result<(), UserFileServiceError> {
         if data.created_at.is_none() {
@@ -92,15 +62,17 @@ impl UserFileService {
             if data.updated_at.is_none() {
                 data.updated_at = Some(now_date_time_str());
             }
+            let items = vec![data];
             self.user_file_repository
                 .get_ref()
-                .insert_one(data)
+                .insert(&items, None)
                 .map_err(|e| UserFileServiceError::Fail)
         } else {
+            let filters = vec![UserFileFilter::Id(data.id)];
             data.updated_at = Some(now_date_time_str());
             self.user_file_repository
                 .get_ref()
-                .update_one(data, columns)
+                .update(&filters, &data, columns)
                 .map_err(|e| UserFileServiceError::Fail)
         }
     }

@@ -49,7 +49,7 @@ pub async fn create(
     rate_limit_service: Data<RateLimitService>,
     role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = role_service.get_all_throw_http()?;
+    let roles = role_service.all_throw_http()?;
     if !RolePolicy::can_create(&user, &roles) {
         return Err(error::ErrorForbidden(""));
     }
@@ -81,7 +81,7 @@ pub async fn store(
     rate_limit_service: Data<RateLimitService>,
     role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = role_service.get_all_throw_http()?;
+    let roles = role_service.all_throw_http()?;
     if !RolePolicy::can_create(&user, &roles) {
         return Err(error::ErrorForbidden(""));
     }
@@ -112,7 +112,7 @@ pub async fn edit(
     rate_limit_service: Data<RateLimitService>,
     role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = role_service.get_all_throw_http()?;
+    let roles = role_service.all_throw_http()?;
     if !RolePolicy::can_update(&user, &roles) {
         return Err(error::ErrorForbidden(""));
     }
@@ -156,7 +156,7 @@ pub async fn update(
     rate_limit_service: Data<RateLimitService>,
     role_service: Data<RoleService>,
 ) -> Result<HttpResponse, Error> {
-    let roles = role_service.get_all_throw_http()?;
+    let roles = role_service.all_throw_http()?;
     if !RolePolicy::can_update(&user, &roles) {
         return Err(error::ErrorForbidden(""));
     }
@@ -295,7 +295,7 @@ pub fn invoke(
                     RoleColumn::Permissions,
                 ]);
 
-                let result = role_service.upsert(&mut role_data, &columns);
+                let result = role_service.upsert(role_data, &columns);
 
                 if let Err(error) = result {
                     if error.eq(&RoleServiceError::DuplicateCode) {

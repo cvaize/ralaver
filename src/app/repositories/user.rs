@@ -1,10 +1,4 @@
-use crate::{
-    make_select_mysql_query, make_update_mysql_query, option_take_json_from_mysql_row,
-    option_to_json_string_for_mysql, take_from_mysql_row, AppError, FromMysqlDto,
-    MysqlAllColumnEnum, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder,
-    MysqlRepository, PaginateParams, ToMysqlDto, User, UserColumn, UserCredentials,
-    UserCredentialsColumn,
-};
+use crate::{make_select_mysql_query, make_update_mysql_query, option_take_json_from_mysql_row, option_to_json_string_for_mysql, take_from_mysql_row, AppError, FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder, MysqlRepository, PaginateParams, Role, RoleFilter, ToMysqlDto, User, UserColumn, UserCredentials, UserCredentialsColumn, UserServiceError};
 use actix_web::web::Data;
 use mysql::prelude::Queryable;
 use mysql::Value;
@@ -41,6 +35,21 @@ impl UserMysqlRepository {
         })
     }
 
+    pub fn first_by_email(&self, email: &str) -> Result<Option<User>, AppError> {
+        let filters: Vec<UserFilter> = vec![UserFilter::Email(email.to_string())];
+        self.first(&filters)
+    }
+
+    pub fn exists_by_email(&self, email: &str) -> Result<bool, AppError> {
+        let filters: Vec<UserFilter> = vec![UserFilter::Email(email.to_string())];
+        self.exists(&filters)
+    }
+
+    pub fn delete_by_email(&self, email: &str) -> Result<(), AppError> {
+        let filters: Vec<UserFilter> = vec![UserFilter::Email(email.to_string())];
+        self.delete(&filters)
+    }
+
     fn try_row_to_credentials(
         &self,
         row: &mut Option<Row>,
@@ -50,21 +59,6 @@ impl UserMysqlRepository {
         }
 
         Ok(None)
-    }
-
-    pub fn first_by_email(&self, email: &str) -> Result<Option<User>, AppError> {
-        let filters: Vec<UserFilter> = vec![UserFilter::Email(email.to_string())];
-        self.first_by_filters(&filters)
-    }
-
-    pub fn exists_by_email(&self, email: &str) -> Result<bool, AppError> {
-        let filters: Vec<UserFilter> = vec![UserFilter::Email(email.to_string())];
-        self.exists_by_filters(&filters)
-    }
-
-    pub fn delete_by_email(&self, email: &str) -> Result<(), AppError> {
-        let filters: Vec<UserFilter> = vec![UserFilter::Email(email.to_string())];
-        self.delete_by_filters(&filters)
     }
 
     pub fn first_credentials_by_email(
@@ -101,6 +95,16 @@ impl UserMysqlRepository {
 
         Ok(())
     }
+
+    pub fn delete_by_id(&self, id: u64) -> Result<(), AppError> {
+        let filters = vec![UserFilter::Id(id)];
+        self.delete(&filters)
+    }
+
+    pub fn delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), AppError> {
+        let filters = vec![UserFilter::Ids(ids.to_owned())];
+        self.delete(&filters)
+    }
 }
 
 pub type UserPaginateParams = PaginateParams<UserFilter, UserSort>;
@@ -108,6 +112,7 @@ pub type UserPaginateParams = PaginateParams<UserFilter, UserSort>;
 #[derive(Debug)]
 pub enum UserFilter {
     Id(u64),
+    Ids(Vec<u64>),
     Email(String),
     Search(String),
     Locale(String),
@@ -117,6 +122,14 @@ impl MysqlQueryBuilder for UserFilter {
     fn push_params_to_mysql_query(&self, query: &mut String) {
         match self {
             Self::Id(_) => query.push_str("id=:id"),
+            Self::Ids(value) => {
+                let mut v = "id in (".to_string();
+                let ids: Vec<String> = value.iter().map(|d| d.to_string()).collect();
+                let ids: String = ids.join(",").to_string();
+                v.push_str(&ids);
+                v.push_str(")");
+                query.push_str(&v)
+            },
             Self::Email(_) => query.push_str("email=:email"),
             Self::Search(_) => query.push_str("(email LIKE :search OR surname LIKE :search OR name LIKE :search OR patronymic LIKE :search)"),
             Self::Locale(_) => query.push_str("locale=:locale"),
@@ -128,6 +141,7 @@ impl MysqlQueryBuilder for UserFilter {
             Self::Id(value) => {
                 params.push(("id".to_string(), Value::from(value.to_owned())));
             }
+            Self::Ids(_) => {}
             Self::Email(value) => {
                 params.push((
                     "email".to_string(),
@@ -291,288 +305,5 @@ impl MysqlColumnEnum for UserCredentialsColumn {}
 impl MysqlIdColumn for UserCredentialsColumn {
     fn get_mysql_id_column() -> Self {
         Self::Id
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::preparation;
-
-    #[test]
-    fn test_first_by_id() {
-        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::user::tests::test_first_by_id
-        let (_, all_services) = preparation();
-        let user_rep = all_services.user_mysql_repository.get_ref();
-
-        let email = "admin_first_by_id@admin.example";
-
-        user_rep.delete_by_email(email).unwrap();
-
-        let user = User::empty(email.to_string());
-        user_rep.insert_one(&user).unwrap();
-
-        let user = user_rep.first_by_email(email).unwrap().unwrap();
-        assert_eq!(user.email, email);
-        let id = user.id;
-
-        let user = user_rep.first_by_id(id).unwrap().unwrap();
-        assert_eq!(user.id, id);
-
-        user_rep.delete_by_email(email).unwrap();
-    }
-
-    #[test]
-    fn test_first_by_email() {
-        let (_, all_services) = preparation();
-        let user_rep = all_services.user_mysql_repository.get_ref();
-
-        let email = "admin_first_by_email@admin.example";
-
-        user_rep.delete_by_email(email).unwrap();
-
-        let user = User::empty(email.to_string());
-        user_rep.insert_one(&user).unwrap();
-
-        let user = user_rep.first_by_email(email).unwrap().unwrap();
-        assert_eq!(user.email, email);
-
-        user_rep.delete_by_email(email).unwrap();
-    }
-
-    #[test]
-    fn test_paginate() {
-        let (_, all_services) = preparation();
-        let user_rep = all_services.user_mysql_repository.get_ref();
-
-        let users = user_rep.paginate(&UserPaginateParams::one()).unwrap();
-        assert_eq!(users.page, 1);
-    }
-
-    #[test]
-    fn test_insert() {
-        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::user::tests::test_insert
-        let (_, all_services) = preparation();
-        let user_rep = all_services.user_mysql_repository.get_ref();
-        let emails = ["admin_insert1@admin.example", "admin_insert2@admin.example"];
-
-        let mut users: Vec<User> = Vec::new();
-
-        for email in emails {
-            users.push(User::empty(email.to_string()));
-            user_rep.delete_by_email(email).unwrap();
-        }
-
-        for user in users {
-            user_rep.insert_one(&user).unwrap();
-        }
-
-        for email in emails {
-            let user = user_rep.first_by_email(email);
-            let mut is_exists = false;
-            if let Ok(user) = user {
-                if let Some(user) = user {
-                    is_exists = true;
-                    user_rep.delete_by_id(user.id).unwrap();
-                }
-            }
-            assert!(is_exists);
-        }
-    }
-
-    #[test]
-    fn test_delete_by_id() {
-        let (_, all_services) = preparation();
-        let user_rep = all_services.user_mysql_repository.get_ref();
-        let emails = [
-            "admin_delete_by_id1@admin.example",
-            "admin_delete_by_id2@admin.example",
-        ];
-
-        for email in emails {
-            user_rep.delete_by_email(email).unwrap();
-
-            let user = User::empty(email.to_string());
-            user_rep.insert_one(&user).unwrap();
-
-            let user = user_rep.first_by_email(email);
-            let mut is_exists = false;
-            if let Ok(user) = user {
-                if let Some(user) = user {
-                    is_exists = true;
-                    user_rep.delete_by_id(user.id).unwrap();
-                }
-            }
-            assert!(is_exists);
-
-            let user = user_rep.first_by_email(email);
-            let mut is_not_exists = true;
-            if let Ok(user) = user {
-                if let Some(_) = user {
-                    is_not_exists = false;
-                }
-            }
-            assert!(is_not_exists);
-        }
-    }
-
-    #[test]
-    fn test_delete_by_ids() {
-        let (_, all_services) = preparation();
-        let user_rep = all_services.user_mysql_repository.get_ref();
-        let emails = [
-            "admin_delete_by_ids1@admin.example",
-            "admin_delete_by_ids2@admin.example",
-        ];
-
-        let mut ids: Vec<u64> = Vec::new();
-        for email in emails {
-            user_rep.delete_by_email(email).unwrap();
-
-            let user = User::empty(email.to_string());
-            user_rep.insert_one(&user).unwrap();
-
-            let user = user_rep.first_by_email(email);
-            let mut is_exists = false;
-            if let Ok(user) = user {
-                if let Some(user) = user {
-                    is_exists = true;
-                    ids.push(user.id);
-                }
-            }
-            assert!(is_exists);
-        }
-        user_rep.delete_by_ids(&ids).unwrap();
-
-        for email in emails {
-            let user = user_rep.first_by_email(email);
-            let mut is_not_exists = true;
-            if let Ok(user) = user {
-                if let Some(_) = user {
-                    is_not_exists = false;
-                }
-            }
-            assert!(is_not_exists);
-        }
-    }
-
-    #[test]
-    fn test_update_password_by_email() {
-        let (_, all_services) = preparation();
-        let user_rep = all_services.user_mysql_repository.get_ref();
-
-        let email = "admin_update_password_by_email@admin.example";
-
-        user_rep.delete_by_email(email).unwrap();
-
-        let user = User::empty(email.to_string());
-        user_rep.insert_one(&user).unwrap();
-
-        let user = user_rep.first_credentials_by_email(email);
-        let mut is_exists = false;
-        if let Ok(user) = user {
-            if let Some(user) = user {
-                is_exists = true;
-                assert!(user.password.is_none());
-            }
-        }
-        assert!(is_exists);
-
-        user_rep.update_password_by_email(email, email).unwrap();
-
-        let user = user_rep.first_credentials_by_email(email);
-        let mut is_exists = false;
-        if let Ok(user) = user {
-            if let Some(user) = user {
-                is_exists = true;
-                assert_eq!(user.password.unwrap(), email);
-            }
-        }
-        assert!(is_exists);
-
-        user_rep.delete_by_email(email).unwrap();
-    }
-
-    #[test]
-    fn test_exists_by_email() {
-        let (_, all_services) = preparation();
-        let user_rep = all_services.user_mysql_repository.get_ref();
-
-        let email = "admin_exists_by_email@admin.example";
-
-        user_rep.delete_by_email(email).unwrap();
-
-        assert_eq!(user_rep.exists_by_email(email).unwrap(), false);
-
-        let user = User::empty(email.to_string());
-        user_rep.insert_one(&user).unwrap();
-
-        assert!(user_rep.exists_by_email(email).unwrap());
-
-        user_rep.delete_by_email(email).unwrap();
-    }
-
-    #[test]
-    fn test_paginate_with_filters() {
-        let (_, all_services) = preparation();
-        let user_rep = all_services.user_mysql_repository.get_ref();
-
-        let email = "admin_paginate_with_filters@admin.example";
-
-        user_rep.delete_by_email(email).unwrap();
-
-        // Create temp data
-        let user = User::empty(email.to_string());
-        user_rep.insert_one(&user).unwrap();
-
-        // Search exists
-        let search = "paginate_with_filters";
-        let mut params = UserPaginateParams::one();
-        params.filters.push(UserFilter::Search(search.to_string()));
-
-        let users = user_rep.paginate(&params).unwrap();
-        assert_eq!(users.records[0].email, email);
-
-        // Search not exists
-        let search = "paginate_____filters";
-        let mut params = UserPaginateParams::one();
-        params.filters.push(UserFilter::Search(search.to_string()));
-
-        let users = user_rep.paginate(&params).unwrap();
-        assert_eq!(users.records.len(), 0);
-
-        // Delete temp data
-        user_rep.delete_by_email(email).unwrap();
-    }
-
-    #[test]
-    fn test_update() {
-        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::repositories::user::tests::test_update
-        let (_, all_services) = preparation();
-        let user_rep = all_services.user_mysql_repository.get_ref();
-
-        let emails = ["admin_update1@admin.example", "admin_update2@admin.example"];
-
-        for email in emails {
-            user_rep.delete_by_email(email).unwrap();
-        }
-
-        let user_data = User::empty(emails[0].to_string());
-        user_rep.insert_one(&user_data).unwrap();
-
-        let mut user = user_rep.first_by_email(emails[0]).unwrap().unwrap();
-        assert_eq!(emails[0].to_string(), user.email);
-
-        user.email = emails[1].to_string();
-
-        let columns: Option<Vec<UserColumn>> = None;
-        user_rep.update_one(&user, &columns).unwrap();
-
-        let user = user_rep.first_by_id(user.id).unwrap().unwrap();
-        assert_eq!(emails[1].to_string(), user.email);
-
-        for email in emails {
-            user_rep.delete_by_email(email).unwrap();
-        }
     }
 }

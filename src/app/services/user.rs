@@ -1,9 +1,13 @@
+use crate::helpers::now_date_time_str;
 use crate::{
-    AppError, HashService, MysqlRepository, PaginationResult, TranslatableError, TranslatorService,
-    User, UserColumn, UserMysqlRepository, UserPaginateParams,
+    make_select_mysql_query, make_update_mysql_query, AppError, AuthServiceError, File, FileColumn,
+    FileFilter, FileServiceError, HashService, MysqlRepository, PaginationResult,
+    TranslatableError, TranslatorService, User, UserColumn, UserCredentials, UserCredentialsColumn,
+    UserFileFilter, UserFilter, UserMysqlRepository, UserPaginateParams,
 };
 use actix_web::web::Data;
 use actix_web::{error, Error};
+use mysql::{params, Row};
 use strum_macros::{Display, EnumString};
 
 pub struct UserService {
@@ -22,16 +26,27 @@ impl UserService {
         }
     }
 
-    pub fn first_by_id(&self, user_id: u64) -> Result<Option<User>, UserServiceError> {
+    pub fn first_credentials_by_email(
+        &self,
+        email: &str,
+    ) -> Result<Option<UserCredentials>, UserServiceError> {
         self.user_repository
             .get_ref()
-            .first_by_id(user_id)
+            .first_credentials_by_email(email)
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn first_by_id_throw_http(&self, user_id: u64) -> Result<User, Error> {
+    pub fn first_by_id(&self, id: u64) -> Result<Option<User>, UserServiceError> {
+        let filters = vec![UserFilter::Id(id)];
+        self.user_repository
+            .get_ref()
+            .first(&filters)
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn first_by_id_throw_http(&self, id: u64) -> Result<User, Error> {
         let user = self
-            .first_by_id(user_id)
+            .first_by_id(id)
             .map_err(|_| error::ErrorInternalServerError(""))?;
         if let Some(user) = user {
             return Ok(user);
@@ -43,6 +58,20 @@ impl UserService {
         self.user_repository
             .get_ref()
             .first_by_email(email)
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn exists_by_email(&self, email: &str) -> Result<bool, UserServiceError> {
+        self.user_repository
+            .get_ref()
+            .exists_by_email(email)
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn delete_by_email(&self, email: &str) -> Result<(), UserServiceError> {
+        self.user_repository
+            .get_ref()
+            .delete_by_email(email)
             .map_err(|e| self.match_error(e))
     }
 
@@ -68,10 +97,17 @@ impl UserService {
         UserServiceError::Fail
     }
 
-    pub fn create(&self, data: &User) -> Result<(), UserServiceError> {
+    pub fn create(&self, data: User) -> Result<(), UserServiceError> {
+        // if data.created_at.is_none() {
+        //     data.created_at = Some(now_date_time_str());
+        // }
+        // if data.updated_at.is_none() {
+        //     data.updated_at = Some(now_date_time_str());
+        // }
+        let items = vec![data];
         self.user_repository
             .get_ref()
-            .insert_one(data)
+            .insert(&items, None)
             .map_err(|e| self.match_error(e))
     }
 
@@ -80,27 +116,26 @@ impl UserService {
         data: &User,
         columns: &Option<Vec<UserColumn>>,
     ) -> Result<(), UserServiceError> {
+        // if data.created_at.is_none() {
+        //     data.created_at = Some(now_date_time_str());
+        // }
+        let filters = vec![UserFilter::Id(data.id)];
+        // data.updated_at = Some(now_date_time_str());
         self.user_repository
             .get_ref()
-            .update_one(data, columns)
+            .update(&filters, &data, columns)
             .map_err(|e| self.match_error(e))
     }
 
     pub fn upsert(
         &self,
-        data: &User,
+        data: User,
         columns: &Option<Vec<UserColumn>>,
     ) -> Result<(), UserServiceError> {
         if data.id == 0 {
-            self.user_repository
-                .get_ref()
-                .insert_one(data)
-                .map_err(|e| self.match_error(e))
+            self.create(data)
         } else {
-            self.user_repository
-                .get_ref()
-                .update_one(data, columns)
-                .map_err(|e| self.match_error(e))
+            self.update(&data, columns)
         }
     }
 
@@ -123,14 +158,14 @@ impl UserService {
         password: &str,
     ) -> Result<(), UserServiceError> {
         let hash_service = self.hash_service.get_ref();
-        let password = hash_service.hash_password(password).map_err(|e| {
-            log::error!("UserService::update_password_by_id - {e}");
+        let hashed_password = hash_service.hash_password(password).map_err(|e| {
+            log::error!("UserService::update_password_by_email - {e}");
             UserServiceError::PasswordHashFail
         })?;
 
         self.user_repository
             .get_ref()
-            .update_password_by_email(email, &password)
+            .update_password_by_email(email, &hashed_password)
             .map_err(|e| self.match_error(e))
     }
 

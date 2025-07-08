@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString, VariantNames};
 use crate::UserFile;
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct File {
     pub id: u64,
     // The file name is made up of the hash, size, and extensions obtained when uploading the file, by mask: [hash]-[size].[extensions].

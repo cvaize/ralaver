@@ -28,7 +28,7 @@ pub enum UserColumn {
     AvatarId,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct UserCredentials {
     pub id: u64,
     pub email: String,

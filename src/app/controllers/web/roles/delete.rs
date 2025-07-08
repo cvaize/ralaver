@@ -36,7 +36,7 @@ pub async fn invoke(
 
     web_auth_service.check_csrf_throw_http(&session, &data._token)?;
 
-    let roles = role_service.get_all_throw_http()?;
+    let roles = role_service.all_throw_http()?;
     if !RolePolicy::can_delete(&user, &roles) {
         return Err(error::ErrorForbidden(""));
     }

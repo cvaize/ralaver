@@ -1,10 +1,5 @@
 use crate::helpers::now_date_time_str;
-use crate::{
-    AppError, Config, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository, File,
-    FileColumn, FileMysqlRepository, FilePaginateParams, MysqlRepository, PaginationResult,
-    RandomService, TranslatableError, TranslatorService, UserFile, UserFileColumn, UserFileFilter,
-    UserFileMysqlRepository, UserFileService, UserFileSort,
-};
+use crate::{AppError, Config, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository, File, FileColumn, FileFilter, FileMysqlRepository, FilePaginateParams, MysqlRepository, PaginationResult, RandomService, TranslatableError, TranslatorService, UserFile, UserFileColumn, UserFileFilter, UserFileMysqlRepository, UserFileService, UserFileSort};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use mime::Mime;
@@ -61,16 +56,16 @@ impl FileService {
         e
     }
 
-    pub fn first_by_id(&self, file_id: u64) -> Result<Option<File>, FileServiceError> {
+    pub fn first_by_id(&self, id: u64) -> Result<Option<File>, FileServiceError> {
         self.file_repository
             .get_ref()
-            .first_by_id(file_id)
+            .first_by_id(id)
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn first_by_id_throw_http(&self, file_id: u64) -> Result<File, Error> {
+    pub fn first_by_id_throw_http(&self, id: u64) -> Result<File, Error> {
         let entity = self
-            .first_by_id(file_id)
+            .first_by_id(id)
             .map_err(|_| error::ErrorInternalServerError(""))?;
         if let Some(entity) = entity {
             return Ok(entity);
@@ -120,7 +115,7 @@ impl FileService {
 
     pub fn upsert(
         &self,
-        data: &mut File,
+        mut data: File,
         columns: &Option<Vec<FileColumn>>,
     ) -> Result<(), FileServiceError> {
         if data.created_at.is_none() {
@@ -130,44 +125,45 @@ impl FileService {
             if data.updated_at.is_none() {
                 data.updated_at = Some(now_date_time_str());
             }
+            let items = vec![data];
             self.file_repository
                 .get_ref()
-                .insert_one(data)
+                .insert(&items, None)
                 .map_err(|e| self.match_error(e))
         } else {
+            let filters = vec![FileFilter::Id(data.id)];
             data.updated_at = Some(now_date_time_str());
             self.file_repository
                 .get_ref()
-                .update_one(data, columns)
+                .update(&filters, &data, columns)
                 .map_err(|e| self.match_error(e))
         }
     }
 
-    pub fn delete_file_by_id(&self, id: u64) -> Result<(), FileServiceError> {
-        self.file_repository
-            .get_ref()
-            .delete_by_id(id)
+    pub fn soft_delete_by_id(&self, id: u64) -> Result<(), FileServiceError> {
+        self.file_repository.get_ref()
+            .soft_delete_by_id(id)
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn delete_file_by_id_throw_http(&self, id: u64) -> Result<(), Error> {
-        self.delete_file_by_id(id)
+    pub fn soft_delete_by_id_throw_http(&self, id: u64) -> Result<(), Error> {
+        self.soft_delete_by_id(id)
             .map_err(|_| error::ErrorInternalServerError(""))
     }
 
-    pub fn delete_files_by_ids(&self, ids: &Vec<u64>) -> Result<(), FileServiceError> {
-        self.file_repository
-            .get_ref()
-            .delete_by_ids(ids)
-            .map_err(|e| self.match_error(e))
-    }
+    // pub fn delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), FileServiceError> {
+    //     self.file_repository
+    //         .get_ref()
+    //         .delete_by_ids(ids)
+    //         .map_err(|e| self.match_error(e))
+    // }
+    //
+    // pub fn delete_by_ids_throw_http(&self, ids: &Vec<u64>) -> Result<(), Error> {
+    //     self.delete_by_ids(ids)
+    //         .map_err(|_| error::ErrorInternalServerError(""))
+    // }
 
-    pub fn delete_files_by_ids_throw_http(&self, ids: &Vec<u64>) -> Result<(), Error> {
-        self.delete_files_by_ids(ids)
-            .map_err(|_| error::ErrorInternalServerError(""))
-    }
-
-    pub fn paginate_files(
+    pub fn paginate(
         &self,
         params: &FilePaginateParams,
     ) -> Result<PaginationResult<File>, FileServiceError> {
@@ -177,11 +173,11 @@ impl FileService {
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn paginate_files_throw_http(
+    pub fn paginate_throw_http(
         &self,
         params: &FilePaginateParams,
     ) -> Result<PaginationResult<File>, Error> {
-        self.paginate_files(params)
+        self.paginate(params)
             .map_err(|_| error::ErrorInternalServerError(""))
     }
 
@@ -473,7 +469,7 @@ impl FileService {
 
         // 6) Upsert file meta in db
         if is_upsert {
-            self.upsert(&mut file, &None)?;
+            self.upsert(file.to_owned(), &None)?;
 
             let file_: Option<File> = file_repository
                 .first_by_disk_and_path(&disk, &file.path)
@@ -599,8 +595,10 @@ impl FileService {
         }
 
         if is_upsert {
+            let user_id = user_file.user_id;
+            let file_id = user_file.file_id;
             user_file_service
-                .upsert(&mut user_file, &None)
+                .upsert(user_file, &None)
                 .map_err(|e| {
                     self.log_error(
                         "upload_local_file_to_local_disk",
@@ -610,7 +608,7 @@ impl FileService {
                 })?;
 
             let user_file_: Option<UserFile> = user_file_service
-                .first_by_user_id_and_file_id(user_file.user_id, user_file.file_id)
+                .first_by_user_id_and_file_id(user_id, file_id)
                 .map_err(|e| {
                     self.log_error(
                         "upload_local_file_to_local_disk",
@@ -655,7 +653,7 @@ impl FileService {
         }
 
         let user_files = user_file_service
-            .get_all(Some(&filters_), sorts)
+            .all(Some(&filters_), sorts)
             .map_err(|e| {
                 self.log_error(
                     "load_and_attach_user_files",

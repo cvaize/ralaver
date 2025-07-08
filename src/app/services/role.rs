@@ -1,7 +1,4 @@
-use crate::{
-    AppError, MysqlRepository, PaginationResult, Role, RoleColumn, RoleMysqlRepository,
-    RolePaginateParams, TranslatableError, TranslatorService,
-};
+use crate::{AppError, MysqlRepository, PaginationResult, Role, RoleColumn, RoleFilter, RoleMysqlRepository, RolePaginateParams, TranslatableError, TranslatorService, User, UserColumn, UserFilter, UserServiceError};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use strum_macros::{Display, EnumString};
@@ -15,43 +12,31 @@ impl RoleService {
         Self { role_repository }
     }
 
-    pub fn get_all_ids(&self) -> Result<Vec<u64>, RoleServiceError> {
+    pub fn all(&self) -> Result<Vec<Role>, RoleServiceError> {
         self.role_repository
             .get_ref()
-            .get_all_ids()
+            .all(None, None, &None)
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn get_all_ids_throw_http(&self) -> Result<Vec<u64>, Error> {
-        self.get_all_ids()
+    pub fn all_throw_http(&self) -> Result<Vec<Role>, Error> {
+        self.all()
             .map_err(|_| error::ErrorInternalServerError(""))
     }
 
-    pub fn get_all(&self) -> Result<Vec<Role>, RoleServiceError> {
+    pub fn first_by_id(&self, id: u64) -> Result<Option<Role>, RoleServiceError> {
         self.role_repository
             .get_ref()
-            .get_all(None, None)
+            .first_by_id(id)
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn get_all_throw_http(&self) -> Result<Vec<Role>, Error> {
-        self.get_all()
-            .map_err(|_| error::ErrorInternalServerError(""))
-    }
-
-    pub fn first_by_id(&self, role_id: u64) -> Result<Option<Role>, RoleServiceError> {
-        self.role_repository
-            .get_ref()
-            .first_by_id(role_id)
-            .map_err(|e| self.match_error(e))
-    }
-
-    pub fn first_by_id_throw_http(&self, role_id: u64) -> Result<Role, Error> {
-        let user = self
-            .first_by_id(role_id)
+    pub fn first_by_id_throw_http(&self, id: u64) -> Result<Role, Error> {
+        let entity = self
+            .first_by_id(id)
             .map_err(|_| error::ErrorInternalServerError(""))?;
-        if let Some(user) = user {
-            return Ok(user);
+        if let Some(entity) = entity {
+            return Ok(entity);
         }
         Err(error::ErrorNotFound(""))
     }
@@ -64,11 +49,11 @@ impl RoleService {
     }
 
     pub fn first_by_code_throw_http(&self, code: &str) -> Result<Role, Error> {
-        let user = self
+        let entity = self
             .first_by_code(code)
             .map_err(|_| error::ErrorInternalServerError(""))?;
-        if let Some(user) = user {
-            return Ok(user);
+        if let Some(entity) = entity {
+            return Ok(entity);
         }
         Err(error::ErrorNotFound(""))
     }
@@ -85,39 +70,45 @@ impl RoleService {
         RoleServiceError::Fail
     }
 
-    pub fn create(&self, data: &mut Role) -> Result<(), RoleServiceError> {
+    pub fn create(&self, data: Role) -> Result<(), RoleServiceError> {
+        // if data.created_at.is_none() {
+        //     data.created_at = Some(now_date_time_str());
+        // }
+        // if data.updated_at.is_none() {
+        //     data.updated_at = Some(now_date_time_str());
+        // }
+        let items = vec![data];
         self.role_repository
             .get_ref()
-            .insert_one(data)
+            .insert(&items, None)
             .map_err(|e| self.match_error(e))
     }
 
     pub fn update(
         &self,
-        data: &mut Role,
+        data: &Role,
         columns: &Option<Vec<RoleColumn>>,
     ) -> Result<(), RoleServiceError> {
+        // if data.created_at.is_none() {
+        //     data.created_at = Some(now_date_time_str());
+        // }
+        let filters = vec![RoleFilter::Id(data.id)];
+        // data.updated_at = Some(now_date_time_str());
         self.role_repository
             .get_ref()
-            .update_one(data, columns)
+            .update(&filters, &data, columns)
             .map_err(|e| self.match_error(e))
     }
 
     pub fn upsert(
         &self,
-        data: &mut Role,
+        data: Role,
         columns: &Option<Vec<RoleColumn>>,
     ) -> Result<(), RoleServiceError> {
         if data.id == 0 {
-            self.role_repository
-                .get_ref()
-                .insert_one(data)
-                .map_err(|e| self.match_error(e))
+            self.create(data)
         } else {
-            self.role_repository
-                .get_ref()
-                .update_one(data, columns)
-                .map_err(|e| self.match_error(e))
+            self.update(&data, columns)
         }
     }
 

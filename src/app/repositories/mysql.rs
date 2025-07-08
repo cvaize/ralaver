@@ -45,9 +45,6 @@ where
     fn get_repository_name(&self) -> &str;
     fn get_table(&self) -> &str;
     fn get_db_pool(&self) -> &MysqlPool;
-    fn get_id_key(&self) -> &str {
-        "id"
-    }
     fn get_is_exists_field(&self) -> &str {
         "is_exists"
     }
@@ -94,34 +91,14 @@ where
         Ok(false)
     }
 
-    fn get_all_ids(&self) -> Result<Vec<u64>, AppError> {
-        let table = self.get_table();
-        let column: &str = self.get_id_key();
-        let query = make_select_mysql_query(table, column, "", "");
-        let mut conn = self.connection()?;
-        let rows = conn
-            .query_iter(query)
-            .map_err(|e| self.log_error("get_all_ids", e.to_string()))?;
-
-        let mut ids: Vec<u64> = Vec::new();
-        for mut row in rows.into_iter() {
-            if let Ok(row) = &mut row {
-                if let Ok(id) = take_from_mysql_row::<u64>(row, &column) {
-                    ids.push(id);
-                }
-            }
-        }
-
-        Ok(ids)
-    }
-
-    fn get_all(
+    fn all_rows(
         &self,
         filters: Option<&Vec<Filter>>,
         sorts: Option<&Vec<Sort>>,
-    ) -> Result<Vec<Entity>, AppError> {
+        columns: &Option<Vec<EntityColumn>>,
+    ) -> Result<Vec<Row>, AppError> {
         let table = self.get_table();
-        let columns: String = EntityColumn::mysql_all_select_columns();
+        let columns: String = columns.mysql_select_columns();
 
         let mut mysql_where: String = String::new();
         let mut mysql_order: String = String::new();
@@ -154,31 +131,65 @@ where
         let query = make_select_mysql_query(table, &columns, &mysql_where, &mysql_order);
         let mut conn = self.connection()?;
 
-        let mut records: Vec<Entity> = Vec::new();
+        let mut rows_result: Vec<Row> = Vec::new();
         if mysql_params.is_empty() {
             let rows = conn
                 .query_iter(query)
-                .map_err(|e| self.log_error("get_all", e.to_string()))?;
+                .map_err(|e| self.log_error("all_rows", e.to_string()))?;
             for mut row in rows.into_iter() {
-                if let Ok(row) = &mut row {
-                    records.push(self.row_to_entity(row)?);
+                if let Ok(row) = row {
+                    rows_result.push(row);
                 }
             }
         } else {
             let rows = conn
                 .exec_iter(query, Params::from(mysql_params))
-                .map_err(|e| self.log_error("get_all", e.to_string()))?;
+                .map_err(|e| self.log_error("all_rows", e.to_string()))?;
             for mut row in rows.into_iter() {
-                if let Ok(row) = &mut row {
-                    records.push(self.row_to_entity(row)?);
+                if let Ok(row) = row {
+                    rows_result.push(row);
                 }
             }
         }
 
+        Ok(rows_result)
+    }
+
+    fn all(
+        &self,
+        filters: Option<&Vec<Filter>>,
+        sorts: Option<&Vec<Sort>>,
+        columns: &Option<Vec<EntityColumn>>,
+    ) -> Result<Vec<Entity>, AppError> {
+        let mut records: Vec<Entity> = Vec::new();
+        let rows = self.all_rows(filters, sorts, columns)?;
+        for mut row in rows {
+            records.push(self.row_to_entity(&mut row)?);
+        }
         Ok(records)
     }
 
-    fn first_by_filters(&self, filters: &Vec<Filter>) -> Result<Option<Entity>, AppError> {
+    fn all_ids(
+        &self,
+        filters: Option<&Vec<Filter>>,
+        sorts: Option<&Vec<Sort>>,
+    ) -> Result<Vec<u64>, AppError> {
+        let column: EntityColumn = EntityColumn::get_mysql_id_column();
+        let column_str: String = column.to_string();
+        let column_str: &str = &column_str;
+        let columns: Option<Vec<EntityColumn>> = Some(vec![column]);
+
+        let mut ids: Vec<u64> = Vec::new();
+        let rows = self.all_rows(filters, sorts, &columns)?;
+        for mut row in rows {
+            if let Ok(id) = take_from_mysql_row::<u64>(&mut row, column_str) {
+                ids.push(id);
+            }
+        }
+        Ok(ids)
+    }
+
+    fn first(&self, filters: &Vec<Filter>) -> Result<Option<Entity>, AppError> {
         if filters.is_empty() {
             return Err(AppError(None));
         }
@@ -202,12 +213,12 @@ where
         let mut conn = self.connection()?;
         let mut row: Option<Row> = conn
             .exec_first(query, Params::from(mysql_params))
-            .map_err(|e| self.log_error("first_by_filters", e.to_string()))?;
+            .map_err(|e| self.log_error("first", e.to_string()))?;
 
         self.try_row_to_entity(&mut row)
     }
 
-    fn exists_by_filters(&self, filters: &Vec<Filter>) -> Result<bool, AppError> {
+    fn exists(&self, filters: &Vec<Filter>) -> Result<bool, AppError> {
         if filters.is_empty() {
             return Err(AppError(None));
         }
@@ -230,53 +241,9 @@ where
         let mut conn = self.connection()?;
         let row: Option<Row> = conn
             .exec_first(query, Params::from(mysql_params))
-            .map_err(|e| self.log_error("exists_by_filters", e.to_string()))?;
+            .map_err(|e| self.log_error("exists", e.to_string()))?;
 
         self.try_row_is_exists(&row)
-    }
-
-    fn delete_by_filters(&self, filters: &Vec<Filter>) -> Result<(), AppError> {
-        if filters.is_empty() {
-            return Err(AppError(None));
-        }
-        let table = self.get_table();
-
-        let mut mysql_where: String = String::new();
-        let mut mysql_params: Vec<(String, Value)> = Vec::new();
-
-        let mut is_and = false;
-        for filter in filters {
-            if is_and {
-                mysql_where.push_str(" AND ")
-            }
-            filter.push_params_to_vec(&mut mysql_params);
-            filter.push_params_to_mysql_query(&mut mysql_where);
-            is_and = true;
-        }
-
-        let mut conn = self.connection()?;
-        let query = make_delete_mysql_query(table, &mysql_where);
-        conn.exec_drop(query, Params::from(mysql_params))
-            .map_err(|e| self.log_error("delete_by_filters", e.to_string()))?;
-
-        Ok(())
-    }
-
-    fn first_by_id(&self, id: u64) -> Result<Option<Entity>, AppError> {
-        let table = self.get_table();
-        let columns = EntityColumn::mysql_all_select_columns();
-        let id_key = self.get_id_key();
-        let mut where_ = id_key.to_string();
-        where_.push_str("=:");
-        where_.push_str(id_key);
-        let query = make_select_mysql_query(table, &columns, &where_, "");
-        let params: Vec<(String, Value)> = vec![(String::from(id_key), Value::from(id))];
-        let mut conn = self.connection()?;
-        let mut row: Option<Row> = conn
-            .exec_first(query, Params::from(params))
-            .map_err(|e| self.log_error("first_by_id", e.to_string()))?;
-
-        self.try_row_to_entity(&mut row)
     }
 
     fn paginate(&self, params: &PaginateParams) -> Result<PaginationResult<Entity>, AppError> {
@@ -345,93 +312,96 @@ where
         ))
     }
 
-    fn insert_one(&self, data: &Entity) -> Result<(), AppError> {
+    fn insert(
+        &self,
+        data: &Vec<Entity>,
+        columns: Option<Vec<EntityColumn>>,
+    ) -> Result<(), AppError> {
         let mut conn = self.connection()?;
 
-        let id_column = EntityColumn::get_mysql_id_column();
-        let columns: Option<Vec<EntityColumn>> =
-            Some(EntityColumn::iter().filter(|c| c.ne(&id_column)).collect());
-        let columns_str = columns.mysql_insert_columns();
-        let mut params: Vec<(String, Value)> = Vec::new();
-        data.push_mysql_params_to_vec(&columns, &mut params);
+        let columns_: Option<Vec<EntityColumn>> = if columns.is_none() {
+            let id_column = EntityColumn::get_mysql_id_column();
+            Some(EntityColumn::iter().filter(|c| c.ne(&id_column)).collect())
+        } else {
+            columns
+        };
 
+        let columns_str = columns_.mysql_insert_columns();
         let table = self.get_table();
         let query = make_insert_mysql_query(table, &columns_str);
-        conn.exec_drop(query, Params::from(params))
-            .map_err(|e| self.log_error("insert_one", e.to_string()))?;
+
+        conn.exec_batch(
+            query,
+            data.iter().map(|entity| {
+                let mut params: Vec<(String, Value)> = Vec::new();
+                entity.push_mysql_params_to_vec(&columns_, &mut params);
+                params
+            }),
+        )
+        .map_err(|e| self.log_error("insert", e.to_string()))?;
 
         Ok(())
     }
 
-    fn delete_by_id(&self, id: u64) -> Result<(), AppError> {
-        let mut conn = self.connection()?;
-        let table = self.get_table();
-
-        let id_key = self.get_id_key();
-        let mut where_ = id_key.to_string();
-        where_.push_str("=:");
-        where_.push_str(id_key);
-        let query = make_delete_mysql_query(table, &where_);
-        let params: Vec<(String, Value)> = vec![(String::from(id_key), Value::from(id))];
-        conn.exec_drop(query, Params::from(params))
-            .map_err(|e| self.log_error("delete_by_id", e.to_string()))?;
-
-        Ok(())
-    }
-
-    fn delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), AppError> {
-        let mut conn = self.connection()?;
-        let table = self.get_table();
-
-        let id_key = self.get_id_key();
-        let mut where_ = id_key.to_string();
-        where_.push_str(" IN (:");
-        where_.push_str(id_key);
-        where_.push_str(")");
-
-        let query = make_delete_mysql_query(table, &where_);
-        let params = ids.iter().map(|id| {
-            let params: Vec<(String, Value)> = vec![(String::from(id_key), Value::from(id))];
-            Params::from(params)
-        });
-        conn.exec_batch(query, params)
-            .map_err(|e| self.log_error("delete_by_ids", e.to_string()))?;
-
-        Ok(())
-    }
-
-    fn update_one(
+    fn update(
         &self,
+        filters: &Vec<Filter>,
         data: &Entity,
         columns: &Option<Vec<EntityColumn>>,
     ) -> Result<(), AppError> {
+        if filters.is_empty() {
+            return Err(AppError(None));
+        }
         let mut conn = self.connection()?;
         let columns_str = columns.mysql_update_columns();
 
         let table = self.get_table();
-        let id_key = self.get_id_key();
-        let mut where_ = id_key.to_string();
-        where_.push_str("=:");
-        where_.push_str(id_key);
-        let query = make_update_mysql_query(table, &columns_str, &where_);
-        let mut params: Vec<(String, Value)> = Vec::new();
-        data.push_mysql_params_to_vec(columns, &mut params);
 
-        let mut is = true;
-        for (key, _) in &params {
-            if key.eq(id_key) {
-                is = false;
-                break;
+        let mut mysql_where: String = String::new();
+        let mut mysql_params: Vec<(String, Value)> = Vec::new();
+
+        let mut is_and = false;
+        for filter in filters {
+            if is_and {
+                mysql_where.push_str(" AND ")
             }
+            filter.push_params_to_vec(&mut mysql_params);
+            filter.push_params_to_mysql_query(&mut mysql_where);
+            is_and = true;
         }
 
-        if is {
-            let id = data.get_id();
-            params.push((id_key.to_string(), Value::from(id)));
+        let query = make_update_mysql_query(table, &columns_str, &mysql_where);
+        data.push_mysql_params_to_vec(columns, &mut mysql_params);
+
+        conn.exec_drop(query, Params::from(mysql_params))
+            .map_err(|e| self.log_error("update", e.to_string()))?;
+
+        Ok(())
+    }
+
+    fn delete(&self, filters: &Vec<Filter>) -> Result<(), AppError> {
+        if filters.is_empty() {
+            return Err(AppError(None));
+        }
+        let table = self.get_table();
+
+        let mut mysql_where: String = String::new();
+        let mut mysql_params: Vec<(String, Value)> = Vec::new();
+
+        let mut is_and = false;
+        for filter in filters {
+            if is_and {
+                mysql_where.push_str(" AND ")
+            }
+            filter.push_params_to_vec(&mut mysql_params);
+            filter.push_params_to_mysql_query(&mut mysql_where);
+            is_and = true;
         }
 
-        conn.exec_drop(query, Params::from(params))
-            .map_err(|e| self.log_error("update_one", e.to_string()))?;
+        let mut conn = self.connection()?;
+        let query = make_delete_mysql_query(table, &mysql_where);
+        conn.exec_drop(query, Params::from(mysql_params))
+            .map_err(|e| self.log_error("delete", e.to_string()))?;
 
         Ok(())
     }

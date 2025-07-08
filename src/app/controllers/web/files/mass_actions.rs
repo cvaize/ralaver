@@ -39,7 +39,7 @@ pub async fn invoke(
 
     web_auth_service.check_csrf_throw_http(&session, &data._token)?;
 
-    let user_roles = role_service.get_all_throw_http()?;
+    let user_roles = role_service.all_throw_http()?;
 
     let user = user.as_ref();
     let lang: String = locale_service.get_locale_code(Some(&req), Some(&user));
@@ -59,7 +59,7 @@ pub async fn invoke(
                     if !FilePolicy::can_delete(&user, &user_roles) {
                         return Err(error::ErrorForbidden(""));
                     }
-                    file_service.delete_files_by_ids_throw_http(ids)?;
+                    // file_service.delete_by_ids_throw_http(ids)?;
                     alert_variants.push(AlertVariant::FilesMassDeleteSuccess(
                         ids.iter()
                             .map(|id| id.to_string())

@@ -40,7 +40,7 @@ impl UserFileMysqlRepository {
             UserFileFilter::UserId(user_id),
             UserFileFilter::FileId(file_id),
         ];
-        self.first_by_filters(&filters)
+        self.first(&filters)
     }
 
     pub fn exists_by_user_id_and_file_id(
@@ -52,7 +52,7 @@ impl UserFileMysqlRepository {
             UserFileFilter::UserId(user_id),
             UserFileFilter::FileId(file_id),
         ];
-        self.exists_by_filters(&filters)
+        self.exists(&filters)
     }
 
     pub fn delete_by_user_id_and_file_id(
@@ -64,7 +64,7 @@ impl UserFileMysqlRepository {
             UserFileFilter::UserId(user_id),
             UserFileFilter::FileId(file_id),
         ];
-        self.delete_by_filters(&filters)
+        self.delete(&filters)
     }
 }
 

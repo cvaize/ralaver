@@ -37,7 +37,7 @@ pub async fn invoke(
 
     web_auth_service.check_csrf_throw_http(&session, &data._token)?;
 
-    let roles = role_service.get_all_throw_http()?;
+    let roles = role_service.all_throw_http()?;
 
     let user = user.as_ref();
     let lang: String = locale_service.get_locale_code(Some(&req), Some(&user));

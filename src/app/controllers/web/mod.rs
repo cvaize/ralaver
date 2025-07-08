@@ -135,7 +135,7 @@ pub fn get_template_context<'a>(data: &'a ContextData) -> Value {
     let mut sidebar_files: Option<String> = None;
     let mut is_sidebar_users_dropdown = false;
 
-    if let Ok(roles) = role_service.get_all() {
+    if let Ok(roles) = role_service.all() {
         let is_users_show = UserPolicy::can_show(user, &roles);
         if is_users_show {
             sidebar_users_index =

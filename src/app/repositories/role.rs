@@ -1,5 +1,5 @@
 
-use crate::{option_take_json_from_mysql_row, option_to_json_string_for_mysql, take_from_mysql_row, AppError, FromMysqlDto, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder, MysqlRepository, PaginateParams, Role, RoleColumn, ToMysqlDto};
+use crate::{option_take_json_from_mysql_row, option_to_json_string_for_mysql, take_from_mysql_row, AppError, FromMysqlDto, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder, MysqlRepository, PaginateParams, Role, RoleColumn, RoleServiceError, ToMysqlDto, UserFilter};
 use actix_web::web::Data;
 use mysql::Row;
 use mysql::Value;
@@ -28,19 +28,34 @@ impl RoleMysqlRepository {
         Self { db_pool }
     }
 
+    pub fn first_by_id(&self, id: u64) -> Result<Option<Role>, AppError> {
+        let filters = vec![RoleFilter::Id(id)];
+        self.first(&filters)
+    }
+
+    pub fn delete_by_id(&self, id: u64) -> Result<(), AppError> {
+        let filters = vec![RoleFilter::Id(id)];
+        self.delete(&filters)
+    }
+
+    pub fn delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), AppError> {
+        let filters = vec![RoleFilter::Ids(ids.to_owned())];
+        self.delete(&filters)
+    }
+
     pub fn first_by_code(&self, code: &str) -> Result<Option<Role>, AppError> {
         let filters: Vec<RoleFilter> = vec![RoleFilter::Code(code.to_string())];
-        self.first_by_filters(&filters)
+        self.first(&filters)
     }
 
     pub fn exists_by_code(&self, code: &str) -> Result<bool, AppError> {
         let filters: Vec<RoleFilter> = vec![RoleFilter::Code(code.to_string())];
-        self.exists_by_filters(&filters)
+        self.exists(&filters)
     }
 
     pub fn delete_by_code(&self, code: &str) -> Result<(), AppError> {
         let filters: Vec<RoleFilter> = vec![RoleFilter::Code(code.to_string())];
-        self.delete_by_filters(&filters)
+        self.delete(&filters)
     }
 }
 
@@ -49,6 +64,7 @@ pub type RolePaginateParams = PaginateParams<RoleFilter, RoleSort>;
 #[derive(Debug)]
 pub enum RoleFilter {
     Id(u64),
+    Ids(Vec<u64>),
     Code(String),
     Search(String),
 }
@@ -57,6 +73,14 @@ impl MysqlQueryBuilder for RoleFilter {
     fn push_params_to_mysql_query(&self, query: &mut String) {
         match self {
             Self::Id(_) => query.push_str("id=:id"),
+            Self::Ids(value) => {
+                let mut v = "id in (".to_string();
+                let ids: Vec<String> = value.iter().map(|d| d.to_string()).collect();
+                let ids: String = ids.join(",").to_string();
+                v.push_str(&ids);
+                v.push_str(")");
+                query.push_str(&v)
+            },
             Self::Code(_) => query.push_str("code=:code"),
             Self::Search(_) => query.push_str("(name LIKE :search OR code LIKE :search)"),
         }
@@ -67,6 +91,7 @@ impl MysqlQueryBuilder for RoleFilter {
             Self::Id(value) => {
                 params.push(("id".to_string(), Value::from(value)));
             }
+            Self::Ids(_) => {}
             Self::Code(value) => {
                 params.push(("code".to_string(), Value::from(value.to_string())));
             }

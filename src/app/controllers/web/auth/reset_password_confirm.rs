@@ -5,7 +5,7 @@ use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
-use crate::{prepare_value, AlertVariant, RateLimitService, WebHttpResponse, RESET_PASSWORD_TTL};
+use crate::{prepare_value, AlertVariant, RateLimitService, UserService, WebHttpResponse, RESET_PASSWORD_TTL};
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::web::{Data, Form, Query};
 use actix_web::{
@@ -42,6 +42,7 @@ pub async fn show(
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     auth_service: Data<AuthService>,
+    user_service: Data<UserService>,
     rate_limit_service: Data<RateLimitService>,
 ) -> Result<HttpResponse, Error> {
     invoke(
@@ -57,6 +58,7 @@ pub async fn show(
         app_service,
         translator_service,
         auth_service,
+        user_service,
         rate_limit_service,
     )
     .await
@@ -70,12 +72,14 @@ pub async fn invoke(
     app_service: Data<AppService>,
     translator_service: Data<TranslatorService>,
     auth_service: Data<AuthService>,
+    user_service: Data<UserService>,
     rate_limit_service: Data<RateLimitService>,
 ) -> Result<HttpResponse, Error> {
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
     let translator_service = translator_service.get_ref();
     let auth_service = auth_service.get_ref();
+    let user_service = user_service.get_ref();
     let rate_limit_service = rate_limit_service.get_ref();
 
     let query = query.into_inner();
@@ -121,6 +125,7 @@ pub async fn invoke(
             translator_service,
             lang,
             auth_service,
+            user_service,
             rate_limit_service,
         )
         .await?;
@@ -203,6 +208,7 @@ async fn post(
     translator_service: &TranslatorService,
     lang: &str,
     auth_service: &AuthService,
+    user_service: &UserService,
     rate_limit_service: &RateLimitService,
 ) -> Result<
     (
@@ -315,7 +321,7 @@ async fn post(
                     .map_err(|_| error::ErrorInternalServerError(""))?;
 
                 if is_exists_code {
-                    auth_service
+                    user_service
                         .update_password_by_email(email, password)
                         .map_err(|_| error::ErrorInternalServerError(""))?;
                     auth_service

@@ -57,7 +57,6 @@ pub fn build(c: &Connections, config: Data<Config>) -> Services {
         key_value_service.clone(),
         hash_service.clone(),
         user_service.clone(),
-        user_mysql_repository.clone(),
     ));
     let locale_service = Data::new(LocaleService::new(config.clone()));
     let app_service = Data::new(AppService::new(config.clone(), locale_service.clone()));
