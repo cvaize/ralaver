@@ -2,7 +2,10 @@ use crate::app::controllers::web::users::create_update::{
     invoke as users_create_update_invoke, post_data_from_user, PostData,
 };
 use crate::libs::actix_web::types::form::Form;
-use crate::{AppService, FileService, LocaleService, RateLimitService, RoleService, TemplateService, TranslatorService, UserService};
+use crate::{
+    AppService, LocaleService, RateLimitService, RoleService, TemplateService, TranslatorService,
+    UserFileService, UserService,
+};
 use crate::{Session, User, WebAuthService};
 use actix_web::web::{Data, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
@@ -20,7 +23,7 @@ pub async fn index(
     user_service: Data<UserService>,
     locale_service: Data<LocaleService>,
     role_service: Data<RoleService>,
-    file_service: Data<FileService>,
+    user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
     let user_roles = role_service.get_all_throw_http()?;
     let edit_user = user.as_ref().clone();
@@ -43,7 +46,7 @@ pub async fn index(
         user_service,
         locale_service,
         role_service,
-        file_service,
+        user_file_service,
     )
 }
 
@@ -60,7 +63,7 @@ pub async fn update(
     user_service: Data<UserService>,
     locale_service: Data<LocaleService>,
     role_service: Data<RoleService>,
-    file_service: Data<FileService>,
+    user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
     let user_roles = role_service.get_all_throw_http()?;
     let edit_user = user.as_ref().clone();
@@ -81,7 +84,7 @@ pub async fn update(
         user_service,
         locale_service,
         role_service,
-        file_service,
+        user_file_service,
     )
 }
 

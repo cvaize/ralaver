@@ -1,10 +1,16 @@
-use std::io::{Read, Write};
 use crate::helpers::now_date_time_str;
-use crate::{AppError, Config, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository, File, FileColumn, FileMysqlRepository, FilePaginateParams, MysqlRepository, PaginationResult, RandomService, TranslatableError, TranslatorService, UserFile, UserFileColumn, UserFileMysqlRepository};
+use crate::{
+    AppError, Config, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository, File,
+    FileColumn, FileMysqlRepository, FilePaginateParams, MysqlRepository, PaginationResult,
+    RandomService, TranslatableError, TranslatorService, UserFile, UserFileColumn, UserFileFilter,
+    UserFileMysqlRepository, UserFileService, UserFileSort,
+};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use mime::Mime;
 use mime2ext::mime2ext;
+use std::collections::HashMap;
+use std::io::{Read, Write};
 use std::path::MAIN_SEPARATOR_STR;
 use strum_macros::{Display, EnumString};
 
@@ -14,7 +20,7 @@ pub const FILE_DIRECTORY: &'static str = "files";
 pub struct FileService {
     config: Data<Config>,
     file_repository: Data<FileMysqlRepository>,
-    user_file_repository: Data<UserFileMysqlRepository>,
+    user_file_service: Data<UserFileService>,
     disk_local_repository: Data<DiskLocalRepository>,
     #[allow(dead_code)]
     disk_external_repository: Data<DiskExternalRepository>,
@@ -26,7 +32,7 @@ impl FileService {
     pub fn new(
         config: Data<Config>,
         file_repository: Data<FileMysqlRepository>,
-        user_file_repository: Data<UserFileMysqlRepository>,
+        user_file_service: Data<UserFileService>,
         disk_local_repository: Data<DiskLocalRepository>,
         disk_external_repository: Data<DiskExternalRepository>,
         random_repository: Data<RandomService>,
@@ -34,7 +40,7 @@ impl FileService {
         Self {
             config,
             file_repository,
-            user_file_repository,
+            user_file_service,
             disk_local_repository,
             disk_external_repository,
             random_repository,
@@ -55,64 +61,44 @@ impl FileService {
         e
     }
 
-    pub fn first_file_by_id(&self, file_id: u64) -> Result<Option<File>, FileServiceError> {
+    pub fn first_by_id(&self, file_id: u64) -> Result<Option<File>, FileServiceError> {
         self.file_repository
             .get_ref()
             .first_by_id(file_id)
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn first_file_by_id_throw_http(&self, file_id: u64) -> Result<File, Error> {
-        let user = self
-            .first_file_by_id(file_id)
-            .map_err(|_| error::ErrorInternalServerError(""))?;
-        if let Some(user) = user {
-            return Ok(user);
-        }
-        Err(error::ErrorNotFound(""))
-    }
-
-    pub fn first_user_file_by_id(
-        &self,
-        file_id: u64,
-    ) -> Result<Option<UserFile>, FileServiceError> {
-        self.user_file_repository
-            .get_ref()
+    pub fn first_by_id_throw_http(&self, file_id: u64) -> Result<File, Error> {
+        let entity = self
             .first_by_id(file_id)
-            .map_err(|e| self.match_error(e))
-    }
-
-    pub fn first_user_file_by_id_throw_http(&self, user_file_id: u64) -> Result<UserFile, Error> {
-        let user_file = self
-            .first_user_file_by_id(user_file_id)
             .map_err(|_| error::ErrorInternalServerError(""))?;
-        if let Some(user_file) = user_file {
-            return Ok(user_file);
+        if let Some(entity) = entity {
+            return Ok(entity);
         }
         Err(error::ErrorNotFound(""))
     }
 
-    pub fn first_file_by_disk_and_path(
+    pub fn first_by_disk_and_filename(
         &self,
         disk: &Disk,
-        path: &str,
+        filename: &str,
     ) -> Result<Option<File>, FileServiceError> {
         self.file_repository
             .get_ref()
-            .first_by_disk_and_path(disk, path)
+            .first_by_disk_and_filename(disk, filename)
             .map_err(|e| self.match_error(e))
     }
 
-    pub fn first_file_by_disk_and_path_throw_http(
+    pub fn first_by_disk_and_filename_throw_http(
         &self,
         disk: &Disk,
-        path: &str,
+        filename: &str,
     ) -> Result<File, Error> {
-        let user = self
-            .first_file_by_disk_and_path(disk, path)
+        let entity = self
+            .first_by_disk_and_filename(disk, filename)
             .map_err(|_| error::ErrorInternalServerError(""))?;
-        if let Some(user) = user {
-            return Ok(user);
+        if let Some(entity) = entity {
+            return Ok(entity);
         }
         Err(error::ErrorNotFound(""))
     }
@@ -132,7 +118,7 @@ impl FileService {
         FileServiceError::Fail
     }
 
-    pub fn upsert_file(
+    pub fn upsert(
         &self,
         data: &mut File,
         columns: &Option<Vec<FileColumn>>,
@@ -157,40 +143,8 @@ impl FileService {
         }
     }
 
-    pub fn upsert_user_file(
-        &self,
-        data: &mut UserFile,
-        columns: &Option<Vec<UserFileColumn>>,
-    ) -> Result<(), FileServiceError> {
-        if data.created_at.is_none() {
-            data.created_at = Some(now_date_time_str());
-        }
-        if data.id == 0 {
-            if data.updated_at.is_none() {
-                data.updated_at = Some(now_date_time_str());
-            }
-            self.user_file_repository
-                .get_ref()
-                .insert_one(data)
-                .map_err(|e| self.match_error(e))
-        } else {
-            data.updated_at = Some(now_date_time_str());
-            self.user_file_repository
-                .get_ref()
-                .update_one(data, columns)
-                .map_err(|e| self.match_error(e))
-        }
-    }
-
     pub fn delete_file_by_id(&self, id: u64) -> Result<(), FileServiceError> {
         self.file_repository
-            .get_ref()
-            .delete_by_id(id)
-            .map_err(|e| self.match_error(e))
-    }
-
-    pub fn delete_user_file_by_id(&self, id: u64) -> Result<(), FileServiceError> {
-        self.user_file_repository
             .get_ref()
             .delete_by_id(id)
             .map_err(|e| self.match_error(e))
@@ -238,38 +192,6 @@ impl FileService {
         str
     }
 
-    pub fn get_public_path(&self, user_file: &UserFile) -> Option<String> {
-        if user_file.path.is_none() {
-            return None;
-        }
-
-        if Disk::Local.to_string().eq(&user_file.disk) {
-            if let Some(filename) = &user_file.filename {
-                let config = self.config.get_ref();
-                let mut public_path = config.filesystem.disks.local.url_path.to_owned();
-                public_path.push('/');
-                public_path.push_str(filename);
-                return Some(public_path);
-            }
-        }
-        None
-    }
-
-    pub fn get_public_url(&self, user_file: &UserFile) -> Option<String> {
-        if let Some(public_path) = self.get_public_path(user_file) {
-            if Disk::Local.to_string().eq(&user_file.disk) {
-                let config = self.config.get_ref();
-                let mut public_url = config.app.url.to_owned();
-                public_url.push('/');
-                public_url.push_str(&public_path);
-                return Some(public_url);
-            }
-            Some(public_path)
-        } else {
-            None
-        }
-    }
-
     pub fn upload_local_file_to_local_disk(
         &self,
         user_id: u64,
@@ -279,7 +201,7 @@ impl FileService {
         mut mime: Option<Mime>,
     ) -> Result<UserFile, FileServiceError> {
         let file_repository = self.file_repository.get_ref();
-        let user_file_repository = self.user_file_repository.get_ref();
+        let user_file_service = self.user_file_service.get_ref();
         let disk_local_repository = self.disk_local_repository.get_ref();
 
         let is_exists = disk_local_repository.exists(upload_path).map_err(|e| {
@@ -517,20 +439,24 @@ impl FileService {
         }
 
         if is_copy {
-            let mut read_stream = disk_local_repository.read_stream(upload_path).map_err(|e| {
-                self.log_error(
-                    "upload_local_file_to_local_disk",
-                    e.to_string(),
-                    FileServiceError::Fail,
-                )
-            })?;
-            let mut write_stream = disk_local_repository.write_stream(&file.path).map_err(|e| {
-                self.log_error(
-                    "upload_local_file_to_local_disk",
-                    e.to_string(),
-                    FileServiceError::Fail,
-                )
-            })?;
+            let mut read_stream = disk_local_repository
+                .read_stream(upload_path)
+                .map_err(|e| {
+                    self.log_error(
+                        "upload_local_file_to_local_disk",
+                        e.to_string(),
+                        FileServiceError::Fail,
+                    )
+                })?;
+            let mut write_stream = disk_local_repository
+                .write_stream(&file.path)
+                .map_err(|e| {
+                    self.log_error(
+                        "upload_local_file_to_local_disk",
+                        e.to_string(),
+                        FileServiceError::Fail,
+                    )
+                })?;
             let mut buf: Vec<u8> = Vec::new();
             while read_stream.read_to_end(&mut buf).unwrap() > 0 {
                 write_stream.write_all(&buf).map_err(|e| {
@@ -547,7 +473,7 @@ impl FileService {
 
         // 6) Upsert file meta in db
         if is_upsert {
-            self.upsert_file(&mut file, &None)?;
+            self.upsert(&mut file, &None)?;
 
             let file_: Option<File> = file_repository
                 .first_by_disk_and_path(&disk, &file.path)
@@ -570,7 +496,7 @@ impl FileService {
         }
 
         // 7) Upsert user file in db
-        let user_file: Option<UserFile> = user_file_repository
+        let user_file: Option<UserFile> = user_file_service
             .first_by_user_id_and_file_id(user_id, file.id)
             .map_err(|e| {
                 self.log_error(
@@ -673,9 +599,17 @@ impl FileService {
         }
 
         if is_upsert {
-            self.upsert_user_file(&mut user_file, &None)?;
+            user_file_service
+                .upsert(&mut user_file, &None)
+                .map_err(|e| {
+                    self.log_error(
+                        "upload_local_file_to_local_disk",
+                        e.to_string(),
+                        FileServiceError::Fail,
+                    )
+                })?;
 
-            let user_file_: Option<UserFile> = user_file_repository
+            let user_file_: Option<UserFile> = user_file_service
                 .first_by_user_id_and_file_id(user_file.user_id, user_file.file_id)
                 .map_err(|e| {
                     self.log_error(
@@ -696,6 +630,54 @@ impl FileService {
         }
 
         Ok(user_file)
+    }
+
+    pub fn load_and_attach_user_files(
+        &self,
+        files: &mut Vec<File>,
+        filters: Option<&Vec<UserFileFilter>>,
+        sorts: Option<&Vec<UserFileSort>>,
+    ) -> Result<(), FileServiceError> {
+        if files.is_empty() {
+            return Ok(());
+        }
+
+        let user_file_service = self.user_file_service.get_ref();
+
+        let mut filters_: Vec<UserFileFilter> = vec![UserFileFilter::FileIds(
+            files.iter().map(|f| f.id).collect(),
+        )];
+
+        if let Some(filters) = filters {
+            for filter in filters {
+                filters_.push(filter.to_owned());
+            }
+        }
+
+        let user_files = user_file_service
+            .get_all(Some(&filters_), sorts)
+            .map_err(|e| {
+                self.log_error(
+                    "load_and_attach_user_files",
+                    e.to_string(),
+                    FileServiceError::Fail,
+                )
+            })?;
+        let mut user_files_idx: HashMap<u64, Vec<UserFile>> = HashMap::new();
+
+        for user_file in user_files {
+            if let Some(user_files) = user_files_idx.get_mut(&user_file.file_id) {
+                user_files.push(user_file);
+            } else {
+                user_files_idx.insert(user_file.file_id, vec![user_file]);
+            }
+        }
+
+        for file in files {
+            file.user_files = user_files_idx.remove(&file.id);
+        }
+
+        Ok(())
     }
 }
 

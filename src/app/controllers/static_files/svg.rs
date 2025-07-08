@@ -6,4 +6,4 @@ pub async fn logo() -> Result<HttpResponse, Error> {
         .body(RESOURCES_LOGO_SVG_GZ))
 }
 
-static RESOURCES_LOGO_SVG_GZ: &'static [u8] = include_bytes!("../../../resources/dist/logo.svg.gz");
+static RESOURCES_LOGO_SVG_GZ: &'static [u8] = include_bytes!("../../../../resources/dist/logo.svg.gz");

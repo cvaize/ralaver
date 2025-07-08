@@ -1,4 +1,4 @@
-use crate::{can_permission, Permission, User, Role};
+use crate::{can_permission, Permission, Role, User};
 
 pub struct FilePolicy;
 

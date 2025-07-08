@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString, VariantNames};
+use crate::UserFile;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct File {
@@ -30,6 +31,8 @@ pub struct File {
     pub is_deleted: bool,
     // The disk where the file is stored.
     pub disk: String,
+    // Ref UserFile
+    pub user_files: Option<Vec<UserFile>>,
 }
 
 #[derive(

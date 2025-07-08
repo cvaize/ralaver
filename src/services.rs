@@ -1,10 +1,5 @@
 use crate::connections::Connections;
-use crate::{
-    AppService, AuthService, Config, CryptService, DiskExternalRepository, DiskLocalRepository,
-    FileMysqlRepository, FileService, HashService, KeyValueService, LocaleService, MailService,
-    RandomService, RateLimitService, RoleMysqlRepository, RoleService, TemplateService,
-    TranslatorService, UserFileMysqlRepository, UserMysqlRepository, UserService, WebAuthService,
-};
+use crate::{AppService, AuthService, Config, CryptService, DiskExternalRepository, DiskLocalRepository, FileMysqlRepository, FileService, HashService, KeyValueService, LocaleService, MailService, RandomService, RateLimitService, RoleMysqlRepository, RoleService, TemplateService, TranslatorService, UserFileMysqlRepository, UserFileService, UserMysqlRepository, UserService, WebAuthService};
 use actix_web::web::Data;
 use std::path::MAIN_SEPARATOR_STR;
 
@@ -30,6 +25,7 @@ pub struct Services {
     pub disk_external_repository: Data<DiskExternalRepository>,
     pub file_service: Data<FileService>,
     pub file_mysql_repository: Data<FileMysqlRepository>,
+    pub user_file_service: Data<UserFileService>,
     pub user_file_mysql_repository: Data<UserFileMysqlRepository>,
 }
 
@@ -88,10 +84,14 @@ pub fn build(c: &Connections, config: Data<Config>) -> Services {
 
     let file_mysql_repository = Data::new(FileMysqlRepository::new(c.mysql.clone()));
     let user_file_mysql_repository = Data::new(UserFileMysqlRepository::new(c.mysql.clone()));
+    let user_file_service = Data::new(UserFileService::new(
+        config.clone(),
+        user_file_mysql_repository.clone(),
+    ));
     let file_service = Data::new(FileService::new(
         config.clone(),
         file_mysql_repository.clone(),
-        user_file_mysql_repository.clone(),
+        user_file_service.clone(),
         disk_local_repository.clone(),
         disk_external_repository.clone(),
         rand_service.clone(),
@@ -119,6 +119,7 @@ pub fn build(c: &Connections, config: Data<Config>) -> Services {
         disk_external_repository,
         file_service,
         file_mysql_repository,
+        user_file_service,
         user_file_mysql_repository,
     }
 }

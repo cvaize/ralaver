@@ -43,11 +43,7 @@ impl FileMysqlRepository {
         self.first_by_filters(&filters)
     }
 
-    pub fn exists_by_disk_and_path(
-        &self,
-        disk: &Disk,
-        path: &str,
-    ) -> Result<bool, AppError> {
+    pub fn exists_by_disk_and_path(&self, disk: &Disk, path: &str) -> Result<bool, AppError> {
         let filters: Vec<FileFilter> = vec![
             FileFilter::Disk(disk.to_string()),
             FileFilter::Path(path.to_string()),
@@ -55,16 +51,24 @@ impl FileMysqlRepository {
         self.exists_by_filters(&filters)
     }
 
-    pub fn delete_by_disk_and_path(
-        &self,
-        disk: &Disk,
-        path: &str,
-    ) -> Result<(), AppError> {
+    pub fn delete_by_disk_and_path(&self, disk: &Disk, path: &str) -> Result<(), AppError> {
         let filters: Vec<FileFilter> = vec![
             FileFilter::Disk(disk.to_string()),
             FileFilter::Path(path.to_string()),
         ];
         self.delete_by_filters(&filters)
+    }
+
+    pub fn first_by_disk_and_filename(
+        &self,
+        disk: &Disk,
+        filename: &str,
+    ) -> Result<Option<File>, AppError> {
+        let filters: Vec<FileFilter> = vec![
+            FileFilter::Filename(filename.to_string()),
+            FileFilter::Disk(disk.to_string()),
+        ];
+        self.first_by_filters(&filters)
     }
 }
 
@@ -99,19 +103,19 @@ impl MysqlQueryBuilder for FileFilter {
     fn push_params_to_vec(&self, params: &mut Vec<(String, Value)>) {
         match self {
             Self::Id(value) => {
-                params.push((FileColumn::Id.to_string(), Value::from(value)));
+                params.push(("id".to_string(), Value::from(value)));
             }
             Self::CreatorUserId(value) => {
-                params.push((FileColumn::CreatorUserId.to_string(), Value::from(value)));
+                params.push(("creator_user_id".to_string(), Value::from(value)));
             }
             Self::Disk(value) => {
-                params.push((FileColumn::Disk.to_string(), Value::from(value)));
+                params.push(("disk".to_string(), Value::from(value)));
             }
             Self::Path(value) => {
-                params.push((FileColumn::Path.to_string(), Value::from(value)));
+                params.push(("path".to_string(), Value::from(value)));
             }
             Self::Filename(value) => {
-                params.push((FileColumn::Filename.to_string(), Value::from(value)));
+                params.push(("filename".to_string(), Value::from(value)));
             }
             Self::Search(value) => {
                 let mut s = "%".to_string();
@@ -120,10 +124,10 @@ impl MysqlQueryBuilder for FileFilter {
                 params.push(("search".to_string(), Value::from(s)));
             }
             Self::IsDelete(value) => {
-                params.push((FileColumn::IsDelete.to_string(), Value::from(value)));
+                params.push(("is_delete".to_string(), Value::from(value)));
             }
             Self::IsDeleted(value) => {
-                params.push((FileColumn::IsDeleted.to_string(), Value::from(value)));
+                params.push(("is_deleted".to_string(), Value::from(value)));
             }
         }
     }
@@ -151,19 +155,46 @@ impl ToMysqlDto<FileColumn> for File {
     fn push_mysql_param_to_vec(&self, column: &FileColumn, params: &mut Vec<(String, Value)>) {
         match column {
             FileColumn::Id => params.push((column.to_string(), Value::from(self.id.to_owned()))),
-            FileColumn::Filename => params.push((column.to_string(), Value::from(self.filename.to_owned()))),
-            FileColumn::Path => params.push((column.to_string(), Value::from(self.path.to_owned()))),
-            FileColumn::Mime => params.push((column.to_string(), Value::from(self.mime.to_owned()))),
-            FileColumn::Hash => params.push((column.to_string(), Value::from(self.hash.to_owned()))),
-            FileColumn::Size => params.push((column.to_string(), Value::from(self.size.to_owned()))),
-            FileColumn::CreatorUserId => params.push((column.to_string(), Value::from(self.creator_user_id.to_owned()))),
-            FileColumn::CreatedAt => params.push((column.to_string(), Value::from(self.created_at.to_owned()))),
-            FileColumn::UpdatedAt => params.push((column.to_string(), Value::from(self.updated_at.to_owned()))),
-            FileColumn::DeleteAt => params.push((column.to_string(), Value::from(self.delete_at.to_owned()))),
-            FileColumn::DeletedAt => params.push((column.to_string(), Value::from(self.deleted_at.to_owned()))),
-            FileColumn::IsDelete => params.push((column.to_string(), Value::from(self.is_delete.to_owned()))),
-            FileColumn::IsDeleted => params.push((column.to_string(), Value::from(self.is_deleted.to_owned()))),
-            FileColumn::Disk => params.push((column.to_string(), Value::from(self.disk.to_owned()))),
+            FileColumn::Filename => {
+                params.push((column.to_string(), Value::from(self.filename.to_owned())))
+            }
+            FileColumn::Path => {
+                params.push((column.to_string(), Value::from(self.path.to_owned())))
+            }
+            FileColumn::Mime => {
+                params.push((column.to_string(), Value::from(self.mime.to_owned())))
+            }
+            FileColumn::Hash => {
+                params.push((column.to_string(), Value::from(self.hash.to_owned())))
+            }
+            FileColumn::Size => {
+                params.push((column.to_string(), Value::from(self.size.to_owned())))
+            }
+            FileColumn::CreatorUserId => params.push((
+                column.to_string(),
+                Value::from(self.creator_user_id.to_owned()),
+            )),
+            FileColumn::CreatedAt => {
+                params.push((column.to_string(), Value::from(self.created_at.to_owned())))
+            }
+            FileColumn::UpdatedAt => {
+                params.push((column.to_string(), Value::from(self.updated_at.to_owned())))
+            }
+            FileColumn::DeleteAt => {
+                params.push((column.to_string(), Value::from(self.delete_at.to_owned())))
+            }
+            FileColumn::DeletedAt => {
+                params.push((column.to_string(), Value::from(self.deleted_at.to_owned())))
+            }
+            FileColumn::IsDelete => {
+                params.push((column.to_string(), Value::from(self.is_delete.to_owned())))
+            }
+            FileColumn::IsDeleted => {
+                params.push((column.to_string(), Value::from(self.is_deleted.to_owned())))
+            }
+            FileColumn::Disk => {
+                params.push((column.to_string(), Value::from(self.disk.to_owned())))
+            }
         }
     }
     fn get_id(&self) -> u64 {
@@ -180,14 +211,30 @@ impl FromMysqlDto for File {
             mime: take_from_mysql_row(row, FileColumn::Mime.to_string().as_str())?,
             hash: take_from_mysql_row(row, FileColumn::Hash.to_string().as_str())?,
             size: take_from_mysql_row(row, FileColumn::Size.to_string().as_str())?,
-            creator_user_id: take_from_mysql_row(row, FileColumn::CreatorUserId.to_string().as_str())?,
-            created_at: take_some_datetime_from_mysql_row(row, FileColumn::CreatedAt.to_string().as_str())?,
-            updated_at: take_some_datetime_from_mysql_row(row, FileColumn::UpdatedAt.to_string().as_str())?,
-            delete_at: take_some_datetime_from_mysql_row(row, FileColumn::DeleteAt.to_string().as_str())?,
-            deleted_at: take_some_datetime_from_mysql_row(row, FileColumn::DeletedAt.to_string().as_str())?,
+            creator_user_id: take_from_mysql_row(
+                row,
+                FileColumn::CreatorUserId.to_string().as_str(),
+            )?,
+            created_at: take_some_datetime_from_mysql_row(
+                row,
+                FileColumn::CreatedAt.to_string().as_str(),
+            )?,
+            updated_at: take_some_datetime_from_mysql_row(
+                row,
+                FileColumn::UpdatedAt.to_string().as_str(),
+            )?,
+            delete_at: take_some_datetime_from_mysql_row(
+                row,
+                FileColumn::DeleteAt.to_string().as_str(),
+            )?,
+            deleted_at: take_some_datetime_from_mysql_row(
+                row,
+                FileColumn::DeletedAt.to_string().as_str(),
+            )?,
             is_delete: take_from_mysql_row(row, FileColumn::IsDelete.to_string().as_str())?,
             is_deleted: take_from_mysql_row(row, FileColumn::IsDeleted.to_string().as_str())?,
             disk: take_from_mysql_row(row, FileColumn::Disk.to_string().as_str())?,
+            user_files: None,
         })
     }
 }

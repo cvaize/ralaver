@@ -25,5 +25,10 @@
     "DuplicateFile": "Such a file has already been created.",
     "NotFound":  "File not found.",
     "Fail": "FileService error."
+  },
+  "UserFileServiceError": {
+    "DbConnectionFail":  "Error connecting to the UserFileService database.",
+    "NotFound":  "User file not found.",
+    "Fail": "UserFileService error."
   }
 }

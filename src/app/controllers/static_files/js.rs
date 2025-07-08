@@ -6,4 +6,4 @@ pub async fn app() -> Result<HttpResponse, Error> {
         .body(RESOURCES_BUILD_APP_JS_GZ))
 }
 
-static RESOURCES_BUILD_APP_JS_GZ: &'static [u8] = include_bytes!("../../../resources/dist/app.min.js.gz");
+static RESOURCES_BUILD_APP_JS_GZ: &'static [u8] = include_bytes!("../../../../resources/dist/app.min.js.gz");

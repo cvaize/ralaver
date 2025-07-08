@@ -1,11 +1,8 @@
+use crate::app::controllers::web::files::upload::get_upload_url;
 use crate::app::controllers::web::{
     generate_2_offset_pagination_array, get_context_data, get_template_context,
 };
-use crate::{
-    prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService,
-    FileFilter, FilePaginateParams, FilePolicy, FileService, FileSort, LocaleService, RoleService,
-    Session, TemplateService, TranslatorService, User, WebAuthService, WebHttpResponse,
-};
+use crate::{prepare_paginate, prepare_value, validation_query_max_length_string, Alert, AppService, Config, FileFilter, FilePaginateParams, FilePolicy, FileService, FileSort, LocaleService, RoleService, Session, TemplateService, TranslatorService, User, WebAuthService, WebHttpResponse};
 use actix_web::web::{Data, Query, ReqData};
 use actix_web::{error, Error, HttpRequest, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
@@ -15,7 +12,6 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
-use crate::app::controllers::web::files::upload::get_upload_url;
 
 const PAGE_URL: &'static str = "/files?";
 
@@ -32,6 +28,7 @@ pub struct IndexQuery {
 }
 
 pub async fn invoke(
+    config: Data<Config>,
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
@@ -44,6 +41,10 @@ pub async fn invoke(
     file_service: Data<FileService>,
     locale_service: Data<LocaleService>,
 ) -> Result<HttpResponse, Error> {
+
+    // TODO: Remove after testing
+    let tmpl_service = Data::new(TemplateService::new_from_files(config.clone())?);
+
     let translator_service = translator_service.get_ref();
     let tmpl_service = tmpl_service.get_ref();
     let app_service = app_service.get_ref();
@@ -75,9 +76,15 @@ pub async fn invoke(
     let filters: Vec<FileFilter> = query.get_filters();
     let sorts: Vec<FileSort> = query.get_sorts();
     let pagination_params = FilePaginateParams::new(page, per_page, filters, sorts);
-    let files = file_service.paginate_files_throw_http(&pagination_params)?;
+    let mut files = file_service.paginate_files_throw_http(&pagination_params)?;
     let total_pages = max(files.total_pages, 1);
     let total_pages_str = total_pages.to_string();
+
+    file_service
+        .load_and_attach_user_files(&mut files.records, None, None)
+        .map_err(|_| error::ErrorInternalServerError(""))?;
+
+    dbg!(&files);
 
     let mut context_data = get_context_data(
         &req,

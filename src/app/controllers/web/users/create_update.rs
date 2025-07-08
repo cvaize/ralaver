@@ -7,7 +7,7 @@ use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString as MMLS};
 use crate::app::validator::rules::required::Required;
 use crate::libs::actix_web::types::form::Form;
-use crate::{prepare_value, Alert, AlertVariant, AppService, FileService, Locale, LocaleService, RateLimitService, Role, RoleService, Session, TemplateService, TranslatableError, TranslatorService, User, UserColumn, UserPolicy, UserService, UserServiceError, WebAuthService, WebHttpResponse};
+use crate::{prepare_value, Alert, AlertVariant, AppService, FileService, Locale, LocaleService, RateLimitService, Role, RoleService, Session, TemplateService, TranslatableError, TranslatorService, User, UserColumn, UserFileService, UserPolicy, UserService, UserServiceError, WebAuthService, WebHttpResponse};
 use actix_web::{web::{Path, Data, ReqData}, error, Error, HttpRequest, HttpResponse, Result, http::{Method, header::{LOCATION}}};
 use serde_derive::Deserialize;
 use serde_json::{json, Value};
@@ -61,7 +61,7 @@ pub async fn create(
     user_service: Data<UserService>,
     locale_service: Data<LocaleService>,
     role_service: Data<RoleService>,
-    file_service: Data<FileService>,
+    user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
     let data = Form(PostData::default());
     let user_roles = role_service.get_all_throw_http()?;
@@ -84,7 +84,7 @@ pub async fn create(
         user_service,
         locale_service,
         role_service,
-        file_service,
+        user_file_service,
     )
 }
 
@@ -102,7 +102,7 @@ pub async fn store(
     user_service: Data<UserService>,
     locale_service: Data<LocaleService>,
     role_service: Data<RoleService>,
-    file_service: Data<FileService>,
+    user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
     let user_roles = role_service.get_all_throw_http()?;
     if !UserPolicy::can_create(&user, &user_roles) {
@@ -124,7 +124,7 @@ pub async fn store(
         user_service,
         locale_service,
         role_service,
-        file_service,
+        user_file_service,
     )
 }
 
@@ -142,7 +142,7 @@ pub async fn edit(
     user_service: Data<UserService>,
     locale_service: Data<LocaleService>,
     role_service: Data<RoleService>,
-    file_service: Data<FileService>,
+    user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
     let user_roles = role_service.get_all_throw_http()?;
     if !UserPolicy::can_update(&user, &user_roles) {
@@ -169,7 +169,7 @@ pub async fn edit(
         user_service,
         locale_service,
         role_service,
-        file_service,
+        user_file_service,
     )
 }
 
@@ -188,7 +188,7 @@ pub async fn update(
     user_service: Data<UserService>,
     locale_service: Data<LocaleService>,
     role_service: Data<RoleService>,
-    file_service: Data<FileService>,
+    user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
     let user_roles = role_service.get_all_throw_http()?;
     if !UserPolicy::can_update(&user, &user_roles) {
@@ -212,7 +212,7 @@ pub async fn update(
         user_service,
         locale_service,
         role_service,
-        file_service,
+        user_file_service,
     )
 }
 
@@ -232,7 +232,7 @@ pub fn invoke(
     user_service: Data<UserService>,
     locale_service: Data<LocaleService>,
     role_service: Data<RoleService>,
-    file_service: Data<FileService>,
+    user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
     data.prepare();
     //
@@ -244,7 +244,7 @@ pub fn invoke(
     let user_service = user_service.get_ref();
     let locale_service = locale_service.get_ref();
     let role_service = role_service.get_ref();
-    let file_service = file_service.get_ref();
+    let user_file_service = user_file_service.get_ref();
 
     //
     let user = user.as_ref();
@@ -536,9 +536,9 @@ pub fn invoke(
     let mut avatar_src: Option<String> = None;
 
     if let Some(avatar_id) = &data.avatar_id {
-        if let Ok(user_file) = file_service.first_user_file_by_id(*avatar_id) {
+        if let Ok(user_file) = user_file_service.first_by_id(*avatar_id) {
             if let Some(user_file) = user_file {
-                avatar_src = file_service.get_public_path(&user_file);
+                avatar_src = user_file_service.get_public_path(&user_file);
             }
         }
     }

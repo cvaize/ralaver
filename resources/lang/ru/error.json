@@ -25,5 +25,10 @@
     "DuplicateFile": "Такой файл уже создан.",
     "NotFound":  "Файл не найден.",
     "Fail": "Ошибка сервиса FileService."
+  },
+  "UserFileServiceError": {
+    "DbConnectionFail":  "Ошибка подключения к базе данных UserFileService.",
+    "NotFound":  "Файл пользователя не найден.",
+    "Fail": "Ошибка сервиса UserFileService."
   }
 }

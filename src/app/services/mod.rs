@@ -13,6 +13,7 @@ mod role;
 mod template;
 mod translator;
 mod user;
+mod user_file;
 mod web_auth;
 
 pub use self::app::*;
@@ -30,4 +31,5 @@ pub use self::role::*;
 pub use self::template::*;
 pub use self::translator::*;
 pub use self::user::*;
+pub use self::user_file::*;
 pub use self::web_auth::*;

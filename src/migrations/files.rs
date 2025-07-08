@@ -36,12 +36,6 @@ fn create_users_files_table(connection: &mut MysqlPooledConnection) {
 
     let query = "ALTER TABLE `users_files` ADD INDEX `upload_filename_idx` (`upload_filename`);";
     connection.query_drop(query).unwrap();
-
-    let query = "ALTER TABLE `users_files` ADD INDEX `is_public_idx` (`is_public`);";
-    connection.query_drop(query).unwrap();
-
-    let query = "ALTER TABLE `users_files` ADD INDEX `disk_idx` (`disk`);";
-    connection.query_drop(query).unwrap();
 }
 
 fn create_files_table(connection: &mut MysqlPooledConnection) {
@@ -69,19 +63,10 @@ fn create_files_table(connection: &mut MysqlPooledConnection) {
     let query = "ALTER TABLE `files` ADD INDEX `creator_user_idx` (`creator_user_id`);";
     connection.query_drop(query).unwrap();
 
-    let query = "ALTER TABLE `files` ADD INDEX `disk_idx` (`disk`);";
-    connection.query_drop(query).unwrap();
-
     let query = "ALTER TABLE `files` ADD INDEX `path_idx` (`path`);";
     connection.query_drop(query).unwrap();
 
     let query = "ALTER TABLE `files` ADD INDEX `filename_idx` (`filename`);";
-    connection.query_drop(query).unwrap();
-
-    let query = "ALTER TABLE `files` ADD INDEX `is_delete_idx` (`is_delete`);";
-    connection.query_drop(query).unwrap();
-
-    let query = "ALTER TABLE `files` ADD INDEX `is_deleted_idx` (`is_deleted`);";
     connection.query_drop(query).unwrap();
 }
 

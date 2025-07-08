@@ -70,11 +70,12 @@ impl UserFileMysqlRepository {
 
 pub type UserFilePaginateParams = PaginateParams<UserFileFilter, UserFileSort>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UserFileFilter {
     Id(u64),
     UserId(u64),
     FileId(u64),
+    FileIds(Vec<u64>),
     Path(String),
     Filename(String),
     Search(String),
@@ -88,6 +89,14 @@ impl MysqlQueryBuilder for UserFileFilter {
             Self::Id(_) => query.push_str("id=:id"),
             Self::UserId(_) => query.push_str("user_id=:user_id"),
             Self::FileId(_) => query.push_str("file_id=:file_id"),
+            Self::FileIds(value) => {
+                let mut v = "file_id in (".to_string();
+                let ids: Vec<String> = value.iter().map(|d| d.to_string()).collect();
+                let ids: String = ids.join(",").to_string();
+                v.push_str(&ids);
+                v.push_str(")");
+                query.push_str(&v)
+            },
             Self::Path(_) => query.push_str("path=:path"),
             Self::Filename(_) => query.push_str("filename=:filename"),
             Self::Search(_) => query.push_str("(filename LIKE :search OR upload_filename LIKE :search OR path LIKE :search)"),
@@ -99,19 +108,20 @@ impl MysqlQueryBuilder for UserFileFilter {
     fn push_params_to_vec(&self, params: &mut Vec<(String, Value)>) {
         match self {
             Self::Id(value) => {
-                params.push((UserFileColumn::Id.to_string(), Value::from(value)));
+                params.push(("id".to_string(), Value::from(value)));
             }
             Self::UserId(value) => {
-                params.push((UserFileColumn::UserId.to_string(), Value::from(value)));
+                params.push(("user_id".to_string(), Value::from(value)));
             }
             Self::FileId(value) => {
-                params.push((UserFileColumn::FileId.to_string(), Value::from(value)));
+                params.push(("file_id".to_string(), Value::from(value)));
             }
+            Self::FileIds(_) => {}
             Self::Path(value) => {
-                params.push((UserFileColumn::Path.to_string(), Value::from(value)));
+                params.push(("path".to_string(), Value::from(value)));
             }
             Self::Filename(value) => {
-                params.push((UserFileColumn::Filename.to_string(), Value::from(value)));
+                params.push(("filename".to_string(), Value::from(value)));
             }
             Self::Search(value) => {
                 let mut s = "%".to_string();
@@ -120,10 +130,10 @@ impl MysqlQueryBuilder for UserFileFilter {
                 params.push(("search".to_string(), Value::from(s)));
             }
             Self::IsDeleted(value) => {
-                params.push((UserFileColumn::IsDeleted.to_string(), Value::from(value)));
+                params.push(("is_deleted".to_string(), Value::from(value)));
             }
             Self::IsPublic(value) => {
-                params.push((UserFileColumn::IsPublic.to_string(), Value::from(value)));
+                params.push(("is_public".to_string(), Value::from(value)));
             }
         }
     }
