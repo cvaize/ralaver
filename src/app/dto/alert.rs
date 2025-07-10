@@ -109,9 +109,21 @@ impl Alert {
                 let vars = one_variables!("name", name);
                 Self::success(translator_service.variables(&lang, "alert.files.delete.success", &vars))
             }
+            AlertVariant::FilesRestoreSuccess(name) => {
+                let vars = one_variables!("name", name);
+                Self::success(translator_service.variables(&lang, "alert.files.restore.success", &vars))
+            }
+            AlertVariant::FilesNonRecoverableWarning(name) => {
+                let vars = one_variables!("name", name);
+                Self::warning(translator_service.variables(&lang, "alert.files.files_non_recoverable.warning", &vars))
+            }
             AlertVariant::FilesMassDeleteSuccess(ids) => {
                 let vars = one_variables!("ids", ids);
                 Self::success(translator_service.variables(&lang, "alert.files.mass_delete.success", &vars))
+            }
+            AlertVariant::FilesMassRestoreSuccess(ids) => {
+                let vars = one_variables!("ids", ids);
+                Self::success(translator_service.variables(&lang, "alert.files.mass_restore.success", &vars))
             }
         }
     }
@@ -136,7 +148,10 @@ pub enum AlertVariant {
     FilesCreateSuccess(String),
     FilesUpdateSuccess(String),
     FilesDeleteSuccess(String),
+    FilesRestoreSuccess(String),
+    FilesNonRecoverableWarning(String),
     FilesMassDeleteSuccess(String),
+    FilesMassRestoreSuccess(String),
 }
 
 impl AlertVariant {
@@ -186,7 +201,16 @@ impl AlertVariant {
             Self::FilesDeleteSuccess(name) => {
                 format!("files_delete_success::{name}")
             }
+            Self::FilesRestoreSuccess(name) => {
+                format!("files_restore_success::{name}")
+            }
+            Self::FilesNonRecoverableWarning(name) => {
+                format!("files_non_recoverable_warning::{name}")
+            }
             Self::FilesMassDeleteSuccess(ids) => {
+                format!("files_mass_delete_success::{ids}")
+            }
+            Self::FilesMassRestoreSuccess(ids) => {
                 format!("files_mass_delete_success::{ids}")
             }
         }
@@ -252,9 +276,21 @@ impl AlertVariant {
                 let p = string.get(1).ok_or(ParseAlertVariantError)?;
                 Ok(Self::FilesDeleteSuccess(p.to_string()))
             }
+            "files_restore_success" => {
+                let p = string.get(1).ok_or(ParseAlertVariantError)?;
+                Ok(Self::FilesRestoreSuccess(p.to_string()))
+            }
+            "files_non_recoverable_warning" => {
+                let p = string.get(1).ok_or(ParseAlertVariantError)?;
+                Ok(Self::FilesNonRecoverableWarning(p.to_string()))
+            }
             "files_mass_delete_success" => {
                 let p = string.get(1).ok_or(ParseAlertVariantError)?;
                 Ok(Self::FilesMassDeleteSuccess(p.to_string()))
+            }
+            "files_mass_restore_success" => {
+                let p = string.get(1).ok_or(ParseAlertVariantError)?;
+                Ok(Self::FilesMassRestoreSuccess(p.to_string()))
             }
             _ => Err(ParseAlertVariantError),
         }

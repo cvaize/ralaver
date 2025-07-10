@@ -12,6 +12,8 @@
   "Selected": "Выбрано",
   "Delete selected": "Удалить выбранное",
   "Delete selected?": "Удалить выбранное?",
+  "Restore selected": "Восстановить выбранное",
+  "Restore selected?": "Восстановить выбранное?",
   "Page :page of :total_pages": "Страница :page из :total_pages",
   "Not Found": "Страница не найдена",
   "Method Not Allowed": "Метод не разрешён",

@@ -1,14 +1,17 @@
-use crate::{
-    AlertVariant, FilePolicy, FileService, LocaleService, RateLimitService, RoleService, Session,
-    TranslatorService, User, WebAuthService, WebHttpResponse,
+use crate::{AlertVariant, FilePolicy, FileService, LocaleService, RateLimitService, RoleService, Session, TranslatorService, User, UserFileService, WebAuthService, WebHttpResponse};
+use actix_web::{
+    error,
+    http::header::HeaderValue,
+    http::header::{LOCATION, ORIGIN, REFERER},
+    web::{Data, Form, Path, ReqData},
+    Error, HttpRequest, HttpResponse, Result,
 };
-use actix_web::{web::{Data, Form, Path, ReqData}, error, Error, HttpRequest, HttpResponse, Result, http::header::{ORIGIN, REFERER, LOCATION}, http::header::HeaderValue};
 use serde_derive::Deserialize;
 use std::sync::Arc;
 
 const RL_MAX_ATTEMPTS: u64 = 60;
 const RL_TTL: u64 = 60;
-const RL_KEY: &'static str = "files_delete";
+const RL_KEY: &'static str = "user_files_restore";
 
 #[derive(Deserialize, Default, Debug)]
 pub struct PostData {
@@ -21,6 +24,7 @@ pub async fn invoke(
     data: Form<PostData>,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
+    user_file_service: Data<UserFileService>,
     file_service: Data<FileService>,
     role_service: Data<RoleService>,
     locale_service: Data<LocaleService>,
@@ -32,6 +36,7 @@ pub async fn invoke(
     let rate_limit_service = rate_limit_service.get_ref();
     let locale_service = locale_service.get_ref();
     let role_service = role_service.get_ref();
+    let user_file_service = user_file_service.get_ref();
     let file_service = file_service.get_ref();
     let translator_service = translator_service.get_ref();
 
@@ -42,10 +47,11 @@ pub async fn invoke(
         return Err(error::ErrorForbidden(""));
     }
 
-    let file_id = path.into_inner();
+    let user_file_id = path.into_inner();
     let user = user.as_ref();
     let lang: String = locale_service.get_locale_code(Some(&req), Some(&user));
-    let delete_file = file_service.first_by_id_throw_http(file_id)?;
+    let delete_user_file = user_file_service.first_by_id_throw_http(user_file_id)?;
+    let file = file_service.first_by_id_throw_http(delete_user_file.file_id)?;
 
     let rate_limit_key = rate_limit_service.make_key_from_request_throw_http(&req, RL_KEY)?;
 
@@ -54,11 +60,16 @@ pub async fn invoke(
         rate_limit_service.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
 
     if executed {
-        if !delete_file.is_delete {
-            file_service.soft_delete_by_id_throw_http(delete_file.id)?;
+        if file.is_delete {
+            let name = format!("UserFileID:{}", delete_user_file.id);
+            alert_variants.push(AlertVariant::FilesNonRecoverableWarning(name));
+        } else {
+            if delete_user_file.is_deleted {
+                user_file_service.restore_by_id_throw_http(delete_user_file.id)?;
+                let name = format!("UserFileID:{}", delete_user_file.id);
+                alert_variants.push(AlertVariant::FilesRestoreSuccess(name));
+            }
         }
-        let name = delete_file.filename;
-        alert_variants.push(AlertVariant::FilesDeleteSuccess(name));
     } else {
         let alert_variant = rate_limit_service.alert_variant_throw_http(
             translator_service,

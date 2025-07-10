@@ -1,9 +1,15 @@
+use crate::helpers::join_vec;
 use crate::libs::actix_web::types::form::Form;
 use crate::{
     AlertVariant, FilePolicy, FileService, LocaleService, RateLimitService, RoleService, Session,
     TranslatorService, User, WebAuthService, WebHttpResponse,
 };
-use actix_web::{web::{Data, ReqData}, error, Error, HttpRequest, HttpResponse, Result, http::header::{HeaderValue, ORIGIN, REFERER, LOCATION}};
+use actix_web::{
+    error,
+    http::header::{HeaderValue, LOCATION, ORIGIN, REFERER},
+    web::{Data, ReqData},
+    Error, HttpRequest, HttpResponse, Result,
+};
 use serde_derive::Deserialize;
 use std::sync::Arc;
 
@@ -59,13 +65,14 @@ pub async fn invoke(
                     if !FilePolicy::can_delete(&user, &user_roles) {
                         return Err(error::ErrorForbidden(""));
                     }
-                    // file_service.delete_by_ids_throw_http(ids)?;
-                    alert_variants.push(AlertVariant::FilesMassDeleteSuccess(
-                        ids.iter()
-                            .map(|id| id.to_string())
-                            .collect::<Vec<String>>()
-                            .join(", "),
-                    ));
+                    file_service.soft_delete_by_ids_throw_http(ids)?;
+                    alert_variants.push(AlertVariant::FilesMassDeleteSuccess(join_vec(ids, ", ")));
+                } else if action.eq("restore") {
+                    if !FilePolicy::can_delete(&user, &user_roles) {
+                        return Err(error::ErrorForbidden(""));
+                    }
+                    file_service.restore_by_ids_throw_http(ids)?;
+                    alert_variants.push(AlertVariant::FilesMassRestoreSuccess(join_vec(ids, ", ")));
                 }
             }
         }
@@ -87,9 +94,6 @@ pub async fn invoke(
 
     Ok(HttpResponse::SeeOther()
         .set_alerts(alert_variants)
-        .insert_header((
-            LOCATION,
-            HeaderValue::from_str(location).unwrap_or(default),
-        ))
+        .insert_header((LOCATION, HeaderValue::from_str(location).unwrap_or(default)))
         .finish())
 }

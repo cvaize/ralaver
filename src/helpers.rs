@@ -124,8 +124,10 @@ pub fn get_sys_gettime_nsec() -> i64 {
 }
 
 pub fn join_vec<T: ToString>(value: &Vec<T>, sep: &str) -> String {
-    let ids: Vec<String> = value.iter().map(|d| d.to_string()).collect();
-    ids.join(sep).to_string()
+    value.iter()
+        .map(|id| id.to_string())
+        .collect::<Vec<String>>()
+        .join(sep)
 }
 
 #[allow(dead_code)]

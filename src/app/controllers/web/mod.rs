@@ -5,6 +5,7 @@ pub mod home;
 pub mod locale;
 pub mod profile;
 pub mod roles;
+pub mod user_files;
 pub mod users;
 
 use crate::{

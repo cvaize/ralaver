@@ -122,26 +122,26 @@ pub enum UserFilter {
 impl MysqlQueryBuilder for UserFilter {
     fn push_params_to_mysql_query(&self, query: &mut String) {
         match self {
-            Self::Id(_) => query.push_str("id=:id"),
+            Self::Id(_) => query.push_str("id=:f_id"),
             Self::Ids(value) => {
                 let v = format!("id in ({})", join_vec(value, ","));
                 query.push_str(&v)
             },
-            Self::Email(_) => query.push_str("email=:email"),
-            Self::Search(_) => query.push_str("(email LIKE :search OR surname LIKE :search OR name LIKE :search OR patronymic LIKE :search)"),
-            Self::Locale(_) => query.push_str("locale=:locale"),
+            Self::Email(_) => query.push_str("email=:f_email"),
+            Self::Search(_) => query.push_str("(email LIKE :f_search OR surname LIKE :f_search OR name LIKE :f_search OR patronymic LIKE :f_search)"),
+            Self::Locale(_) => query.push_str("locale=:f_locale"),
         }
     }
 
     fn push_params_to_vec(&self, params: &mut Vec<(String, Value)>) {
         match self {
             Self::Id(value) => {
-                params.push(("id".to_string(), Value::from(value.to_owned())));
+                params.push(("f_id".to_string(), Value::from(value.to_owned())));
             }
             Self::Ids(_) => {}
             Self::Email(value) => {
                 params.push((
-                    "email".to_string(),
+                    "f_email".to_string(),
                     Value::from(value.to_string().into_bytes()),
                 ));
             }
@@ -149,11 +149,11 @@ impl MysqlQueryBuilder for UserFilter {
                 let mut s = "%".to_string();
                 s.push_str(value);
                 s.push_str("%");
-                params.push(("search".to_string(), Value::from(s.into_bytes())));
+                params.push(("f_search".to_string(), Value::from(s.into_bytes())));
             }
             Self::Locale(value) => {
                 params.push((
-                    "locale".to_string(),
+                    "f_locale".to_string(),
                     Value::from(value.to_string().into_bytes()),
                 ));
             }

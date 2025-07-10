@@ -60,8 +60,17 @@
     "delete": {
       "success": "Файл \":name\" успешно удален."
     },
+    "restore": {
+      "success": "Файл \":name\" успешно восстановлен."
+    },
+    "files_non_recoverable": {
+      "warning": "Файл \":name\" был удален с диска и восстановлению не подлежит."
+    },
     "mass_delete": {
       "success": "Файлы IDs:\":ids\" успешно удалены."
+    },
+    "mass_restore": {
+      "success": "Файлы IDs:\":ids\" успешно восстановлены."
     }
   }
 }

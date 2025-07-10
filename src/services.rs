@@ -86,6 +86,7 @@ pub fn build(c: &Connections, config: Data<Config>) -> Services {
     let user_file_service = Data::new(UserFileService::new(
         config.clone(),
         user_file_mysql_repository.clone(),
+        disk_local_repository.clone(),
     ));
     let file_service = Data::new(FileService::new(
         config.clone(),

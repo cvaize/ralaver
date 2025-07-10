@@ -151,6 +151,8 @@ pub async fn invoke(
             "label": translator_service.translate(lang, "Selected"),
             "delete": translator_service.translate(lang, "Delete selected"),
             "delete_confirm": translator_service.translate(lang, "Delete selected?"),
+            "restore": translator_service.translate(lang, "Restore selected"),
+            "restore_confirm": translator_service.translate(lang, "Restore selected?"),
         }));
         delete = Some(json!({
             "action": "/files/:id/delete",

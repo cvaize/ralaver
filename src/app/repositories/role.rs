@@ -73,30 +73,30 @@ pub enum RoleFilter {
 impl MysqlQueryBuilder for RoleFilter {
     fn push_params_to_mysql_query(&self, query: &mut String) {
         match self {
-            Self::Id(_) => query.push_str("id=:id"),
+            Self::Id(_) => query.push_str("id=:f_id"),
             Self::Ids(value) => {
                 let v = format!("id in ({})", join_vec(value, ","));
                 query.push_str(&v)
             },
-            Self::Code(_) => query.push_str("code=:code"),
-            Self::Search(_) => query.push_str("(name LIKE :search OR code LIKE :search)"),
+            Self::Code(_) => query.push_str("code=:f_code"),
+            Self::Search(_) => query.push_str("(name LIKE :f_search OR code LIKE :f_search)"),
         }
     }
 
     fn push_params_to_vec(&self, params: &mut Vec<(String, Value)>) {
         match self {
             Self::Id(value) => {
-                params.push(("id".to_string(), Value::from(value)));
+                params.push(("f_id".to_string(), Value::from(value)));
             }
             Self::Ids(_) => {}
             Self::Code(value) => {
-                params.push(("code".to_string(), Value::from(value.to_string())));
+                params.push(("f_code".to_string(), Value::from(value.to_string())));
             }
             Self::Search(value) => {
                 let mut s = "%".to_string();
                 s.push_str(value);
                 s.push_str("%");
-                params.push(("search".to_string(), Value::from(s)));
+                params.push(("f_search".to_string(), Value::from(s)));
             }
         }
     }

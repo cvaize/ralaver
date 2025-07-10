@@ -108,6 +108,44 @@ impl FileMysqlRepository {
 
         self.update(&filters, &data, &columns)
     }
+
+    pub fn restore_by_id(&self, id: u64) -> Result<(), AppError> {
+        let filters = vec![
+            FileFilter::Id(id),
+            FileFilter::IsDelete(true),
+            FileFilter::IsDeleted(false),
+        ];
+
+        let mut data = File::default();
+        data.delete_at = None;
+        data.is_delete = false;
+
+        let columns: Option<Vec<FileColumn>> = Some(vec![
+            FileColumn::DeleteAt,
+            FileColumn::IsDelete,
+        ]);
+
+        self.update(&filters, &data, &columns)
+    }
+
+    pub fn restore_by_ids(&self, ids: &Vec<u64>) -> Result<(), AppError> {
+        let filters = vec![
+            FileFilter::Ids(ids.clone()),
+            FileFilter::IsDelete(true),
+            FileFilter::IsDeleted(false),
+        ];
+
+        let mut data = File::default();
+        data.delete_at = None;
+        data.is_delete = false;
+
+        let columns: Option<Vec<FileColumn>> = Some(vec![
+            FileColumn::DeleteAt,
+            FileColumn::IsDelete,
+        ]);
+
+        self.update(&filters, &data, &columns)
+    }
 }
 
 pub type FilePaginateParams = PaginateParams<FileFilter, FileSort>;
@@ -128,50 +166,50 @@ pub enum FileFilter {
 impl MysqlQueryBuilder for FileFilter {
     fn push_params_to_mysql_query(&self, query: &mut String) {
         match self {
-            Self::Id(_) => query.push_str("id=:id"),
+            Self::Id(_) => query.push_str("id=:f_id"),
             Self::Ids(value) => {
                 let v = format!("id in ({})", join_vec(value, ","));
                 query.push_str(&v)
             },
-            Self::CreatorUserId(_) => query.push_str("creator_user_id=:creator_user_id"),
-            Self::Disk(_) => query.push_str("disk=:disk"),
-            Self::Path(_) => query.push_str("path=:path"),
-            Self::Filename(_) => query.push_str("filename=:filename"),
-            Self::Search(_) => query.push_str("(filename LIKE :search OR path LIKE :search)"),
-            Self::IsDelete(_) => query.push_str("is_delete=:is_delete"),
-            Self::IsDeleted(_) => query.push_str("is_deleted=:is_deleted"),
+            Self::CreatorUserId(_) => query.push_str("creator_user_id=:f_creator_user_id"),
+            Self::Disk(_) => query.push_str("disk=:f_disk"),
+            Self::Path(_) => query.push_str("path=:f_path"),
+            Self::Filename(_) => query.push_str("filename=:f_filename"),
+            Self::Search(_) => query.push_str("(filename LIKE :f_search OR path LIKE :f_search)"),
+            Self::IsDelete(_) => query.push_str("is_delete=:f_is_delete"),
+            Self::IsDeleted(_) => query.push_str("is_deleted=:f_is_deleted"),
         }
     }
 
     fn push_params_to_vec(&self, params: &mut Vec<(String, Value)>) {
         match self {
             Self::Id(value) => {
-                params.push(("id".to_string(), Value::from(value)));
+                params.push(("f_id".to_string(), Value::from(value)));
             }
             Self::Ids(_) => {}
             Self::CreatorUserId(value) => {
-                params.push(("creator_user_id".to_string(), Value::from(value)));
+                params.push(("f_creator_user_id".to_string(), Value::from(value)));
             }
             Self::Disk(value) => {
-                params.push(("disk".to_string(), Value::from(value)));
+                params.push(("f_disk".to_string(), Value::from(value)));
             }
             Self::Path(value) => {
-                params.push(("path".to_string(), Value::from(value)));
+                params.push(("f_path".to_string(), Value::from(value)));
             }
             Self::Filename(value) => {
-                params.push(("filename".to_string(), Value::from(value)));
+                params.push(("f_filename".to_string(), Value::from(value)));
             }
             Self::Search(value) => {
                 let mut s = "%".to_string();
                 s.push_str(value);
                 s.push_str("%");
-                params.push(("search".to_string(), Value::from(s)));
+                params.push(("f_search".to_string(), Value::from(s)));
             }
             Self::IsDelete(value) => {
-                params.push(("is_delete".to_string(), Value::from(value)));
+                params.push(("f_is_delete".to_string(), Value::from(value)));
             }
             Self::IsDeleted(value) => {
-                params.push(("is_deleted".to_string(), Value::from(value)));
+                params.push(("f_is_deleted".to_string(), Value::from(value)));
             }
         }
     }

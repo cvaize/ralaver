@@ -6,6 +6,7 @@ use crate::{
 use actix_web::{web::{Data, ReqData}, error, Error, HttpRequest, HttpResponse, Result, http::{header::{HeaderValue, ORIGIN, REFERER, LOCATION}}};
 use serde_derive::Deserialize;
 use std::sync::Arc;
+use crate::helpers::join_vec;
 
 const RL_MAX_ATTEMPTS: u64 = 30;
 const RL_TTL: u64 = 60;
@@ -61,10 +62,7 @@ pub async fn invoke(
                     }
                     user_service.delete_by_ids_throw_http(ids)?;
                     alert_variants.push(AlertVariant::UsersMassDeleteSuccess(
-                        ids.iter()
-                            .map(|id| id.to_string())
-                            .collect::<Vec<String>>()
-                            .join(", "),
+                        join_vec(ids, ", "),
                     ));
                 }
             }

@@ -112,4 +112,25 @@ pub fn register(cfg: &mut web::ServiceConfig) {
             .wrap(WebAuthMiddleware)
             .route(web::post().to(controllers::web::files::delete::invoke)),
     );
+    cfg.service(
+        web::resource("/files/{file_id}/restore")
+            .wrap(WebAuthMiddleware)
+            .route(web::post().to(controllers::web::files::restore::invoke)),
+    );
+    cfg.service(
+        web::resource("/user-files/{file_id}")
+            .wrap(WebAuthMiddleware)
+            .route(web::get().to(controllers::web::user_files::update::edit))
+            .route(web::post().to(controllers::web::user_files::update::update)),
+    );
+    cfg.service(
+        web::resource("/user-files/{file_id}/delete")
+            .wrap(WebAuthMiddleware)
+            .route(web::post().to(controllers::web::user_files::delete::invoke)),
+    );
+    cfg.service(
+        web::resource("/user-files/{file_id}/restore")
+            .wrap(WebAuthMiddleware)
+            .route(web::post().to(controllers::web::user_files::restore::invoke)),
+    );
 }

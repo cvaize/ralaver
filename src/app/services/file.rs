@@ -1,5 +1,11 @@
 use crate::helpers::now_date_time_str;
-use crate::{AppError, Config, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository, File, FileColumn, FileFilter, FileMysqlRepository, FilePaginateParams, MysqlRepository, PaginationResult, RandomService, TranslatableError, TranslatorService, UserFile, UserFileColumn, UserFileFilter, UserFileMysqlRepository, UserFileService, UserFileSort};
+use crate::{
+    AppError, Config, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository, File,
+    FileColumn, FileFilter, FileMysqlRepository, FilePaginateParams, MysqlRepository,
+    PaginationResult, RandomService, TranslatableError, TranslatorService, UserFile,
+    UserFileColumn, UserFileFilter, UserFileMysqlRepository, UserFileService, UserFileServiceError,
+    UserFileSort, UserServiceError,
+};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use mime::Mime;
@@ -109,7 +115,25 @@ impl FileService {
         FileServiceError::Fail
     }
 
-    pub fn upsert(
+    fn match_user_service_error(&self, _: UserFileServiceError) -> FileServiceError {
+        FileServiceError::UserFileServiceFail
+    }
+
+    pub fn create(&self, mut data: File) -> Result<(), FileServiceError> {
+        if data.created_at.is_none() {
+            data.created_at = Some(now_date_time_str());
+        }
+        if data.updated_at.is_none() {
+            data.updated_at = Some(now_date_time_str());
+        }
+        let items = vec![data];
+        self.file_repository
+            .get_ref()
+            .insert(&items, None)
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn update(
         &self,
         mut data: File,
         columns: &Option<Vec<FileColumn>>,
@@ -117,29 +141,36 @@ impl FileService {
         if data.created_at.is_none() {
             data.created_at = Some(now_date_time_str());
         }
+        let filters = vec![FileFilter::Id(data.id)];
+        data.updated_at = Some(now_date_time_str());
+        self.file_repository
+            .get_ref()
+            .update(&filters, &data, columns)
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn upsert(
+        &self,
+        data: File,
+        columns: &Option<Vec<FileColumn>>,
+    ) -> Result<(), FileServiceError> {
         if data.id == 0 {
-            if data.updated_at.is_none() {
-                data.updated_at = Some(now_date_time_str());
-            }
-            let items = vec![data];
-            self.file_repository
-                .get_ref()
-                .insert(&items, None)
-                .map_err(|e| self.match_error(e))
+            self.create(data)
         } else {
-            let filters = vec![FileFilter::Id(data.id)];
-            data.updated_at = Some(now_date_time_str());
-            self.file_repository
-                .get_ref()
-                .update(&filters, &data, columns)
-                .map_err(|e| self.match_error(e))
+            self.update(data, columns)
         }
     }
 
     pub fn soft_delete_by_id(&self, id: u64) -> Result<(), FileServiceError> {
-        self.file_repository.get_ref()
+        let _ = self
+            .file_repository
+            .get_ref()
             .soft_delete_by_id(id)
-            .map_err(|e| self.match_error(e))
+            .map_err(|e| self.match_error(e));
+        self.user_file_service
+            .get_ref()
+            .soft_delete_by_file_id(id)
+            .map_err(|e| self.match_user_service_error(e))
     }
 
     pub fn soft_delete_by_id_throw_http(&self, id: u64) -> Result<(), Error> {
@@ -147,17 +178,46 @@ impl FileService {
             .map_err(|_| error::ErrorInternalServerError(""))
     }
 
-    // pub fn delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), FileServiceError> {
-    //     self.file_repository
-    //         .get_ref()
-    //         .delete_by_ids(ids)
-    //         .map_err(|e| self.match_error(e))
-    // }
-    //
-    // pub fn delete_by_ids_throw_http(&self, ids: &Vec<u64>) -> Result<(), Error> {
-    //     self.delete_by_ids(ids)
-    //         .map_err(|_| error::ErrorInternalServerError(""))
-    // }
+    pub fn soft_delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), FileServiceError> {
+        let _ = self
+            .file_repository
+            .get_ref()
+            .soft_delete_by_ids(ids)
+            .map_err(|e| self.match_error(e));
+        self.user_file_service
+            .get_ref()
+            .soft_delete_by_file_ids(ids)
+            .map_err(|e| self.match_user_service_error(e))
+    }
+
+    pub fn soft_delete_by_ids_throw_http(&self, ids: &Vec<u64>) -> Result<(), Error> {
+        self.soft_delete_by_ids(ids)
+            .map_err(|_| error::ErrorInternalServerError(""))
+    }
+
+    pub fn restore_by_id(&self, id: u64) -> Result<(), FileServiceError> {
+        self.file_repository
+            .get_ref()
+            .restore_by_id(id)
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn restore_by_id_throw_http(&self, id: u64) -> Result<(), Error> {
+        self.restore_by_id(id)
+            .map_err(|_| error::ErrorInternalServerError(""))
+    }
+
+    pub fn restore_by_ids(&self, ids: &Vec<u64>) -> Result<(), FileServiceError> {
+        self.file_repository
+            .get_ref()
+            .restore_by_ids(ids)
+            .map_err(|e| self.match_error(e))
+    }
+
+    pub fn restore_by_ids_throw_http(&self, ids: &Vec<u64>) -> Result<(), Error> {
+        self.restore_by_ids(ids)
+            .map_err(|_| error::ErrorInternalServerError(""))
+    }
 
     pub fn paginate(
         &self,
@@ -175,13 +235,6 @@ impl FileService {
     ) -> Result<PaginationResult<File>, Error> {
         self.paginate(params)
             .map_err(|_| error::ErrorInternalServerError(""))
-    }
-
-    pub fn make_public_filename(&self, user_id: u64, filename: &str) -> String {
-        let mut str = user_id.to_string();
-        str.push('-');
-        str.push_str(filename);
-        str
     }
 
     pub fn upload_local_file_to_local_disk(
@@ -532,39 +585,6 @@ impl FileService {
             is_upsert = true;
         }
 
-        if is_public {
-            let filename = Some(self.make_public_filename(user_id, &file.filename));
-
-            if filename.ne(&user_file.filename) {
-                user_file.filename = filename.to_owned();
-                is_upsert = true;
-            }
-
-            let public_path = disk_local_repository
-                .set_public(&file.path, is_public, filename)
-                .map_err(|e| {
-                    self.log_error(
-                        "upload_local_file_to_local_disk",
-                        e.to_string(),
-                        FileServiceError::Fail,
-                    )
-                })?;
-
-            if user_file.path.ne(&public_path) {
-                user_file.path = public_path;
-                is_upsert = true;
-            }
-        } else {
-            if user_file.filename.is_some() {
-                user_file.filename = None;
-                is_upsert = true;
-            }
-            if user_file.path.is_some() {
-                user_file.path = None;
-                is_upsert = true;
-            }
-        }
-
         if user_file.mime.ne(&file.mime) {
             user_file.mime = file.mime.to_owned();
             is_upsert = true;
@@ -580,28 +600,26 @@ impl FileService {
             is_upsert = true;
         }
 
-        if user_file.is_public != is_public {
-            user_file.is_public = is_public;
+        if user_file.disk.ne(&file.disk) {
+            user_file.disk = file.disk.to_owned();
             is_upsert = true;
         }
 
-        if user_file.disk.ne(&file.disk) {
-            user_file.disk = file.disk.to_owned();
+        if user_file.is_public != is_public {
+            user_file.is_public = is_public;
             is_upsert = true;
         }
 
         if is_upsert {
             let user_id = user_file.user_id;
             let file_id = user_file.file_id;
-            user_file_service
-                .upsert(user_file, &None)
-                .map_err(|e| {
-                    self.log_error(
-                        "upload_local_file_to_local_disk",
-                        e.to_string(),
-                        FileServiceError::Fail,
-                    )
-                })?;
+            user_file_service.upsert(user_file, &None, &file).map_err(|e| {
+                self.log_error(
+                    "upload_local_file_to_local_disk",
+                    e.to_string(),
+                    FileServiceError::Fail,
+                )
+            })?;
 
             let user_file_: Option<UserFile> = user_file_service
                 .first_by_user_id_and_file_id(user_id, file_id)
@@ -648,15 +666,13 @@ impl FileService {
             }
         }
 
-        let user_files = user_file_service
-            .all(Some(&filters_), sorts)
-            .map_err(|e| {
-                self.log_error(
-                    "load_and_attach_user_files",
-                    e.to_string(),
-                    FileServiceError::Fail,
-                )
-            })?;
+        let user_files = user_file_service.all(Some(&filters_), sorts).map_err(|e| {
+            self.log_error(
+                "load_and_attach_user_files",
+                e.to_string(),
+                FileServiceError::Fail,
+            )
+        })?;
         let mut user_files_idx: HashMap<u64, Vec<UserFile>> = HashMap::new();
 
         for user_file in user_files {
@@ -681,6 +697,7 @@ pub enum FileServiceError {
     DuplicateFile,
     NotFound,
     Fail,
+    UserFileServiceFail,
 }
 
 impl TranslatableError for FileServiceError {
@@ -693,6 +710,9 @@ impl TranslatableError for FileServiceError {
                 translator_service.translate(lang, "error.FileServiceError.DuplicateFile")
             }
             Self::NotFound => translator_service.translate(lang, "error.FileServiceError.NotFound"),
+            Self::UserFileServiceFail => {
+                translator_service.translate(lang, "error.UserFileServiceError.Fail")
+            }
             _ => translator_service.translate(lang, "error.FileServiceError.Fail"),
         }
     }

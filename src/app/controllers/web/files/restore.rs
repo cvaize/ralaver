@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 const RL_MAX_ATTEMPTS: u64 = 60;
 const RL_TTL: u64 = 60;
-const RL_KEY: &'static str = "files_delete";
+const RL_KEY: &'static str = "files_restore";
 
 #[derive(Deserialize, Default, Debug)]
 pub struct PostData {
@@ -54,11 +54,15 @@ pub async fn invoke(
         rate_limit_service.attempt_throw_http(&rate_limit_key, RL_MAX_ATTEMPTS, RL_TTL)?;
 
     if executed {
-        if !delete_file.is_delete {
-            file_service.soft_delete_by_id_throw_http(delete_file.id)?;
-        }
         let name = delete_file.filename;
-        alert_variants.push(AlertVariant::FilesDeleteSuccess(name));
+        if delete_file.is_delete {
+            if delete_file.is_deleted {
+                alert_variants.push(AlertVariant::FilesNonRecoverableWarning(name));
+            } else {
+                file_service.restore_by_id_throw_http(delete_file.id)?;
+                alert_variants.push(AlertVariant::FilesRestoreSuccess(name));
+            }
+        }
     } else {
         let alert_variant = rate_limit_service.alert_variant_throw_http(
             translator_service,
