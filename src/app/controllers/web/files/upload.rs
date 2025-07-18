@@ -17,6 +17,8 @@ use actix_web::{
 use serde::Deserialize;
 use serde_json::json;
 use std::sync::Arc;
+use actix_multipart::Multipart;
+use futures_util::{StreamExt, TryStreamExt};
 
 #[derive(Debug, MultipartForm)]
 pub struct UploadData {
@@ -301,8 +303,103 @@ pub fn invoke(
         .body(s))
 }
 
+// pub async fn upload(
+//     mut payload: Multipart,
+//     req: HttpRequest,
+//     user: ReqData<Arc<User>>,
+//     session: ReqData<Arc<Session>>,
+// ) -> Result<HttpResponse, Error> {
+//     // iterate over multipart stream
+//     while let Ok(Some(mut field)) = payload.try_next().await {
+//         // dbg!(&field);
+//         // let content_type = field.content_type();
+//         // dbg!(content_type);
+//         let content_disposition = field.content_disposition().unwrap();
+//         // dbg!(content_disposition);
+//         let field_name = content_disposition.get_name().unwrap().to_string();
+//         // dbg!(&field_name);
+//         // let filename = content_disposition.get_filename().unwrap();
+//         // dbg!(filename);
+//         // let filepath = format!(".{}", file_path);
+//         //
+//         // // File::create is blocking operation, use threadpool
+//         // let mut f = web::block(|| std::fs::File::create(filepath))
+//         //     .await
+//         //     .unwrap();
+//         //
+//         // let mut bytes = BytesMut::new();
+//         // // Field in turn is stream of *Bytes* object
+//         while let Some(chunk) = field.next().await {
+//             // let data = chunk.unwrap();
+//             // bytes.extend_from_slice(&data);
+//             dbg!(&field_name);
+//             // dbg!(&data);
+//             // filesystem operations are blocking, we have to use threadpool
+//             // f = web::block(move || f.write_all(&data).map(|_| f))
+//             //     .await
+//             //     .unwrap();
+//         }
+//         // if field_name.eq("_token") {
+//         //     dbg!(&bytes);
+//         // }
+//     }
+//
+//     Ok(HttpResponse::Ok()
+//         .content_type(mime::APPLICATION_JSON.as_ref())
+//         .body("{\"test\": 1}"))
+// }
+
+pub async fn avatar(
+    mut payload: Multipart,
+    req: HttpRequest,
+    user: ReqData<Arc<User>>,
+    session: ReqData<Arc<Session>>,
+) -> Result<HttpResponse, Error> {
+    // iterate over multipart stream
+    while let Ok(Some(mut field)) = payload.try_next().await {
+        // dbg!(&field);
+        // let content_type = field.content_type();
+        // dbg!(content_type);
+        let content_disposition = field.content_disposition().unwrap();
+        // dbg!(content_disposition);
+        let field_name = content_disposition.get_name().unwrap().to_string();
+        // dbg!(&field_name);
+        // let filename = content_disposition.get_filename().unwrap();
+        // dbg!(filename);
+        // let filepath = format!(".{}", file_path);
+        //
+        // // File::create is blocking operation, use threadpool
+        // let mut f = web::block(|| std::fs::File::create(filepath))
+        //     .await
+        //     .unwrap();
+        //
+        // let mut bytes = BytesMut::new();
+        // // Field in turn is stream of *Bytes* object
+        while let Some(chunk) = field.next().await {
+            // let data = chunk.unwrap();
+            // bytes.extend_from_slice(&data);
+            dbg!(&field_name);
+            // dbg!(&data);
+            // filesystem operations are blocking, we have to use threadpool
+            // f = web::block(move || f.write_all(&data).map(|_| f))
+            //     .await
+            //     .unwrap();
+        }
+        // if field_name.eq("_token") {
+        //     dbg!(&bytes);
+        // }
+    }
+
+    Ok(HttpResponse::Ok()
+        .content_type(mime::APPLICATION_JSON.as_ref())
+        .body("{\"test\": 1}"))
+}
+
 pub fn get_upload_url() -> String {
     "/files/upload".to_string()
+}
+pub fn get_upload_avatar_url() -> String {
+    "/files/upload/avatar".to_string()
 }
 
 impl UploadData {
@@ -315,6 +412,6 @@ impl UploadData {
 
 impl ErrorMessages {
     pub fn is_empty(&self) -> bool {
-        self.form.is_empty()
+        self.form.is_empty() && self.file.is_empty() && self.is_public.is_empty()
     }
 }

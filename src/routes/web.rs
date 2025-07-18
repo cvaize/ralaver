@@ -101,6 +101,11 @@ pub fn register(cfg: &mut web::ServiceConfig) {
             .route(web::get().to(controllers::web::files::upload::show))
             .route(web::post().to(controllers::web::files::upload::upload)),
     );
+    cfg.service(
+        web::resource(controllers::web::files::upload::get_upload_avatar_url().as_str())
+            .wrap(WebAuthMiddleware)
+            .route(web::post().to(controllers::web::files::upload::avatar)),
+    );
     // cfg.service(
     //     web::resource("/files/{file_id}")
     //         .wrap(WebAuthMiddleware)

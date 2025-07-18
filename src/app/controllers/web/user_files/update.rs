@@ -307,6 +307,6 @@ impl PostData {
 
 impl ErrorMessages {
     pub fn is_empty(&self) -> bool {
-        self.form.is_empty()
+        self.form.is_empty() && self.is_public.is_empty()
     }
 }

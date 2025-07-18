@@ -1,4 +1,16 @@
+pub mod bytes_max_length;
+pub mod bytes_min_length;
+pub mod bytes_mut_max_length;
+pub mod bytes_mut_min_length;
 pub mod confirmed;
+pub mod contains_str;
+pub mod contains_vec_str;
 pub mod email;
+pub mod mimes;
 pub mod required;
-pub mod length;
+pub mod str_max_chars_count;
+pub mod str_max_length;
+pub mod str_min_max_chars_count;
+pub mod str_min_max_length;
+pub mod str_min_chars_count;
+pub mod str_min_length;

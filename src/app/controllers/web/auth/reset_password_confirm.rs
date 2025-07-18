@@ -3,7 +3,7 @@ use crate::app::controllers::web::{get_public_context_data, get_public_template_
 use crate::app::middlewares::web_auth::REDIRECT_TO;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
-use crate::app::validator::rules::length::MinMaxLengthString;
+use crate::app::validator::rules::str_min_max_chars_count::StrMinMaxCharsCount;
 use crate::app::validator::rules::required::Required;
 use crate::{prepare_value, AlertVariant, RateLimitService, UserService, WebHttpResponse, RESET_PASSWORD_TTL};
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
@@ -250,7 +250,7 @@ async fn post(
                 lang,
                 &data.password,
                 |value| {
-                    MinMaxLengthString::validate(
+                    StrMinMaxCharsCount::validate(
                         translator_service,
                         lang,
                         value,
@@ -266,7 +266,7 @@ async fn post(
                 lang,
                 &data.confirm_password,
                 |value| {
-                    MinMaxLengthString::validate(
+                    StrMinMaxCharsCount::validate(
                         translator_service,
                         lang,
                         value,
@@ -282,7 +282,7 @@ async fn post(
                 lang,
                 &data.code,
                 |value| {
-                    MinMaxLengthString::validate(
+                    StrMinMaxCharsCount::validate(
                         translator_service,
                         lang,
                         value,

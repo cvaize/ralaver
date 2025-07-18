@@ -1,9 +1,9 @@
+#![allow(dead_code)]
 use std::collections::HashMap;
 use crate::TranslatorService;
 
 pub struct Required;
 
-#[allow(dead_code)]
 impl Required {
     pub fn apply<T>(value: &Option<T>) -> bool {
         value.is_some()
@@ -15,13 +15,13 @@ impl Required {
         value: &Option<T>,
         attribute_name: &str,
     ) -> Vec<String> {
-        if Self::apply(value) {
-            Vec::new()
-        } else {
+        let mut v: Vec<String> = Vec::new();
+        if !Self::apply(value) {
             let mut vars = HashMap::new();
             vars.insert("attribute", attribute_name);
-            Vec::from([translator_service.variables(&lang, "validation.required", &vars)])
+            v.push(translator_service.variables(&lang, "validation.required", &vars));
         }
+        v
     }
 
     pub fn validated<T, O: FnOnce(&T) -> Vec<String>>(
@@ -34,9 +34,11 @@ impl Required {
         if Self::apply(value) {
             cb(value.as_ref().unwrap())
         } else {
+            let mut v: Vec<String> = Vec::new();
             let mut vars = HashMap::new();
             vars.insert("attribute", attribute_name);
-            Vec::from([translator_service.variables(&lang, "validation.required", &vars)])
+            v.push(translator_service.variables(&lang, "validation.required", &vars));
+            v
         }
     }
 }
@@ -47,6 +49,7 @@ mod tests {
 
     #[test]
     fn apply() {
+        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::validator::rules::required::tests::apply
         let value: Option<String> = None;
         assert_eq!(true, Required::apply(&Some("test".to_string())));
         assert_eq!(false, Required::apply(&value));

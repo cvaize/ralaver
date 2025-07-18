@@ -1,7 +1,4 @@
-use crate::app::controllers::web::users::create_update::{
-    invoke as users_create_update_invoke, post_data_from_user, PostData,
-};
-use crate::libs::actix_web::types::form::Form;
+use crate::app::controllers::web::users::create_update::{invoke as users_create_update_invoke, InvokeData, InvokeRoute};
 use crate::{
     AppService, LocaleService, RateLimitService, RoleService, TemplateService, TranslatorService,
     UserFileService, UserService,
@@ -10,11 +7,13 @@ use crate::{Session, User, WebAuthService};
 use actix_web::web::{Data, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use std::sync::Arc;
+use actix_multipart::Multipart;
 
 pub async fn index(
     req: HttpRequest,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
+    // Services
     translator_service: Data<TranslatorService>,
     template_service: Data<TemplateService>,
     app_service: Data<AppService>,
@@ -25,19 +24,14 @@ pub async fn index(
     role_service: Data<RoleService>,
     user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = role_service.all_throw_http()?;
-    let edit_user = user.as_ref().clone();
-    let post_data = post_data_from_user(&edit_user);
-    let edit_user = Some(edit_user);
-    let data = Form(post_data);
-    users_create_update_invoke(
-        true,
-        edit_user,
+    users_create_update_invoke(InvokeData {
+        route: InvokeRoute::ProfileEdit,
+        auth_user: user.as_ref(),
+        auth_session: session.as_ref(),
+        entity: None,
+        payload: None,
         req,
-        data,
-        user,
-        user_roles,
-        session,
+        // Services
         translator_service,
         template_service,
         app_service,
@@ -47,14 +41,15 @@ pub async fn index(
         locale_service,
         role_service,
         user_file_service,
-    )
+    }).await
 }
 
 pub async fn update(
     req: HttpRequest,
+    payload: Multipart,
     user: ReqData<Arc<User>>,
     session: ReqData<Arc<Session>>,
-    data: Form<PostData>,
+    // Services
     translator_service: Data<TranslatorService>,
     template_service: Data<TemplateService>,
     app_service: Data<AppService>,
@@ -65,17 +60,14 @@ pub async fn update(
     role_service: Data<RoleService>,
     user_file_service: Data<UserFileService>,
 ) -> Result<HttpResponse, Error> {
-    let user_roles = role_service.all_throw_http()?;
-    let edit_user = user.as_ref().clone();
-    let edit_user = Some(edit_user);
-    users_create_update_invoke(
-        true,
-        edit_user,
+    users_create_update_invoke(InvokeData {
+        route: InvokeRoute::ProfileUpdate,
+        auth_user: user.as_ref(),
+        auth_session: session.as_ref(),
+        entity: None,
+        payload: Some(payload),
         req,
-        data,
-        user,
-        user_roles,
-        session,
+        // Services
         translator_service,
         template_service,
         app_service,
@@ -85,7 +77,7 @@ pub async fn update(
         locale_service,
         role_service,
         user_file_service,
-    )
+    }).await
 }
 
 pub fn get_url() -> String {

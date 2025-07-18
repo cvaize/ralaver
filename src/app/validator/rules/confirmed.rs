@@ -1,9 +1,9 @@
+#![allow(dead_code)]
 use std::collections::HashMap;
 use crate::TranslatorService;
 
 pub struct Confirmed;
 
-#[allow(dead_code)]
 impl Confirmed {
     pub fn apply<T: PartialEq>(a: &T, b: &T) -> bool {
         a.eq(b)
@@ -16,13 +16,13 @@ impl Confirmed {
         b: &T,
         attribute_name: &str,
     ) -> Vec<String> {
-        if Self::apply(a, b) {
-            Vec::new()
-        } else {
+        let mut v: Vec<String> = Vec::new();
+        if !Self::apply(a, b) {
             let mut vars = HashMap::new();
             vars.insert("attribute", attribute_name);
-            Vec::from([translator_service.variables(&lang, "validation.confirmed", &vars)])
+            v.push(translator_service.variables(&lang, "validation.confirmed", &vars));
         }
+        v
     }
 }
 
@@ -32,6 +32,7 @@ mod tests {
 
     #[test]
     fn apply() {
+        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::validator::rules::confirmed::tests::apply
         assert_eq!(
             true,
             Confirmed::apply(&"test".to_string(), &"test".to_string())

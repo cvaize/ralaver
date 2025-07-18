@@ -1,4 +1,4 @@
-use crate::app::validator::rules::length::MinMaxLengthString;
+use crate::app::validator::rules::str_min_max_length::StrMinMaxLength;
 use crate::{Config, Locale, User};
 use actix_web::web::Data;
 use actix_web::http::header::ACCEPT_LANGUAGE;
@@ -80,14 +80,14 @@ impl LocaleService {
         if let Some(req) = req {
             if let Some(locale) = req.cookie(&self.config.get_ref().app.locale_cookie_key) {
                 let locale = locale.value().to_string();
-                if MinMaxLengthString::apply(&locale, 1, 6) {
+                if StrMinMaxLength::apply(&locale, 1, 6) {
                     return self.exists_locale_code_or_default(locale);
                 }
             }
         }
         if let Some(user) = user {
             if let Some(locale) = &user.locale {
-                if MinMaxLengthString::apply(&locale, 1, 6) {
+                if StrMinMaxLength::apply(&locale, 1, 6) {
                     return self.exists_locale_code_or_default(locale.to_string());
                 }
             }

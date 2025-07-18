@@ -1,5 +1,5 @@
 use crate::app::validator::rules::email::Email;
-use crate::app::validator::rules::length::MinMaxLengthString;
+use crate::app::validator::rules::str_min_max_length::StrMinMaxLength;
 use crate::{
     HashService, KeyValueService, KeyValueServiceError, TranslatableError, TranslatorService, User,
     UserMysqlRepository, UserService, UserServiceError,
@@ -164,7 +164,7 @@ pub struct Credentials {
 
 impl Credentials {
     pub fn is_valid(&self) -> bool {
-        Email::apply(&self.email) && MinMaxLengthString::apply(&self.password, 4, 255)
+        Email::apply(&self.email) && StrMinMaxLength::apply(&self.password, 4, 255)
     }
 }
 

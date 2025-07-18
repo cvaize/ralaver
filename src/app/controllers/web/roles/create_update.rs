@@ -1,5 +1,6 @@
 use crate::app::controllers::web::{get_context_data, get_template_context};
-use crate::app::validator::rules::length::{MaxLengthString, MinMaxLengthString as MMLS};
+use crate::app::validator::rules::str_max_chars_count::StrMaxCharsCount;
+use crate::app::validator::rules::str_min_max_chars_count::{StrMinMaxCharsCount as MMLS};
 use crate::app::validator::rules::required::Required;
 use crate::libs::actix_web::types::form::Form;
 use crate::{
@@ -272,7 +273,7 @@ pub fn invoke(
 
             if let Some(description) = &data.description {
                 errors.description =
-                    MaxLengthString::validate(translator_service, lang, description, 255, &description_str);
+                    StrMaxCharsCount::validate(translator_service, lang, description, 255, &description_str);
             }
 
             if errors.is_empty() {
@@ -451,5 +452,6 @@ impl ErrorMessages {
             && self.code.len() == 0
             && self.name.len() == 0
             && self.description.len() == 0
+            && self.permissions.len() == 0
     }
 }

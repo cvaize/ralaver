@@ -2,7 +2,6 @@ use crate::app::controllers::web::{get_public_context_data, get_public_template_
 use crate::app::middlewares::web_auth::REDIRECT_TO;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
-use crate::app::validator::rules::length::MinMaxLengthString;
 use crate::app::validator::rules::required::Required;
 use crate::{prepare_value, AlertVariant, RateLimitService, TranslatableError, WebHttpResponse};
 use crate::{
@@ -13,6 +12,7 @@ use actix_web::{error, Error, HttpRequest, HttpResponse, Result, http::{Method, 
 use actix_web::http::header::HeaderValue;
 use serde_derive::Deserialize;
 use serde_json::json;
+use crate::app::validator::rules::str_min_max_chars_count::StrMinMaxCharsCount;
 
 const RL_MAX_ATTEMPTS: u64 = 5;
 const RL_TTL: u64 = 60;
@@ -183,7 +183,7 @@ async fn post(
             }, email_str);
             password_errors =
                 Required::validated(translator_service, lang, &data.password, |value| {
-                    MinMaxLengthString::validate(
+                    StrMinMaxCharsCount::validate(
                         translator_service,
                         lang,
                         value,
@@ -194,7 +194,7 @@ async fn post(
                 }, password_str);
             confirm_password_errors =
                 Required::validated(translator_service, lang, &data.confirm_password, |value| {
-                    MinMaxLengthString::validate(
+                    StrMinMaxCharsCount::validate(
                         translator_service,
                         lang,
                         value,

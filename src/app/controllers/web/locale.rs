@@ -1,4 +1,4 @@
-use crate::app::validator::rules::length::MinMaxLengthString;
+use crate::app::validator::rules::str_min_max_chars_count::StrMinMaxCharsCount;
 use crate::Config;
 use actix_web::cookie::Cookie;
 use actix_web::web::{Data, Form};
@@ -25,7 +25,7 @@ pub async fn switch(
         _ => config.app.locale.to_string(),
     };
 
-    if !MinMaxLengthString::apply(&locale, 1, 6) {
+    if !StrMinMaxCharsCount::apply(&locale, 1, 6) {
         return Err(error::ErrorBadRequest(""));
     }
 

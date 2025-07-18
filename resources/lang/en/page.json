@@ -104,7 +104,7 @@
         "patronymic": "{{validation.attributes.patronymic}}",
         "locale": "{{validation.attributes.locale}}",
         "roles_ids": "{{validation.attributes.roles_ids}}",
-        "avatar_id": "{{validation.attributes.avatar_id}}"
+        "avatar": "{{validation.attributes.avatar}}"
       },
       "tabs": {
         "main": "Main",

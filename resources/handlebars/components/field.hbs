@@ -26,15 +26,15 @@
             {{#if options_values}}
                 {{#each options_values as |option_value|}}
                     <option value="{{option_value}}"
-                        {{#if (eq value option_value)}} selected{{/if}}
+                        {{#if (eq ../value option_value)}} selected{{/if}}
                     >{{option_value}}</option>
                 {{/each}}
             {{/if}}
             {{#if options}}
                 {{#each options as |option|}}
-                    <option value="{{lookup option option_value_key}}"
-                        {{#if (eq value (lookup option option_value_key))}} selected{{/if}}
-                    >{{lookup option option_label_key}}</option>
+                    <option value="{{lookup option ../option_value_key}}"
+                        {{#if (eq ../value (lookup option ../option_value_key))}} selected{{/if}}
+                    >{{lookup option ../option_label_key}}</option>
                 {{/each}}
             {{/if}}
         </select>
@@ -68,6 +68,7 @@
             {{#if min}} min="{{min}}" {{/if}}
             {{#if max}} max="{{max}}" {{/if}}
             {{#if step}} step="{{step}}" {{/if}}
+            {{#if accept}} accept="{{accept}}" {{/if}}
         >
     {{/if}}
     {{#if errors}}

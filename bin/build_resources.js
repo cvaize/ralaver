@@ -9,8 +9,6 @@ const styles = [
         .filter(s => s.endsWith('.css'))
         .map(s => './resources/css/libraries/' + s),
 
-    './resources/css/components/layout.css',
-
     ...fs.readdirSync('./resources/css/components')
         .filter(s => s.endsWith('.css'))
         .map(s => './resources/css/components/' + s),

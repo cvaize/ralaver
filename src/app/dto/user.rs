@@ -1,5 +1,10 @@
+use mime::{Mime, IMAGE_JPEG, IMAGE_PNG};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString, VariantNames};
+
+// 3 Megabytes
+pub const USER_AVATAR_MAX_SIZE: usize = 3145728;
+pub const USER_AVATAR_MIMES: &'static[Mime; 2] = &[IMAGE_JPEG, IMAGE_PNG];
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct User {

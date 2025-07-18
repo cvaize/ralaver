@@ -125,7 +125,14 @@ pub fn get_sys_gettime_nsec() -> i64 {
 
 pub fn join_vec<T: ToString>(value: &Vec<T>, sep: &str) -> String {
     value.iter()
-        .map(|id| id.to_string())
+        .map(|v| v.to_string())
+        .collect::<Vec<String>>()
+        .join(sep)
+}
+
+pub fn join_array<T: ToString>(value: &[T], sep: &str) -> String {
+    value.iter()
+        .map(|v| v.to_string())
         .collect::<Vec<String>>()
         .join(sep)
 }

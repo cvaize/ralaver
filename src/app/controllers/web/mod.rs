@@ -446,6 +446,25 @@ macro_rules! prepare_upload_text_value {
 }
 
 #[macro_export]
+macro_rules! assign_value_bytes_to_string {
+    ($source:expr, $result:expr) => {
+        {
+            if $source.is_empty() {
+                $result = None;
+            } else {
+                let value = String::from_utf8($source.to_vec()).map_err(|_| actix_web::error::ErrorBadRequest(""))?;
+                let value = value.trim().to_string();
+                if value.is_empty() {
+                    $result = None;
+                } else {
+                    $result = Some(value);
+                }
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! prepare_paginate {
     ($page:expr, $per_page:expr, $default_per_page:expr, $max_per_page:expr) => {
         let page = std::cmp::max($page.unwrap_or(1), 1);
@@ -460,7 +479,7 @@ macro_rules! validation_query_max_length_string {
     ($errors:expr, $field:expr, $field_name:expr, $max_size:expr, $translator_service:expr, $lang:expr) => {
         if let Some(value) = &$field {
             let mut errors_: Vec<String> =
-                crate::app::validator::rules::length::MaxLengthString::validate(
+                crate::app::validator::rules::str_max_chars_count::StrMaxCharsCount::validate(
                     $translator_service,
                     $lang,
                     value,
