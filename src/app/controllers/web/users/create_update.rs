@@ -27,6 +27,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use strum::VariantNames;
 use strum_macros::{Display, EnumString};
+use std::io::Cursor;
+use image::imageops::FilterType;
+use image::ImageReader;
 
 #[derive(
     Debug,
@@ -504,6 +507,11 @@ pub async fn invoke(
 
             if let Some(avatar) = data.avatar {
                 let bytes = avatar.bytes.to_vec();
+                let img = ImageReader::new(Cursor::new(bytes)).with_guessed_format()?.decode().map_err(|_| error::ErrorInternalServerError(""))?;
+                let img = img.resize(200, 200, FilterType::Triangle);
+                let mut bytes: Vec<u8> = Vec::new();
+                img.write_to(&mut Cursor::new(&mut bytes), image::ImageFormat::Jpeg).map_err(|_| error::ErrorInternalServerError(""))?;
+
                 let upload_filename = avatar.filename;
                 let mime = avatar.mime;
                 let user_file = file_service.upload_bytes_file_to_local_disk(auth_user.id, bytes, true, upload_filename, mime)
