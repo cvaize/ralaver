@@ -1,6 +1,7 @@
 mod mysql;
 mod disk;
 mod file;
+mod key_value;
 mod role;
 mod user;
 mod user_file;

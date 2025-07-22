@@ -1,4 +1,4 @@
-use crate::{AlertVariant, KeyValueConnection, KeyValueService, TranslatorService};
+use crate::{AlertVariant, KeyValueServiceConnection, KeyValueService, TranslatorService};
 use actix_web::web::Data;
 use actix_web::{error, Error, HttpRequest};
 use std::collections::HashMap;
@@ -42,7 +42,7 @@ impl RateLimitService {
         value
     }
 
-    fn get_connection(&self) -> Result<KeyValueConnection, RateLimitServiceError> {
+    fn get_connection(&self) -> Result<KeyValueServiceConnection, RateLimitServiceError> {
         self.key_value_service
             .get_ref()
             .get_connection()
@@ -69,7 +69,7 @@ impl RateLimitService {
 
     fn ttl_(
         &self,
-        connection: &mut KeyValueConnection,
+        connection: &mut KeyValueServiceConnection,
         key: &str,
     ) -> Result<u64, RateLimitServiceError> {
         let value: i64 = connection.ttl(self.make_store_key(key)).map_err(|e| {
@@ -141,7 +141,7 @@ impl RateLimitService {
 
     fn get_(
         &self,
-        connection: &mut KeyValueConnection,
+        connection: &mut KeyValueServiceConnection,
         key: &str,
     ) -> Result<u64, RateLimitServiceError> {
         Ok(connection
@@ -160,7 +160,7 @@ impl RateLimitService {
 
     fn set_(
         &self,
-        connection: &mut KeyValueConnection,
+        connection: &mut KeyValueServiceConnection,
         key: &str,
         amount: u64,
         ttl: u64,
@@ -180,7 +180,7 @@ impl RateLimitService {
 
     fn incr_(
         &self,
-        connection: &mut KeyValueConnection,
+        connection: &mut KeyValueServiceConnection,
         key: &str,
         amount: u64,
         ttl: u64,
@@ -205,7 +205,7 @@ impl RateLimitService {
 
     fn remaining_(
         &self,
-        connection: &mut KeyValueConnection,
+        connection: &mut KeyValueServiceConnection,
         key: &str,
         max_attempts: u64,
     ) -> Result<u64, RateLimitServiceError> {
@@ -223,7 +223,7 @@ impl RateLimitService {
 
     fn is_too_many_attempts_(
         &self,
-        connection: &mut KeyValueConnection,
+        connection: &mut KeyValueServiceConnection,
         key: &str,
         max_attempts: u64,
     ) -> Result<bool, RateLimitServiceError> {

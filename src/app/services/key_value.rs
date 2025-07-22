@@ -14,13 +14,13 @@ impl KeyValueService {
         Self { pool }
     }
 
-    pub fn get_connection(&self) -> Result<KeyValueConnection, KeyValueServiceError> {
+    pub fn get_connection(&self) -> Result<KeyValueServiceConnection, KeyValueServiceError> {
         let conn: PooledConnection<Client> = self.pool.get_ref().get().map_err(|e| {
             log::error!("KeyValueService::ConnectFail - {e}");
             KeyValueServiceError::ConnectFail
         })?;
 
-        Ok(KeyValueConnection::new(conn))
+        Ok(KeyValueServiceConnection::new(conn))
     }
 
     pub fn get<K: ToRedisArgs, V: FromRedisValue>(
@@ -63,6 +63,14 @@ impl KeyValueService {
         self.get_connection()?.del(key)
     }
 
+    pub fn incr<K: ToRedisArgs, D: ToRedisArgs, V: FromRedisValue>(
+        &self,
+        key: K,
+        delta: D,
+    ) -> Result<V, KeyValueServiceError> {
+        self.get_connection()?.incr(key, delta)
+    }
+
     pub fn ttl<K: ToRedisArgs, V: FromRedisValue>(
         &self,
         key: K,
@@ -71,11 +79,11 @@ impl KeyValueService {
     }
 }
 
-pub struct KeyValueConnection {
+pub struct KeyValueServiceConnection {
     conn: PooledConnection<Client>,
 }
 
-impl KeyValueConnection {
+impl KeyValueServiceConnection {
     pub fn new(conn: PooledConnection<Client>) -> Self {
         Self { conn }
     }
@@ -163,6 +171,17 @@ impl KeyValueConnection {
     pub fn del<K: ToRedisArgs>(&mut self, key: K) -> Result<(), KeyValueServiceError> {
         self.conn.del(key).map_err(|e| {
             log::error!("KeyValueService::del - {e}");
+            KeyValueServiceError::Fail
+        })
+    }
+
+    pub fn incr<K: ToRedisArgs, D: ToRedisArgs, V: FromRedisValue>(
+        &mut self,
+        key: K,
+        delta: D,
+    ) -> Result<V, KeyValueServiceError> {
+        self.conn.incr(key, delta).map_err(|e| {
+            log::error!("KeyValueService::incr - {e}");
             KeyValueServiceError::Fail
         })
     }
