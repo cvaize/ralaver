@@ -9,8 +9,10 @@ const styles = [
         .filter(s => s.endsWith('.css'))
         .map(s => './resources/css/libraries/' + s),
 
+    './resources/css/components/layout.css',
+
     ...fs.readdirSync('./resources/css/components')
-        .filter(s => s.endsWith('.css'))
+        .filter(s => s.endsWith('.css') && s !== 'layout.css')
         .map(s => './resources/css/components/' + s),
 ].filter((item, i, ar) => ar.indexOf(item) === i);
 

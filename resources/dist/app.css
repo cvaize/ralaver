@@ -347,7 +347,195 @@ template {
 [hidden] {
     display: none;
 }
-.admin-accordion {
+:root {
+    --admin-app-accent-color: 0, 0, 255;
+    --admin-app-mark-bg-color: 255, 255, 0;
+    --admin-app-color: 59, 67, 81;
+    --admin-app-background-color: 255, 255, 255;
+    --admin-app-backdrop-color: 0, 0, 0;
+    --admin-app-light-background-color: 225, 225, 225;
+    --admin-app-success-color: 30, 180, 20;
+    --admin-app-danger-color: 220, 53, 69;
+    --admin-app-warning-color: 215, 215, 0;
+    --admin-app-focus-box-shadow: 0 0 0 2px rgba(var(--admin-app-accent-color), 0.5);
+}
+
+::selection {
+    background-color: rgba(var(--admin-app-accent-color), 0.2);
+}
+
+mark {
+    background-color: rgb(var(--admin-app-mark-bg-color));
+}
+
+*, *:before, *:after {
+    box-sizing: border-box;
+}
+
+*[class*="admin-"]:focus {
+    box-shadow: var(--admin-app-focus-box-shadow);
+    outline: none;
+}
+
+h1, h2, h3, h4, h5, h6, p {
+    margin: 0 0 1rem 0;
+}
+
+[type="button"], [type="reset"], [type="submit"], button {
+    -webkit-appearance: button;
+}
+
+button, select {
+    text-transform: none;
+}
+
+.admin-html {
+    line-height: 1.5;
+}
+
+.admin-body {
+    color: rgb(var(--admin-app-color));
+    font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    font-size: .8rem;
+    text-rendering: optimizeLegibility;
+}
+
+.admin-app {
+    min-height: 100vh;
+    height: 100%;
+    position: relative;
+    width: 100%;
+    color: rgb(var(--admin-app-color));
+    background: rgb(var(--admin-app-background-color));
+}
+
+.admin-content {
+    width: 100%;
+    min-height: 100vh;
+    padding: 0.8rem;
+}
+
+.admin-hr {
+    opacity: 0.1;
+    margin: 0.5rem 0;
+}
+
+.admin-img {
+    max-width: 100%;
+    height: auto;
+}
+
+.admin-icon--svg {
+    width: 1.2em;
+    min-width: 1.2em;
+    height: 1.2em;
+    min-height: 1.2em;
+    fill: currentColor;
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+    top: -0.1em;
+}
+
+.admin-text--mini {
+    font-size: .875em;
+    opacity: 0.8;
+}
+
+.admin-text--accent {
+    color: rgb(var(--admin-app-accent-color));
+}
+
+.admin-text--success {
+    color: rgb(var(--admin-app-success-color));
+}
+
+.admin-text--warning {
+    color: rgb(var(--admin-app-warning-color));
+}
+
+.admin-text--danger {
+    color: rgb(var(--admin-app-danger-color));
+}
+
+.admin-backdrop {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 180;
+    background: rgba(var(--admin-app-backdrop-color), 0.6);
+    display: none;
+}
+
+.admin-container {
+    width: 100%;
+    max-width: 1460px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.admin-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+}
+
+.admin-col-auto {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 100%;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+.admin-col {
+    flex: 1 0 0;
+    width: auto;
+    max-width: 100%;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+@media (max-width: 1460px) {
+    .admin-container {
+        max-width: 1320px;
+    }
+}
+
+@media (max-width: 1399px) {
+    .admin-container {
+        max-width: 1140px;
+    }
+}
+
+@media (max-width: 1199px) {
+    .admin-container {
+        max-width: 960px;
+    }
+}
+
+@media (max-width: 991px) {
+    .admin-container {
+        max-width: 720px;
+    }
+}
+
+@media (max-width: 767px) {
+    .admin-container {
+        max-width: 540px;
+    }
+}
+
+@media (max-width: 470px) {
+    .admin-container {
+        max-width: none;
+    }
+}.admin-accordion {
 }
 
 .admin-accordion__header {
@@ -1811,194 +1999,6 @@ input.admin-input[type="file"], input.admin-input[type="file"]:read-only, input.
 .admin-danger > .admin-input[type="range"] {
     color: rgb(var(--admin-app-danger-color));
     background-color: rgb(var(--admin-app-danger-color));
-}:root {
-    --admin-app-accent-color: 0, 0, 255;
-    --admin-app-mark-bg-color: 255, 255, 0;
-    --admin-app-color: 59, 67, 81;
-    --admin-app-background-color: 255, 255, 255;
-    --admin-app-backdrop-color: 0, 0, 0;
-    --admin-app-light-background-color: 225, 225, 225;
-    --admin-app-success-color: 30, 180, 20;
-    --admin-app-danger-color: 220, 53, 69;
-    --admin-app-warning-color: 215, 215, 0;
-    --admin-app-focus-box-shadow: 0 0 0 2px rgba(var(--admin-app-accent-color), 0.5);
-}
-
-::selection {
-    background-color: rgba(var(--admin-app-accent-color), 0.2);
-}
-
-mark {
-    background-color: rgb(var(--admin-app-mark-bg-color));
-}
-
-*, *:before, *:after {
-    box-sizing: border-box;
-}
-
-*[class*="admin-"]:focus {
-    box-shadow: var(--admin-app-focus-box-shadow);
-    outline: none;
-}
-
-h1, h2, h3, h4, h5, h6, p {
-    margin: 0 0 1rem 0;
-}
-
-[type="button"], [type="reset"], [type="submit"], button {
-    -webkit-appearance: button;
-}
-
-button, select {
-    text-transform: none;
-}
-
-.admin-html {
-    line-height: 1.5;
-}
-
-.admin-body {
-    color: rgb(var(--admin-app-color));
-    font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-    font-size: .8rem;
-    text-rendering: optimizeLegibility;
-}
-
-.admin-app {
-    min-height: 100vh;
-    height: 100%;
-    position: relative;
-    width: 100%;
-    color: rgb(var(--admin-app-color));
-    background: rgb(var(--admin-app-background-color));
-}
-
-.admin-content {
-    width: 100%;
-    min-height: 100vh;
-    padding: 0.8rem;
-}
-
-.admin-hr {
-    opacity: 0.1;
-    margin: 0.5rem 0;
-}
-
-.admin-img {
-    max-width: 100%;
-    height: auto;
-}
-
-.admin-icon--svg {
-    width: 1.2em;
-    min-width: 1.2em;
-    height: 1.2em;
-    min-height: 1.2em;
-    fill: currentColor;
-    display: inline-block;
-    vertical-align: middle;
-    position: relative;
-    top: -0.1em;
-}
-
-.admin-text--mini {
-    font-size: .875em;
-    opacity: 0.8;
-}
-
-.admin-text--accent {
-    color: rgb(var(--admin-app-accent-color));
-}
-
-.admin-text--success {
-    color: rgb(var(--admin-app-success-color));
-}
-
-.admin-text--warning {
-    color: rgb(var(--admin-app-warning-color));
-}
-
-.admin-text--danger {
-    color: rgb(var(--admin-app-danger-color));
-}
-
-.admin-backdrop {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 180;
-    background: rgba(var(--admin-app-backdrop-color), 0.6);
-    display: none;
-}
-
-.admin-container {
-    width: 100%;
-    max-width: 1460px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 1rem;
-    padding-right: 1rem;
-}
-
-.admin-row {
-    display: flex;
-    flex-wrap: wrap;
-    margin-left: -0.5rem;
-    margin-right: -0.5rem;
-}
-
-.admin-col-auto {
-    flex: 0 0 auto;
-    width: auto;
-    max-width: 100%;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-}
-
-.admin-col {
-    flex: 1 0 0;
-    width: auto;
-    max-width: 100%;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-}
-
-@media (max-width: 1460px) {
-    .admin-container {
-        max-width: 1320px;
-    }
-}
-
-@media (max-width: 1399px) {
-    .admin-container {
-        max-width: 1140px;
-    }
-}
-
-@media (max-width: 1199px) {
-    .admin-container {
-        max-width: 960px;
-    }
-}
-
-@media (max-width: 991px) {
-    .admin-container {
-        max-width: 720px;
-    }
-}
-
-@media (max-width: 767px) {
-    .admin-container {
-        max-width: 540px;
-    }
-}
-
-@media (max-width: 470px) {
-    .admin-container {
-        max-width: none;
-    }
 }.admin-list-page {
     display: grid;
     grid-template-columns: 1fr auto auto auto auto auto auto;
