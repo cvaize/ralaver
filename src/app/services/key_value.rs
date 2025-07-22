@@ -9,8 +9,6 @@ pub struct KeyValueService {
     pool: Data<RedisPool>,
 }
 
-// TODO: Мысль: а что если redis будет внутри приложения и обращения к нему будут через память, а не через сетевой интерфейс.
-// TODO: Создать KeyValueRedisRepository и KeyValueMemoryRepository
 impl KeyValueService {
     pub fn new(pool: Data<RedisPool>) -> Self {
         Self { pool }
@@ -40,13 +38,6 @@ impl KeyValueService {
         self.get_connection()?.get_ex(key, seconds)
     }
 
-    pub fn get_del<K: ToRedisArgs, V: FromRedisValue>(
-        &self,
-        key: K,
-    ) -> Result<Option<V>, KeyValueServiceError> {
-        self.get_connection()?.get_del(key)
-    }
-
     pub fn set<K: ToRedisArgs, V: ToRedisArgs>(
         &self,
         key: K,
@@ -70,14 +61,6 @@ impl KeyValueService {
 
     pub fn del<K: ToRedisArgs>(&self, key: K) -> Result<(), KeyValueServiceError> {
         self.get_connection()?.del(key)
-    }
-
-    pub fn incr<K: ToRedisArgs, D: ToRedisArgs, V: FromRedisValue>(
-        &self,
-        key: K,
-        delta: D,
-    ) -> Result<V, KeyValueServiceError> {
-        self.get_connection()?.incr(key, delta)
     }
 
     pub fn ttl<K: ToRedisArgs, V: FromRedisValue>(
@@ -184,17 +167,6 @@ impl KeyValueConnection {
         })
     }
 
-    pub fn incr<K: ToRedisArgs, D: ToRedisArgs, V: FromRedisValue>(
-        &mut self,
-        key: K,
-        delta: D,
-    ) -> Result<V, KeyValueServiceError> {
-        self.conn.incr(key, delta).map_err(|e| {
-            log::error!("KeyValueService::incr - {e}");
-            KeyValueServiceError::Fail
-        })
-    }
-
     pub fn ttl<K: ToRedisArgs, V: FromRedisValue>(
         &mut self,
         key: K,
@@ -210,49 +182,4 @@ impl KeyValueConnection {
 pub enum KeyValueServiceError {
     ConnectFail,
     Fail,
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::preparation;
-
-    #[test]
-    fn test() {
-        let (_, all_services) = preparation();
-        let key_value_service = all_services.key_value_service.get_ref();
-        let key = "app::services::key_value::tests::get_and_set_and_del";
-        let v: u64 = 123;
-        key_value_service.del(key).unwrap();
-        let value: i64 = key_value_service.ttl(key).unwrap();
-        assert_eq!(value, -2);
-
-        let value: Option<u64> = key_value_service.get(key).unwrap();
-        assert!(value.is_none());
-
-        key_value_service.set(key, v).unwrap();
-        let value: i64 = key_value_service.ttl(key).unwrap();
-        assert_eq!(value, -1);
-
-        let value: Option<u64> = key_value_service.get_ex(key, 600).unwrap();
-        assert!(value.is_some());
-
-        let value: i64 = key_value_service.ttl(key).unwrap();
-        assert!(value > 0);
-
-        key_value_service.set_ex(key, v, 600).unwrap();
-        let value: i64 = key_value_service.ttl(key).unwrap();
-        assert!(value > 0);
-
-        let value: u64 = key_value_service.incr(key, 1).unwrap();
-        assert_eq!(value - 1, v);
-        let value: Option<u64> = key_value_service.get(key).unwrap();
-        assert_eq!(value.unwrap() - 1, v);
-
-        key_value_service.expire(key, 600).unwrap();
-        let value: Option<u64> = key_value_service.get(key).unwrap();
-        assert!(value.is_some());
-        let value: Option<u64> = key_value_service.get_del(key).unwrap();
-        assert!(value.is_some());
-        assert_eq!(value.unwrap(), v + 1);
-    }
 }

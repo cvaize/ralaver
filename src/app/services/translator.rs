@@ -1,5 +1,5 @@
 use crate::helpers::collect_files_from_dir;
-use crate::Config;
+use crate::{Config, KeyValueService};
 use actix_web::web::Data;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -286,6 +286,7 @@ pub trait TranslatableError {
 mod tests {
     use super::*;
     use test::Bencher;
+    use crate::preparation;
 
     #[test]
     fn translate() {
@@ -462,4 +463,73 @@ mod tests {
         let config = Data::new(Config::new());
         let _ = TranslatorService::new_from_files(config).unwrap();
     }
+    //
+    // #[bench]
+    // fn bench_hash_map_vs_redis(b: &mut Bencher) {
+    // // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo bench -- --nocapture --exact app::services::translator::tests::bench_hash_map_vs_redis
+    // // #[test]
+    // // fn test_hash_map_vs_redis() {
+    // //     // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::services::translator::tests::test_hash_map_vs_redis
+    //     let (_, all_services) = preparation();
+    //     let key_value_service = all_services.key_value_service.get_ref();
+    //     let translator_service = all_services.translator_service.get_ref();
+    //     // let mut last_key = "".to_string();
+    //     // for (lang, translates) in &translator_service.translates {
+    //     //     for (key, value) in translates {
+    //     //         last_key = format!("{lang}.{key}");
+    //     //         key_value_service.set_ex(&last_key, value, 86400).unwrap();
+    //     //     }
+    //     // }
+    //     // dbg!(&last_key);
+    //     let v: Option<String> = key_value_service.get("en.validation.password.symbols").unwrap();
+    //     dbg!(&v);
+    //     let v = translator_service.get("en", "validation.password.symbols");
+    //     dbg!(&v);
+    //     b.iter(|| {
+    //         // 47,511.95 ns/iter (+/- 4,466.43)
+    //         // let _: Option<String> = key_value_service.get("en.validation.password.symbols").unwrap();
+    //         // 36.55 ns/iter (+/- 0.96)
+    //         let _ = translator_service.get("en", "validation.password.symbols");
+    //     });
+    // }
+    //
+    // #[bench]
+    // fn bench_kv_vs_redis(b: &mut Bencher) {
+    //     // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo bench -- --nocapture --exact app::services::translator::tests::bench_kv_vs_redis
+    // // #[test]
+    // // fn test_kv_vs_redis() {
+    // //     // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::services::translator::tests::test_kv_vs_redis
+    //     use kv::*;
+    //
+    //     let (_, all_services) = preparation();
+    //     let key_value_service = all_services.key_value_service.get_ref();
+    //     let translator_service = all_services.translator_service.get_ref();
+    //
+    //     // При реализации expires можно при получении данных проверять expires и если он истёк, то удалять старое значение и отдавать в ответе None.
+    //     let cfg = Config::new("./storage/kv_db");
+    //     let store = Store::new(cfg).unwrap();
+    //     let bucket = store.bucket::<Raw, Raw>(Some("bucket_name")).unwrap();
+    //
+    //     // for (lang, translates) in &translator_service.translates {
+    //     //     for (key, value) in translates {
+    //     //         let k = Raw::from(format!("{lang}.{key}").into_bytes());
+    //     //         let v = Raw::from(value.to_owned().into_bytes());
+    //     //         bucket.set(&k, &v).unwrap();
+    //     //     }
+    //     // }
+    //     // "en.validation.password.symbols"
+    //     let key = Raw::from(b"en.validation.password.symbols");
+    //     let v = String::from_utf8(bucket.get(&key).unwrap().unwrap().to_vec()).unwrap();
+    //     dbg!(&v);
+    //     let v = translator_service.get("en", "validation.password.symbols");
+    //     dbg!(&v);
+    //     b.iter(|| {
+    //         // 190.75 ns/iter (+/- 6.52)
+    //         let _ = bucket.get(&key).unwrap().unwrap();
+    //         // 47,511.95 ns/iter (+/- 4,466.43)
+    //         // let _: Option<String> = key_value_service.get("en.validation.password.symbols").unwrap();
+    //         // 36.55 ns/iter (+/- 0.96)
+    //         // let _ = translator_service.get("en", "validation.password.symbols");
+    //     });
+    // }
 }
