@@ -1,8 +1,5 @@
 use crate::app::controllers::web::users::create_update::{invoke as users_create_update_invoke, InvokeData, InvokeRoute};
-use crate::{
-    AppService, LocaleService, RateLimitService, RoleService, TemplateService, TranslatorService,
-    UserFileService, UserService,
-};
+use crate::{AppService, FileService, LocaleService, RateLimitService, RoleService, TemplateService, TranslatorService, UserFileService, UserService};
 use crate::{Session, User, WebAuthService};
 use actix_web::web::{Data, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
@@ -23,6 +20,7 @@ pub async fn index(
     locale_service: Data<LocaleService>,
     role_service: Data<RoleService>,
     user_file_service: Data<UserFileService>,
+    file_service: Data<FileService>,
 ) -> Result<HttpResponse, Error> {
     users_create_update_invoke(InvokeData {
         route: InvokeRoute::ProfileEdit,
@@ -41,6 +39,7 @@ pub async fn index(
         locale_service,
         role_service,
         user_file_service,
+        file_service,
     }).await
 }
 
@@ -59,6 +58,7 @@ pub async fn update(
     locale_service: Data<LocaleService>,
     role_service: Data<RoleService>,
     user_file_service: Data<UserFileService>,
+    file_service: Data<FileService>,
 ) -> Result<HttpResponse, Error> {
     users_create_update_invoke(InvokeData {
         route: InvokeRoute::ProfileUpdate,
@@ -77,6 +77,7 @@ pub async fn update(
         locale_service,
         role_service,
         user_file_service,
+        file_service,
     }).await
 }
 

@@ -1,11 +1,6 @@
+#![allow(dead_code)]
 use crate::helpers::now_date_time_str;
-use crate::{
-    AppError, Config, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository, File,
-    FileColumn, FileFilter, FileMysqlRepository, FilePaginateParams, MysqlRepository,
-    PaginationResult, RandomService, TranslatableError, TranslatorService, UserFile,
-    UserFileColumn, UserFileFilter, UserFileMysqlRepository, UserFileService, UserFileServiceError,
-    UserFileSort, UserServiceError,
-};
+use crate::{AppError, Config, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository, File, FileColumn, FileFilter, FileMysqlRepository, FilePaginateParams, HashService, MysqlRepository, PaginationResult, RandomService, TranslatableError, TranslatorService, UserFile, UserFileColumn, UserFileFilter, UserFileMysqlRepository, UserFileService, UserFileServiceError, UserFileSort, UserServiceError};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use mime::Mime;
@@ -23,10 +18,9 @@ pub struct FileService {
     file_repository: Data<FileMysqlRepository>,
     user_file_service: Data<UserFileService>,
     disk_local_repository: Data<DiskLocalRepository>,
-    #[allow(dead_code)]
     disk_external_repository: Data<DiskExternalRepository>,
-    #[allow(dead_code)]
     random_repository: Data<RandomService>,
+    hash_service: Data<HashService>,
 }
 
 impl FileService {
@@ -37,6 +31,7 @@ impl FileService {
         disk_local_repository: Data<DiskLocalRepository>,
         disk_external_repository: Data<DiskExternalRepository>,
         random_repository: Data<RandomService>,
+        hash_service: Data<HashService>,
     ) -> Self {
         Self {
             config,
@@ -45,6 +40,7 @@ impl FileService {
             disk_local_repository,
             disk_external_repository,
             random_repository,
+            hash_service,
         }
     }
 
@@ -237,6 +233,331 @@ impl FileService {
             .map_err(|_| error::ErrorInternalServerError(""))
     }
 
+    pub fn upload_bytes_file_to_local_disk(
+        &self,
+        user_id: u64,
+        bytes: Vec<u8>,
+        is_public: bool,
+        mut upload_filename: Option<String>,
+        mut mime: Option<Mime>,
+    ) -> Result<UserFile, FileServiceError> {
+        let file_repository = self.file_repository.get_ref();
+        let user_file_service = self.user_file_service.get_ref();
+        let disk_local_repository = self.disk_local_repository.get_ref();
+        let hash_service = self.hash_service.get_ref();
+
+        if let Some(upload_filename_) = upload_filename {
+            upload_filename = Some(upload_filename_.trim().to_string());
+        }
+
+        let disk = Disk::Local;
+
+        // 1) Make filename [hash]-[size].[extensions]
+        // 1.1) Make hash
+        let hash: String = hash_service.hash(&bytes);
+
+        if mime.is_none() {
+            if let Some(upload_filename) = &upload_filename {
+                mime = mime_guess::from_path(upload_filename).first()
+            }
+        }
+
+        let mime_str: Option<String> = if let Some(mime) = &mime {
+            Some(mime.to_string())
+        } else {
+            None
+        };
+
+        // 1.2) Make size
+        let size: u64 = bytes.len() as u64;
+
+        // 1.3) Make extensions
+        // [hash]-[size].[extensions]
+        let mut filename = hash.to_owned();
+        filename.push('-');
+        filename.push_str(size.to_string().as_str());
+
+        if let Some(mime_) = &mime {
+            if let Some(ext) = mime2ext(mime_) {
+                filename.push('.');
+                filename.push_str(ext.trim());
+            }
+        }
+
+        // 2) Make path = [root]/[service_folder]/[filename]
+        let path: String = disk_local_repository.path(&filename).map_err(|e| {
+            self.log_error(
+                "upload_bytes_file_to_local_disk",
+                e.to_string(),
+                FileServiceError::Fail,
+            )
+        })?;
+
+        // 3) Find old file in db or make new file
+        let file: Option<File> = file_repository
+            .first_by_disk_and_path(&disk, &path)
+            .map_err(|e| {
+                self.log_error(
+                    "upload_bytes_file_to_local_disk",
+                    e.to_string(),
+                    FileServiceError::Fail,
+                )
+            })?;
+
+        let mut file: File = if let Some(file) = file {
+            file
+        } else {
+            File::default()
+        };
+
+        // 4) Set new data in file
+        let mut is_upsert = file.id == 0;
+
+        if file.id == 0 {
+            file.disk = disk.to_string();
+        } else if file.disk.ne(disk.to_string().as_str()) {
+            return Err(self.log_error(
+                "upload_bytes_file_to_local_disk",
+                format!("Disk not equal. File ID: {}.", file.id),
+                FileServiceError::Fail,
+            ));
+        }
+
+        if path.ne(&file.path) {
+            file.path = path;
+            is_upsert = true;
+        }
+
+        if filename.ne(&file.filename) {
+            file.filename = filename;
+            is_upsert = true;
+        }
+
+        let hash: Option<String> = Some(hash);
+        if hash.ne(&file.hash) {
+            file.hash = hash;
+            is_upsert = true;
+        }
+
+        let size: Option<u64> = Some(size);
+        if size.ne(&file.size) {
+            file.size = size;
+            is_upsert = true;
+        }
+
+        if mime_str.ne(&file.mime) {
+            file.mime = mime_str;
+            is_upsert = true;
+        }
+
+        if file.creator_user_id.is_none() {
+            file.creator_user_id = Some(user_id);
+            is_upsert = true;
+        }
+
+        if file.delete_at.is_some() {
+            file.delete_at = None;
+            is_upsert = true;
+        }
+
+        if file.deleted_at.is_some() {
+            file.deleted_at = None;
+            is_upsert = true;
+        }
+
+        if file.is_delete == true {
+            file.is_delete = false;
+            is_upsert = true;
+        }
+
+        if file.is_deleted == true {
+            file.is_deleted = false;
+            is_upsert = true;
+        }
+
+        // 5) Copy content if necessary.
+        let is_exists_in_fs = disk_local_repository.exists(&file.path).map_err(|e| {
+            self.log_error(
+                "upload_bytes_file_to_local_disk",
+                e.to_string(),
+                FileServiceError::Fail,
+            )
+        })?;
+
+        let mut is_delete_old_file = false;
+        let mut is_copy = !is_exists_in_fs;
+
+        if is_exists_in_fs {
+            if let Some(new_file_hash) = &file.hash {
+                let old_file_hash: String =
+                    disk_local_repository.hash(&file.path).map_err(|e| {
+                        self.log_error(
+                            "upload_bytes_file_to_local_disk",
+                            e.to_string(),
+                            FileServiceError::Fail,
+                        )
+                    })?;
+
+                if old_file_hash.ne(new_file_hash) {
+                    is_copy = true;
+                    is_delete_old_file = true;
+                }
+            } else {
+                is_copy = true;
+                is_delete_old_file = true;
+            }
+        }
+
+        if is_delete_old_file {
+            disk_local_repository.delete(&file.path).map_err(|e| {
+                self.log_error(
+                    "upload_bytes_file_to_local_disk",
+                    e.to_string(),
+                    FileServiceError::Fail,
+                )
+            })?;
+        }
+
+        if is_copy {
+            disk_local_repository
+                .put(&file.path, bytes)
+                .map_err(|e| {
+                    self.log_error(
+                        "upload_bytes_file_to_local_disk",
+                        e.to_string(),
+                        FileServiceError::Fail,
+                    )
+                })?;
+        }
+
+        // 6) Upsert file meta in db
+        if is_upsert {
+            self.upsert(file.to_owned(), &None)?;
+
+            let file_: Option<File> = file_repository
+                .first_by_disk_and_path(&disk, &file.path)
+                .map_err(|e| {
+                    self.log_error(
+                        "upload_bytes_file_to_local_disk",
+                        e.to_string(),
+                        FileServiceError::Fail,
+                    )
+                })?;
+            if let Some(file_) = file_ {
+                file = file_;
+            } else {
+                return Err(self.log_error(
+                    "upload_bytes_file_to_local_disk",
+                    format!("File created, but not found {}", &file.path),
+                    FileServiceError::NotFound,
+                ));
+            }
+        }
+
+        // 7) Upsert user file in db
+        let user_file: Option<UserFile> = user_file_service
+            .first_by_user_id_and_file_id(user_id, file.id)
+            .map_err(|e| {
+                self.log_error(
+                    "upload_bytes_file_to_local_disk",
+                    e.to_string(),
+                    FileServiceError::Fail,
+                )
+            })?;
+
+        let mut user_file: UserFile = if let Some(user_file) = user_file {
+            user_file
+        } else {
+            UserFile::default()
+        };
+
+        // 8) Set new data in user file
+        let mut is_upsert = user_file.id == 0;
+
+        if user_file.id == 0 {
+            user_file.user_id = user_id;
+        } else if user_file.user_id.ne(&user_id) {
+            return Err(self.log_error(
+                "upload_bytes_file_to_local_disk",
+                format!("User ID not equal. User File ID: {}.", user_file.id),
+                FileServiceError::Fail,
+            ));
+        }
+
+        if user_file.id == 0 {
+            user_file.file_id = file.id;
+        } else if user_file.file_id.ne(&file.id) {
+            return Err(self.log_error(
+                "upload_bytes_file_to_local_disk",
+                format!("File ID not equal. User File ID: {}.", user_file.id),
+                FileServiceError::Fail,
+            ));
+        }
+
+        if upload_filename.ne(&user_file.upload_filename) {
+            user_file.upload_filename = upload_filename;
+            is_upsert = true;
+        }
+
+        if user_file.mime.ne(&file.mime) {
+            user_file.mime = file.mime.to_owned();
+            is_upsert = true;
+        }
+
+        if user_file.deleted_at.is_some() {
+            user_file.deleted_at = None;
+            is_upsert = true;
+        }
+
+        if user_file.is_deleted == true {
+            user_file.is_deleted = false;
+            is_upsert = true;
+        }
+
+        if user_file.disk.ne(&file.disk) {
+            user_file.disk = file.disk.to_owned();
+            is_upsert = true;
+        }
+
+        if user_file.is_public != is_public {
+            user_file.is_public = is_public;
+            is_upsert = true;
+        }
+
+        if is_upsert {
+            let user_id = user_file.user_id;
+            let file_id = user_file.file_id;
+            user_file_service.upsert(user_file, &None, &file).map_err(|e| {
+                self.log_error(
+                    "upload_bytes_file_to_local_disk",
+                    e.to_string(),
+                    FileServiceError::Fail,
+                )
+            })?;
+
+            let user_file_: Option<UserFile> = user_file_service
+                .first_by_user_id_and_file_id(user_id, file_id)
+                .map_err(|e| {
+                    self.log_error(
+                        "upload_bytes_file_to_local_disk",
+                        e.to_string(),
+                        FileServiceError::Fail,
+                    )
+                })?;
+            if let Some(user_file_) = user_file_ {
+                user_file = user_file_;
+            } else {
+                return Err(self.log_error(
+                    "upload_bytes_file_to_local_disk",
+                    format!("User File created, but not found {}", &file.path),
+                    FileServiceError::NotFound,
+                ));
+            }
+        }
+
+        Ok(user_file)
+    }
+
     pub fn upload_local_file_to_local_disk(
         &self,
         user_id: u64,
@@ -272,7 +593,7 @@ impl FileService {
 
         // 1) Make filename [hash]-[size].[extensions]
         // 1.1) Make hash
-        let hash = disk_local_repository.hash(upload_path).map_err(|e| {
+        let hash: String = disk_local_repository.hash(upload_path).map_err(|e| {
             self.log_error(
                 "upload_local_file_to_local_disk",
                 e.to_string(),
@@ -503,7 +824,13 @@ impl FileService {
                     )
                 })?;
             let mut buf: Vec<u8> = Vec::new();
-            while read_stream.read_to_end(&mut buf).unwrap() > 0 {
+            while read_stream.read_to_end(&mut buf).map_err(|e| {
+                self.log_error(
+                    "upload_local_file_to_local_disk",
+                    e.to_string(),
+                    FileServiceError::Fail,
+                )
+            })? > 0 {
                 write_stream.write_all(&buf).map_err(|e| {
                     self.log_error(
                         "upload_local_file_to_local_disk",
@@ -513,7 +840,13 @@ impl FileService {
                 })?;
                 buf.clear();
             }
-            write_stream.flush().unwrap();
+            write_stream.flush().map_err(|e| {
+                self.log_error(
+                    "upload_local_file_to_local_disk",
+                    e.to_string(),
+                    FileServiceError::Fail,
+                )
+            })?;
         }
 
         // 6) Upsert file meta in db

@@ -1,21 +1,20 @@
 use crate::app::controllers::web::profile::get_url as get_profile_url;
-use crate::app::controllers::web::{get_context_data, get_template_context, ContextData};
-use crate::app::validator::rules::bytes_max_length::BytesMaxLength;
+use crate::app::controllers::web::{get_context_data, get_template_context};
 use crate::app::validator::rules::bytes_mut_max_length::BytesMutMaxLength;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::contains_str::ContainsStr;
 use crate::app::validator::rules::contains_vec_str::ContainsVecStr;
 use crate::app::validator::rules::email::Email;
+use crate::app::validator::rules::mimes::Mimes;
 use crate::app::validator::rules::required::Required;
 use crate::app::validator::rules::str_max_chars_count::StrMaxCharsCount;
-use crate::app::validator::rules::str_max_length::StrMaxLength;
 use crate::app::validator::rules::str_min_max_chars_count::StrMinMaxCharsCount as MMCC;
-use crate::{assign_value_bytes_to_string, prepare_value, Alert, AlertVariant, AppService, FileService, Locale, LocaleService, RateLimitService, Role, RoleService, Session, TemplateService, TranslatableError, TranslatorService, User, UserColumn, UserFileService, UserPolicy, UserService, UserServiceError, WebAuthService, WebHttpResponse, USER_AVATAR_MAX_SIZE, USER_AVATAR_MIMES};
+use crate::{assign_value_bytes_to_string, Alert, AlertVariant, AppService, FileService, Locale, LocaleService, RateLimitService, RoleService, Session, TemplateService, TranslatableError, TranslatorService, User, UserColumn, UserFileService, UserPolicy, UserService, UserServiceError, WebAuthService, WebHttpResponse, USER_AVATAR_MAX_SIZE, USER_AVATAR_MIMES};
 use actix_multipart::Multipart;
 use actix_web::http::header::HeaderValue;
 use actix_web::{
     error,
-    http::{header::LOCATION, Method},
+    http::header::LOCATION,
     web::{Data, Path, ReqData},
     Error, HttpRequest, HttpResponse, Result,
 };
@@ -28,7 +27,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use strum::VariantNames;
 use strum_macros::{Display, EnumString};
-use crate::app::validator::rules::mimes::Mimes;
 
 #[derive(
     Debug,
@@ -129,6 +127,7 @@ pub struct InvokeData<'a> {
     pub locale_service: Data<LocaleService>,
     pub role_service: Data<RoleService>,
     pub user_file_service: Data<UserFileService>,
+    pub file_service: Data<FileService>,
 }
 
 pub async fn create(
@@ -145,6 +144,7 @@ pub async fn create(
     locale_service: Data<LocaleService>,
     role_service: Data<RoleService>,
     user_file_service: Data<UserFileService>,
+    file_service: Data<FileService>,
 ) -> Result<HttpResponse, Error> {
     invoke(InvokeData {
         route: InvokeRoute::Create,
@@ -163,34 +163,9 @@ pub async fn create(
         locale_service,
         role_service,
         user_file_service,
+        file_service,
     })
     .await
-
-    // let data = PostData::default();
-    // let errors = ErrorMessages::default();
-    // let user_roles = role_service.all_throw_http()?;
-    // if !UserPolicy::can_create(&user, &user_roles) {
-    //     return Err(error::ErrorForbidden(""));
-    // }
-    // invoke(
-    //     false,
-    //     None,
-    //     req,
-    //     data,
-    //     errors,
-    //     user,
-    //     user_roles,
-    //     session,
-    //     translator_service,
-    //     template_service,
-    //     app_service,
-    //     web_auth_service,
-    //     rate_limit_service,
-    //     user_service,
-    //     locale_service,
-    //     role_service,
-    //     user_file_service,
-    // ).await
 }
 
 pub async fn store(
@@ -208,6 +183,7 @@ pub async fn store(
     locale_service: Data<LocaleService>,
     role_service: Data<RoleService>,
     user_file_service: Data<UserFileService>,
+    file_service: Data<FileService>,
 ) -> Result<HttpResponse, Error> {
     invoke(InvokeData {
         route: InvokeRoute::Store,
@@ -226,45 +202,9 @@ pub async fn store(
         locale_service,
         role_service,
         user_file_service,
+        file_service,
     })
     .await
-    // let user = user.as_ref();
-    // let context_data = get_context_data(
-    //     &req,
-    //     user,
-    //     &session,
-    //     translator_service.get_ref(),
-    //     app_service.get_ref(),
-    //     web_auth_service.get_ref(),
-    //     role_service.get_ref(),
-    // );
-    //
-    //
-    // let mut data = PostData::default();
-    // let errors = data.fill_from_multipart(payload, &context_data.lang, translator_service.clone()).await?;
-    // let user_roles = role_service.all_throw_http()?;
-    // if !UserPolicy::can_create(&user, &user_roles) {
-    //     return Err(error::ErrorForbidden(""));
-    // }
-    // invoke(
-    //     false,
-    //     None,
-    //     req,
-    //     data,
-    //     errors,
-    //     user,
-    //     user_roles,
-    //     session,
-    //     translator_service,
-    //     template_service,
-    //     app_service,
-    //     web_auth_service,
-    //     rate_limit_service,
-    //     user_service,
-    //     locale_service,
-    //     role_service,
-    //     user_file_service,
-    // ).await
 }
 
 pub async fn edit(
@@ -282,6 +222,7 @@ pub async fn edit(
     locale_service: Data<LocaleService>,
     role_service: Data<RoleService>,
     user_file_service: Data<UserFileService>,
+    file_service: Data<FileService>,
 ) -> Result<HttpResponse, Error> {
     let user_id = path.into_inner();
     let entity = user_service.get_ref().first_by_id_throw_http(user_id)?;
@@ -302,35 +243,9 @@ pub async fn edit(
         locale_service,
         role_service,
         user_file_service,
+        file_service,
     })
     .await
-    // let user_roles = role_service.all_throw_http()?;
-    // if !UserPolicy::can_update(&user, &user_roles) {
-    //     return Err(error::ErrorForbidden(""));
-    // }
-    // let user_id = path.into_inner();
-    // let edit_user = user_service.get_ref().first_by_id_throw_http(user_id)?;
-    // let post_data = post_data_from_user(&edit_user);
-    // let edit_user = Some(edit_user);
-    // let data = Form(post_data);
-    // invoke(
-    //     false,
-    //     edit_user,
-    //     req,
-    //     data,
-    //     user,
-    //     user_roles,
-    //     session,
-    //     translator_service,
-    //     template_service,
-    //     app_service,
-    //     web_auth_service,
-    //     rate_limit_service,
-    //     user_service,
-    //     locale_service,
-    //     role_service,
-    //     user_file_service,
-    // )
 }
 
 pub async fn update(
@@ -350,6 +265,7 @@ pub async fn update(
     locale_service: Data<LocaleService>,
     role_service: Data<RoleService>,
     user_file_service: Data<UserFileService>,
+    file_service: Data<FileService>,
 ) -> Result<HttpResponse, Error> {
     let user_id = path.into_inner();
     let entity = user_service.get_ref().first_by_id_throw_http(user_id)?;
@@ -370,33 +286,9 @@ pub async fn update(
         locale_service,
         role_service,
         user_file_service,
+        file_service,
     })
     .await
-    // let data = Form(PostData::default());
-    // let user_roles = role_service.all_throw_http()?;
-    // if !UserPolicy::can_update(&user, &user_roles) {
-    //     return Err(error::ErrorForbidden(""));
-    // }
-    // let user_id = path.into_inner();
-    // let edit_user = Some(user_service.get_ref().first_by_id_throw_http(user_id)?);
-    // invoke(
-    //     false,
-    //     edit_user,
-    //     req,
-    //     data,
-    //     user,
-    //     user_roles,
-    //     session,
-    //     translator_service,
-    //     template_service,
-    //     app_service,
-    //     web_auth_service,
-    //     rate_limit_service,
-    //     user_service,
-    //     locale_service,
-    //     role_service,
-    //     user_file_service,
-    // )
 }
 
 pub async fn invoke(
@@ -439,6 +331,7 @@ pub async fn invoke(
     let locale_service = invoke_data.locale_service.get_ref();
     let role_service = invoke_data.role_service.get_ref();
     let user_file_service = invoke_data.user_file_service.get_ref();
+    let file_service = invoke_data.file_service.get_ref();
 
     let user_roles = role_service.all_throw_http()?;
 
@@ -575,6 +468,13 @@ pub async fn invoke(
             )?;
             errors.form.push(ttl_message)
         } else if errors.is_empty() {
+
+            // https://crates.io/crates/image
+            // TODO
+            // Upload Avatar and Resize by image crate
+            // dbg!(&data.avatar);
+
+
             let id = if let Some(entity) = &entity {
                 entity.id
             } else {
@@ -587,7 +487,6 @@ pub async fn invoke(
             user_data.surname = data.surname.to_owned();
             user_data.name = data.name.to_owned();
             user_data.patronymic = data.patronymic.to_owned();
-            // user_data.avatar_id = data.avatar_id.to_owned();
 
             let mut columns: Vec<UserColumn> = vec![
                 UserColumn::Email,
@@ -601,6 +500,16 @@ pub async fn invoke(
             if UserPolicy::can_set_roles(&auth_user, &user_roles) {
                 user_data.roles_ids = data.roles_ids.to_owned();
                 columns.push(UserColumn::RolesIds);
+            }
+
+            if let Some(avatar) = data.avatar {
+                let bytes = avatar.bytes.to_vec();
+                let upload_filename = avatar.filename;
+                let mime = avatar.mime;
+                let user_file = file_service.upload_bytes_file_to_local_disk(auth_user.id, bytes, true, upload_filename, mime)
+                    .map_err(|_| error::ErrorInternalServerError(""))?;
+                columns.push(UserColumn::AvatarId);
+                user_data.avatar_id = Some(user_file.id);
             }
 
             let columns: Option<Vec<UserColumn>> = Some(columns);

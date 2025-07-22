@@ -95,6 +95,7 @@ pub fn build(c: &Connections, config: Data<Config>) -> Services {
         disk_local_repository.clone(),
         disk_external_repository.clone(),
         rand_service.clone(),
+        hash_service.clone(),
     ));
 
     Services {
