@@ -2563,6 +2563,57 @@ dependencies = [
 ]
 
 [[package]]
+name = "ralaver"
+version = "0.1.0"
+dependencies = [
+ "accept-language",
+ "actix-files",
+ "actix-http",
+ "actix-multipart",
+ "actix-rt",
+ "actix-utils",
+ "actix-web",
+ "base64-stream",
+ "bytes",
+ "cfg-if",
+ "chrono",
+ "dotenv",
+ "encoding_rs",
+ "env_logger",
+ "flatten_json",
+ "futures-core",
+ "futures-util",
+ "handlebars",
+ "hex",
+ "image",
+ "kv",
+ "lettre",
+ "libc 1.0.0-alpha.1",
+ "log",
+ "mime",
+ "mime2ext",
+ "mime_guess",
+ "mysql",
+ "openssl",
+ "r2d2",
+ "rand 0.9.1",
+ "redis",
+ "serde",
+ "serde_bare",
+ "serde_derive",
+ "serde_json",
+ "serde_qs",
+ "serde_urlencoded",
+ "sha2",
+ "sodoken",
+ "strum",
+ "strum_macros",
+ "tokio",
+ "ureq 3.0.12",
+ "url",
+]
+
+[[package]]
 name = "rand"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2786,57 +2837,6 @@ name = "rle-decode-fast"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3582f63211428f83597b51b2ddb88e2a91a9d52d12831f9d08f5e624e8977422"
-
-[[package]]
-name = "rust-admin-panel"
-version = "0.1.0"
-dependencies = [
- "accept-language",
- "actix-files",
- "actix-http",
- "actix-multipart",
- "actix-rt",
- "actix-utils",
- "actix-web",
- "base64-stream",
- "bytes",
- "cfg-if",
- "chrono",
- "dotenv",
- "encoding_rs",
- "env_logger",
- "flatten_json",
- "futures-core",
- "futures-util",
- "handlebars",
- "hex",
- "image",
- "kv",
- "lettre",
- "libc 1.0.0-alpha.1",
- "log",
- "mime",
- "mime2ext",
- "mime_guess",
- "mysql",
- "openssl",
- "r2d2",
- "rand 0.9.1",
- "redis",
- "serde",
- "serde_bare",
- "serde_derive",
- "serde_json",
- "serde_qs",
- "serde_urlencoded",
- "sha2",
- "sodoken",
- "strum",
- "strum_macros",
- "tokio",
- "ureq 3.0.12",
- "url",
-]
 
 [[package]]
 name = "rustc-demangle"

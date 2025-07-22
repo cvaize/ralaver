@@ -1,5 +1,5 @@
 {
-  "name": "rust-admin-panel",
+  "name": "ralaver",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cvaize/rust-admin-panel.git"
+    "url": "git+https://github.com/cvaize/ralaver.git"
   },
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/cvaize/rust-admin-panel/issues"
+    "url": "https://github.com/cvaize/ralaver/issues"
   },
-  "homepage": "https://github.com/cvaize/rust-admin-panel#readme",
+  "homepage": "https://github.com/cvaize/ralaver#readme",
   "dependencies": {
     "@node-minify/clean-css": "^9.0.1",
     "@node-minify/core": "^9.0.2",

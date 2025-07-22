@@ -1,9 +1,9 @@
 [package]
-name = "rust-admin-panel"
+name = "ralaver"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-default-run = "rust-admin-panel"
+default-run = "ralaver"
 
 [dependencies]
 dotenv = "0.15.0"

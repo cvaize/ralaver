@@ -1,17 +1,20 @@
-mod mysql;
 mod disk;
 mod file;
 mod key_value;
+mod mysql;
+mod redis_key_value;
 mod role;
 mod user;
 mod user_file;
 
 pub use self::disk::*;
 pub use self::file::*;
+pub use self::key_value::*;
+pub use self::mysql::*;
+pub use self::redis_key_value::*;
 pub use self::role::*;
 pub use self::user::*;
 pub use self::user_file::*;
-pub use self::mysql::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -43,13 +46,8 @@ pub struct PaginateParams<Filter, Sort> {
     pub sorts: Vec<Sort>,
 }
 
-impl<Filter, Sort> PaginateParams <Filter, Sort>{
-    pub fn new(
-        page: i64,
-        per_page: i64,
-        filters: Vec<Filter>,
-        sorts: Vec<Sort>,
-    ) -> Self {
+impl<Filter, Sort> PaginateParams<Filter, Sort> {
+    pub fn new(page: i64, per_page: i64, filters: Vec<Filter>, sorts: Vec<Sort>) -> Self {
         Self {
             page,
             per_page,
