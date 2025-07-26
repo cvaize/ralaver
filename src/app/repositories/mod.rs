@@ -1,17 +1,17 @@
 mod disk;
 mod file;
-mod key_value;
+mod kv;
 mod mysql;
-mod redis_key_value;
+mod redis;
 mod role;
 mod user;
 mod user_file;
 
 pub use self::disk::*;
 pub use self::file::*;
-pub use self::key_value::*;
+pub use self::kv::*;
 pub use self::mysql::*;
-pub use self::redis_key_value::*;
+pub use self::redis::*;
 pub use self::role::*;
 pub use self::user::*;
 pub use self::user_file::*;

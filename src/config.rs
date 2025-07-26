@@ -36,6 +36,7 @@ pub struct FilesystemLocalDiskConfig {
 pub struct DbConfig {
     pub mysql: MysqlDbConfig,
     pub redis: RedisDbConfig,
+    pub kv: KVConfig,
 }
 
 #[derive(Debug, Clone)]
@@ -50,6 +51,11 @@ pub struct MysqlDbConfig {
 pub struct RedisDbConfig {
     pub url: String,
     pub secret: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct KVConfig {
+    pub storage: String
 }
 
 #[derive(Debug, Clone)]
@@ -193,6 +199,12 @@ impl Config {
                         .trim()
                         .to_string(),
                 },
+                kv: KVConfig {
+                    storage: env::var("KV_STORAGE")
+                        .unwrap_or("./storage/kv_db".to_string())
+                        .trim()
+                        .to_string(),
+                }
             },
             auth: AuthConfig {
                 cookie: AuthCookieConfig {

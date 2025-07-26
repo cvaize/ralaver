@@ -1,9 +1,15 @@
 use crate::connections::Connections;
-use crate::{AppService, AuthService, Config, CryptService, DiskExternalRepository, DiskLocalRepository, FileMysqlRepository, FileService, HashService, KeyValueService, LocaleService, MailService, RandomService, RateLimitService, RoleMysqlRepository, RoleService, TemplateService, TranslatorService, UserFileMysqlRepository, UserFileService, UserMysqlRepository, UserService, WebAuthService};
+use crate::{
+    AppService, AuthService, Config, CryptService, DiskExternalRepository, DiskLocalRepository,
+    FileMysqlRepository, FileService, HashService, KVRepository, KeyValueService, LocaleService,
+    MailService, RandomService, RateLimitService, RedisRepository, RoleMysqlRepository,
+    RoleService, TemplateService, TranslatorService, UserFileMysqlRepository, UserFileService,
+    UserMysqlRepository, UserService, WebAuthService,
+};
 use actix_web::web::Data;
 use std::path::MAIN_SEPARATOR_STR;
 
-pub struct Services {
+pub struct Services<'a> {
     pub config: Data<Config>,
     pub key_value_service: Data<KeyValueService>,
     pub translator_service: Data<TranslatorService>,
@@ -27,9 +33,15 @@ pub struct Services {
     pub file_mysql_repository: Data<FileMysqlRepository>,
     pub user_file_service: Data<UserFileService>,
     pub user_file_mysql_repository: Data<UserFileMysqlRepository>,
+    pub redis_repository: Data<RedisRepository>,
+    pub kv_repository: Data<KVRepository<'a>>,
 }
 
-pub fn build(c: &Connections, config: Data<Config>) -> Services {
+pub fn build<'a>(c: &Connections, config: Data<Config>) -> Services<'a> {
+    let kv_repository = Data::new(
+        KVRepository::new(&config.get_ref().db.kv.storage).expect("Fail init KVRepository::new"),
+    );
+    let redis_repository = Data::new(RedisRepository::new(c.redis.clone()));
     let key_value_service = Data::new(KeyValueService::new(c.redis.clone()));
     let translator_service = Data::new(
         TranslatorService::new_from_files(config.clone())
@@ -122,5 +134,7 @@ pub fn build(c: &Connections, config: Data<Config>) -> Services {
         file_mysql_repository,
         user_file_service,
         user_file_mysql_repository,
+        redis_repository,
+        kv_repository,
     }
 }

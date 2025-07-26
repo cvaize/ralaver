@@ -32,7 +32,7 @@ pub use errors::AppError;
 pub use mysql_connection::MysqlPool;
 pub use mysql_connection::MysqlPooledConnection;
 
-fn preparation() -> (Connections, Services) {
+fn preparation<'a>() -> (Connections, Services<'a>) {
     dotenv::dotenv().ok();
     let config = Data::new(Config::new());
     let _ = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -53,6 +53,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(all_services.config.clone())
+            .app_data(all_services.redis_repository.clone())
             .app_data(all_services.key_value_service.clone())
             .app_data(all_services.translator_service.clone())
             .app_data(all_services.template_service.clone())

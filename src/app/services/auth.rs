@@ -1,8 +1,8 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::str_min_max_length::StrMinMaxLength;
 use crate::{
-    HashService, KeyValueService, KeyValueServiceError, TranslatableError, TranslatorService, User,
-    UserMysqlRepository, UserService, UserServiceError,
+    HashService, KeyValueService, AppError, TranslatableError, TranslatorService, User,
+    UserService, UserServiceError,
 };
 use actix_web::web::Data;
 use serde_derive::{Deserialize, Serialize};
@@ -100,7 +100,7 @@ impl AuthService {
         &self,
         email: &str,
         code: &str,
-    ) -> Result<String, KeyValueServiceError> {
+    ) -> Result<String, AppError> {
         let hash_service = self.hash_service.get_ref();
         let email = hash_service.hash(email);
 
@@ -111,7 +111,7 @@ impl AuthService {
         &self,
         email: &str,
         code: &str,
-    ) -> Result<(), KeyValueServiceError> {
+    ) -> Result<(), AppError> {
         let key = self.make_reset_password_store_key(email, code)?;
         let key_value_service = self.key_value_service.get_ref();
 
@@ -128,7 +128,7 @@ impl AuthService {
         &self,
         email: &str,
         code: &str,
-    ) -> Result<(), KeyValueServiceError> {
+    ) -> Result<(), AppError> {
         let key = self.make_reset_password_store_key(email, code)?;
         let key_value_service = self.key_value_service.get_ref();
 
@@ -143,7 +143,7 @@ impl AuthService {
         &self,
         email: &str,
         code: &str,
-    ) -> Result<bool, KeyValueServiceError> {
+    ) -> Result<bool, AppError> {
         let key = self.make_reset_password_store_key(email, code)?;
         let key_value_service = self.key_value_service.get_ref();
 

@@ -5,22 +5,22 @@ use redis::{Client, Commands, Expiry, FromRedisValue, RedisError, ToRedisArgs};
 use crate::AppError;
 
 #[derive(Debug, Clone)]
-pub struct KeyValueService {
+pub struct RedisRepository {
     pool: Data<RedisPool>,
 }
 
-impl KeyValueService {
+impl RedisRepository {
     pub fn new(pool: Data<RedisPool>) -> Self {
         Self { pool }
     }
 
-    pub fn get_connection(&self) -> Result<KeyValueServiceConnection, AppError> {
+    pub fn get_connection(&self) -> Result<RedisRepositoryConnection, AppError> {
         let conn: PooledConnection<Client> = self.pool.get_ref().get().map_err(|e| {
-            log::error!("KeyValueService::ConnectFail - {e}");
+            log::error!("RedisRepository::ConnectFail - {e}");
             AppError(Some(e.to_string()))
         })?;
 
-        Ok(KeyValueServiceConnection::new(conn))
+        Ok(RedisRepositoryConnection::new(conn))
     }
 
     pub fn get<K: ToRedisArgs, V: FromRedisValue>(
@@ -79,11 +79,11 @@ impl KeyValueService {
     }
 }
 
-pub struct KeyValueServiceConnection {
+pub struct RedisRepositoryConnection {
     conn: PooledConnection<Client>,
 }
 
-impl KeyValueServiceConnection {
+impl RedisRepositoryConnection {
     pub fn new(conn: PooledConnection<Client>) -> Self {
         Self { conn }
     }
@@ -93,7 +93,7 @@ impl KeyValueServiceConnection {
         key: K,
     ) -> Result<Option<V>, AppError> {
         let value = self.conn.get(key).map_err(|e| {
-            log::error!("KeyValueService::get - {e}");
+            log::error!("RedisRepository::get - {e}");
             AppError(Some(e.to_string()))
         })?;
         Ok(value)
@@ -105,7 +105,7 @@ impl KeyValueServiceConnection {
         seconds: u64,
     ) -> Result<Option<V>, AppError> {
         let value = self.conn.get_ex(key, Expiry::EX(seconds)).map_err(|e| {
-            log::error!("KeyValueService::get_ex - {e}");
+            log::error!("RedisRepository::get_ex - {e}");
             AppError(Some(e.to_string()))
         })?;
         Ok(value)
@@ -116,7 +116,7 @@ impl KeyValueServiceConnection {
         key: K,
     ) -> Result<Option<V>, AppError> {
         let value = self.conn.get_del(&key).map_err(|e| {
-            log::error!("KeyValueService::get_del - {e}");
+            log::error!("RedisRepository::get_del - {e}");
             AppError(Some(e.to_string()))
         })?;
         Ok(value)
@@ -129,7 +129,7 @@ impl KeyValueServiceConnection {
     ) -> Result<(), AppError> {
         let result: Result<String, RedisError> = self.conn.set(&key, value);
         if let Err(e) = result {
-            log::error!("KeyValueService::set - {e}");
+            log::error!("RedisRepository::set - {e}");
             if e.to_string() == "An error was signalled by the server - ResponseError: wrong number of arguments for 'set' command" {
                 self.del(&key)?;
             } else {
@@ -147,7 +147,7 @@ impl KeyValueServiceConnection {
     ) -> Result<(), AppError> {
         let result: Result<String, RedisError> = self.conn.set_ex(&key, value, seconds);
         if let Err(e) = result {
-            log::error!("KeyValueService::set_ex - {e}");
+            log::error!("RedisRepository::set_ex - {e}");
             if e.to_string() == "An error was signalled by the server - ResponseError: wrong number of arguments for 'setex' command" {
                 self.del(&key)?;
             } else {
@@ -163,14 +163,14 @@ impl KeyValueServiceConnection {
         seconds: i64,
     ) -> Result<(), AppError> {
         self.conn.expire(key, seconds).map_err(|e| {
-            log::error!("KeyValueService::expire - {e}");
+            log::error!("RedisRepository::expire - {e}");
             AppError(Some(e.to_string()))
         })
     }
 
     pub fn del<K: ToRedisArgs>(&mut self, key: K) -> Result<(), AppError> {
         self.conn.del(key).map_err(|e| {
-            log::error!("KeyValueService::del - {e}");
+            log::error!("RedisRepository::del - {e}");
             AppError(Some(e.to_string()))
         })
     }
@@ -181,7 +181,7 @@ impl KeyValueServiceConnection {
         delta: D,
     ) -> Result<V, AppError> {
         self.conn.incr(key, delta).map_err(|e| {
-            log::error!("KeyValueService::incr - {e}");
+            log::error!("RedisRepository::incr - {e}");
             AppError(Some(e.to_string()))
         })
     }
@@ -191,9 +191,8 @@ impl KeyValueServiceConnection {
         key: K,
     ) -> Result<V, AppError> {
         self.conn.ttl(key).map_err(|e| {
-            log::error!("KeyValueService::ttl - {e}");
+            log::error!("RedisRepository::ttl - {e}");
             AppError(Some(e.to_string()))
         })
     }
 }
-
