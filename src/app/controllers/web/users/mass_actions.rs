@@ -1,12 +1,17 @@
+use crate::helpers::join_vec;
 use crate::libs::actix_web::types::form::Form;
 use crate::{
     AlertVariant, LocaleService, RateLimitService, RoleService, Session, TranslatorService, User,
     UserPolicy, UserService, WebAuthService, WebHttpResponse,
 };
-use actix_web::{web::{Data, ReqData}, error, Error, HttpRequest, HttpResponse, Result, http::{header::{HeaderValue, ORIGIN, REFERER, LOCATION}}};
+use actix_web::{
+    error,
+    http::header::{HeaderValue, LOCATION, ORIGIN, REFERER},
+    web::{Data, ReqData},
+    Error, HttpRequest, HttpResponse, Result,
+};
 use serde_derive::Deserialize;
 use std::sync::Arc;
-use crate::helpers::join_vec;
 
 const RL_MAX_ATTEMPTS: u64 = 30;
 const RL_TTL: u64 = 60;
@@ -61,9 +66,7 @@ pub async fn invoke(
                         return Err(error::ErrorForbidden(""));
                     }
                     user_service.delete_by_ids_throw_http(ids)?;
-                    alert_variants.push(AlertVariant::UsersMassDeleteSuccess(
-                        join_vec(ids, ", "),
-                    ));
+                    alert_variants.push(AlertVariant::UsersMassDeleteSuccess(join_vec(ids, ", ")));
                 }
             }
         }
@@ -85,9 +88,6 @@ pub async fn invoke(
 
     Ok(HttpResponse::SeeOther()
         .set_alerts(alert_variants)
-        .insert_header((
-            LOCATION,
-            HeaderValue::from_str(location).unwrap_or(default),
-        ))
+        .insert_header((LOCATION, HeaderValue::from_str(location).unwrap_or(default)))
         .finish())
 }

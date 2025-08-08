@@ -17,7 +17,7 @@ pub struct Config {
 #[derive(Debug, Clone)]
 pub struct FilesystemConfig {
     pub default: String,
-    pub disks: FilesystemDisksConfig
+    pub disks: FilesystemDisksConfig,
 }
 
 #[derive(Debug, Clone)]
@@ -55,7 +55,7 @@ pub struct RedisDbConfig {
 
 #[derive(Debug, Clone)]
 pub struct KVConfig {
-    pub storage: String
+    pub storage: String,
 }
 
 #[derive(Debug, Clone)]
@@ -71,7 +71,7 @@ pub struct AppConfig {
 
 #[derive(Debug, Clone)]
 pub struct AuthConfig {
-    pub cookie: AuthCookieConfig
+    pub cookie: AuthCookieConfig,
 }
 
 #[derive(Debug, Clone)]
@@ -141,10 +141,7 @@ impl Config {
 
         Self {
             app: AppConfig {
-                key: env::var("APP_KEY")
-                    .unwrap()
-                    .trim()
-                    .to_string(),
+                key: env::var("APP_KEY").unwrap().trim().to_string(),
                 url: env::var("APP_URL")
                     .unwrap_or("http://localhost".to_string())
                     .trim()
@@ -204,7 +201,7 @@ impl Config {
                         .unwrap_or("./storage/kv_db".to_string())
                         .trim()
                         .to_string(),
-                }
+                },
             },
             auth: AuthConfig {
                 cookie: AuthCookieConfig {
@@ -212,16 +209,19 @@ impl Config {
                         // Default: 30 days equal 2592000 seconds
                         .unwrap_or("2592000".to_string())
                         .trim()
-                        .parse::<u64>().unwrap_or(2592000),
+                        .parse::<u64>()
+                        .unwrap_or(2592000),
                     session_expires: env::var("AUTH_COOKIE_SESSION_EXPIRES")
                         // Default: 24 hours equal 86400 seconds
                         .unwrap_or("86400".to_string())
                         .trim()
-                        .parse::<u64>().unwrap_or(3600),
+                        .parse::<u64>()
+                        .unwrap_or(3600),
                     token_length: env::var("AUTH_COOKIE_TOKEN_LENGTH")
                         .unwrap_or("64".to_string())
                         .trim()
-                        .parse::<usize>().unwrap_or(64),
+                        .parse::<usize>()
+                        .unwrap_or(64),
                     cookie_key: env::var("AUTH_COOKIE_KEY")
                         .unwrap_or("session".to_string())
                         .trim()
@@ -229,7 +229,8 @@ impl Config {
                     cookie_http_only: env::var("AUTH_COOKIE_HTTP_ONLY")
                         .unwrap_or("1".to_string())
                         .trim()
-                        .parse::<bool>().unwrap_or(true),
+                        .parse::<bool>()
+                        .unwrap_or(true),
                     cookie_path: env::var("AUTH_COOKIE_PATH")
                         .unwrap_or("/".to_string())
                         .trim()
@@ -237,12 +238,13 @@ impl Config {
                     cookie_secure: env::var("AUTH_COOKIE_SECURE")
                         .unwrap_or("0".to_string())
                         .trim()
-                        .parse::<bool>().unwrap_or(false),
+                        .parse::<bool>()
+                        .unwrap_or(false),
                     cookie_domain: env::var("AUTH_COOKIE_DOMAIN")
                         .unwrap_or("".to_string())
                         .trim()
                         .to_string(),
-                }
+                },
             },
             translator: TranslatorConfig {
                 translates_folder: env::var("TRANSLATOR_TRANSLATES_FOLDER")
@@ -303,8 +305,8 @@ impl Config {
                         public_root: storage_local_public_root,
                         url_path: storage_local_public_url,
                     },
-                }
-            }
+                },
+            },
         }
     }
 }

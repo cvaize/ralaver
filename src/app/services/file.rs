@@ -1,6 +1,12 @@
 #![allow(dead_code)]
 use crate::helpers::now_date_time_str;
-use crate::{AppError, Config, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository, File, FileColumn, FileFilter, FileMysqlRepository, FilePaginateParams, HashService, MysqlRepository, PaginationResult, RandomService, TranslatableError, TranslatorService, UserFile, UserFileColumn, UserFileFilter, UserFileMysqlRepository, UserFileService, UserFileServiceError, UserFileSort, UserServiceError};
+use crate::{
+    AppError, Config, Disk, DiskExternalRepository, DiskLocalRepository, DiskRepository, File,
+    FileColumn, FileFilter, FileMysqlRepository, FilePaginateParams, HashService, MysqlRepository,
+    PaginationResult, RandomService, TranslatableError, TranslatorService, UserFile,
+    UserFileColumn, UserFileFilter, UserFileMysqlRepository, UserFileService, UserFileServiceError,
+    UserFileSort, UserServiceError,
+};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use mime::Mime;
@@ -14,7 +20,7 @@ pub const FILE_DEFAULT_IS_PUBLIC: bool = false;
 pub const FILE_DIRECTORY: &'static str = "files";
 
 pub struct FileService {
-    config: Data<Config>,
+    config: Config,
     file_repository: Data<FileMysqlRepository>,
     user_file_service: Data<UserFileService>,
     disk_local_repository: Data<DiskLocalRepository>,
@@ -25,7 +31,7 @@ pub struct FileService {
 
 impl FileService {
     pub fn new(
-        config: Data<Config>,
+        config: Config,
         file_repository: Data<FileMysqlRepository>,
         user_file_service: Data<UserFileService>,
         disk_local_repository: Data<DiskLocalRepository>,
@@ -419,15 +425,13 @@ impl FileService {
         }
 
         if is_copy {
-            disk_local_repository
-                .put(&file.path, bytes)
-                .map_err(|e| {
-                    self.log_error(
-                        "upload_bytes_file_to_local_disk",
-                        e.to_string(),
-                        FileServiceError::Fail,
-                    )
-                })?;
+            disk_local_repository.put(&file.path, bytes).map_err(|e| {
+                self.log_error(
+                    "upload_bytes_file_to_local_disk",
+                    e.to_string(),
+                    FileServiceError::Fail,
+                )
+            })?;
         }
 
         // 6) Upsert file meta in db
@@ -527,13 +531,15 @@ impl FileService {
         if is_upsert {
             let user_id = user_file.user_id;
             let file_id = user_file.file_id;
-            user_file_service.upsert(user_file, &None, &file).map_err(|e| {
-                self.log_error(
-                    "upload_bytes_file_to_local_disk",
-                    e.to_string(),
-                    FileServiceError::Fail,
-                )
-            })?;
+            user_file_service
+                .upsert(user_file, &None, &file)
+                .map_err(|e| {
+                    self.log_error(
+                        "upload_bytes_file_to_local_disk",
+                        e.to_string(),
+                        FileServiceError::Fail,
+                    )
+                })?;
 
             let user_file_: Option<UserFile> = user_file_service
                 .first_by_user_id_and_file_id(user_id, file_id)
@@ -830,7 +836,8 @@ impl FileService {
                     e.to_string(),
                     FileServiceError::Fail,
                 )
-            })? > 0 {
+            })? > 0
+            {
                 write_stream.write_all(&buf).map_err(|e| {
                     self.log_error(
                         "upload_local_file_to_local_disk",
@@ -946,13 +953,15 @@ impl FileService {
         if is_upsert {
             let user_id = user_file.user_id;
             let file_id = user_file.file_id;
-            user_file_service.upsert(user_file, &None, &file).map_err(|e| {
-                self.log_error(
-                    "upload_local_file_to_local_disk",
-                    e.to_string(),
-                    FileServiceError::Fail,
-                )
-            })?;
+            user_file_service
+                .upsert(user_file, &None, &file)
+                .map_err(|e| {
+                    self.log_error(
+                        "upload_local_file_to_local_disk",
+                        e.to_string(),
+                        FileServiceError::Fail,
+                    )
+                })?;
 
             let user_file_: Option<UserFile> = user_file_service
                 .first_by_user_id_and_file_id(user_id, file_id)
@@ -1051,100 +1060,100 @@ impl TranslatableError for FileServiceError {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::{preparation, Disk, MysqlRepository};
-    use mime::Mime;
-    use std::path::MAIN_SEPARATOR_STR;
-    use std::{env, fs};
-    use test::Bencher;
-
-    // #[test]
-    // fn test_upload_local_file_to_local_disk() {
-    //     // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::services::file::tests::test_upload_local_file_to_local_disk
-    //     let (_, all_services) = preparation();
-    //     let config = all_services.config.get_ref();
-    //     let file_service = all_services.file_service.get_ref();
-    //     let file_repository = all_services.file_mysql_repository.get_ref();
-    //     let user_file_repository = all_services.user_file_mysql_repository.get_ref();
-    //
-    //     let root = env::current_dir().unwrap();
-    //     let root_dir = root.to_str().unwrap();
-    //
-    //     let disk = Disk::Local;
-    //     let user_id = 1;
-    //     let is_public = true;
-    //     let user_filename = "test_upload_local_file_to_local_disk.test.tar.gz";
-    //     let hash = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08".to_string();
-    //
-    //     let mut upload_path = root_dir.to_string();
-    //     if !upload_path.ends_with(MAIN_SEPARATOR_STR) {
-    //         upload_path.push_str(MAIN_SEPARATOR_STR);
-    //     }
-    //     upload_path.push_str(user_filename);
-    //
-    //     fs::write(&user_filename, "test").unwrap();
-    //
-    //     let mime: Mime = mime_guess::from_path(&upload_path).first().unwrap();
-    //
-    //     let user_file = file_service
-    //         .upload_local_file_to_local_disk(
-    //             user_id,
-    //             &upload_path,
-    //             is_public,
-    //             Some(user_filename.to_owned()),
-    //             Some(mime.to_owned()),
-    //         )
-    //         .unwrap();
-    //
-    //     let file = file_service
-    //         .first_file_by_id(user_file.file_id)
-    //         .unwrap()
-    //         .unwrap();
-    //
-    //     // dbg!(&user_file);
-    //     // dbg!(&file);
-    //
-    //     assert_eq!(user_file.user_id, user_id);
-    //     assert_eq!(user_file.file_id, file.id);
-    //
-    //     let mut path = config.filesystem.disks.local.public_root.to_owned();
-    //     if !path.ends_with(MAIN_SEPARATOR_STR) {
-    //         path.push_str(MAIN_SEPARATOR_STR);
-    //     }
-    //     path.push_str(format!("1-{}-4.tar.gz", &hash).as_str());
-    //     assert_eq!(user_file.path.as_str(), path.as_str());
-    //     let m = Some(mime.to_string());
-    //     assert_eq!(&user_file.mime, &m);
-    //     assert_eq!(user_file.is_public, is_public);
-    //     assert_eq!(file.filename.as_str(), format!("{}-4.tar.gz", &hash).as_str());
-    //
-    //     let mut path = config.filesystem.disks.local.root.to_owned();
-    //     if !path.ends_with(MAIN_SEPARATOR_STR) {
-    //         path.push_str(MAIN_SEPARATOR_STR);
-    //     }
-    //     path.push_str(format!("{}-4.tar.gz", &hash).as_str());
-    //     assert_eq!(file.path.as_str(), path.as_str());
-    //     let m = Some(mime.to_string());
-    //     assert_eq!(&file.mime, &m);
-    //     let s = Some(4);
-    //     assert_eq!(&file.size, &s);
-    //     assert_eq!(&file.disk, disk.to_string().as_str());
-    //
-    //     fs::remove_file(&user_filename).unwrap();
-    //     fs::remove_file(&user_file.path).unwrap();
-    //     fs::remove_file(&file.path).unwrap();
-    //     user_file_repository.delete_by_id(user_file.id).unwrap();
-    //     file_repository.delete_by_id(file.id).unwrap();
-    // }
-
-    // #[bench]
-    // fn bench_encrypt_string(b: &mut Bencher) {
-    //     let (_, all_services) = preparation();
-    //     let crypt = all_services.crypt_service.get_ref();
-    //
-    //     b.iter(|| {
-    //         let _ = crypt.encrypt_string(DATA).unwrap();
-    //     })
-    // }
-}
+// #[cfg(test)]
+// mod tests {
+//     use crate::{preparation, Disk, MysqlRepository};
+//     use mime::Mime;
+//     use std::path::MAIN_SEPARATOR_STR;
+//     use std::{env, fs};
+//     use test::Bencher;
+//
+//     // #[test]
+//     // fn test_upload_local_file_to_local_disk() {
+//     //     // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::services::file::tests::test_upload_local_file_to_local_disk
+//     //     let (_, all_services) = preparation();
+//     //     let config = all_services.config;
+//     //     let file_service = all_services.file_service.get_ref();
+//     //     let file_repository = all_services.file_mysql_repository.get_ref();
+//     //     let user_file_repository = all_services.user_file_mysql_repository.get_ref();
+//     //
+//     //     let root = env::current_dir().unwrap();
+//     //     let root_dir = root.to_str().unwrap();
+//     //
+//     //     let disk = Disk::Local;
+//     //     let user_id = 1;
+//     //     let is_public = true;
+//     //     let user_filename = "test_upload_local_file_to_local_disk.test.tar.gz";
+//     //     let hash = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08".to_string();
+//     //
+//     //     let mut upload_path = root_dir.to_string();
+//     //     if !upload_path.ends_with(MAIN_SEPARATOR_STR) {
+//     //         upload_path.push_str(MAIN_SEPARATOR_STR);
+//     //     }
+//     //     upload_path.push_str(user_filename);
+//     //
+//     //     fs::write(&user_filename, "test").unwrap();
+//     //
+//     //     let mime: Mime = mime_guess::from_path(&upload_path).first().unwrap();
+//     //
+//     //     let user_file = file_service
+//     //         .upload_local_file_to_local_disk(
+//     //             user_id,
+//     //             &upload_path,
+//     //             is_public,
+//     //             Some(user_filename.to_owned()),
+//     //             Some(mime.to_owned()),
+//     //         )
+//     //         .unwrap();
+//     //
+//     //     let file = file_service
+//     //         .first_file_by_id(user_file.file_id)
+//     //         .unwrap()
+//     //         .unwrap();
+//     //
+//     //     // dbg!(&user_file);
+//     //     // dbg!(&file);
+//     //
+//     //     assert_eq!(user_file.user_id, user_id);
+//     //     assert_eq!(user_file.file_id, file.id);
+//     //
+//     //     let mut path = config.filesystem.disks.local.public_root.to_owned();
+//     //     if !path.ends_with(MAIN_SEPARATOR_STR) {
+//     //         path.push_str(MAIN_SEPARATOR_STR);
+//     //     }
+//     //     path.push_str(format!("1-{}-4.tar.gz", &hash).as_str());
+//     //     assert_eq!(user_file.path.as_str(), path.as_str());
+//     //     let m = Some(mime.to_string());
+//     //     assert_eq!(&user_file.mime, &m);
+//     //     assert_eq!(user_file.is_public, is_public);
+//     //     assert_eq!(file.filename.as_str(), format!("{}-4.tar.gz", &hash).as_str());
+//     //
+//     //     let mut path = config.filesystem.disks.local.root.to_owned();
+//     //     if !path.ends_with(MAIN_SEPARATOR_STR) {
+//     //         path.push_str(MAIN_SEPARATOR_STR);
+//     //     }
+//     //     path.push_str(format!("{}-4.tar.gz", &hash).as_str());
+//     //     assert_eq!(file.path.as_str(), path.as_str());
+//     //     let m = Some(mime.to_string());
+//     //     assert_eq!(&file.mime, &m);
+//     //     let s = Some(4);
+//     //     assert_eq!(&file.size, &s);
+//     //     assert_eq!(&file.disk, disk.to_string().as_str());
+//     //
+//     //     fs::remove_file(&user_filename).unwrap();
+//     //     fs::remove_file(&user_file.path).unwrap();
+//     //     fs::remove_file(&file.path).unwrap();
+//     //     user_file_repository.delete_by_id(user_file.id).unwrap();
+//     //     file_repository.delete_by_id(file.id).unwrap();
+//     // }
+//
+//     // #[bench]
+//     // fn bench_encrypt_string(b: &mut Bencher) {
+//     //     let (_, all_services) = preparation();
+//     //     let crypt = all_services.crypt_service.get_ref();
+//     //
+//     //     b.iter(|| {
+//     //         let _ = crypt.encrypt_string(DATA).unwrap();
+//     //     })
+//     // }
+// }

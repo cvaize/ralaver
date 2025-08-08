@@ -7,6 +7,7 @@ use crate::{
 use actix_multipart::form::tempfile::TempFile;
 use actix_multipart::form::text::Text;
 use actix_multipart::form::MultipartForm;
+use actix_multipart::Multipart;
 use actix_web::http::header::HeaderValue;
 use actix_web::{
     error,
@@ -14,11 +15,10 @@ use actix_web::{
     web::{Data, ReqData},
     Error, HttpRequest, HttpResponse, Result,
 };
+use futures_util::{StreamExt, TryStreamExt};
 use serde::Deserialize;
 use serde_json::json;
 use std::sync::Arc;
-use actix_multipart::Multipart;
-use futures_util::{StreamExt, TryStreamExt};
 
 #[derive(Debug, MultipartForm)]
 pub struct UploadData {

@@ -9,14 +9,14 @@ use actix_web::{error, Error};
 use strum_macros::{Display, EnumString};
 
 pub struct UserFileService {
-    config: Data<Config>,
+    config: Config,
     user_file_repository: Data<UserFileMysqlRepository>,
     disk_local_repository: Data<DiskLocalRepository>,
 }
 
 impl UserFileService {
     pub fn new(
-        config: Data<Config>,
+        config: Config,
         user_file_repository: Data<UserFileMysqlRepository>,
         disk_local_repository: Data<DiskLocalRepository>,
     ) -> Self {
@@ -141,8 +141,7 @@ impl UserFileService {
 
         if Disk::Local.to_string().eq(&user_file.disk) {
             if let Some(filename) = &user_file.filename {
-                let config = self.config.get_ref();
-                let mut public_path = config.filesystem.disks.local.url_path.to_owned();
+                let mut public_path = self.config.filesystem.disks.local.url_path.to_owned();
                 public_path.push('/');
                 public_path.push_str(filename);
                 return Some(public_path);
@@ -154,8 +153,7 @@ impl UserFileService {
     pub fn get_public_url(&self, user_file: &UserFile) -> Option<String> {
         if let Some(public_path) = self.get_public_path(user_file) {
             if Disk::Local.to_string().eq(&user_file.disk) {
-                let config = self.config.get_ref();
-                let mut public_url = config.app.url.to_owned();
+                let mut public_url = self.config.app.url.to_owned();
                 public_url.push('/');
                 public_url.push_str(&public_path);
                 return Some(public_url);

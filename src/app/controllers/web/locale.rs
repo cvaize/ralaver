@@ -2,7 +2,11 @@ use crate::app::validator::rules::str_min_max_chars_count::StrMinMaxCharsCount;
 use crate::Config;
 use actix_web::cookie::Cookie;
 use actix_web::web::{Data, Form};
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result, http::{header::{ORIGIN, REFERER, LOCATION, HeaderValue}}};
+use actix_web::{
+    error,
+    http::header::{HeaderValue, LOCATION, ORIGIN, REFERER},
+    Error, HttpRequest, HttpResponse, Result,
+};
 use serde_derive::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -36,7 +40,9 @@ pub async fn switch(
 
     let headers = req.headers();
     let default = HeaderValue::from_static("/");
-    let location = headers.get(REFERER).unwrap_or(headers.get(ORIGIN).unwrap_or(&default));
+    let location = headers
+        .get(REFERER)
+        .unwrap_or(headers.get(ORIGIN).unwrap_or(&default));
     let location = location.to_str().unwrap_or("/");
 
     Ok(HttpResponse::SeeOther()

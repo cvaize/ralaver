@@ -3,7 +3,11 @@ use crate::{
     TranslatorService, User, WebAuthService, WebHttpResponse,
 };
 use actix_web::web::{Data, Form, Path, ReqData};
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result, http::header::{HeaderValue, ORIGIN, REFERER, LOCATION}};
+use actix_web::{
+    error,
+    http::header::{HeaderValue, LOCATION, ORIGIN, REFERER},
+    Error, HttpRequest, HttpResponse, Result,
+};
 use serde_derive::Deserialize;
 use std::sync::Arc;
 
@@ -74,9 +78,6 @@ pub async fn invoke(
 
     Ok(HttpResponse::SeeOther()
         .set_alerts(alert_variants)
-        .insert_header((
-            LOCATION,
-            HeaderValue::from_str(location).unwrap_or(default),
-        ))
+        .insert_header((LOCATION, HeaderValue::from_str(location).unwrap_or(default)))
         .finish())
 }

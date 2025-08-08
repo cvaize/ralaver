@@ -1,10 +1,13 @@
-
-use crate::{option_take_json_from_mysql_row, option_to_json_string_for_mysql, take_from_mysql_row, AppError, FromMysqlDto, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder, MysqlRepository, PaginateParams, Role, RoleColumn, RoleServiceError, ToMysqlDto, UserFilter};
+use crate::helpers::join_vec;
+use crate::{
+    option_take_json_from_mysql_row, option_to_json_string_for_mysql, take_from_mysql_row,
+    AppError, FromMysqlDto, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder,
+    MysqlRepository, PaginateParams, Role, RoleColumn, RoleServiceError, ToMysqlDto, UserFilter,
+};
 use actix_web::web::Data;
 use mysql::Row;
 use mysql::Value;
 use strum_macros::{Display, EnumIter, EnumString};
-use crate::helpers::join_vec;
 
 pub struct RoleMysqlRepository {
     db_pool: Data<MysqlPool>,
@@ -77,7 +80,7 @@ impl MysqlQueryBuilder for RoleFilter {
             Self::Ids(value) => {
                 let v = format!("id in ({})", join_vec(value, ","));
                 query.push_str(&v)
-            },
+            }
             Self::Code(_) => query.push_str("code=:f_code"),
             Self::Search(_) => query.push_str("(name LIKE :f_search OR code LIKE :f_search)"),
         }

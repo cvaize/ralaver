@@ -1,6 +1,6 @@
+use crate::UserFile;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString, VariantNames};
-use crate::UserFile;
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct File {

@@ -2,7 +2,13 @@ use crate::{
     AlertVariant, FilePolicy, FileService, LocaleService, RateLimitService, RoleService, Session,
     TranslatorService, User, WebAuthService, WebHttpResponse,
 };
-use actix_web::{web::{Data, Form, Path, ReqData}, error, Error, HttpRequest, HttpResponse, Result, http::header::{ORIGIN, REFERER, LOCATION}, http::header::HeaderValue};
+use actix_web::{
+    error,
+    http::header::HeaderValue,
+    http::header::{LOCATION, ORIGIN, REFERER},
+    web::{Data, Form, Path, ReqData},
+    Error, HttpRequest, HttpResponse, Result,
+};
 use serde_derive::Deserialize;
 use std::sync::Arc;
 

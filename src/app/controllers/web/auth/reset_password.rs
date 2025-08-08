@@ -1,12 +1,17 @@
 use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
-use crate::{RateLimitService, UserService};
 use crate::{
     prepare_value, Alert, AppService, AuthService, EmailAddress, EmailMessage, MailService,
     RandomService, TemplateService, TranslatorService, WebHttpResponse, RESET_PASSWORD_TTL,
 };
-use actix_web::{web::{Data, Form}, error, Error, HttpRequest, HttpResponse, Result, http::Method};
+use crate::{RateLimitService, UserService};
+use actix_web::{
+    error,
+    http::Method,
+    web::{Data, Form},
+    Error, HttpRequest, HttpResponse, Result,
+};
 use serde_derive::Deserialize;
 use serde_json::json;
 

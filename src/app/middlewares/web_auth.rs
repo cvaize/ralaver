@@ -4,7 +4,11 @@ use actix_web::body::BoxBody;
 use actix_web::web::Data;
 use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    Error, HttpMessage, HttpResponse, http::{header::{HeaderValue, LOCATION}, StatusCode}
+    http::{
+        header::{HeaderValue, LOCATION},
+        StatusCode,
+    },
+    Error, HttpMessage, HttpResponse,
 };
 use std::sync::Arc;
 use std::{future::Future, pin::Pin, rc::Rc};
@@ -39,10 +43,7 @@ pub struct InnerWebAuthMiddleware<S> {
 fn unauthorized_redirect(auth_service: &WebAuthService) -> HttpResponse {
     HttpResponse::SeeOther()
         .cookie(auth_service.make_clear_cookie())
-        .insert_header((
-            LOCATION,
-            HeaderValue::from_static(REDIRECT_TO),
-        ))
+        .insert_header((LOCATION, HeaderValue::from_static(REDIRECT_TO)))
         .finish()
 }
 
@@ -105,10 +106,9 @@ where
 
                         res_mut.head_mut().status = StatusCode::SEE_OTHER;
 
-                        res_mut.headers_mut().insert(
-                            LOCATION,
-                            HeaderValue::from_static(REDIRECT_TO),
-                        );
+                        res_mut
+                            .headers_mut()
+                            .insert(LOCATION, HeaderValue::from_static(REDIRECT_TO));
 
                         let _ = web_auth_service.expire_session(new_session_rc.as_ref());
 

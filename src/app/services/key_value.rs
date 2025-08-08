@@ -1,8 +1,8 @@
 use crate::redis_connection::RedisPool;
+use crate::AppError;
 use actix_web::web::Data;
 use r2d2::PooledConnection;
 use redis::{Client, Commands, Expiry, FromRedisValue, RedisError, ToRedisArgs};
-use crate::AppError;
 
 #[derive(Debug, Clone)]
 pub struct KeyValueService {
@@ -23,10 +23,7 @@ impl KeyValueService {
         Ok(KeyValueServiceConnection::new(conn))
     }
 
-    pub fn get<K: ToRedisArgs, V: FromRedisValue>(
-        &self,
-        key: K,
-    ) -> Result<Option<V>, AppError> {
+    pub fn get<K: ToRedisArgs, V: FromRedisValue>(&self, key: K) -> Result<Option<V>, AppError> {
         self.get_connection()?.get(key)
     }
 
@@ -38,11 +35,7 @@ impl KeyValueService {
         self.get_connection()?.get_ex(key, seconds)
     }
 
-    pub fn set<K: ToRedisArgs, V: ToRedisArgs>(
-        &self,
-        key: K,
-        value: V,
-    ) -> Result<(), AppError> {
+    pub fn set<K: ToRedisArgs, V: ToRedisArgs>(&self, key: K, value: V) -> Result<(), AppError> {
         self.get_connection()?.set(key, value)
     }
 
@@ -71,10 +64,7 @@ impl KeyValueService {
         self.get_connection()?.incr(key, delta)
     }
 
-    pub fn ttl<K: ToRedisArgs, V: FromRedisValue>(
-        &self,
-        key: K,
-    ) -> Result<V, AppError> {
+    pub fn ttl<K: ToRedisArgs, V: FromRedisValue>(&self, key: K) -> Result<V, AppError> {
         self.get_connection()?.ttl(key)
     }
 }
@@ -157,11 +147,7 @@ impl KeyValueServiceConnection {
         Ok(())
     }
 
-    pub fn expire<K: ToRedisArgs>(
-        &mut self,
-        key: K,
-        seconds: i64,
-    ) -> Result<(), AppError> {
+    pub fn expire<K: ToRedisArgs>(&mut self, key: K, seconds: i64) -> Result<(), AppError> {
         self.conn.expire(key, seconds).map_err(|e| {
             log::error!("KeyValueService::expire - {e}");
             AppError(Some(e.to_string()))
@@ -186,14 +172,10 @@ impl KeyValueServiceConnection {
         })
     }
 
-    pub fn ttl<K: ToRedisArgs, V: FromRedisValue>(
-        &mut self,
-        key: K,
-    ) -> Result<V, AppError> {
+    pub fn ttl<K: ToRedisArgs, V: FromRedisValue>(&mut self, key: K) -> Result<V, AppError> {
         self.conn.ttl(key).map_err(|e| {
             log::error!("KeyValueService::ttl - {e}");
             AppError(Some(e.to_string()))
         })
     }
 }
-

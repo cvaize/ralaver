@@ -1,19 +1,24 @@
 use crate::app::controllers::web::{get_context_data, get_template_context};
-use crate::app::validator::rules::str_max_chars_count::StrMaxCharsCount;
-use crate::app::validator::rules::str_min_max_chars_count::{StrMinMaxCharsCount as MMLS};
 use crate::app::validator::rules::required::Required;
+use crate::app::validator::rules::str_max_chars_count::StrMaxCharsCount;
+use crate::app::validator::rules::str_min_max_chars_count::StrMinMaxCharsCount as MMLS;
 use crate::libs::actix_web::types::form::Form;
 use crate::{
     prepare_value, Alert, AlertVariant, AppService, Permission, RateLimitService, Role, RoleColumn,
     RolePolicy, RoleService, RoleServiceError, Session, TemplateService, TranslatableError,
     TranslatorService, User, WebAuthService, WebHttpResponse,
 };
-use actix_web::{web::{Path, Data, ReqData}, error, Error, HttpRequest, HttpResponse, Result, http::{Method, header::{LOCATION}}};
+use actix_web::http::header::HeaderValue;
+use actix_web::{
+    error,
+    http::{header::LOCATION, Method},
+    web::{Data, Path, ReqData},
+    Error, HttpRequest, HttpResponse, Result,
+};
 use serde_derive::Deserialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
-use actix_web::http::header::HeaderValue;
 use strum::VariantNames;
 
 const RL_MAX_ATTEMPTS: u64 = 10;
@@ -218,8 +223,10 @@ pub fn invoke(
 
     let code_str = translator_service.translate(lang, "page.roles.create.fields.code");
     let name_str = translator_service.translate(lang, "page.roles.create.fields.name");
-    let description_str = translator_service.translate(lang, "page.roles.create.fields.description");
-    let permissions_str = translator_service.translate(lang, "page.roles.create.fields.permissions");
+    let description_str =
+        translator_service.translate(lang, "page.roles.create.fields.description");
+    let permissions_str =
+        translator_service.translate(lang, "page.roles.create.fields.permissions");
 
     let (title, heading, action) = if let Some(edit_role) = &edit_role {
         let mut vars: HashMap<&str, &str> = HashMap::new();
@@ -272,8 +279,13 @@ pub fn invoke(
             );
 
             if let Some(description) = &data.description {
-                errors.description =
-                    StrMaxCharsCount::validate(translator_service, lang, description, 255, &description_str);
+                errors.description = StrMaxCharsCount::validate(
+                    translator_service,
+                    lang,
+                    description,
+                    255,
+                    &description_str,
+                );
             }
 
             if errors.is_empty() {
@@ -309,8 +321,11 @@ pub fn invoke(
                 }
             }
         } else {
-            let ttl_message =
-                rate_limit_service.ttl_message_throw_http(translator_service, lang, &rate_limit_key)?;
+            let ttl_message = rate_limit_service.ttl_message_throw_http(
+                translator_service,
+                lang,
+                &rate_limit_key,
+            )?;
             errors.form.push(ttl_message)
         }
 
@@ -353,10 +368,7 @@ pub fn invoke(
             } else if action.eq("save_and_close") {
                 return Ok(HttpResponse::SeeOther()
                     .set_alerts(alert_variants)
-                    .insert_header((
-                        LOCATION,
-                        HeaderValue::from_static("/roles"),
-                    ))
+                    .insert_header((LOCATION, HeaderValue::from_static("/roles")))
                     .finish());
             }
         }

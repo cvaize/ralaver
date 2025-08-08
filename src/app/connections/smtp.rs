@@ -1,3 +1,4 @@
+use crate::config::MailSmtpConfig;
 pub use lettre::error::Error as LettreError;
 pub use lettre::message::header::ContentType as LettreContentType;
 pub use lettre::message::Mailbox as LettreMailbox;
@@ -8,7 +9,6 @@ pub use lettre::{
     Transport as LettreTransport,
 };
 use strum_macros::{Display, EnumString};
-use crate::config::MailSmtpConfig;
 
 #[derive(Debug, Clone, Copy, Display, EnumString)]
 pub enum SmtpConnectionError {
@@ -24,7 +24,7 @@ pub fn get_smtp_transport(
 
     let host = config.host.to_owned();
     let port: u16 = config.port.to_owned().parse().map_err(|e| {
-        log::error!("{}",format!("SmtpConnectionError::ParsePortFail - {:}", &e).as_str());
+        log::error!("SmtpConnectionError::ParsePortFail - {:}", &e);
         SmtpConnectionError::ParsePortFail
     })?;
     let username = config.username.to_owned();
@@ -37,20 +37,15 @@ pub fn get_smtp_transport(
     if config.encryption == "" {
     } else if config.encryption == "tls" {
         let tls_parameters = TlsParameters::new(host.into()).map_err(|e| {
-            log::error!("{}",
-                format!("SmtpConnectionError::MakeTlsParametersFail - {:}", &e).as_str(),
-            );
+            log::error!("SmtpConnectionError::MakeTlsParametersFail - {:}", &e,);
             SmtpConnectionError::MakeTlsParametersFail
         })?;
 
         mailer = mailer.tls(Tls::Wrapper(tls_parameters));
     } else {
-        log::error!("{}",
-            format!(
-                "SmtpConnectionError::EncryptionNotSupported - {}",
-                &config.encryption
-            )
-            .as_str(),
+        log::error!(
+            "SmtpConnectionError::EncryptionNotSupported - {}",
+            &config.encryption,
         );
         return Err(SmtpConnectionError::EncryptionNotSupported);
     }

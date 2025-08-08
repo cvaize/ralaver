@@ -582,7 +582,10 @@ pub fn make_select_mysql_query(table: &str, columns: &str, where_: &str, order_:
 }
 
 pub fn make_is_exists_mysql_query(table: &str, where_: &str) -> String {
-    format!("SELECT EXISTS(SELECT 1 FROM {} WHERE {} LIMIT 1) as is_exists", table, where_)
+    format!(
+        "SELECT EXISTS(SELECT 1 FROM {} WHERE {} LIMIT 1) as is_exists",
+        table, where_
+    )
 }
 
 pub fn make_insert_mysql_query(table: &str, columns_: &str) -> String {

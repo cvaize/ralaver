@@ -1,15 +1,21 @@
 use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
-use crate::{prepare_value, AlertVariant, RateLimitService, Session, WebAuthService, WebHttpResponse};
+use crate::app::validator::rules::str_min_max_chars_count::StrMinMaxCharsCount;
+use crate::{
+    prepare_value, AlertVariant, RateLimitService, Session, WebAuthService, WebHttpResponse,
+};
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
+use actix_web::http::header::HeaderValue;
 use actix_web::web::Data;
 use actix_web::web::Form;
-use actix_web::{error, Error, HttpRequest, HttpResponse, Result, http::{Method, header::{LOCATION}}};
-use actix_web::http::header::HeaderValue;
+use actix_web::{
+    error,
+    http::{header::LOCATION, Method},
+    Error, HttpRequest, HttpResponse, Result,
+};
 use serde_derive::Deserialize;
 use serde_json::json;
-use crate::app::validator::rules::str_min_max_chars_count::StrMinMaxCharsCount;
 
 const RL_MAX_ATTEMPTS: u64 = 5;
 const RL_TTL: u64 = 60;
@@ -178,11 +184,18 @@ async fn post(
             .map_err(|_| error::ErrorInternalServerError(""))?;
 
         if executed {
-            email_errors = Required::validated(translator_service, lang, &data.email, |value| {
-                Email::validate(translator_service, lang, value, email_str)
-            }, email_str);
-            password_errors =
-                Required::validated(translator_service, lang, &data.password, |value| {
+            email_errors = Required::validated(
+                translator_service,
+                lang,
+                &data.email,
+                |value| Email::validate(translator_service, lang, value, email_str),
+                email_str,
+            );
+            password_errors = Required::validated(
+                translator_service,
+                lang,
+                &data.password,
+                |value| {
                     StrMinMaxCharsCount::validate(
                         translator_service,
                         lang,
@@ -191,7 +204,9 @@ async fn post(
                         255,
                         password_str,
                     )
-                }, password_str);
+                },
+                password_str,
+            );
 
             if email_errors.len() == 0 && password_errors.len() == 0 {
                 let email_value = data.email.as_ref().unwrap();

@@ -1,10 +1,16 @@
-use crate::{make_select_mysql_query, make_update_mysql_query, option_take_json_from_mysql_row, option_to_json_string_for_mysql, take_from_mysql_row, AppError, FromMysqlDto, MysqlAllColumnEnum, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder, MysqlRepository, PaginateParams, Role, RoleFilter, ToMysqlDto, User, UserColumn, UserCredentials, UserCredentialsColumn, UserServiceError};
+use crate::helpers::join_vec;
+use crate::{
+    make_select_mysql_query, make_update_mysql_query, option_take_json_from_mysql_row,
+    option_to_json_string_for_mysql, take_from_mysql_row, AppError, FromMysqlDto,
+    MysqlAllColumnEnum, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder,
+    MysqlRepository, PaginateParams, Role, RoleFilter, ToMysqlDto, User, UserColumn,
+    UserCredentials, UserCredentialsColumn, UserServiceError,
+};
 use actix_web::web::Data;
 use mysql::prelude::Queryable;
 use mysql::Value;
 use mysql::{params, Row};
 use strum_macros::{Display, EnumIter, EnumString};
-use crate::helpers::join_vec;
 
 pub struct UserMysqlRepository {
     db_pool: Data<MysqlPool>,
@@ -245,7 +251,10 @@ impl FromMysqlDto for User {
             surname: take_from_mysql_row(row, UserColumn::Surname.to_string().as_str())?,
             name: take_from_mysql_row(row, UserColumn::Name.to_string().as_str())?,
             patronymic: take_from_mysql_row(row, UserColumn::Patronymic.to_string().as_str())?,
-            is_super_admin: take_from_mysql_row(row, UserColumn::IsSuperAdmin.to_string().as_str())?,
+            is_super_admin: take_from_mysql_row(
+                row,
+                UserColumn::IsSuperAdmin.to_string().as_str(),
+            )?,
             roles_ids: option_take_json_from_mysql_row(
                 row,
                 UserColumn::RolesIds.to_string().as_str(),

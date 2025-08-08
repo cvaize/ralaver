@@ -1,10 +1,15 @@
-use crate::app::controllers::web::users::create_update::{invoke as users_create_update_invoke, InvokeData, InvokeRoute};
-use crate::{AppService, FileService, LocaleService, RateLimitService, RoleService, TemplateService, TranslatorService, UserFileService, UserService};
+use crate::app::controllers::web::users::create_update::{
+    invoke as users_create_update_invoke, InvokeData, InvokeRoute,
+};
+use crate::{
+    AppService, FileService, LocaleService, RateLimitService, RoleService, TemplateService,
+    TranslatorService, UserFileService, UserService,
+};
 use crate::{Session, User, WebAuthService};
+use actix_multipart::Multipart;
 use actix_web::web::{Data, ReqData};
 use actix_web::{Error, HttpRequest, HttpResponse, Result};
 use std::sync::Arc;
-use actix_multipart::Multipart;
 
 pub async fn index(
     req: HttpRequest,
@@ -40,7 +45,8 @@ pub async fn index(
         role_service,
         user_file_service,
         file_service,
-    }).await
+    })
+    .await
 }
 
 pub async fn update(
@@ -78,7 +84,8 @@ pub async fn update(
         role_service,
         user_file_service,
         file_service,
-    }).await
+    })
+    .await
 }
 
 pub fn get_url() -> String {

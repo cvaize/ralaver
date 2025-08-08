@@ -1,4 +1,7 @@
-use crate::{AlertVariant, FilePolicy, FileService, LocaleService, RateLimitService, RoleService, Session, TranslatorService, User, UserFileService, WebAuthService, WebHttpResponse};
+use crate::{
+    AlertVariant, FilePolicy, FileService, LocaleService, RateLimitService, RoleService, Session,
+    TranslatorService, User, UserFileService, WebAuthService, WebHttpResponse,
+};
 use actix_web::{
     error,
     http::header::HeaderValue,

@@ -1,15 +1,18 @@
-use std::path::MAIN_SEPARATOR;
-use std::sync::Arc;
+use crate::{Config, Disk, FilePolicy, FileService, RoleService, User};
+use actix_files::NamedFile;
 use actix_web::web::{Data, Path, ReqData};
 use actix_web::{error, Error, Result};
-use actix_files::NamedFile;
-use crate::{Config, Disk, FilePolicy, FileService, RoleService, User, UserFileService};
+use std::path::MAIN_SEPARATOR;
+use std::sync::Arc;
 
-pub async fn public(
-    config: Data<Config>,
-    filename: Path<String>,
-) -> Result<NamedFile, Error> {
-    let mut path = config.filesystem.disks.local.public_root.to_owned();
+pub async fn public(config: Data<Config>, filename: Path<String>) -> Result<NamedFile, Error> {
+    let mut path = config
+        .get_ref()
+        .filesystem
+        .disks
+        .local
+        .public_root
+        .to_owned();
     let filename = filename.into_inner();
     path.push(MAIN_SEPARATOR);
     path.push_str(&filename);

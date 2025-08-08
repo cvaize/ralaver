@@ -1,4 +1,4 @@
-use crate::helpers::{collect_files_from_dir};
+use crate::helpers::collect_files_from_dir;
 use crate::Config;
 use actix_web::web::Data;
 use actix_web::{error, Error};
@@ -10,7 +10,7 @@ use strum_macros::{Display, EnumString};
 
 #[allow(dead_code)]
 pub struct TemplateService {
-    config: Data<Config>,
+    config: Config,
     handlebars: Handlebars<'static>,
 }
 
@@ -20,14 +20,14 @@ pub enum TemplateServiceError {
 }
 
 impl TemplateService {
-    pub fn new_from_files(config: Data<Config>) -> Result<Self, io::Error> {
+    pub fn new_from_files(config: Config) -> Result<Self, io::Error> {
         let mut handlebars: Handlebars = Handlebars::new();
 
         let mut dir = env::current_dir().map_err(|e| {
             log::error!("TemplateService::new_from_files - {e}");
             e
         })?;
-        dir.push(Path::new(&config.get_ref().template.handlebars.folder));
+        dir.push(Path::new(&config.template.handlebars.folder));
         let str_dir = dir.to_owned();
         let str_dir = str_dir.to_str().unwrap();
 

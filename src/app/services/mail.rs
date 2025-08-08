@@ -3,36 +3,29 @@ use crate::app::connections::smtp::{
     LettreSmtpTransport, LettreTransport,
 };
 use crate::config::MailSmtpConfig;
-use crate::{Config};
+use crate::Config;
 use actix_web::web::Data;
 use strum_macros::{Display, EnumString};
 
-
 pub struct MailService {
-    config: Data<Config>,
+    config: Config,
     mailer: Data<LettreSmtpTransport>,
 }
 
 impl MailService {
-    pub fn new(
-        config: Data<Config>,
-        mailer: Data<LettreSmtpTransport>,
-    ) -> Self {
-        Self {
-            config,
-            mailer,
-        }
+    pub fn new(config: Config, mailer: Data<LettreSmtpTransport>) -> Self {
+        Self { config, mailer }
     }
 
     pub fn send_email(&self, data: &EmailMessage) -> Result<(), MailServiceError> {
         let mailer = &self.mailer;
-        let message: LettreMessage = data.build(&self.config.get_ref().mail.smtp).map_err(|e| {
-            log::error!("{}",format!("MailService::send_email - {:}", &e).as_str());
+        let message: LettreMessage = data.build(&self.config.mail.smtp).map_err(|e| {
+            log::error!("{}", format!("MailService::send_email - {:}", &e).as_str());
             e
         })?;
 
         mailer.send(&message).map_err(|e| {
-            log::error!("{}",format!("MailService::send_email - {:}", &e).as_str());
+            log::error!("{}", format!("MailService::send_email - {:}", &e).as_str());
             MailServiceError::SendFail
         })?;
 

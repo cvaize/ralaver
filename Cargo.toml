@@ -51,6 +51,7 @@ serde_json = "1.0.140"
 actix-web = "4.11.0"
 image = "0.25.6"
 kv = "0.24.0"
+bytevec = "0.2.0"
 
 [[bin]]
 name = "migrate"

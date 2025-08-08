@@ -1,11 +1,10 @@
+use crate::helpers::get_sys_gettime_nsec;
 use rand::distr::uniform::{SampleRange, SampleUniform};
 use rand::distr::{Alphanumeric, SampleString};
 use rand::Rng;
-use crate::helpers::get_sys_gettime_nsec;
 
 #[derive(Debug, Clone)]
-pub struct RandomService {
-}
+pub struct RandomService {}
 
 impl RandomService {
     pub fn new() -> Self {
@@ -81,8 +80,8 @@ impl RandomService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test::Bencher;
     use actix_web::web::Data;
+    use test::Bencher;
 
     const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                             abcdefghijklmnopqrstuvwxyz\

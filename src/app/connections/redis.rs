@@ -1,7 +1,7 @@
+use crate::config::RedisDbConfig;
 use r2d2::Pool;
 use redis::{Client, ErrorKind, RedisError, Value};
 use strum_macros::{Display, EnumString};
-use crate::config::RedisDbConfig;
 // https://docs.rs/redis/latest/redis/#type-conversions
 
 pub type RedisPool = Pool<Client>;
@@ -12,23 +12,20 @@ pub enum RedisConnectionError {
     CreateClientFail,
 }
 
-pub fn get_connection_pool(
-    config: &RedisDbConfig,
-) -> Result<RedisPool, RedisConnectionError> {
+pub fn get_connection_pool(config: &RedisDbConfig) -> Result<RedisPool, RedisConnectionError> {
     log::info!("Connecting to Redis database.");
     let database_url = config.url.to_owned();
 
     let client = Client::open(database_url).map_err(|e| {
-        log::error!("{}",format!("RedisConnectionError::CreateClientFail - {:}", &e).as_str());
+        log::error!("RedisConnectionError::CreateClientFail - {:}", &e);
         RedisConnectionError::CreateClientFail
     })?;
 
     Pool::builder().build(client).map_err(|e| {
-        log::error!("{}",format!("RedisConnectionError::CreatePoolFail - {:}", &e).as_str());
+        log::error!("RedisConnectionError::CreatePoolFail - {:}", &e);
         RedisConnectionError::CreatePoolFail
     })
 }
-
 
 pub fn get_inner_value(v: &Value) -> &Value {
     if let Value::Attribute {
@@ -67,31 +64,33 @@ pub const REDIS_ERROR_MESSAGE: &'static str = "Response type not model compatibl
 #[macro_export]
 macro_rules! model_redis_impl {
     ($t:ty) => {
-impl redis::ToRedisArgs for $t {
-    fn write_redis_args<W>(&self, out: &mut W)
-    where
-        W: ?Sized + redis::RedisWrite,
-    {
-        out.write_arg(&serde_bare::to_vec(self).unwrap())
-    }
-}
-
-impl redis::FromRedisValue for $t {
-    fn from_redis_value(v: &redis::Value) -> redis::RedisResult<Self> {
-        let v = crate::redis_connection::get_inner_value(v);
-        match *v {
-            redis::Value::BulkString(ref bytes) => serde_bare::from_slice(bytes).map_err(|_| {
-                crate::redis_connection::make_redis_error(
-                    v,
-                    crate::redis_connection::REDIS_ERROR_MESSAGE,
-                )
-            }),
-            _ => Err(crate::redis_connection::make_redis_error(
-                v,
-                crate::redis_connection::REDIS_ERROR_MESSAGE,
-            )),
+        impl redis::ToRedisArgs for $t {
+            fn write_redis_args<W>(&self, out: &mut W)
+            where
+                W: ?Sized + redis::RedisWrite,
+            {
+                out.write_arg(&serde_bare::to_vec(self).unwrap())
+            }
         }
-    }
-}
+
+        impl redis::FromRedisValue for $t {
+            fn from_redis_value(v: &redis::Value) -> redis::RedisResult<Self> {
+                let v = crate::redis_connection::get_inner_value(v);
+                match *v {
+                    redis::Value::BulkString(ref bytes) => {
+                        serde_bare::from_slice(bytes).map_err(|_| {
+                            crate::redis_connection::make_redis_error(
+                                v,
+                                crate::redis_connection::REDIS_ERROR_MESSAGE,
+                            )
+                        })
+                    }
+                    _ => Err(crate::redis_connection::make_redis_error(
+                        v,
+                        crate::redis_connection::REDIS_ERROR_MESSAGE,
+                    )),
+                }
+            }
+        }
     };
 }

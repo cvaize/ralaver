@@ -4,7 +4,7 @@ use strum_macros::{Display, EnumIter, EnumString, VariantNames};
 
 // 3 Megabytes
 pub const USER_AVATAR_MAX_SIZE: usize = 3145728;
-pub const USER_AVATAR_MIMES: &'static[Mime; 2] = &[IMAGE_JPEG, IMAGE_PNG];
+pub const USER_AVATAR_MIMES: &'static [Mime; 2] = &[IMAGE_JPEG, IMAGE_PNG];
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct User {
@@ -19,7 +19,19 @@ pub struct User {
     pub avatar_id: Option<u64>,
 }
 
-#[derive(Debug, Clone, Copy, Display, EnumString, Serialize, Deserialize, VariantNames, EnumIter, Eq, PartialEq)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Display,
+    EnumString,
+    Serialize,
+    Deserialize,
+    VariantNames,
+    EnumIter,
+    Eq,
+    PartialEq,
+)]
 #[strum(serialize_all = "snake_case")]
 pub enum UserColumn {
     Id,
@@ -40,7 +52,9 @@ pub struct UserCredentials {
     pub password: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, Display, EnumString, Serialize, Deserialize, VariantNames, EnumIter)]
+#[derive(
+    Debug, Clone, Copy, Display, EnumString, Serialize, Deserialize, VariantNames, EnumIter,
+)]
 #[strum(serialize_all = "snake_case")]
 pub enum UserCredentialsColumn {
     Id,

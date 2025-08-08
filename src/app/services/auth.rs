@@ -1,7 +1,7 @@
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::str_min_max_length::StrMinMaxLength;
 use crate::{
-    HashService, KeyValueService, AppError, TranslatableError, TranslatorService, User,
+    AppError, HashService, KeyValueService, TranslatableError, TranslatorService, User,
     UserService, UserServiceError,
 };
 use actix_web::web::Data;
@@ -107,11 +107,7 @@ impl AuthService {
         Ok(format!("{}.{}.{}", RESET_PASSWORD_CODE_KEY, email, code))
     }
 
-    pub fn save_reset_password_code(
-        &self,
-        email: &str,
-        code: &str,
-    ) -> Result<(), AppError> {
+    pub fn save_reset_password_code(&self, email: &str, code: &str) -> Result<(), AppError> {
         let key = self.make_reset_password_store_key(email, code)?;
         let key_value_service = self.key_value_service.get_ref();
 
@@ -124,11 +120,7 @@ impl AuthService {
         Ok(())
     }
 
-    pub fn delete_reset_password_code(
-        &self,
-        email: &str,
-        code: &str,
-    ) -> Result<(), AppError> {
+    pub fn delete_reset_password_code(&self, email: &str, code: &str) -> Result<(), AppError> {
         let key = self.make_reset_password_store_key(email, code)?;
         let key_value_service = self.key_value_service.get_ref();
 
@@ -139,11 +131,7 @@ impl AuthService {
         Ok(())
     }
 
-    pub fn is_exists_reset_password_code(
-        &self,
-        email: &str,
-        code: &str,
-    ) -> Result<bool, AppError> {
+    pub fn is_exists_reset_password_code(&self, email: &str, code: &str) -> Result<bool, AppError> {
         let key = self.make_reset_password_store_key(email, code)?;
         let key_value_service = self.key_value_service.get_ref();
 

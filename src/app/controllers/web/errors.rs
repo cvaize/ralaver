@@ -1,12 +1,16 @@
-use crate::{AppService, RoleService, Session, TemplateService, TranslatorService, User, WebAuthService};
+use crate::app::controllers::web::{
+    get_context_data, get_public_context_data, get_public_template_context, get_template_context,
+};
+use crate::{
+    AppService, RoleService, Session, TemplateService, TranslatorService, User, WebAuthService,
+};
+use actix_http::HttpMessage;
 use actix_web::dev::ServiceResponse;
 use actix_web::http::header;
 use actix_web::middleware::ErrorHandlerResponse;
 use actix_web::{web, Error, HttpRequest, HttpResponse};
-use std::sync::Arc;
-use actix_http::HttpMessage;
 use serde_json::json;
-use crate::app::controllers::web::{get_context_data, get_public_context_data, get_public_template_context, get_template_context};
+use std::sync::Arc;
 
 pub fn default_error_handler<B>(
     ser_res: ServiceResponse<B>,
@@ -25,7 +29,11 @@ pub fn default_error_handler<B>(
     }
 
     let path = req.uri().path();
-    let res = if path.starts_with("/storage") || path.starts_with("/css") || path.starts_with("/js") || path.starts_with("/svg") {
+    let res = if path.starts_with("/storage")
+        || path.starts_with("/css")
+        || path.starts_with("/js")
+        || path.starts_with("/svg")
+    {
         res.set_body("".to_string())
     } else {
         if path.starts_with("/api") {
@@ -136,12 +144,12 @@ fn get_error_html_response<B>(
     let role_service = role_service.unwrap();
 
     let extensions = request.extensions();
-    let user = extensions.get::<Arc<User>>().map(|u| {u.as_ref()});
-    let session = extensions.get::<Arc<Session>>().map(|u| {u.as_ref()});
+    let user = extensions.get::<Arc<User>>().map(|u| u.as_ref());
+    let session = extensions.get::<Arc<Session>>().map(|u| u.as_ref());
 
     let ctx = if user.is_some() && session.is_some() {
-        let user  = user.unwrap();
-        let session  = session.unwrap();
+        let user = user.unwrap();
+        let session = session.unwrap();
         let mut context_data = get_context_data(
             request,
             user,

@@ -1,4 +1,8 @@
-use crate::{AppError, MysqlRepository, PaginationResult, Role, RoleColumn, RoleFilter, RoleMysqlRepository, RolePaginateParams, TranslatableError, TranslatorService, User, UserColumn, UserFilter, UserServiceError};
+use crate::{
+    AppError, MysqlRepository, PaginationResult, Role, RoleColumn, RoleFilter, RoleMysqlRepository,
+    RolePaginateParams, TranslatableError, TranslatorService, User, UserColumn, UserFilter,
+    UserServiceError,
+};
 use actix_web::web::Data;
 use actix_web::{error, Error};
 use strum_macros::{Display, EnumString};
@@ -20,8 +24,7 @@ impl RoleService {
     }
 
     pub fn all_throw_http(&self) -> Result<Vec<Role>, Error> {
-        self.all()
-            .map_err(|_| error::ErrorInternalServerError(""))
+        self.all().map_err(|_| error::ErrorInternalServerError(""))
     }
 
     pub fn first_by_id(&self, id: u64) -> Result<Option<Role>, RoleServiceError> {

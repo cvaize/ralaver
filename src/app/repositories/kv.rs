@@ -27,19 +27,19 @@ impl<'a> KVRepository<'a> {
         make_bucket(&self.store, name)
     }
 
-    pub fn contains(&self, key: &str) -> Result<bool, AppError> {
+    pub fn contains(&self, key: &[u8]) -> Result<bool, AppError> {
         self.bucket.contains(key)
     }
 
-    pub fn get(&self, key: &str) -> Result<Option<String>, AppError> {
+    pub fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, AppError> {
         self.bucket.get(key)
     }
 
-    pub fn set(&self, key: &str, value: &str) -> Result<Option<String>, AppError> {
+    pub fn set(&self, key: &[u8], value: &[u8]) -> Result<Option<Vec<u8>>, AppError> {
         self.bucket.set(key, value)
     }
 
-    pub fn remove(&self, key: &str) -> Result<Option<String>, AppError> {
+    pub fn remove(&self, key: &[u8]) -> Result<Option<Vec<u8>>, AppError> {
         self.bucket.remove(key)
     }
 }
@@ -53,20 +53,16 @@ impl<'a> KVBucketRepository<'a> {
         Self { bucket }
     }
 
-    pub fn parse_value(&self, value: Option<Raw>) -> Result<Option<String>, AppError> {
+    pub fn parse_value(&self, value: Option<Raw>) -> Result<Option<Vec<u8>>, AppError> {
         if let Some(value) = value {
-            let value = String::from_utf8(value.to_vec()).map_err(|e| {
-                log::error!("KVRepository::parse_value - {e}");
-                AppError(Some(e.to_string()))
-            })?;
-            Ok(Some(value))
+            Ok(Some(value.to_vec()))
         } else {
             Ok(None)
         }
     }
 
-    pub fn contains(&self, key: &str) -> Result<bool, AppError> {
-        let key = Raw::from(key.as_bytes());
+    pub fn contains(&self, key: &[u8]) -> Result<bool, AppError> {
+        let key = Raw::from(key);
         let value = self.bucket.contains(&key).map_err(|e| {
             log::error!("KVRepository::contains - {e}");
             AppError(Some(e.to_string()))
@@ -74,8 +70,8 @@ impl<'a> KVBucketRepository<'a> {
         Ok(value)
     }
 
-    pub fn get(&self, key: &str) -> Result<Option<String>, AppError> {
-        let key = Raw::from(key.as_bytes());
+    pub fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, AppError> {
+        let key = Raw::from(key);
         let value = self.bucket.get(&key).map_err(|e| {
             log::error!("KVRepository::get - {e}");
             AppError(Some(e.to_string()))
@@ -83,9 +79,9 @@ impl<'a> KVBucketRepository<'a> {
         self.parse_value(value)
     }
 
-    pub fn set(&self, key: &str, value: &str) -> Result<Option<String>, AppError> {
-        let key = Raw::from(key.as_bytes());
-        let value = Raw::from(value.as_bytes());
+    pub fn set(&self, key: &[u8], value: &[u8]) -> Result<Option<Vec<u8>>, AppError> {
+        let key = Raw::from(key);
+        let value = Raw::from(value);
         let old_value = self.bucket.set(&key, &value).map_err(|e| {
             log::error!("KVRepository::set - {e}");
             AppError(Some(e.to_string()))
@@ -93,8 +89,8 @@ impl<'a> KVBucketRepository<'a> {
         self.parse_value(old_value)
     }
 
-    pub fn remove(&self, key: &str) -> Result<Option<String>, AppError> {
-        let key = Raw::from(key.as_bytes());
+    pub fn remove(&self, key: &[u8]) -> Result<Option<Vec<u8>>, AppError> {
+        let key = Raw::from(key);
         let old_value = self.bucket.remove(&key).map_err(|e| {
             log::error!("KVRepository::remove - {e}");
             AppError(Some(e.to_string()))

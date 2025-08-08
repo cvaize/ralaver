@@ -1,7 +1,7 @@
 use crate::config::MysqlDbConfig;
-use r2d2::{Pool, PooledConnection};
 use crate::errors::AppError;
 use mysql::{error::Error, Conn, Opts, OptsBuilder};
+use r2d2::{Pool, PooledConnection};
 
 /// An [`r2d2`] connection manager for [`mysql`] connections.
 #[derive(Clone, Debug)]

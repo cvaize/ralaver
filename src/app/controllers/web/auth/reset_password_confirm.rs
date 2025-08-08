@@ -3,17 +3,19 @@ use crate::app::controllers::web::{get_public_context_data, get_public_template_
 use crate::app::middlewares::web_auth::REDIRECT_TO;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
-use crate::app::validator::rules::str_min_max_chars_count::StrMinMaxCharsCount;
 use crate::app::validator::rules::required::Required;
-use crate::{prepare_value, AlertVariant, RateLimitService, UserService, WebHttpResponse, RESET_PASSWORD_TTL};
+use crate::app::validator::rules::str_min_max_chars_count::StrMinMaxCharsCount;
+use crate::{
+    prepare_value, AlertVariant, RateLimitService, UserService, WebHttpResponse, RESET_PASSWORD_TTL,
+};
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
+use actix_web::http::header::HeaderValue;
 use actix_web::web::{Data, Form, Query};
 use actix_web::{
     error,
     http::{header::LOCATION, Method},
     Error, HttpRequest, HttpResponse, Result,
 };
-use actix_web::http::header::HeaderValue;
 use serde_derive::Deserialize;
 use serde_json::json;
 

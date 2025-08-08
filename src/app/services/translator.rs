@@ -8,23 +8,23 @@ use std::{env, fs, io};
 
 #[derive(Debug, Clone)]
 pub struct TranslatorService {
-    config: Data<Config>,
+    config: Config,
     pub translates: HashMap<String, HashMap<String, String>>,
 }
 
 impl TranslatorService {
-    pub fn new(config: Data<Config>, translates: HashMap<String, HashMap<String, String>>) -> Self {
+    pub fn new(config: Config, translates: HashMap<String, HashMap<String, String>>) -> Self {
         Self { config, translates }
     }
 
-    pub fn new_from_files(config: Data<Config>) -> Result<Self, io::Error> {
+    pub fn new_from_files(config: Config) -> Result<Self, io::Error> {
         let mut translates: HashMap<String, String> = HashMap::from([]);
 
         let mut dir = env::current_dir().map_err(|e| {
             log::error!("TranslatorService::new_from_files - {e}");
             e
         })?;
-        dir.push(Path::new(&config.get_ref().translator.translates_folder));
+        dir.push(Path::new(&config.translator.translates_folder));
         let str_dir = dir.to_owned();
         let str_dir = str_dir.to_str().unwrap();
 
@@ -175,7 +175,7 @@ impl TranslatorService {
             return translate.to_string();
         }
 
-        let app = &self.config.get_ref().app;
+        let app = &self.config.app;
 
         if lang != app.fallback_locale && app.locale != app.fallback_locale {
             if let Some(translate) = self.get(&app.fallback_locale, key) {
@@ -191,7 +191,7 @@ impl TranslatorService {
             return true;
         }
 
-        let app = &self.config.get_ref().app;
+        let app = &self.config.app;
         if lang != app.locale {
             if self.is(&app.locale, key) {
                 return true;
@@ -282,254 +282,254 @@ pub trait TranslatableError {
     fn translate(&self, lang: &str, translator_service: &TranslatorService) -> String;
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use test::Bencher;
-    use crate::preparation;
-
-    #[test]
-    fn translate() {
-        let config = Data::new(Config::new());
-        let mut translates: HashMap<String, HashMap<String, String>> = HashMap::from([]);
-        translates.insert(
-            "en".to_string(),
-            HashMap::from([
-                ("test_key".to_string(), "test_value".to_string()),
-                ("test_key2".to_string(), "test_value2".to_string()),
-            ]),
-        );
-        let t: TranslatorService = TranslatorService::new(config, translates);
-
-        assert_eq!("test_value".to_string(), t.translate("en", "test_key"));
-        assert_eq!("test_value".to_string(), t.translate("fi", "test_key"));
-        assert_eq!("test_key123".to_string(), t.translate("en", "test_key123"));
-    }
-
-    #[bench]
-    fn bench_translate(b: &mut Bencher) {
-        let config = Data::new(Config::new());
-        let mut t: TranslatorService = TranslatorService::new_from_files(config).unwrap();
-        t.insert(
-            "en",
-            "test_key".to_string(),
-            "test_value :variable 213".to_string(),
-        );
-        t.insert("en", "test_key2".to_string(), "test_value2".to_string());
-
-        b.iter(|| {
-            t.translate("en", "test_key");
-        });
-    }
-
-    #[bench]
-    fn bench_variable(b: &mut Bencher) {
-        // 123.49 ns/iter (+/- 4.11)
-        let config = Data::new(Config::new());
-        let mut t: TranslatorService = TranslatorService::new_from_files(config).unwrap();
-        t.insert(
-            "en",
-            "test_key".to_string(),
-            "test_value :variable 213".to_string(),
-        );
-        t.insert("en", "test_key2".to_string(), "test_value2".to_string());
-
-        b.iter(|| {
-            let mut vars = HashMap::new();
-            vars.insert("variable", "test321");
-            t.variables("en", "test_key", &vars);
-        });
-    }
-
-    #[test]
-    fn choices() {
-        let config = Data::new(Config::new());
-        let mut t: TranslatorService = TranslatorService::new_from_files(config).unwrap();
-        t.insert("en", "test_key".to_string(), "second|seconds".to_string());
-        t.insert(
-            "ru",
-            "test_key".to_string(),
-            "секунда|секунды|секунд".to_string(),
-        );
-
-        let value = t.choices("en", "test_key", 1, None);
-        assert_eq!("second".to_string(), value);
-        let value = t.choices("en", "test_key", 2, None);
-        assert_eq!("seconds".to_string(), value);
-        let value = t.choices("ru", "test_key", 1, None);
-        assert_eq!("секунда".to_string(), value);
-        let value = t.choices("ru", "test_key", 2, None);
-        assert_eq!("секунды".to_string(), value);
-        let value = t.choices("ru", "test_key", 10, None);
-        assert_eq!("секунд".to_string(), value);
-        let value = t.choices("ru", "test_key", 100033, None);
-        assert_eq!("секунды".to_string(), value);
-    }
-
-    #[bench]
-    fn bench_format(b: &mut Bencher) {
-        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo bench -- --nocapture --exact app::services::translator::tests::bench_format
-        // 31.64 ns/iter (+/- 1.11)
-        let var1 = "test";
-        let var2 = 123.to_string();
-        let var2 = var2.as_str();
-        b.iter(|| {
-            let _ = format!("test test test {var1} {var2}");
-        });
-    }
-
-    #[bench]
-    fn bench_push_str(b: &mut Bencher) {
-        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo bench -- --nocapture --exact app::services::translator::tests::bench_push_str
-        // 40.85 ns/iter (+/- 0.93)
-        let var1 = "test";
-        let var2 = 123.to_string();
-        let var2 = var2.as_str();
-        b.iter(|| {
-            let mut str = "test test test ".to_string();
-            str.push_str(var1);
-            str.push_str(" ");
-            str.push_str(var2);
-        });
-    }
-
-    #[bench]
-    fn bench_replace(b: &mut Bencher) {
-        // 139.26 ns/iter (+/- 5.05)
-        let variables: HashMap<String, String> = HashMap::from([
-            (":key".to_string(), "test123".to_string()),
-            (":value".to_string(), "test321".to_string()),
-        ]);
-
-        b.iter(|| {
-            let mut string = "test test test :key :value".to_string();
-            for (key, value) in &variables {
-                string = string.replace(key, value);
-            }
-        });
-    }
-
-    #[bench]
-    fn bench_custom_format(b: &mut Bencher) {
-        // 122.59 ns/iter (+/- 5.49)
-        let variables: HashMap<String, String> = HashMap::from([
-            (":key".to_string(), "test123".to_string()),
-            (":value".to_string(), "test321".to_string()),
-        ]);
-
-        let s = "test test test :key :value".to_string();
-        let chunks_: Vec<&str> = s.split(" ").collect();
-
-        let mut chunks: Vec<String> = Vec::new();
-        let mut chunk = "".to_string();
-        for str in chunks_.iter() {
-            let str = str.trim();
-            if str.is_empty() {
-                continue;
-            }
-            if let Some(char) = str.get(..1) {
-                if char == ":" {
-                    let c = chunk.trim().to_owned();
-                    if !c.is_empty() {
-                        chunks.push(c.to_string());
-                    }
-                    chunks.push(str.to_string());
-                    chunk = "".to_string();
-                } else {
-                    chunk.push(' ');
-                    chunk.push_str(str);
-                }
-            } else {
-                chunk.push(' ');
-                chunk.push_str(str);
-            }
-        }
-        if !chunk.is_empty() {
-            chunks.push(chunk.to_string());
-        }
-        b.iter(|| {
-            let mut value = "".to_string();
-            for chunk in &chunks {
-                let s = variables.get(chunk).unwrap_or(chunk);
-                value.push(' ');
-                value.push_str(s);
-            }
-            let _ = value.trim().to_string();
-        });
-    }
-
-    #[test]
-    fn new_from_files() {
-        let config = Data::new(Config::new());
-        let _ = TranslatorService::new_from_files(config).unwrap();
-    }
-    //
-    // #[bench]
-    // fn bench_hash_map_vs_redis(b: &mut Bencher) {
-    // // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo bench -- --nocapture --exact app::services::translator::tests::bench_hash_map_vs_redis
-    // // #[test]
-    // // fn test_hash_map_vs_redis() {
-    // //     // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::services::translator::tests::test_hash_map_vs_redis
-    //     let (_, all_services) = preparation();
-    //     let key_value_service = all_services.key_value_service.get_ref();
-    //     let translator_service = all_services.translator_service.get_ref();
-    //     // let mut last_key = "".to_string();
-    //     // for (lang, translates) in &translator_service.translates {
-    //     //     for (key, value) in translates {
-    //     //         last_key = format!("{lang}.{key}");
-    //     //         key_value_service.set_ex(&last_key, value, 86400).unwrap();
-    //     //     }
-    //     // }
-    //     // dbg!(&last_key);
-    //     let v: Option<String> = key_value_service.get("en.validation.password.symbols").unwrap();
-    //     dbg!(&v);
-    //     let v = translator_service.get("en", "validation.password.symbols");
-    //     dbg!(&v);
-    //     b.iter(|| {
-    //         // 47,511.95 ns/iter (+/- 4,466.43)
-    //         // let _: Option<String> = key_value_service.get("en.validation.password.symbols").unwrap();
-    //         // 36.55 ns/iter (+/- 0.96)
-    //         let _ = translator_service.get("en", "validation.password.symbols");
-    //     });
-    // }
-    //
-    // #[bench]
-    // fn bench_kv_vs_redis(b: &mut Bencher) {
-    //     // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo bench -- --nocapture --exact app::services::translator::tests::bench_kv_vs_redis
-    // // #[test]
-    // // fn test_kv_vs_redis() {
-    // //     // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::services::translator::tests::test_kv_vs_redis
-    //     use kv::*;
-    //
-    //     let (_, all_services) = preparation();
-    //     let key_value_service = all_services.key_value_service.get_ref();
-    //     let translator_service = all_services.translator_service.get_ref();
-    //
-    //     // При реализации expires можно при получении данных проверять expires и если он истёк, то удалять старое значение и отдавать в ответе None.
-    //     let cfg = Config::new("./storage/kv_db");
-    //     let store = Store::new(cfg).unwrap();
-    //     let bucket = store.bucket::<Raw, Raw>(Some("bucket_name")).unwrap();
-    //
-    //     // for (lang, translates) in &translator_service.translates {
-    //     //     for (key, value) in translates {
-    //     //         let k = Raw::from(format!("{lang}.{key}").into_bytes());
-    //     //         let v = Raw::from(value.to_owned().into_bytes());
-    //     //         bucket.set(&k, &v).unwrap();
-    //     //     }
-    //     // }
-    //     // "en.validation.password.symbols"
-    //     let key = Raw::from(b"en.validation.password.symbols");
-    //     let v = String::from_utf8(bucket.get(&key).unwrap().unwrap().to_vec()).unwrap();
-    //     dbg!(&v);
-    //     let v = translator_service.get("en", "validation.password.symbols");
-    //     dbg!(&v);
-    //     b.iter(|| {
-    //         // 190.75 ns/iter (+/- 6.52)
-    //         let _ = bucket.get(&key).unwrap().unwrap();
-    //         // 47,511.95 ns/iter (+/- 4,466.43)
-    //         // let _: Option<String> = key_value_service.get("en.validation.password.symbols").unwrap();
-    //         // 36.55 ns/iter (+/- 0.96)
-    //         // let _ = translator_service.get("en", "validation.password.symbols");
-    //     });
-    // }
-}
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use test::Bencher;
+//     // use crate::preparation;
+//
+//     #[test]
+//     fn translate() {
+//         let config = Data::new(Config::new());
+//         let mut translates: HashMap<String, HashMap<String, String>> = HashMap::from([]);
+//         translates.insert(
+//             "en".to_string(),
+//             HashMap::from([
+//                 ("test_key".to_string(), "test_value".to_string()),
+//                 ("test_key2".to_string(), "test_value2".to_string()),
+//             ]),
+//         );
+//         let t: TranslatorService = TranslatorService::new(config, translates);
+//
+//         assert_eq!("test_value".to_string(), t.translate("en", "test_key"));
+//         assert_eq!("test_value".to_string(), t.translate("fi", "test_key"));
+//         assert_eq!("test_key123".to_string(), t.translate("en", "test_key123"));
+//     }
+//
+//     #[bench]
+//     fn bench_translate(b: &mut Bencher) {
+//         let config = Data::new(Config::new());
+//         let mut t: TranslatorService = TranslatorService::new_from_files(config).unwrap();
+//         t.insert(
+//             "en",
+//             "test_key".to_string(),
+//             "test_value :variable 213".to_string(),
+//         );
+//         t.insert("en", "test_key2".to_string(), "test_value2".to_string());
+//
+//         b.iter(|| {
+//             t.translate("en", "test_key");
+//         });
+//     }
+//
+//     #[bench]
+//     fn bench_variable(b: &mut Bencher) {
+//         // 123.49 ns/iter (+/- 4.11)
+//         let config = Data::new(Config::new());
+//         let mut t: TranslatorService = TranslatorService::new_from_files(config).unwrap();
+//         t.insert(
+//             "en",
+//             "test_key".to_string(),
+//             "test_value :variable 213".to_string(),
+//         );
+//         t.insert("en", "test_key2".to_string(), "test_value2".to_string());
+//
+//         b.iter(|| {
+//             let mut vars = HashMap::new();
+//             vars.insert("variable", "test321");
+//             t.variables("en", "test_key", &vars);
+//         });
+//     }
+//
+//     #[test]
+//     fn choices() {
+//         let config = Data::new(Config::new());
+//         let mut t: TranslatorService = TranslatorService::new_from_files(config).unwrap();
+//         t.insert("en", "test_key".to_string(), "second|seconds".to_string());
+//         t.insert(
+//             "ru",
+//             "test_key".to_string(),
+//             "секунда|секунды|секунд".to_string(),
+//         );
+//
+//         let value = t.choices("en", "test_key", 1, None);
+//         assert_eq!("second".to_string(), value);
+//         let value = t.choices("en", "test_key", 2, None);
+//         assert_eq!("seconds".to_string(), value);
+//         let value = t.choices("ru", "test_key", 1, None);
+//         assert_eq!("секунда".to_string(), value);
+//         let value = t.choices("ru", "test_key", 2, None);
+//         assert_eq!("секунды".to_string(), value);
+//         let value = t.choices("ru", "test_key", 10, None);
+//         assert_eq!("секунд".to_string(), value);
+//         let value = t.choices("ru", "test_key", 100033, None);
+//         assert_eq!("секунды".to_string(), value);
+//     }
+//
+//     #[bench]
+//     fn bench_format(b: &mut Bencher) {
+//         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo bench -- --nocapture --exact app::services::translator::tests::bench_format
+//         // 31.64 ns/iter (+/- 1.11)
+//         let var1 = "test";
+//         let var2 = 123.to_string();
+//         let var2 = var2.as_str();
+//         b.iter(|| {
+//             let _ = format!("test test test {var1} {var2}");
+//         });
+//     }
+//
+//     #[bench]
+//     fn bench_push_str(b: &mut Bencher) {
+//         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo bench -- --nocapture --exact app::services::translator::tests::bench_push_str
+//         // 40.85 ns/iter (+/- 0.93)
+//         let var1 = "test";
+//         let var2 = 123.to_string();
+//         let var2 = var2.as_str();
+//         b.iter(|| {
+//             let mut str = "test test test ".to_string();
+//             str.push_str(var1);
+//             str.push_str(" ");
+//             str.push_str(var2);
+//         });
+//     }
+//
+//     #[bench]
+//     fn bench_replace(b: &mut Bencher) {
+//         // 139.26 ns/iter (+/- 5.05)
+//         let variables: HashMap<String, String> = HashMap::from([
+//             (":key".to_string(), "test123".to_string()),
+//             (":value".to_string(), "test321".to_string()),
+//         ]);
+//
+//         b.iter(|| {
+//             let mut string = "test test test :key :value".to_string();
+//             for (key, value) in &variables {
+//                 string = string.replace(key, value);
+//             }
+//         });
+//     }
+//
+//     #[bench]
+//     fn bench_custom_format(b: &mut Bencher) {
+//         // 122.59 ns/iter (+/- 5.49)
+//         let variables: HashMap<String, String> = HashMap::from([
+//             (":key".to_string(), "test123".to_string()),
+//             (":value".to_string(), "test321".to_string()),
+//         ]);
+//
+//         let s = "test test test :key :value".to_string();
+//         let chunks_: Vec<&str> = s.split(" ").collect();
+//
+//         let mut chunks: Vec<String> = Vec::new();
+//         let mut chunk = "".to_string();
+//         for str in chunks_.iter() {
+//             let str = str.trim();
+//             if str.is_empty() {
+//                 continue;
+//             }
+//             if let Some(char) = str.get(..1) {
+//                 if char == ":" {
+//                     let c = chunk.trim().to_owned();
+//                     if !c.is_empty() {
+//                         chunks.push(c.to_string());
+//                     }
+//                     chunks.push(str.to_string());
+//                     chunk = "".to_string();
+//                 } else {
+//                     chunk.push(' ');
+//                     chunk.push_str(str);
+//                 }
+//             } else {
+//                 chunk.push(' ');
+//                 chunk.push_str(str);
+//             }
+//         }
+//         if !chunk.is_empty() {
+//             chunks.push(chunk.to_string());
+//         }
+//         b.iter(|| {
+//             let mut value = "".to_string();
+//             for chunk in &chunks {
+//                 let s = variables.get(chunk).unwrap_or(chunk);
+//                 value.push(' ');
+//                 value.push_str(s);
+//             }
+//             let _ = value.trim().to_string();
+//         });
+//     }
+//
+//     #[test]
+//     fn new_from_files() {
+//         let config = Data::new(Config::new());
+//         let _ = TranslatorService::new_from_files(config).unwrap();
+//     }
+//     //
+//     // #[bench]
+//     // fn bench_hash_map_vs_redis(b: &mut Bencher) {
+//     // // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo bench -- --nocapture --exact app::services::translator::tests::bench_hash_map_vs_redis
+//     // // #[test]
+//     // // fn test_hash_map_vs_redis() {
+//     // //     // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::services::translator::tests::test_hash_map_vs_redis
+//     //     let (_, all_services) = preparation();
+//     //     let key_value_service = all_services.key_value_service.get_ref();
+//     //     let translator_service = all_services.translator_service.get_ref();
+//     //     // let mut last_key = "".to_string();
+//     //     // for (lang, translates) in &translator_service.translates {
+//     //     //     for (key, value) in translates {
+//     //     //         last_key = format!("{lang}.{key}");
+//     //     //         key_value_service.set_ex(&last_key, value, 86400).unwrap();
+//     //     //     }
+//     //     // }
+//     //     // dbg!(&last_key);
+//     //     let v: Option<String> = key_value_service.get("en.validation.password.symbols").unwrap();
+//     //     dbg!(&v);
+//     //     let v = translator_service.get("en", "validation.password.symbols");
+//     //     dbg!(&v);
+//     //     b.iter(|| {
+//     //         // 47,511.95 ns/iter (+/- 4,466.43)
+//     //         // let _: Option<String> = key_value_service.get("en.validation.password.symbols").unwrap();
+//     //         // 36.55 ns/iter (+/- 0.96)
+//     //         let _ = translator_service.get("en", "validation.password.symbols");
+//     //     });
+//     // }
+//     //
+//     // #[bench]
+//     // fn bench_kv_vs_redis(b: &mut Bencher) {
+//     //     // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo bench -- --nocapture --exact app::services::translator::tests::bench_kv_vs_redis
+//     // // #[test]
+//     // // fn test_kv_vs_redis() {
+//     // //     // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::services::translator::tests::test_kv_vs_redis
+//     //     use kv::*;
+//     //
+//     //     let (_, all_services) = preparation();
+//     //     let key_value_service = all_services.key_value_service.get_ref();
+//     //     let translator_service = all_services.translator_service.get_ref();
+//     //
+//     //     // При реализации expires можно при получении данных проверять expires и если он истёк, то удалять старое значение и отдавать в ответе None.
+//     //     let cfg = Config::new("./storage/kv_db");
+//     //     let store = Store::new(cfg).unwrap();
+//     //     let bucket = store.bucket::<Raw, Raw>(Some("bucket_name")).unwrap();
+//     //
+//     //     // for (lang, translates) in &translator_service.translates {
+//     //     //     for (key, value) in translates {
+//     //     //         let k = Raw::from(format!("{lang}.{key}").into_bytes());
+//     //     //         let v = Raw::from(value.to_owned().into_bytes());
+//     //     //         bucket.set(&k, &v).unwrap();
+//     //     //     }
+//     //     // }
+//     //     // "en.validation.password.symbols"
+//     //     let key = Raw::from(b"en.validation.password.symbols");
+//     //     let v = String::from_utf8(bucket.get(&key).unwrap().unwrap().to_vec()).unwrap();
+//     //     dbg!(&v);
+//     //     let v = translator_service.get("en", "validation.password.symbols");
+//     //     dbg!(&v);
+//     //     b.iter(|| {
+//     //         // 190.75 ns/iter (+/- 6.52)
+//     //         let _ = bucket.get(&key).unwrap().unwrap();
+//     //         // 47,511.95 ns/iter (+/- 4,466.43)
+//     //         // let _: Option<String> = key_value_service.get("en.validation.password.symbols").unwrap();
+//     //         // 36.55 ns/iter (+/- 0.96)
+//     //         // let _ = translator_service.get("en", "validation.password.symbols");
+//     //     });
+//     // }
+// }

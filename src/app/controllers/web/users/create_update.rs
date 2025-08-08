@@ -9,7 +9,12 @@ use crate::app::validator::rules::mimes::Mimes;
 use crate::app::validator::rules::required::Required;
 use crate::app::validator::rules::str_max_chars_count::StrMaxCharsCount;
 use crate::app::validator::rules::str_min_max_chars_count::StrMinMaxCharsCount as MMCC;
-use crate::{assign_value_bytes_to_string, Alert, AlertVariant, AppService, FileService, Locale, LocaleService, RateLimitService, RoleService, Session, TemplateService, TranslatableError, TranslatorService, User, UserColumn, UserFileService, UserPolicy, UserService, UserServiceError, WebAuthService, WebHttpResponse, USER_AVATAR_MAX_SIZE, USER_AVATAR_MIMES};
+use crate::{
+    assign_value_bytes_to_string, Alert, AlertVariant, AppService, FileService, Locale,
+    LocaleService, RateLimitService, RoleService, Session, TemplateService, TranslatableError,
+    TranslatorService, User, UserColumn, UserFileService, UserPolicy, UserService,
+    UserServiceError, WebAuthService, WebHttpResponse, USER_AVATAR_MAX_SIZE, USER_AVATAR_MIMES,
+};
 use actix_multipart::Multipart;
 use actix_web::http::header::HeaderValue;
 use actix_web::{
@@ -20,16 +25,16 @@ use actix_web::{
 };
 use bytes::{Bytes, BytesMut};
 use futures_util::{StreamExt, TryStreamExt};
+use image::imageops::FilterType;
+use image::ImageReader;
 use mime::Mime;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::io::Cursor;
 use std::sync::Arc;
 use strum::VariantNames;
 use strum_macros::{Display, EnumString};
-use std::io::Cursor;
-use image::imageops::FilterType;
-use image::ImageReader;
 
 #[derive(
     Debug,
@@ -471,12 +476,10 @@ pub async fn invoke(
             )?;
             errors.form.push(ttl_message)
         } else if errors.is_empty() {
-
             // https://crates.io/crates/image
             // TODO
             // Upload Avatar and Resize by image crate
             // dbg!(&data.avatar);
-
 
             let id = if let Some(entity) = &entity {
                 entity.id
@@ -507,14 +510,25 @@ pub async fn invoke(
 
             if let Some(avatar) = data.avatar {
                 let bytes = avatar.bytes.to_vec();
-                let img = ImageReader::new(Cursor::new(bytes)).with_guessed_format()?.decode().map_err(|_| error::ErrorInternalServerError(""))?;
+                let img = ImageReader::new(Cursor::new(bytes))
+                    .with_guessed_format()?
+                    .decode()
+                    .map_err(|_| error::ErrorInternalServerError(""))?;
                 let img = img.resize(200, 200, FilterType::Triangle);
                 let mut bytes: Vec<u8> = Vec::new();
-                img.write_to(&mut Cursor::new(&mut bytes), image::ImageFormat::Jpeg).map_err(|_| error::ErrorInternalServerError(""))?;
+                img.write_to(&mut Cursor::new(&mut bytes), image::ImageFormat::Jpeg)
+                    .map_err(|_| error::ErrorInternalServerError(""))?;
 
                 let upload_filename = avatar.filename;
                 let mime = avatar.mime;
-                let user_file = file_service.upload_bytes_file_to_local_disk(auth_user.id, bytes, true, upload_filename, mime)
+                let user_file = file_service
+                    .upload_bytes_file_to_local_disk(
+                        auth_user.id,
+                        bytes,
+                        true,
+                        upload_filename,
+                        mime,
+                    )
                     .map_err(|_| error::ErrorInternalServerError(""))?;
                 columns.push(UserColumn::AvatarId);
                 user_data.avatar_id = Some(user_file.id);
@@ -595,11 +609,7 @@ pub async fn invoke(
                     ))
                     .finish());
             } else if action.eq("save_and_close") {
-                let url_ = if is_profile {
-                    "/"
-                } else {
-                    "/users"
-                };
+                let url_ = if is_profile { "/" } else { "/users" };
 
                 return Ok(HttpResponse::SeeOther()
                     .set_alerts(alert_variants)
@@ -786,7 +796,7 @@ impl PostData {
                             lang,
                             &bytes,
                             USER_AVATAR_MAX_SIZE,
-                            avatar_str
+                            avatar_str,
                         );
                         if !errors_.is_empty() {
                             errors.avatar.append(&mut errors_);
@@ -797,7 +807,7 @@ impl PostData {
                             lang,
                             &mime,
                             USER_AVATAR_MIMES,
-                            avatar_str
+                            avatar_str,
                         );
                         if !errors_.is_empty() {
                             errors.avatar.append(&mut errors_);

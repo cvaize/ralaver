@@ -1,8 +1,12 @@
 use crate::helpers::{join_vec, now_date_time_str};
-use crate::{take_from_mysql_row, take_some_datetime_from_mysql_row, AppError, Disk, File, FileColumn, FromMysqlDto, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder, MysqlRepository, PaginateParams, Role, RoleFilter, ToMysqlDto};
+use crate::{
+    take_from_mysql_row, take_some_datetime_from_mysql_row, AppError, Disk, File, FileColumn,
+    FromMysqlDto, MysqlColumnEnum, MysqlIdColumn, MysqlPool, MysqlQueryBuilder, MysqlRepository,
+    PaginateParams, Role, RoleFilter, ToMysqlDto,
+};
 use actix_web::web::Data;
-use mysql::Value;
 use mysql::Row;
+use mysql::Value;
 use strum_macros::{Display, EnumIter, EnumString};
 
 pub struct FileMysqlRepository {
@@ -74,37 +78,27 @@ impl FileMysqlRepository {
     }
 
     pub fn soft_delete_by_id(&self, id: u64) -> Result<(), AppError> {
-        let filters = vec![
-            FileFilter::Id(id),
-            FileFilter::IsDeleted(false),
-        ];
+        let filters = vec![FileFilter::Id(id), FileFilter::IsDeleted(false)];
 
         let mut data = File::default();
         data.delete_at = Some(now_date_time_str());
         data.is_delete = true;
 
-        let columns: Option<Vec<FileColumn>> = Some(vec![
-            FileColumn::DeleteAt,
-            FileColumn::IsDelete,
-        ]);
+        let columns: Option<Vec<FileColumn>> =
+            Some(vec![FileColumn::DeleteAt, FileColumn::IsDelete]);
 
         self.update(&filters, &data, &columns)
     }
 
     pub fn soft_delete_by_ids(&self, ids: &Vec<u64>) -> Result<(), AppError> {
-        let filters = vec![
-            FileFilter::Ids(ids.clone()),
-            FileFilter::IsDeleted(false),
-        ];
+        let filters = vec![FileFilter::Ids(ids.clone()), FileFilter::IsDeleted(false)];
 
         let mut data = File::default();
         data.delete_at = Some(now_date_time_str());
         data.is_delete = true;
 
-        let columns: Option<Vec<FileColumn>> = Some(vec![
-            FileColumn::DeleteAt,
-            FileColumn::IsDelete,
-        ]);
+        let columns: Option<Vec<FileColumn>> =
+            Some(vec![FileColumn::DeleteAt, FileColumn::IsDelete]);
 
         self.update(&filters, &data, &columns)
     }
@@ -120,10 +114,8 @@ impl FileMysqlRepository {
         data.delete_at = None;
         data.is_delete = false;
 
-        let columns: Option<Vec<FileColumn>> = Some(vec![
-            FileColumn::DeleteAt,
-            FileColumn::IsDelete,
-        ]);
+        let columns: Option<Vec<FileColumn>> =
+            Some(vec![FileColumn::DeleteAt, FileColumn::IsDelete]);
 
         self.update(&filters, &data, &columns)
     }
@@ -139,10 +131,8 @@ impl FileMysqlRepository {
         data.delete_at = None;
         data.is_delete = false;
 
-        let columns: Option<Vec<FileColumn>> = Some(vec![
-            FileColumn::DeleteAt,
-            FileColumn::IsDelete,
-        ]);
+        let columns: Option<Vec<FileColumn>> =
+            Some(vec![FileColumn::DeleteAt, FileColumn::IsDelete]);
 
         self.update(&filters, &data, &columns)
     }
@@ -170,7 +160,7 @@ impl MysqlQueryBuilder for FileFilter {
             Self::Ids(value) => {
                 let v = format!("id in ({})", join_vec(value, ","));
                 query.push_str(&v)
-            },
+            }
             Self::CreatorUserId(_) => query.push_str("creator_user_id=:f_creator_user_id"),
             Self::Disk(_) => query.push_str("disk=:f_disk"),
             Self::Path(_) => query.push_str("path=:f_path"),
