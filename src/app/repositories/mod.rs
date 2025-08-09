@@ -1,5 +1,6 @@
 mod disk;
 mod file;
+mod key_value;
 mod kv;
 mod mysql;
 mod redis;
@@ -9,6 +10,7 @@ mod user_file;
 
 pub use self::disk::*;
 pub use self::file::*;
+pub use self::key_value::*;
 pub use self::kv::*;
 pub use self::mysql::*;
 pub use self::redis::*;

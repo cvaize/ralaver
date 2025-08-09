@@ -48,7 +48,7 @@ impl KeyValueService {
         self.get_connection()?.set_ex(key, value, seconds)
     }
 
-    pub fn expire<K: ToRedisArgs>(&self, key: K, seconds: i64) -> Result<(), AppError> {
+    pub fn expire<K: ToRedisArgs>(&self, key: K, seconds: u64) -> Result<(), AppError> {
         self.get_connection()?.expire(key, seconds)
     }
 
@@ -147,8 +147,8 @@ impl KeyValueServiceConnection {
         Ok(())
     }
 
-    pub fn expire<K: ToRedisArgs>(&mut self, key: K, seconds: i64) -> Result<(), AppError> {
-        self.conn.expire(key, seconds).map_err(|e| {
+    pub fn expire<K: ToRedisArgs>(&mut self, key: K, seconds: u64) -> Result<(), AppError> {
+        self.conn.expire(key, seconds as i64).map_err(|e| {
             log::error!("KeyValueService::expire - {e}");
             AppError(Some(e.to_string()))
         })

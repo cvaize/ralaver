@@ -226,7 +226,7 @@ impl WebAuthService {
         key_value_service
             .expire(
                 self.get_token_value_key(&token),
-                self.config.auth.cookie.session_expires as i64,
+                self.config.auth.cookie.session_expires,
             )
             .map_err(|e| {
                 log::error!("WebAuthService::expire_session - {e}");

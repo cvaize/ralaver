@@ -27,6 +27,10 @@ impl RedisRepository {
         self.get_connection()?.get(key)
     }
 
+    pub fn get_del<K: ToRedisArgs, V: FromRedisValue>(&self, key: K) -> Result<Option<V>, AppError> {
+        self.get_connection()?.get_del(key)
+    }
+
     pub fn get_ex<K: ToRedisArgs, V: FromRedisValue>(
         &self,
         key: K,
@@ -48,7 +52,7 @@ impl RedisRepository {
         self.get_connection()?.set_ex(key, value, seconds)
     }
 
-    pub fn expire<K: ToRedisArgs>(&self, key: K, seconds: i64) -> Result<(), AppError> {
+    pub fn expire<K: ToRedisArgs>(&self, key: K, seconds: u64) -> Result<(), AppError> {
         self.get_connection()?.expire(key, seconds)
     }
 
@@ -147,8 +151,8 @@ impl RedisRepositoryConnection {
         Ok(())
     }
 
-    pub fn expire<K: ToRedisArgs>(&mut self, key: K, seconds: i64) -> Result<(), AppError> {
-        self.conn.expire(key, seconds).map_err(|e| {
+    pub fn expire<K: ToRedisArgs>(&mut self, key: K, seconds: u64) -> Result<(), AppError> {
+        self.conn.expire(key, seconds as i64).map_err(|e| {
             log::error!("RedisRepository::expire - {e}");
             AppError(Some(e.to_string()))
         })

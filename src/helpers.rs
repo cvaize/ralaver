@@ -189,6 +189,13 @@ impl BytesValue for String {
     }
 }
 
+pub fn value_from_bytes<V: BytesValue>(v: Option<Vec<u8>>) -> Result<Option<V>, AppError> {
+    match v {
+        Some(v) => Ok(Some(V::value_from_bytes(v)?)),
+        _ => Ok(None),
+    }
+}
+
 // #[cfg(test)]
 // mod tests {
 //     use serde_derive::{Deserialize, Serialize};
