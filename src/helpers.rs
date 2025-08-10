@@ -23,6 +23,14 @@ pub fn now_date_time_str() -> String {
     Utc::now().format(DATE_TIME_FORMAT).to_string()
 }
 
+pub fn now_timestamp() -> u64 {
+    let timestamp = Utc::now().timestamp();
+    if timestamp < 0 {
+        panic!("Timestamp less than 0");
+    }
+    timestamp as u64
+}
+
 pub fn none_if_empty(v: &Option<String>) -> Option<String> {
     if let Some(v_) = v {
         let v = v_.trim();
@@ -152,7 +160,7 @@ pub trait BytesKey: Sized {
     fn key_to_bytes(self) -> Result<Vec<u8>, AppError>;
 }
 
-pub trait BytesValue: Sized {
+pub trait BytesValue: Sized + Clone {
     fn value_to_bytes(self) -> Result<Vec<u8>, AppError>;
     fn value_from_bytes(bytes: Vec<u8>) -> Result<Self, AppError>;
 }

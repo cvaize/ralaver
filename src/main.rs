@@ -34,22 +34,22 @@ pub use mysql_connection::MysqlPool;
 pub use mysql_connection::MysqlPooledConnection;
 use std::path::MAIN_SEPARATOR_STR;
 
+pub fn make_config() -> Config {
+    dotenv::dotenv().ok();
+    Config::new()
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    dotenv::dotenv().ok();
-    let config = Config::new();
+    let config = make_config();
     let _ = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     // Connections
-    let smtp: Data<LettreSmtpTransport> =
-        Data::new(get_smtp_transport(&config.mail.smtp).unwrap());
-    let mysql: Data<MysqlPool> =
-        Data::new(get_mysql_connection_pool(&config.db.mysql).unwrap());
-    let redis: Data<RedisPool> =
-        Data::new(get_redis_connection_pool(&config.db.redis).unwrap());
+    let smtp: Data<LettreSmtpTransport> = Data::new(get_smtp_transport(&config.mail.smtp).unwrap());
+    let mysql: Data<MysqlPool> = Data::new(get_mysql_connection_pool(&config.db.mysql).unwrap());
+    let redis: Data<RedisPool> = Data::new(get_redis_connection_pool(&config.db.redis).unwrap());
 
-    let kv_repository =
-        Data::new(KVRepository::new(&config.db.kv.storage).expect("Fail init KVRepository::new"));
+    let kv_repository = Data::new(KVRepository::new(&config.db.kv.storage).unwrap());
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 

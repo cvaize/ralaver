@@ -1,5 +1,5 @@
 use crate::AppError;
-use kv::{Bucket, Config, Raw, Store};
+use kv::{Bucket, Config, Error, Item, Iter, Raw, Store, Value};
 
 pub struct KVRepository<'a> {
     store: Store,
@@ -41,6 +41,10 @@ impl<'a> KVRepository<'a> {
 
     pub fn remove(&self, key: &[u8]) -> Result<Option<Vec<u8>>, AppError> {
         self.bucket.remove(key)
+    }
+
+    pub fn iter(&self) -> KVIterRepository {
+        self.bucket.iter()
     }
 }
 
@@ -96,6 +100,44 @@ impl<'a> KVBucketRepository<'a> {
             AppError(Some(e.to_string()))
         })?;
         self.parse_value(old_value)
+    }
+
+    pub fn iter(&self) -> KVIterRepository {
+        KVIterRepository {
+            iter: self.bucket.iter(),
+        }
+    }
+}
+
+pub struct KVIterRepository {
+    iter: Iter<Raw, Raw>,
+}
+
+impl Iterator for KVIterRepository {
+    type Item = Result<(Vec<u8>, Vec<u8>), AppError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iter.next() {
+            None => None,
+            Some(Err(e)) => Some(Err(AppError(Some(e.to_string())))),
+            Some(Ok(item)) => {
+                let key: Result<Raw, Error> = item.key();
+                let value: Result<Raw, Error> = item.value();
+
+                if let Err(error) = key {
+                    return Some(Err(AppError(Some(error.to_string()))));
+                }
+
+                if let Err(error) = value {
+                    return Some(Err(AppError(Some(error.to_string()))));
+                }
+
+                let key: Raw = key.unwrap();
+                let value: Raw = value.unwrap();
+
+                Some(Ok((key.to_vec(), value.to_vec())))
+            }
+        }
     }
 }
 

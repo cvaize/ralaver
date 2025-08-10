@@ -14,7 +14,9 @@ pub trait ConnectableKeyValueRepository {
 }
 
 pub trait IncrementableKeyValueRepository {
-    // Increment or decrement if minus exists
+    /// Increment the numeric value of a key by the given amount.
+    /// If the key does not exist, it is set to 0 before performing the operation.
+    /// Returns the current value in the response.
     fn incr(&self, key: &str, delta: i64) -> Result<i64, AppError>;
 }
 
@@ -24,5 +26,6 @@ pub trait ExpirableKeyValueRepository {
     // Set data and expires
     fn set_ex<V: BytesValue>(&self, key: &str, value: V, seconds: u64) -> Result<(), AppError>;
     fn expire(&self, key: &str, seconds: u64) -> Result<(), AppError>;
+    /// Get the time to live for a key in seconds.
     fn ttl(&self, key: &str) -> Result<u64, AppError>;
 }
