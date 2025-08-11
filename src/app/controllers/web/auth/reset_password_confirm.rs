@@ -1,13 +1,10 @@
 use crate::app::controllers::web::auth::reset_password::CODE_LEN;
 use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
-use crate::app::middlewares::web_auth::REDIRECT_TO;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
 use crate::app::validator::rules::str_min_max_chars_count::StrMinMaxCharsCount;
-use crate::{
-    prepare_value, AlertVariant, RateLimitService, UserService, WebHttpResponse, RESET_PASSWORD_TTL,
-};
+use crate::{prepare_value, AlertVariant, RateLimitService, UserService, WebHttpResponse, RESET_PASSWORD_TTL, UNAUTHORIZED_REDIRECT_TO};
 use crate::{AppService, AuthService, TemplateService, TranslatorService};
 use actix_web::http::header::HeaderValue;
 use actix_web::web::{Data, Form, Query};
@@ -135,7 +132,7 @@ pub async fn invoke(
     if is_done {
         return Ok(HttpResponse::SeeOther()
             .set_alerts(vec![AlertVariant::ResetPasswordConfirmSuccess])
-            .insert_header((LOCATION, HeaderValue::from_static(REDIRECT_TO)))
+            .insert_header((LOCATION, HeaderValue::from_static(UNAUTHORIZED_REDIRECT_TO)))
             .finish());
     }
 

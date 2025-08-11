@@ -1,5 +1,4 @@
-use crate::app::middlewares::web_auth::REDIRECT_TO;
-use crate::{AlertVariant, WebAuthService, WebHttpResponse};
+use crate::{AlertVariant, WebAuthService, WebHttpResponse, UNAUTHORIZED_REDIRECT_TO};
 use actix_web::http::header::HeaderValue;
 use actix_web::web::Data;
 use actix_web::{
@@ -20,6 +19,6 @@ pub async fn invoke(
     Ok(HttpResponse::SeeOther()
         .cookie(web_auth_service.make_clear_cookie())
         .set_alerts(vec![AlertVariant::LogoutSuccess])
-        .insert_header((LOCATION, HeaderValue::from_static(REDIRECT_TO)))
+        .insert_header((LOCATION, HeaderValue::from_static(UNAUTHORIZED_REDIRECT_TO)))
         .finish())
 }

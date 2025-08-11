@@ -1,16 +1,19 @@
-use crate::{Config, CryptService, HashService, KeyValueService, RandomService, User, UserService};
+use crate::{Config, CryptService, HashService, KeyValueService, RandomService, User, UserService, WebHttpResponse};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
 use actix_web::web::Data;
-use actix_web::{error, Error, HttpRequest};
+use actix_web::{error, Error, HttpRequest, HttpResponse};
 use chrono::{DateTime, NaiveDateTime, TimeDelta, Utc};
 use std::borrow::Cow;
 use std::ops::Add;
+use actix_http::header::{HeaderValue, LOCATION};
 use strum_macros::{Display, EnumString};
 
 const FORMAT: &'static str = "%Y.%m.%d %H:%M:%S";
 
 pub const CSRF_ERROR_MESSAGE: &'static str = "CSRF token mismatch.";
+
+pub const UNAUTHORIZED_REDIRECT_TO: &'static str = "/login";
 
 #[derive(Debug, Clone)]
 pub struct Session(u64, u64, String, DateTime<Utc>, Option<String>);
@@ -365,6 +368,16 @@ impl WebAuthService {
             Ok(is)
         } else {
             Err(error::ErrorForbidden(CSRF_ERROR_MESSAGE))
+        }
+    }
+
+    pub fn login_by_req_throw_http_redirect(&self, req: &HttpRequest) -> Result<(User, Session), HttpResponse> {
+        let result = self.login_by_req(req);
+        match result {
+            Ok((user, session)) => Ok((user, session)),
+            Err(_) => Err(HttpResponse::SeeOther()
+                .insert_header((LOCATION, HeaderValue::from_static(UNAUTHORIZED_REDIRECT_TO)))
+                .finish()),
         }
     }
 }

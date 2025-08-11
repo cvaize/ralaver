@@ -1,10 +1,9 @@
 use crate::app::controllers::web::{get_public_context_data, get_public_template_context};
-use crate::app::middlewares::web_auth::REDIRECT_TO;
 use crate::app::validator::rules::confirmed::Confirmed;
 use crate::app::validator::rules::email::Email;
 use crate::app::validator::rules::required::Required;
 use crate::app::validator::rules::str_min_max_chars_count::StrMinMaxCharsCount;
-use crate::{prepare_value, AlertVariant, RateLimitService, TranslatableError, WebHttpResponse};
+use crate::{prepare_value, AlertVariant, RateLimitService, TranslatableError, WebHttpResponse, UNAUTHORIZED_REDIRECT_TO};
 use crate::{
     AppService, AuthService, AuthServiceError, Credentials, TemplateService, TranslatorService,
 };
@@ -95,7 +94,7 @@ pub async fn invoke(
     if is_done {
         return Ok(HttpResponse::SeeOther()
             .set_alerts(vec![AlertVariant::RegisterSuccess])
-            .insert_header((LOCATION, HeaderValue::from_static(REDIRECT_TO)))
+            .insert_header((LOCATION, HeaderValue::from_static(UNAUTHORIZED_REDIRECT_TO)))
             .finish());
     }
 

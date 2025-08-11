@@ -1,4 +1,4 @@
-use crate::{Session, User, WebAuthService};
+use crate::{Session, User, WebAuthService, UNAUTHORIZED_REDIRECT_TO};
 use actix_utils::future::{ready, Ready};
 use actix_web::body::BoxBody;
 use actix_web::web::Data;
@@ -15,8 +15,6 @@ use std::{future::Future, pin::Pin, rc::Rc};
 
 #[derive(Clone)]
 pub struct WebAuthMiddleware;
-
-pub static REDIRECT_TO: &str = "/login";
 
 impl<S> Transform<S, ServiceRequest> for WebAuthMiddleware
 where
@@ -43,7 +41,7 @@ pub struct InnerWebAuthMiddleware<S> {
 fn unauthorized_redirect(auth_service: &WebAuthService) -> HttpResponse {
     HttpResponse::SeeOther()
         .cookie(auth_service.make_clear_cookie())
-        .insert_header((LOCATION, HeaderValue::from_static(REDIRECT_TO)))
+        .insert_header((LOCATION, HeaderValue::from_static(UNAUTHORIZED_REDIRECT_TO)))
         .finish()
 }
 
@@ -97,7 +95,6 @@ where
 
             match res.response().error() {
                 Some(e) => {
-                    // TODO: Render error page
                     if e.as_response_error()
                         .status_code()
                         .eq(&StatusCode::UNAUTHORIZED)
@@ -108,7 +105,7 @@ where
 
                         res_mut
                             .headers_mut()
-                            .insert(LOCATION, HeaderValue::from_static(REDIRECT_TO));
+                            .insert(LOCATION, HeaderValue::from_static(UNAUTHORIZED_REDIRECT_TO));
 
                         let _ = web_auth_service.expire_session(new_session_rc.as_ref());
 
