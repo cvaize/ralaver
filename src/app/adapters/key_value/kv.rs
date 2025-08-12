@@ -1,7 +1,7 @@
 use crate::helpers::{now_timestamp, BytesValue};
 use crate::{
-    AppError, ExpirableKeyValueRepository, IncrementableKeyValueRepository, KVRepository,
-    KeyValueRepository,
+    AppError, ExpirableKeyValueRepository, IncrementableKeyValueRepository, KVBucketRepository,
+    KVRepository, KeyValueRepository,
 };
 use actix_web::web::Data;
 
@@ -9,17 +9,17 @@ const TIMESTAMP_BYTES_MAX: [u8; 8] = [255, 255, 255, 255, 255, 255, 255, 255];
 const TIMESTAMP_BYTES_LENGTH: usize = 8;
 
 pub struct KVRepositoryKeyValueAdapter<'a> {
-    repository: Data<KVRepository<'a>>,
+    pub repository: Data<KVBucketRepository<'a>>,
 }
 
 impl<'a> KVRepositoryKeyValueAdapter<'a> {
-    pub fn new(repository: Data<KVRepository<'a>>) -> Self {
+    pub fn new(repository: Data<KVBucketRepository<'a>>) -> Self {
         Self { repository }
     }
 
     /// Clearing expired values
     pub fn clean_expired_values(&mut self) -> Result<(), AppError> {
-        let repository: &KVRepository = self.repository.get_ref();
+        let repository: &KVBucketRepository = self.repository.get_ref();
 
         let mut error: Option<AppError> = None;
         for item in repository.iter() {
@@ -51,9 +51,20 @@ impl<'a> KVRepositoryKeyValueAdapter<'a> {
         Ok(())
     }
 
+    fn sum(&self, a: u64, b: u64) -> u64 {
+        if a == u64::MAX || b == u64::MAX {
+            return u64::MAX;
+        }
+
+        if b > (u64::MAX - a) {
+            return u64::MAX;
+        }
+        a + b
+    }
+
     fn get_with_timestamp<V: BytesValue>(&self, key: &str) -> Result<Option<(V, u64)>, AppError> {
         let key: &[u8] = key.as_bytes();
-        let repository: &KVRepository = self.repository.get_ref();
+        let repository: &KVBucketRepository = self.repository.get_ref();
 
         let value: Option<Vec<u8>> = repository.get(key)?;
         if let Some(v) = value {
@@ -75,7 +86,7 @@ impl<'a> KVRepositoryKeyValueAdapter<'a> {
         key: &str,
     ) -> Result<Option<(V, u64)>, AppError> {
         let key: &[u8] = key.as_bytes();
-        let repository: &KVRepository = self.repository.get_ref();
+        let repository: &KVBucketRepository = self.repository.get_ref();
 
         let value: Option<Vec<u8>> = repository.remove(key)?;
         if let Some(v) = value {
@@ -130,17 +141,23 @@ impl<'a> KeyValueRepository for KVRepositoryKeyValueAdapter<'a> {
 
 impl<'a> IncrementableKeyValueRepository for KVRepositoryKeyValueAdapter<'a> {
     fn incr(&self, key: &str, delta: i64) -> Result<i64, AppError> {
-        let mut value: (i64, u64) = self.get_with_timestamp(key)?.unwrap_or((0, u64::MAX));
-        value.0 += delta;
-        self.set_ex(key, value.0, value.1)?;
-        Ok(value.0)
+        let mut value_with_timestamp: (i64, u64) = self.get_with_timestamp(key)?.unwrap_or((0, u64::MAX));
+        value_with_timestamp.0 += delta;
+
+        let mut data: Vec<u8> = value_with_timestamp.0.value_to_bytes()?;
+        let mut value: Vec<u8> = value_with_timestamp.1.value_to_bytes()?;
+        value.append(&mut data);
+
+        self.repository.get_ref().set(key.as_bytes(), &value)?;
+
+        Ok(value_with_timestamp.0)
     }
 }
 
 impl<'a> ExpirableKeyValueRepository for KVRepositoryKeyValueAdapter<'a> {
     fn get_ex<V: BytesValue>(&self, key: &str, seconds: u64) -> Result<Option<V>, AppError> {
         let key: &[u8] = key.as_bytes();
-        let repository: &KVRepository = self.repository.get_ref();
+        let repository: &KVBucketRepository = self.repository.get_ref();
 
         let value: Option<Vec<u8>> = repository.get(key)?;
         if let Some(v) = value {
@@ -152,8 +169,9 @@ impl<'a> ExpirableKeyValueRepository for KVRepositoryKeyValueAdapter<'a> {
                 return Ok(None);
             }
             let mut append_data: Vec<u8> = data.to_vec();
-            let mut value: Vec<u8> = (now + seconds).value_to_bytes()?;
+            let mut value: Vec<u8> = self.sum(now, seconds).value_to_bytes()?;
             value.append(&mut append_data);
+            self.repository.get_ref().set(key, &value)?;
 
             return Ok(Some(V::value_from_bytes(data.to_vec())?));
         }
@@ -163,7 +181,7 @@ impl<'a> ExpirableKeyValueRepository for KVRepositoryKeyValueAdapter<'a> {
 
     fn set_ex<V: BytesValue>(&self, key: &str, value: V, seconds: u64) -> Result<(), AppError> {
         let mut data: Vec<u8> = value.value_to_bytes()?;
-        let mut value: Vec<u8> = (now_timestamp() + seconds).value_to_bytes()?;
+        let mut value: Vec<u8> = self.sum(now_timestamp(), seconds).value_to_bytes()?;
         value.append(&mut data);
 
         self.repository.get_ref().set(key.as_bytes(), &value)?;
@@ -172,14 +190,14 @@ impl<'a> ExpirableKeyValueRepository for KVRepositoryKeyValueAdapter<'a> {
 
     fn expire(&self, key: &str, seconds: u64) -> Result<(), AppError> {
         let key: &[u8] = key.as_bytes();
-        let repository: &KVRepository = self.repository.get_ref();
+        let repository: &KVBucketRepository = self.repository.get_ref();
 
         let value: Option<Vec<u8>> = repository.get(key)?;
         if let Some(v) = value {
             let (_, data) = v.split_at(TIMESTAMP_BYTES_LENGTH);
             let mut data: Vec<u8> = data.to_vec();
 
-            let mut value: Vec<u8> = (now_timestamp() + seconds).value_to_bytes()?;
+            let mut value: Vec<u8> = self.sum(now_timestamp(), seconds).value_to_bytes()?;
             value.append(&mut data);
 
             self.repository.get_ref().set(key, &value)?;
@@ -189,12 +207,17 @@ impl<'a> ExpirableKeyValueRepository for KVRepositoryKeyValueAdapter<'a> {
 
     fn ttl(&self, key: &str) -> Result<u64, AppError> {
         let key: &[u8] = key.as_bytes();
-        let repository: &KVRepository = self.repository.get_ref();
+        let repository: &KVBucketRepository = self.repository.get_ref();
 
         let value: Option<Vec<u8>> = repository.get(key)?;
         if let Some(v) = value {
             let (timestamp, _) = v.split_at(TIMESTAMP_BYTES_LENGTH);
             let timestamp: u64 = u64::value_from_bytes(timestamp.to_vec())?;
+
+            if timestamp == u64::MAX {
+                return Ok(u64::MAX);
+            }
+
             let now: u64 = now_timestamp();
 
             if timestamp <= now {
@@ -213,56 +236,184 @@ impl<'a> ExpirableKeyValueRepository for KVRepositoryKeyValueAdapter<'a> {
 mod tests {
     use super::*;
     use crate::make_config;
-    use test::Bencher;
 
-    #[test]
-    fn test_incrementable_key_value_repo_incr() {
-        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::adapters::key_value::kv::tests::test_incrementable_key_value_repo_incr
-        let config = make_config();
-        let kv_repository = Data::new(KVRepository::new(&config.db.kv.storage).unwrap());
-        let kv_adapter = KVRepositoryKeyValueAdapter::new(kv_repository);
-
-        let key = "test_incrementable_key_value_repo_incr";
-        let mut value = kv_adapter.incr(key, 5).unwrap();
-        assert_eq!(value, 5);
-        value = kv_adapter.incr(key, 5).unwrap();
-        assert_eq!(value, 10);
-        value = kv_adapter.incr(key, -2).unwrap();
-        assert_eq!(value, 8);
-        value = kv_adapter.incr(key, -20).unwrap();
-        assert_eq!(value, -12);
-        value = kv_adapter.incr(key, 12).unwrap();
-        assert_eq!(value, 0);
-        kv_adapter.del(key).unwrap();
+    struct TestAdapterData<'a> {
+        kv_repository: KVRepository<'a>,
+        kv_adapter: KVRepositoryKeyValueAdapter<'a>,
     }
 
-    #[bench]
-    fn bench_incrementable_key_value_repo_incr(b: &mut Bencher) {
-        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo bench -- --nocapture --exact app::adapters::key_value::kv::tests::bench_incrementable_key_value_repo_incr
-        // 1,249.39 ns/iter (+/- 29.61)
+    fn make_adapter<'a>(name: &str) -> TestAdapterData<'a> {
         let config = make_config();
-        let kv_repository = Data::new(KVRepository::new(&config.db.kv.storage).unwrap());
-        let kv_adapter = KVRepositoryKeyValueAdapter::new(kv_repository);
+        let kv_repository = KVRepository::new(&config.db.kv.storage).unwrap();
+        let kv_bucket_repository = kv_repository.make_bucket(Some(name)).unwrap();
+        let kv_adapter = KVRepositoryKeyValueAdapter::new(Data::new(kv_bucket_repository));
+        TestAdapterData {
+            kv_repository,
+            kv_adapter,
+        }
+    }
 
-        let key = "bench_incrementable_key_value_repo_incr";
-        b.iter(|| {
-            let _ = kv_adapter.incr(key, 5).unwrap();
-        });
-        kv_adapter.del(key).unwrap();
+    #[test]
+    fn test_get_del_set() {
+        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::adapters::key_value::kv::tests::test_get_del_set
+        let key = "app_adapters_key_value_kv_tests_test_get_del_set";
+        let data = make_adapter(key);
+        data.kv_adapter.repository.get_ref().clear().unwrap();
+
+        assert_eq!(data.kv_adapter.get::<u64>(key).unwrap(), None);
+        data.kv_adapter.set::<u64>(key, 34).unwrap();
+        assert_eq!(data.kv_adapter.get::<u64>(key).unwrap(), Some(34));
+        assert_eq!(data.kv_adapter.get::<u64>(key).unwrap(), Some(34));
+        data.kv_adapter.set::<u64>(key, 22).unwrap();
+        assert_eq!(data.kv_adapter.get::<u64>(key).unwrap(), Some(22));
+        data.kv_adapter
+            .set::<String>(key, "Hello".to_string())
+            .unwrap();
+        assert_eq!(
+            data.kv_adapter.get::<String>(key).unwrap(),
+            Some("Hello".to_string())
+        );
+        assert!(data.kv_adapter.get::<u64>(key).is_err());
+        data.kv_adapter.set::<u64>(key, 22).unwrap();
+        assert_eq!(data.kv_adapter.get::<u64>(key).unwrap(), Some(22));
+        data.kv_adapter.del(key).unwrap();
+        assert_eq!(data.kv_adapter.get::<u64>(key).unwrap(), None);
+        assert_eq!(data.kv_adapter.get_del::<u64>(key).unwrap(), None);
+        data.kv_adapter.set::<u64>(key, 22).unwrap();
+        assert_eq!(data.kv_adapter.get::<u64>(key).unwrap(), Some(22));
+        assert_eq!(data.kv_adapter.get_del::<u64>(key).unwrap(), Some(22));
+        assert_eq!(data.kv_adapter.get_del::<u64>(key).unwrap(), None);
+        assert_eq!(data.kv_adapter.get::<u64>(key).unwrap(), None);
+
+        data.kv_adapter.repository.get_ref().clear().unwrap();
+    }
+
+    #[test]
+    fn test_set_and_set_ex() {
+        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::adapters::key_value::kv::tests::test_set_and_set_ex
+        let key = "app_adapters_key_value_kv_tests_test_set_and_set_ex";
+        let data = make_adapter(key);
+        data.kv_adapter.repository.get_ref().clear().unwrap();
+
+        data.kv_adapter.set_ex::<u64>(key, 22, 100).unwrap();
+        assert_eq!(data.kv_adapter.get::<u64>(key).unwrap(), Some(22));
+        assert_eq!(data.kv_adapter.ttl(key).unwrap(), 100);
+        data.kv_adapter.set::<u64>(key, 22).unwrap();
+        assert_eq!(data.kv_adapter.ttl(key).unwrap(), u64::MAX);
+
+        data.kv_adapter.repository.get_ref().clear().unwrap();
+    }
+
+    #[test]
+    fn test_incr() {
+        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::adapters::key_value::kv::tests::test_incr
+        let key = "app_adapters_key_value_kv_tests_test_incr";
+        let data = make_adapter(key);
+        data.kv_adapter.repository.get_ref().clear().unwrap();
+
+        assert_eq!(data.kv_adapter.incr(key, 5).unwrap(), 5);
+        assert_eq!(data.kv_adapter.get::<i64>(key).unwrap(), Some(5));
+        assert_eq!(data.kv_adapter.incr(key, 5).unwrap(), 10);
+        assert_eq!(data.kv_adapter.get::<i64>(key).unwrap(), Some(10));
+        assert_eq!(data.kv_adapter.incr(key, -2).unwrap(), 8);
+        assert_eq!(data.kv_adapter.incr(key, -20).unwrap(), -12);
+        assert_eq!(data.kv_adapter.incr(key, 12).unwrap(), 0);
+
+        data.kv_adapter.repository.get_ref().clear().unwrap();
+    }
+
+    #[test]
+    fn test_incr_ex() {
+        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::adapters::key_value::kv::tests::test_incr_ex
+        let key = "app_adapters_key_value_kv_tests_test_incr_ex";
+        let data = make_adapter(key);
+        data.kv_adapter.repository.get_ref().clear().unwrap();
+
+        data.kv_adapter.set_ex::<i64>(key, 5, 50).unwrap();
+        assert_eq!(data.kv_adapter.ttl(key).unwrap(), 50);
+
+        assert_eq!(data.kv_adapter.incr(key, 5).unwrap(), 10);
+        assert_eq!(data.kv_adapter.ttl(key).unwrap(), 50);
+        assert_eq!(data.kv_adapter.get::<i64>(key).unwrap(), Some(10));
+
+        data.kv_adapter.repository.get_ref().clear().unwrap();
+    }
+
+    #[test]
+    fn test_get_ex() {
+        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::adapters::key_value::kv::tests::test_get_ex
+        let key = "app_adapters_key_value_kv_tests_test_get_ex";
+        let data = make_adapter(key);
+        data.kv_adapter.repository.get_ref().clear().unwrap();
+
+        assert_eq!(data.kv_adapter.get_ex::<u64>(key, 100).unwrap(), None);
+        assert_eq!(data.kv_adapter.ttl(key).unwrap(), u64::MAX);
+        data.kv_adapter.set::<u64>(key, 5).unwrap();
+        assert_eq!(data.kv_adapter.ttl(key).unwrap(), u64::MAX);
+        assert_eq!(data.kv_adapter.get_ex::<u64>(key, 100).unwrap(), Some(5));
+        assert_eq!(data.kv_adapter.ttl(key).unwrap(), 100);
+
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        assert_eq!(data.kv_adapter.ttl(key).unwrap(), 99);
+
+        assert_eq!(data.kv_adapter.get_ex::<u64>(key, 1).unwrap(), Some(5));
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        assert_eq!(data.kv_adapter.get::<u64>(key).unwrap(), None);
+        assert_eq!(data.kv_adapter.ttl(key).unwrap(), u64::MAX);
+
+        data.kv_adapter.repository.get_ref().clear().unwrap();
+    }
+
+    #[test]
+    fn test_set_ex() {
+        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::adapters::key_value::kv::tests::test_set_ex
+        let key = "app_adapters_key_value_kv_tests_test_set_ex";
+        let data = make_adapter(key);
+        data.kv_adapter.repository.get_ref().clear().unwrap();
+
+        data.kv_adapter.set_ex::<u64>(key, 5, 50).unwrap();
+        assert_eq!(data.kv_adapter.ttl(key).unwrap(), 50);
+
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        assert_eq!(data.kv_adapter.ttl(key).unwrap(), 49);
+        data.kv_adapter.set_ex::<u64>(key, 5, 1).unwrap();
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        assert_eq!(data.kv_adapter.get::<u64>(key).unwrap(), None);
+        assert_eq!(data.kv_adapter.ttl(key).unwrap(), u64::MAX);
+
+        data.kv_adapter.repository.get_ref().clear().unwrap();
+    }
+
+    #[test]
+    fn test_expire() {
+        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::adapters::key_value::kv::tests::test_expire
+        let key = "app_adapters_key_value_kv_tests_test_expire";
+        let data = make_adapter(key);
+        data.kv_adapter.repository.get_ref().clear().unwrap();
+
+        data.kv_adapter.set_ex::<u64>(key, 5, 100).unwrap();
+        assert_eq!(data.kv_adapter.ttl(key).unwrap(), 100);
+        data.kv_adapter.expire(key, 50).unwrap();
+        assert_eq!(data.kv_adapter.ttl(key).unwrap(), 50);
+
+        data.kv_adapter.repository.get_ref().clear().unwrap();
     }
 
     #[test]
     fn test_clean_expired_values() {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::adapters::key_value::kv::tests::test_clean_expired_values
-        let config = make_config();
-        let kv_repository = Data::new(KVRepository::new(&config.db.kv.storage).unwrap());
-        let mut kv_adapter = KVRepositoryKeyValueAdapter::new(kv_repository);
+        let key = "app_adapters_key_value_kv_tests_test_clean_expired_values";
+        let mut data = make_adapter(key);
+        data.kv_adapter.repository.get_ref().clear().unwrap();
 
-        kv_adapter.clean_expired_values().unwrap();
-    }
+        data.kv_adapter.set_ex::<u64>(key, 5, 1).unwrap();
+        data.kv_adapter.clean_expired_values().unwrap();
+        assert!(data.kv_adapter.repository.get_ref().get(key.as_bytes()).unwrap().is_some());
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        assert!(data.kv_adapter.repository.get_ref().get(key.as_bytes()).unwrap().is_some());
+        data.kv_adapter.clean_expired_values().unwrap();
+        assert!(data.kv_adapter.repository.get_ref().get(key.as_bytes()).unwrap().is_none());
 
-    #[test]
-    fn test_ttl() {
-        // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::adapters::key_value::kv::tests::test_ttl
+        data.kv_adapter.repository.get_ref().clear().unwrap();
     }
 }

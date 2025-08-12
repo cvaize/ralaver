@@ -23,8 +23,8 @@ impl<'a> KVRepository<'a> {
         Ok(Self { store, bucket })
     }
 
-    pub fn make_bucket(&self, name: Option<&str>) -> Result<Bucket<'a, Raw, Raw>, AppError> {
-        make_bucket(&self.store, name)
+    pub fn make_bucket(&self, name: Option<&str>) -> Result<KVBucketRepository<'a>, AppError> {
+        Ok(KVBucketRepository::new(make_bucket(&self.store, name)?))
     }
 
     pub fn contains(&self, key: &[u8]) -> Result<bool, AppError> {
@@ -68,7 +68,7 @@ impl<'a> KVBucketRepository<'a> {
     pub fn contains(&self, key: &[u8]) -> Result<bool, AppError> {
         let key = Raw::from(key);
         let value = self.bucket.contains(&key).map_err(|e| {
-            log::error!("KVRepository::contains - {e}");
+            log::error!("KVBucketRepository::contains - {e}");
             AppError(Some(e.to_string()))
         })?;
         Ok(value)
@@ -77,7 +77,7 @@ impl<'a> KVBucketRepository<'a> {
     pub fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, AppError> {
         let key = Raw::from(key);
         let value = self.bucket.get(&key).map_err(|e| {
-            log::error!("KVRepository::get - {e}");
+            log::error!("KVBucketRepository::get - {e}");
             AppError(Some(e.to_string()))
         })?;
         self.parse_value(value)
@@ -87,7 +87,7 @@ impl<'a> KVBucketRepository<'a> {
         let key = Raw::from(key);
         let value = Raw::from(value);
         let old_value = self.bucket.set(&key, &value).map_err(|e| {
-            log::error!("KVRepository::set - {e}");
+            log::error!("KVBucketRepository::set - {e}");
             AppError(Some(e.to_string()))
         })?;
         self.parse_value(old_value)
@@ -96,7 +96,7 @@ impl<'a> KVBucketRepository<'a> {
     pub fn remove(&self, key: &[u8]) -> Result<Option<Vec<u8>>, AppError> {
         let key = Raw::from(key);
         let old_value = self.bucket.remove(&key).map_err(|e| {
-            log::error!("KVRepository::remove - {e}");
+            log::error!("KVBucketRepository::remove - {e}");
             AppError(Some(e.to_string()))
         })?;
         self.parse_value(old_value)
@@ -106,6 +106,14 @@ impl<'a> KVBucketRepository<'a> {
         KVIterRepository {
             iter: self.bucket.iter(),
         }
+    }
+
+    pub fn clear(&self) -> Result<(), AppError> {
+        self.bucket.clear().map_err(|e| {
+            log::error!("KVBucketRepository::clear - {e}");
+            AppError(Some(e.to_string()))
+        })?;
+        Ok(())
     }
 }
 
