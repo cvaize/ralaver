@@ -1,9 +1,18 @@
 use crate::helpers::{value_from_bytes, BytesValue};
-use crate::{AppError, ExpirableKeyValueRepository, IncrementableKeyValueRepository, KeyValueRepository, RedisRepository};
+use crate::{
+    AppError, ExpirableKeyValueRepository, IncrementableKeyValueRepository, KeyValueRepository,
+    RedisRepository,
+};
 use actix_web::web::Data;
 
 pub struct RedisRepositoryKeyValueAdapter {
     rep: Data<RedisRepository>,
+}
+
+impl RedisRepositoryKeyValueAdapter {
+    pub fn new(rep: Data<RedisRepository>) -> Self {
+        Self { rep }
+    }
 }
 
 impl KeyValueRepository for RedisRepositoryKeyValueAdapter {
@@ -38,7 +47,9 @@ impl ExpirableKeyValueRepository for RedisRepositoryKeyValueAdapter {
     }
 
     fn set_ex<V: BytesValue>(&self, key: &str, value: V, seconds: u64) -> Result<(), AppError> {
-        self.rep.get_ref().set_ex(key, value.value_to_bytes()?, seconds)?;
+        self.rep
+            .get_ref()
+            .set_ex(key, value.value_to_bytes()?, seconds)?;
         Ok(())
     }
 

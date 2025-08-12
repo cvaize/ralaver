@@ -39,6 +39,10 @@ pub fn make_config() -> Config {
     Config::new()
 }
 
+// fn get_key_value_repository() {
+//
+// }
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let config = make_config();
@@ -49,7 +53,12 @@ async fn main() -> std::io::Result<()> {
     let mysql: Data<MysqlPool> = Data::new(get_mysql_connection_pool(&config.db.mysql).unwrap());
     let redis: Data<RedisPool> = Data::new(get_redis_connection_pool(&config.db.redis).unwrap());
 
-    let kv_repository = Data::new(KVRepository::new(&config.db.kv.storage).unwrap());
+    // let redis_repository = Data::new(RedisRepository::new(redis.clone()));
+    // let kv_repository = Data::new(KVRepository::new(&config.db.kv.storage).unwrap());
+    // let kv_key_value_bucket_repository = Data::new(kv_repository.get_ref().make_bucket(Some("kv_key_value_bucket_repository")).unwrap());
+
+    // let redis_key_value_repository = Data::new(RedisRepositoryKeyValueAdapter::new(redis_repository.clone()));
+    // let kv_key_value_repository = Data::new(KVRepositoryKeyValueAdapter::new(kv_key_value_bucket_repository));
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 
@@ -130,6 +139,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(smtp.clone())
             .app_data(mysql.clone())
             .app_data(redis.clone())
+            // .app_data(redis_repository.clone())
             .app_data(redis_repository)
             .app_data(role_mysql_repository)
             .app_data(user_mysql_repository)
@@ -137,7 +147,9 @@ async fn main() -> std::io::Result<()> {
             .app_data(disk_external_repository)
             .app_data(file_mysql_repository)
             .app_data(user_file_mysql_repository)
-            .app_data(kv_repository.clone())
+            // .app_data(kv_repository.clone())
+            // .app_data(redis_key_value_repository.clone())
+            // .app_data(kv_key_value_repository.clone())
             .app_data(key_value_service)
             .app_data(translator_service)
             .app_data(template_service)
