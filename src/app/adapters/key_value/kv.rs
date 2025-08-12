@@ -18,7 +18,7 @@ impl<'a> KVRepositoryKeyValueAdapter<'a> {
     }
 
     /// Clearing expired values
-    pub fn clean_expired_values(&mut self) -> Result<(), AppError> {
+    pub fn clean_expired_values(&self) -> Result<(), AppError> {
         let repository: &KVBucketRepository = self.repository.get_ref();
 
         let mut error: Option<AppError> = None;
@@ -403,7 +403,7 @@ mod tests {
     fn test_clean_expired_values() {
         // RUSTFLAGS=-Awarnings CARGO_INCREMENTAL=0 cargo test -- --nocapture --exact app::adapters::key_value::kv::tests::test_clean_expired_values
         let key = "app_adapters_key_value_kv_tests_test_clean_expired_values";
-        let mut data = make_adapter(key);
+        let data = make_adapter(key);
         data.kv_adapter.repository.get_ref().clear().unwrap();
 
         data.kv_adapter.set_ex::<u64>(key, 5, 1).unwrap();
