@@ -1,21 +1,20 @@
 use crate::redis_connection::RedisPool;
 use crate::AppError;
-use actix_web::web::Data;
 use r2d2::PooledConnection;
 use redis::{Client, Commands, Expiry, FromRedisValue, RedisError, ToRedisArgs};
 
 #[derive(Debug, Clone)]
 pub struct RedisRepository {
-    pool: Data<RedisPool>,
+    pool: RedisPool,
 }
 
 impl RedisRepository {
-    pub fn new(pool: Data<RedisPool>) -> Self {
+    pub fn new(pool: RedisPool) -> Self {
         Self { pool }
     }
 
     pub fn get_connection(&self) -> Result<RedisRepositoryConnection, AppError> {
-        let conn: PooledConnection<Client> = self.pool.get_ref().get().map_err(|e| {
+        let conn: PooledConnection<Client> = self.pool.get().map_err(|e| {
             log::error!("RedisRepository::ConnectFail - {e}");
             AppError(Some(e.to_string()))
         })?;

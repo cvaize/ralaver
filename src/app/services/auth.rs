@@ -111,8 +111,9 @@ impl AuthService {
         let key = self.make_reset_password_store_key(email, code)?;
         let key_value_service = self.key_value_service.get_ref();
 
+        let v: u8 = 1;
         key_value_service
-            .set_ex(&key, true, RESET_PASSWORD_TTL)
+            .set_ex(&key, v, RESET_PASSWORD_TTL)
             .map_err(|e| {
                 log::error!("AuthService::save_reset_password_code - {key} - {e}");
                 e
@@ -135,12 +136,12 @@ impl AuthService {
         let key = self.make_reset_password_store_key(email, code)?;
         let key_value_service = self.key_value_service.get_ref();
 
-        let is_stored: Option<bool> = key_value_service.get(&key).map_err(|e| {
+        let is_stored: Option<u8> = key_value_service.get(&key).map_err(|e| {
             log::error!("AuthService::is_exists_reset_password_code - {key} - {e}");
             e
         })?;
 
-        Ok(is_stored.unwrap_or(false))
+        Ok(is_stored.unwrap_or(0) == 1)
     }
 }
 

@@ -1,4 +1,8 @@
-use crate::{Config, CryptService, HashService, KeyValueService, RandomService, User, UserService, WebHttpResponse};
+use crate::{
+    Config, CryptService, HashService, KeyValueService, RandomService, User, UserService,
+    WebHttpResponse,
+};
+use actix_http::header::{HeaderValue, LOCATION};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
 use actix_web::web::Data;
@@ -6,7 +10,6 @@ use actix_web::{error, Error, HttpRequest, HttpResponse};
 use chrono::{DateTime, NaiveDateTime, TimeDelta, Utc};
 use std::borrow::Cow;
 use std::ops::Add;
-use actix_http::header::{HeaderValue, LOCATION};
 use strum_macros::{Display, EnumString};
 
 const FORMAT: &'static str = "%Y.%m.%d %H:%M:%S";
@@ -211,8 +214,8 @@ impl WebAuthService {
 
         key_value_service
             .set_ex(
-                self.get_token_value_key(&token),
-                token.get_token_value(),
+                self.get_token_value_key(&token).as_str(),
+                token.get_token_value().to_string(),
                 self.config.auth.cookie.token_expires,
             )
             .map_err(|e| {
@@ -228,7 +231,7 @@ impl WebAuthService {
 
         key_value_service
             .expire(
-                self.get_token_value_key(&token),
+                self.get_token_value_key(&token).as_str(),
                 self.config.auth.cookie.session_expires,
             )
             .map_err(|e| {
@@ -259,7 +262,7 @@ impl WebAuthService {
             self.config.auth.cookie.token_expires
         };
         let value: Option<String> = key_value_service
-            .get_ex(self.get_token_value_key(&token), token_expires)
+            .get_ex(self.get_token_value_key(&token).as_str(), token_expires)
             .map_err(|e| {
                 log::error!("WebAuthService::login_by_session - {e}");
                 return WebAuthServiceError::Fail;
@@ -371,7 +374,10 @@ impl WebAuthService {
         }
     }
 
-    pub fn login_by_req_throw_http_redirect(&self, req: &HttpRequest) -> Result<(User, Session), HttpResponse> {
+    pub fn login_by_req_throw_http_redirect(
+        &self,
+        req: &HttpRequest,
+    ) -> Result<(User, Session), HttpResponse> {
         let result = self.login_by_req(req);
         match result {
             Ok((user, session)) => Ok((user, session)),

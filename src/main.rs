@@ -12,7 +12,6 @@ pub mod routes;
 
 use crate::app::connections::smtp::{get_smtp_transport, LettreSmtpTransport};
 use crate::app::controllers::web::errors::default_error_handler;
-use crate::redis_connection::RedisPool;
 use actix_web::middleware::{ErrorHandlers, Logger};
 use actix_web::web::Data;
 use actix_web::App;
@@ -33,15 +32,12 @@ pub use errors::AppError;
 pub use mysql_connection::MysqlPool;
 pub use mysql_connection::MysqlPooledConnection;
 use std::path::MAIN_SEPARATOR_STR;
+use std::time::Duration;
 
 pub fn make_config() -> Config {
     dotenv::dotenv().ok();
     Config::new()
 }
-
-// fn get_key_value_repository() {
-//
-// }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -51,20 +47,43 @@ async fn main() -> std::io::Result<()> {
     // Connections
     let smtp: Data<LettreSmtpTransport> = Data::new(get_smtp_transport(&config.mail.smtp).unwrap());
     let mysql: Data<MysqlPool> = Data::new(get_mysql_connection_pool(&config.db.mysql).unwrap());
-    let redis: Data<RedisPool> = Data::new(get_redis_connection_pool(&config.db.redis).unwrap());
 
-    // let redis_repository = Data::new(RedisRepository::new(redis.clone()));
-    // let kv_repository = Data::new(KVRepository::new(&config.db.kv.storage).unwrap());
-    // let kv_key_value_bucket_repository = Data::new(kv_repository.get_ref().make_bucket(Some("kv_key_value_bucket_repository")).unwrap());
+    // Start - key_value_service
+    // Чтобы переключить KeyValueRepository раскомментируйте блок кода ниже и измените тип KeyValueRepositoryType
 
-    // let redis_key_value_repository = Data::new(RedisRepositoryKeyValueAdapter::new(redis_repository.clone()));
-    // let kv_key_value_repository = Data::new(KVRepositoryKeyValueAdapter::new(kv_key_value_bucket_repository));
+    let kv_repository = KVRepository::new(&config.db.kv.storage).unwrap();
+    let kv_key_value_bucket_repository = kv_repository.make_bucket(None).unwrap();
+    let kv_repository_key_value_adapter = Data::new(KVRepositoryKeyValueAdapter::new(
+        kv_key_value_bucket_repository,
+    ));
+    let key_value_service = Data::new(KeyValueService::new(
+        kv_repository_key_value_adapter.clone(),
+    ));
+
+    // let redis: RedisPool = get_redis_connection_pool(&config.db.redis).unwrap();
+    // let redis_repository = RedisRepository::new(redis);
+    // let redis_repository_key_value_adapter = RedisRepositoryKeyValueAdapter::new(redis_repository);
+    // let key_value_service = Data::new(KeyValueService::new(redis_repository_key_value_adapter));
+
+    // End - key_value_service
+
+    actix_rt::spawn(async move {
+        loop {
+            actix_rt::time::sleep(Duration::from_secs(86400)).await;
+
+            let kv_repository_key_value_adapter = kv_repository_key_value_adapter.get_ref();
+            log::info!("Main schedule - Start - \"clean_expired_values\"");
+            if let Err(e) = kv_repository_key_value_adapter.clean_expired_values() {
+                log::error!("Main schedule - Error - {e}");
+            }
+            log::info!("Main schedule - End - \"clean_expired_values\"");
+        }
+    });
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 
     HttpServer::new(move || {
         // Repositories
-        let redis_repository = Data::new(RedisRepository::new(redis.clone()));
         let role_mysql_repository = Data::new(RoleMysqlRepository::new(mysql.clone()));
         let user_mysql_repository = Data::new(UserMysqlRepository::new(mysql.clone()));
         let disk_local_repository = Data::new(DiskLocalRepository::new(
@@ -77,7 +96,6 @@ async fn main() -> std::io::Result<()> {
         let user_file_mysql_repository = Data::new(UserFileMysqlRepository::new(mysql.clone()));
 
         // Services
-        let key_value_service = Data::new(KeyValueService::new(redis.clone()));
         let translator_service = Data::new(
             TranslatorService::new_from_files(config.clone())
                 .expect("Fail init TranslatorService::new_from_files"),
@@ -138,19 +156,13 @@ async fn main() -> std::io::Result<()> {
             .app_data(config)
             .app_data(smtp.clone())
             .app_data(mysql.clone())
-            .app_data(redis.clone())
-            // .app_data(redis_repository.clone())
-            .app_data(redis_repository)
             .app_data(role_mysql_repository)
             .app_data(user_mysql_repository)
             .app_data(disk_local_repository)
             .app_data(disk_external_repository)
             .app_data(file_mysql_repository)
             .app_data(user_file_mysql_repository)
-            // .app_data(kv_repository.clone())
-            // .app_data(redis_key_value_repository.clone())
-            // .app_data(kv_key_value_repository.clone())
-            .app_data(key_value_service)
+            .app_data(key_value_service.clone())
             .app_data(translator_service)
             .app_data(template_service)
             .app_data(hash_service)

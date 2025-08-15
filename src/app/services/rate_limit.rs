@@ -1,4 +1,4 @@
-use crate::{AlertVariant, KeyValueService, KeyValueServiceConnection, TranslatorService};
+use crate::{AlertVariant, KeyValueService, TranslatorService};
 use actix_web::web::Data;
 use actix_web::{error, Error, HttpRequest};
 use std::collections::HashMap;
@@ -42,20 +42,10 @@ impl RateLimitService {
         value
     }
 
-    fn get_connection(&self) -> Result<KeyValueServiceConnection, RateLimitServiceError> {
-        self.key_value_service
-            .get_ref()
-            .get_connection()
-            .map_err(|e| {
-                log::error!("RateLimitService::get_connection - {e}");
-                RateLimitServiceError::Fail
-            })
-    }
-
     pub fn clear(&self, key: &str) -> Result<(), RateLimitServiceError> {
         self.key_value_service
             .get_ref()
-            .del(self.make_store_key(key))
+            .del(self.make_store_key(key).as_str())
             .map_err(|e| {
                 log::error!("RateLimitService::clear - {e}");
                 RateLimitServiceError::Fail
@@ -67,24 +57,19 @@ impl RateLimitService {
             .map_err(|_| error::ErrorInternalServerError(""))
     }
 
-    fn ttl_(
-        &self,
-        connection: &mut KeyValueServiceConnection,
-        key: &str,
-    ) -> Result<u64, RateLimitServiceError> {
-        let value: i64 = connection.ttl(self.make_store_key(key)).map_err(|e| {
-            log::error!("RateLimitService::ttl - {e}");
-            RateLimitServiceError::Fail
-        })?;
+    fn ttl(&self, key: &str) -> Result<u64, RateLimitServiceError> {
+        let value: u64 = self
+            .key_value_service
+            .get_ref()
+            .ttl(self.make_store_key(key).as_str())
+            .map_err(|e| {
+                log::error!("RateLimitService::ttl - {e}");
+                RateLimitServiceError::Fail
+            })?;
         if value <= 0 {
             return Ok(0);
         }
         Ok(value as u64)
-    }
-
-    pub fn ttl(&self, key: &str) -> Result<u64, RateLimitServiceError> {
-        let mut connection = self.get_connection()?;
-        self.ttl_(&mut connection, key)
     }
 
     pub fn ttl_message(
@@ -139,13 +124,11 @@ impl RateLimitService {
             .map_err(|_| error::ErrorInternalServerError(""))
     }
 
-    fn get_(
-        &self,
-        connection: &mut KeyValueServiceConnection,
-        key: &str,
-    ) -> Result<u64, RateLimitServiceError> {
-        Ok(connection
-            .get(self.make_store_key(key))
+    fn get(&self, key: &str) -> Result<u64, RateLimitServiceError> {
+        Ok(self
+            .key_value_service
+            .get_ref()
+            .get(self.make_store_key(key).as_str())
             .map_err(|e| {
                 log::error!("RateLimitService::get - {e}");
                 RateLimitServiceError::Fail
@@ -153,90 +136,46 @@ impl RateLimitService {
             .unwrap_or(0))
     }
 
-    pub fn get(&self, key: &str) -> Result<u64, RateLimitServiceError> {
-        let mut connection = self.get_connection()?;
-        self.get_(&mut connection, key)
-    }
-
-    fn set_(
-        &self,
-        connection: &mut KeyValueServiceConnection,
-        key: &str,
-        amount: u64,
-        ttl: u64,
-    ) -> Result<(), RateLimitServiceError> {
-        connection
-            .set_ex(self.make_store_key(key), amount, ttl)
+    fn set(&self, key: &str, amount: u64, ttl: u64) -> Result<(), RateLimitServiceError> {
+        self.key_value_service
+            .get_ref()
+            .set_ex(self.make_store_key(key).as_str(), amount, ttl)
             .map_err(|e| {
                 log::error!("RateLimitService::set - {e}");
                 RateLimitServiceError::Fail
             })
     }
 
-    pub fn set(&self, key: &str, amount: u64, ttl: u64) -> Result<(), RateLimitServiceError> {
-        let mut connection = self.get_connection()?;
-        self.set_(&mut connection, key, amount, ttl)
-    }
-
-    fn incr_(
-        &self,
-        connection: &mut KeyValueServiceConnection,
-        key: &str,
-        amount: u64,
-        ttl: u64,
-    ) -> Result<u64, RateLimitServiceError> {
-        if self.ttl_(connection, key)? == 0 {
-            self.set_(connection, key, amount, ttl)?;
+    fn incr(&self, key: &str, amount: u64, ttl: u64) -> Result<u64, RateLimitServiceError> {
+        if self.ttl(key)? == 0 {
+            self.set(key, amount, ttl)?;
             return Ok(amount);
         }
 
-        Ok(connection
-            .incr(self.make_store_key(key), amount)
+        Ok(self
+            .key_value_service
+            .get_ref()
+            .incr(self.make_store_key(key).as_str(), amount as i64)
             .map_err(|e| {
                 log::error!("RateLimitService::incr - {e}");
                 RateLimitServiceError::Fail
-            })?)
+            })? as u64)
     }
 
-    pub fn incr(&self, key: &str, amount: u64, ttl: u64) -> Result<u64, RateLimitServiceError> {
-        let mut connection = self.get_connection()?;
-        self.incr_(&mut connection, key, amount, ttl)
-    }
-
-    fn remaining_(
-        &self,
-        connection: &mut KeyValueServiceConnection,
-        key: &str,
-        max_attempts: u64,
-    ) -> Result<u64, RateLimitServiceError> {
-        let value = self.get_(connection, key)?;
+    fn remaining(&self, key: &str, max_attempts: u64) -> Result<u64, RateLimitServiceError> {
+        let value = self.get(key)?;
         if value >= max_attempts {
             return Ok(0);
         }
         Ok(max_attempts - value)
     }
 
-    pub fn remaining(&self, key: &str, max_attempts: u64) -> Result<u64, RateLimitServiceError> {
-        let mut connection = self.get_connection()?;
-        self.remaining_(&mut connection, key, max_attempts)
-    }
-
-    fn is_too_many_attempts_(
-        &self,
-        connection: &mut KeyValueServiceConnection,
-        key: &str,
-        max_attempts: u64,
-    ) -> Result<bool, RateLimitServiceError> {
-        Ok(self.get_(connection, key)? >= max_attempts)
-    }
-
-    pub fn is_too_many_attempts(
+    fn is_too_many_attempts(
         &self,
         key: &str,
         max_attempts: u64,
     ) -> Result<bool, RateLimitServiceError> {
-        let mut connection = self.get_connection()?;
-        self.is_too_many_attempts_(&mut connection, key, max_attempts)
+        Ok(self.get(key)? >= max_attempts)
     }
 
     pub fn attempt(
@@ -245,11 +184,10 @@ impl RateLimitService {
         max_attempts: u64,
         ttl: u64,
     ) -> Result<bool, RateLimitServiceError> {
-        let mut connection = self.get_connection()?;
-        if self.is_too_many_attempts_(&mut connection, key, max_attempts)? {
+        if self.is_too_many_attempts(key, max_attempts)? {
             return Ok(false);
         }
-        Ok(self.incr_(&mut connection, key, 1, ttl)? <= max_attempts)
+        Ok(self.incr(key, 1, ttl)? <= max_attempts)
     }
 
     pub fn attempt_throw_http(

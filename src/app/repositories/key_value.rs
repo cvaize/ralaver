@@ -1,5 +1,8 @@
-use crate::helpers::{BytesKey, BytesValue};
-use crate::AppError;
+use crate::helpers::BytesValue;
+use crate::{AppError};
+
+pub type KeyValueRepositoryType = crate::KVRepositoryKeyValueAdapter<'static>;
+// pub type KeyValueRepositoryType = crate::RedisRepositoryKeyValueAdapter;
 
 pub trait KeyValueRepository {
     fn get<V: BytesValue>(&self, key: &str) -> Result<Option<V>, AppError>;
@@ -7,10 +10,6 @@ pub trait KeyValueRepository {
     fn get_del<V: BytesValue>(&self, key: &str) -> Result<Option<V>, AppError>;
     fn set<V: BytesValue>(&self, key: &str, value: V) -> Result<(), AppError>;
     fn del(&self, key: &str) -> Result<(), AppError>;
-}
-
-pub trait ConnectableKeyValueRepository {
-    fn get_connection<C>(&self) -> Result<C, AppError>;
 }
 
 pub trait IncrementableKeyValueRepository {
