@@ -1,0 +1,59 @@
+.admin-tags {
+    display: flex;
+    flex-wrap: wrap;
+    font-size: inherit;
+    align-items: flex-start;
+}
+
+.admin-tag {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: 0.5rem;
+}
+
+.admin-tag__name {
+    display: block;
+    margin-right: 0.5rem;
+    color: rgb(var(--admin-app-color));
+    font-weight: 700;
+    padding-top: 0.25rem;
+}
+
+.admin-tag__value {
+    display: flex;
+    background-color: rgb(var(--admin-app-color));
+    color: rgb(var(--admin-app-background-color));
+    margin-right: 0.2rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.admin-tag__close {
+    display: block;
+    width: 1.2rem;
+    height: 1.2rem;
+    position: relative;
+    margin-left: 0.2rem;
+}
+
+.admin-tag__close:hover {
+    opacity: 0.8;
+}
+
+.admin-tag__close:before, .admin-tag__close:after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    width: 80%;
+    height: 0.0625rem;
+    background-color: rgb(var(--admin-app-background-color));
+    transform-origin: center;
+    transform: rotate(45deg);
+}
+
+.admin-tag__close:after {
+    transform: rotate(-45deg);
+}

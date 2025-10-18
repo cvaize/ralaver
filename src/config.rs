@@ -3,8 +3,6 @@
 use std::env;
 use std::path::MAIN_SEPARATOR_STR;
 
-const DEFAULT_KEY_VALUE_REPOSITORY: &'static str = "redis";
-
 #[derive(Debug, Clone)]
 pub struct Config {
     pub app: AppConfig,
@@ -14,17 +12,6 @@ pub struct Config {
     pub template: TemplateConfig,
     pub mail: MailConfig,
     pub filesystem: FilesystemConfig,
-    pub services: ServicesConfig,
-}
-
-#[derive(Debug, Clone)]
-pub struct ServicesConfig {
-    pub key_value: KeyValueServiceConfig,
-}
-
-#[derive(Debug, Clone)]
-pub struct KeyValueServiceConfig {
-    pub repository: String,
 }
 
 #[derive(Debug, Clone)]
@@ -318,14 +305,6 @@ impl Config {
                         public_root: storage_local_public_root,
                         url_path: storage_local_public_url,
                     },
-                },
-            },
-            services: ServicesConfig {
-                key_value: KeyValueServiceConfig {
-                    repository: env::var("KEY_VALUE_SERVICE_REPOSITORY")
-                        .unwrap_or(DEFAULT_KEY_VALUE_REPOSITORY.to_string())
-                        .trim()
-                        .to_string(),
                 },
             },
         }

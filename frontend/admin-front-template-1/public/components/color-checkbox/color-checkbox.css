@@ -1,0 +1,91 @@
+.admin-color-checkbox {
+    --checkbox-circle-color: rgb(var(--admin-app-color));
+    --checkbox-chevron-color: rgb(var(--admin-app-background-color));
+    position: relative;
+    user-select: none;
+    display: inline-block;
+    padding: 2px;
+    border-radius: 0.3em;
+}
+
+.admin-color-checkbox__text {
+    cursor: pointer;
+}
+
+.admin-color-checkbox__box {
+    display: inline-block;
+    max-width: 1em;
+    min-width: 1em;
+    max-height: 1em;
+    min-height: 1em;
+    border-radius: 50%;
+    box-shadow: 0 0 0.2em 0 currentColor;
+    position: relative;
+    transform-origin: center;
+    transform: translateY(2px) scale(1.3);
+    margin-right: 0.3rem;
+}
+
+.admin-color-checkbox__box:before, .admin-color-checkbox__box:after {
+    content: '';
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--checkbox-circle-color);
+    border-radius: 50%;
+    transform-origin: center;
+}
+
+.admin-color-checkbox__box:after {
+    border-radius: 0;
+    border-right: 1px solid var(--checkbox-chevron-color);
+    border-bottom: 1px solid var(--checkbox-chevron-color);
+    width: 0.25em;
+    height: 0.5em;
+    background: transparent;
+    transform: rotate(45deg) translate(0.4em, -0.14em) scale(1.2);
+    opacity: 0;
+}
+
+.admin-color-checkbox__input:checked ~ .admin-color-checkbox__box:after {
+    opacity: 1;
+}
+
+.admin-color-checkbox__input:disabled ~ .admin-color-checkbox__box,
+.admin-color-checkbox__input:disabled ~ .admin-color-checkbox__text {
+    opacity: 0.5;
+    cursor: auto;
+}
+
+.admin-color-checkbox:focus {
+    --admin-app-focus-box-shadow: 0 0 0 2px rgba(var(--admin-app-color), 0.5);
+    box-shadow: var(--admin-app-focus-box-shadow);
+    outline: none;
+}
+
+.admin-accent.admin-color-checkbox {
+    --admin-app-focus-box-shadow: 0 0 0 2px rgba(var(--admin-app-accent-color), 0.5);
+}
+
+.admin-accent.admin-color-checkbox > .admin-color-checkbox__text {
+    color: rgb(var(--admin-app-accent-color));
+}
+
+.admin-success.admin-color-checkbox {
+    --admin-app-focus-box-shadow: 0 0 0 2px rgba(var(--admin-app-success-color), 0.5);
+}
+
+.admin-success.admin-color-checkbox > .admin-color-checkbox__text {
+    color: rgb(var(--admin-app-success-color));
+}
+
+.admin-danger.admin-color-checkbox {
+    --admin-app-focus-box-shadow: 0 0 0 2px rgba(var(--admin-app-danger-color), 0.5);
+}
+
+.admin-danger.admin-color-checkbox > .admin-color-checkbox__text {
+    color: rgb(var(--admin-app-danger-color));
+}

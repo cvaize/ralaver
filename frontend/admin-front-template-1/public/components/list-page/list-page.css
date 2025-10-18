@@ -1,0 +1,238 @@
+.admin-list-page {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto auto auto auto;
+    gap: 0.5rem 0.5rem;
+    grid-template-areas:
+    "breadcrumb breadcrumb breadcrumb breadcrumb breadcrumb breadcrumb breadcrumb"
+    "header header buttons buttons buttons buttons buttons"
+    "tags tags search search search search search"
+    "tags tags top-sort top-paginate top-paginate top-paginate top-page-control"
+    "data data data data data data data"
+    "page-number page-number per-page bottom-paginate bottom-paginate bottom-paginate bottom-page-control";
+}
+
+.admin-list-page__breadcrumb, .admin-list-page__header, .admin-list-page__tags, .admin-list-page__page-number {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+.admin-list-page__buttons, .admin-list-page__search, .admin-list-page__sort, .admin-list-page__top-paginate,
+.admin-list-page__top-page-control, .admin-list-page__per-page, .admin-list-page__bottom-paginate,
+.admin-list-page__bottom-page-control {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.admin-list-page__breadcrumb {
+    display: block;
+    width: 100%;
+    grid-area: breadcrumb;
+}
+
+.admin-list-page__header {
+    display: block;
+    grid-area: header;
+    margin-bottom: 0;
+}
+
+.admin-list-page__buttons {
+    grid-area: buttons;
+}
+
+.admin-list-page__tags {
+    grid-area: tags;
+}
+
+.admin-list-page__search {
+    grid-area: search;
+}
+
+.admin-list-page__sort {
+    grid-area: top-sort;
+}
+
+.admin-list-page__sort__field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.admin-list-page__sort__label {
+    white-space: nowrap;
+    margin-right: 0.5rem;
+}
+
+.admin-list-page__top-paginate {
+    grid-area: top-paginate;
+}
+
+.admin-list-page__top-page-control {
+    grid-area: top-page-control;
+}
+
+.admin-list-page__data {
+    grid-area: data;
+}
+
+.admin-list-page__page-number {
+    white-space: nowrap;
+    margin-top: 0.4rem;
+    grid-area: page-number;
+}
+
+.admin-list-page__per-page {
+    grid-area: per-page;
+}
+
+.admin-list-page__per-page__field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.admin-list-page__per-page__label {
+    white-space: nowrap;
+    margin-right: 0.5rem;
+}
+
+.admin-list-page__bottom-paginate {
+    grid-area: bottom-paginate;
+}
+
+.admin-list-page__bottom-page-control {
+    grid-area: bottom-page-control;
+}
+
+
+@media (max-width: 1399px) {
+    .admin-list-page {
+        grid-template-areas:
+    "breadcrumb breadcrumb breadcrumb breadcrumb breadcrumb breadcrumb breadcrumb"
+    "header header header header buttons buttons buttons"
+    "search search search search search search search"
+    "tags tags tags tags tags tags tags"
+    "top-sort top-sort top-sort top-paginate top-paginate top-paginate top-page-control"
+    "data data data data data data data"
+    "page-number page-number per-page bottom-paginate bottom-paginate bottom-paginate bottom-page-control";
+    }
+}
+
+@media (max-width: 1199px) {
+
+
+}
+
+@media (max-width: 991px) {
+    .admin-list-page {
+        grid-template-areas:
+    "breadcrumb breadcrumb breadcrumb breadcrumb breadcrumb breadcrumb breadcrumb"
+    "header header header header buttons buttons buttons"
+    "search search search search search search search"
+    "tags tags tags tags tags tags tags"
+    "top-sort top-sort top-sort top-paginate top-paginate top-paginate top-page-control"
+    "data data data data data data data"
+    "page-number page-number per-page per-page per-page per-page per-page"
+    "bottom-paginate bottom-paginate bottom-paginate bottom-paginate bottom-paginate bottom-paginate bottom-page-control";
+    }
+
+    .admin-list-page__top-paginate, .admin-list-page__top-page-control {
+        align-self: end;
+    }
+}
+
+
+@media (max-width: 530px) {
+    .admin-list-page {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .admin-list-page__breadcrumb, .admin-list-page__header, .admin-list-page__tags, .admin-list-page__search, .admin-list-page__data,
+    .admin-list-page__header, .admin-list-page__buttons {
+        width: 100%;
+    }
+
+    .admin-list-page__breadcrumb {
+        order: 1;
+    }
+
+    .admin-list-page__header {
+        order: 2;
+    }
+
+    .admin-list-page__header__text {
+        line-height: 1;
+    }
+
+    .admin-list-page__buttons {
+        order: 3;
+    }
+
+    .admin-list-page__search {
+        order: 4;
+    }
+
+    .admin-list-page__search__grow {
+        flex: 1 0 0;
+        width: auto;
+        max-width: 100%;
+    }
+
+    .admin-list-page__search__text {
+        display: none;
+    }
+
+    .admin-list-page__tags {
+        order: 5;
+    }
+
+    .admin-list-page__sort {
+        order: 6;
+        margin-left: auto;
+    }
+
+    .admin-list-page__top-paginate {
+        order: 7;
+        margin-left: auto;
+    }
+
+    .admin-list-page__top-page-control {
+        order: 8;
+    }
+
+    .admin-list-page__data {
+        order: 9;
+    }
+
+    .admin-list-page__page-number {
+        order: 10;
+    }
+
+    .admin-list-page__per-page {
+        order: 11;
+        margin-left: auto;
+    }
+
+    .admin-list-page__bottom-paginate {
+        order: 12;
+        margin-left: auto;
+    }
+
+    .admin-list-page__bottom-page-control {
+        order: 13;
+    }
+}
+
+@media (max-width: 400px) {
+    .admin-list-page__page-number {
+        margin-top: 0;
+        width: 100%;
+        text-align: right;
+        justify-content: right;
+    }
+}

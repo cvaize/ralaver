@@ -16,7 +16,6 @@ use actix_web::middleware::{ErrorHandlers, Logger};
 use actix_web::web::Data;
 use actix_web::App;
 use actix_web::HttpServer;
-pub use app::adapters::*;
 pub use app::connections::mysql as mysql_connection;
 pub use app::connections::mysql::get_connection_pool as get_mysql_connection_pool;
 pub use app::connections::redis as redis_connection;
@@ -32,7 +31,8 @@ pub use errors::AppError;
 pub use mysql_connection::MysqlPool;
 pub use mysql_connection::MysqlPooledConnection;
 use std::path::MAIN_SEPARATOR_STR;
-use std::time::Duration;
+// use std::time::Duration;
+use crate::redis_connection::RedisPool;
 
 pub fn make_config() -> Config {
     dotenv::dotenv().ok();
@@ -48,37 +48,18 @@ async fn main() -> std::io::Result<()> {
     let smtp: Data<LettreSmtpTransport> = Data::new(get_smtp_transport(&config.mail.smtp).unwrap());
     let mysql: Data<MysqlPool> = Data::new(get_mysql_connection_pool(&config.db.mysql).unwrap());
 
-    // Start - key_value_service
-    // Чтобы переключить KeyValueRepository раскомментируйте блок кода ниже и измените тип KeyValueRepositoryType
+    let redis: RedisPool = get_redis_connection_pool(&config.db.redis).unwrap();
+    let redis_repository = Data::new(RedisRepository::new(redis));
+    let key_value_service = Data::new(KeyValueService::new(redis_repository));
 
-    let kv_repository = KVRepository::new(&config.db.kv.storage).unwrap();
-    let kv_key_value_bucket_repository = kv_repository.make_bucket(None).unwrap();
-    let kv_repository_key_value_adapter = Data::new(KVRepositoryKeyValueAdapter::new(
-        kv_key_value_bucket_repository,
-    ));
-    let key_value_service = Data::new(KeyValueService::new(
-        kv_repository_key_value_adapter.clone(),
-    ));
-
-    // let redis: RedisPool = get_redis_connection_pool(&config.db.redis).unwrap();
-    // let redis_repository = RedisRepository::new(redis);
-    // let redis_repository_key_value_adapter = RedisRepositoryKeyValueAdapter::new(redis_repository);
-    // let key_value_service = Data::new(KeyValueService::new(redis_repository_key_value_adapter));
-
-    // End - key_value_service
-
-    actix_rt::spawn(async move {
-        loop {
-            actix_rt::time::sleep(Duration::from_secs(86400)).await;
-
-            let kv_repository_key_value_adapter = kv_repository_key_value_adapter.get_ref();
-            log::info!("Main schedule - Start - \"clean_expired_values\"");
-            if let Err(e) = kv_repository_key_value_adapter.clean_expired_values() {
-                log::error!("Main schedule - Error - {e}");
-            }
-            log::info!("Main schedule - End - \"clean_expired_values\"");
-        }
-    });
+    // Эта реализация выполнения в фоне через определённое количество секунд.
+    // actix_rt::spawn(async move {
+    //     loop {
+    //         actix_rt::time::sleep(Duration::from_secs(86400)).await;
+    //
+    //         log::info!("Schedule");
+    //     }
+    // });
 
     log::info!("Starting HTTP server at http://0.0.0.0:8080");
 

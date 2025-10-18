@@ -1,0 +1,1838 @@
+<!doctype html>
+<html lang="en" class="admin-html">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin front v1 template</title>
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./libraries/normalize/normalize.css">
+    <link rel="stylesheet" href="./components/layout/layout.css">
+    <link rel="stylesheet" href="./components/accordion/accordion.css">
+    <link rel="stylesheet" href="./components/sidebar/sidebar.css">
+    <link rel="stylesheet" href="./components/breadcrumb/breadcrumb.css">
+    <link rel="stylesheet" href="./components/tabs/tabs.css">
+    <link rel="stylesheet" href="./components/tabs/tabs--menu-mod-xl.css">
+    <link rel="stylesheet" href="./components/alert/alert.css">
+    <link rel="stylesheet" href="./components/btn/btn.css">
+    <link rel="stylesheet" href="./components/collapse/collapse.css">
+    <link rel="stylesheet" href="./components/dropdown/dropdown.css">
+    <link rel="stylesheet" href="./components/modal/modal.css">
+    <link rel="stylesheet" href="./components/pagination/pagination.css">
+    <link rel="stylesheet" href="./components/table/table.css">
+    <link rel="stylesheet" href="./components/b-checkbox/b-checkbox.css">
+    <link rel="stylesheet" href="./components/b-radio/b-radio.css">
+    <link rel="stylesheet" href="./components/b-tabs/b-tabs.css">
+    <link rel="stylesheet" href="./components/c-checkbox/c-checkbox.css">
+    <link rel="stylesheet" href="./components/checkbox/checkbox.css">
+    <link rel="stylesheet" href="./components/color-checkbox/color-checkbox.css">
+    <link rel="stylesheet" href="./components/field/field.css">
+    <link rel="stylesheet" href="./components/input/input.css">
+    <link rel="stylesheet" href="./components/menu/menu.css">
+    <link rel="stylesheet" href="./components/radio/radio.css">
+    <link rel="stylesheet" href="./components/s-collapse/s-collapse.css">
+    <link rel="stylesheet" href="./components/c-radio/c-radio.css">
+    <link rel="stylesheet" href="./components/tag/tag.css">
+    <link rel="stylesheet" href="./components/search-group/search-group.css">
+    <link rel="stylesheet" href="./components/dark-mode/dark-mode.css">
+
+    <script src="./components/number-validate/number-validate.js" defer></script>
+    <!--    <script src="./libraries/embla-carousel/embla-carousel.umd.js" defer></script>-->
+    <script src="./components/dark-mode/dark-mode.js" defer></script>
+    <script src="components/pagination/generate-pagination-example.js" defer></script>
+</head>
+<body class="admin-body">
+<input id="admin-dark-mode__radio--dark" class="admin-dark-mode__radio--dark" type="radio" name="admin-dark-mode__radio"
+       hidden>
+<input id="admin-dark-mode__radio--light" class="admin-dark-mode__radio--light" type="radio"
+       name="admin-dark-mode__radio" hidden>
+<input id="admin-dark-mode__radio--auto" class="admin-dark-mode__radio--auto" type="radio" name="admin-dark-mode__radio"
+       hidden checked>
+<input id="admin-sidebar__nav__checkbox" class="admin-sidebar__nav__checkbox" type="checkbox" hidden>
+<main class="admin-app">
+    <div class="admin-dark-mode">
+        <label for="admin-dark-mode__radio--light" class="admin-dark-mode__label admin-dark-mode__label--dark"
+               title="Сейчас используется тёмная тема. Кликните 1 раз если хотите переключиться на светлую тему или 2 раза если вы хотите автоматически использовать светлую/тёмную тему вашего компьютера."></label>
+        <label for="admin-dark-mode__radio--auto" class="admin-dark-mode__label admin-dark-mode__label--light"
+               title="Сейчас используется светлая тема. Кликните 2 раза если хотите переключиться на тёмную тему или 1 раз если вы хотите автоматически использовать светлую/тёмную тему вашего компьютера."></label>
+        <label for="admin-dark-mode__radio--dark" class="admin-dark-mode__label admin-dark-mode__label--auto"
+               title="Сейчас используется светлая/тёмная тема вашего компьютера. Кликните 1 раз если хотите переключиться на тёмную тему или 2 раза если вы хотите использовать светлую тему."></label>
+        <svg class="admin-icon--svg admin-dark-mode__icon admin-dark-mode__icon--dark"
+             xmlns="http://www.w3.org/2000/svg"
+             width="24" height="24"
+             viewBox="0 0 24 24">
+            <path d="M11.01 3.05C6.51 3.54 3 7.36 3 12a9 9 0 0 0 9 9c4.63 0 8.45-3.5 8.95-8 .09-.79-.78-1.42-1.54-.95A5.403 5.403 0 0 1 11.1 7.5c0-1.06.31-2.06.84-2.89.45-.67-.04-1.63-.93-1.56z"/>
+        </svg>
+        <svg class="admin-icon--svg admin-dark-mode__icon admin-dark-mode__icon--light"
+             xmlns="http://www.w3.org/2000/svg"
+             width="24" height="24"
+             viewBox="0 0 24 24">
+            <path d="m6.05 4.14-.39-.39a.993.993 0 0 0-1.4 0l-.01.01a.984.984 0 0 0 0 1.4l.39.39c.39.39 1.01.39 1.4 0l.01-.01a.984.984 0 0 0 0-1.4zM3.01 10.5H1.99c-.55 0-.99.44-.99.99v.01c0 .55.44.99.99.99H3c.56.01 1-.43 1-.98v-.01c0-.56-.44-1-.99-1zm9-9.95H12c-.56 0-1 .44-1 .99v.96c0 .55.44.99.99.99H12c.56.01 1-.43 1-.98v-.97c0-.55-.44-.99-.99-.99zm7.74 3.21c-.39-.39-1.02-.39-1.41-.01l-.39.39a.984.984 0 0 0 0 1.4l.01.01c.39.39 1.02.39 1.4 0l.39-.39a.984.984 0 0 0 0-1.4zm-1.81 15.1.39.39a.996.996 0 1 0 1.41-1.41l-.39-.39a.993.993 0 0 0-1.4 0c-.4.4-.4 1.02-.01 1.41zM20 11.49v.01c0 .55.44.99.99.99H22c.55 0 .99-.44.99-.99v-.01c0-.55-.44-.99-.99-.99h-1.01c-.55 0-.99.44-.99.99zM12 5.5c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm-.01 16.95H12c.55 0 .99-.44.99-.99v-.96c0-.55-.44-.99-.99-.99h-.01c-.55 0-.99.44-.99.99v.96c0 .55.44.99.99.99zm-7.74-3.21c.39.39 1.02.39 1.41 0l.39-.39a.993.993 0 0 0 0-1.4l-.01-.01a.996.996 0 0 0-1.41 0l-.39.39c-.38.4-.38 1.02.01 1.41z"/>
+        </svg>
+        <span class="admin-dark-mode__icon admin-dark-mode__icon--auto"></span>
+    </div>
+
+    <label for="admin-sidebar__nav__checkbox" class="admin-sidebar__burger" aria-label="Open menu"></label>
+    <label for="admin-sidebar__nav__checkbox" class="admin-sidebar__backdrop" aria-label="Close menu"></label>
+
+    <div class="admin-sidebar">
+        <a href="/" class="admin-sidebar__brand">
+            Admin front
+            <img style="display: none" class="admin-sidebar__brand__logo" src="https://placehold.co/600x400"
+                 alt="Admin front">
+        </a>
+        <nav class="admin-sidebar__nav">
+            <div class="admin-accordion admin-sidebar__menu">
+                <input id="admin-sidebar__accordion-account"
+                       class="admin-accordion__checkbox admin-sidebar__menu__checkbox"
+                       type="checkbox"
+                       name="admin-accordion__checkbox"
+                       hidden>
+                <label class="admin-accordion__header admin-sidebar__menu__header"
+                       for="admin-sidebar__accordion-account">
+                    <span class="admin-sidebar__menu__header__content">
+                        <svg class="admin-sidebar__menu__header__icon admin-icon--svg"
+                             xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                             viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20z"/>
+                        </svg>
+                        <span class="admin-sidebar__menu__header__text">admin@admin.example</span>
+                    </span>
+                </label>
+                <div class="admin-accordion__body" style="--admin-accordion-max-height: 4rem;">
+                    <ul class="admin-sidebar__menu__items">
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">
+                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                     viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm0 14c-2.03 0-4.43-.82-6.14-2.88a9.947 9.947 0 0 1 12.28 0C16.43 19.18 14.03 20 12 20z"/>
+                                </svg>
+                                Профиль
+                            </a>
+                        </li>
+                        <li class="admin-sidebar__menu__item">
+                            <button class="admin-sidebar__menu__item__link">
+                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                     viewBox="0 0 24 24">
+                                    <path d="M5 5h6c.55 0 1-.45 1-1s-.45-1-1-1H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h6c.55 0 1-.45 1-1s-.45-1-1-1H5V5z"/>
+                                    <path d="m20.65 11.65-2.79-2.79a.501.501 0 0 0-.86.35V11h-7c-.55 0-1 .45-1 1s.45 1 1 1h7v1.79c0 .45.54.67.85.35l2.79-2.79c.2-.19.2-.51.01-.7z"/>
+                                </svg>
+                                Выход
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="admin-sidebar__menu">
+                <a class="admin-sidebar__menu__header" href="#">
+                    <span class="admin-sidebar__menu__header__content">
+                        <svg class="admin-sidebar__menu__header__icon admin-icon--svg"
+                             xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                             viewBox="0 0 24 24">
+                            <path d="M14 9.5h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm0 7h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm5 4.5H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2zM7 11h3c.55 0 1-.45 1-1V7c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7V7zm0 11h3c.55 0 1-.45 1-1v-3c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7v-3z"/>
+                        </svg>
+                        <span class="admin-sidebar__menu__header__text">Панель</span>
+                    </span>
+                </a>
+            </div>
+            <div class="admin-accordion admin-sidebar__menu">
+                <input id="admin-sidebar__accordion-sales"
+                       class="admin-accordion__checkbox admin-sidebar__menu__checkbox"
+                       type="checkbox"
+                       name="admin-accordion__checkbox"
+                       hidden>
+                <label class="admin-accordion__header admin-sidebar__menu__header"
+                       for="admin-sidebar__accordion-sales">
+                    <span class="admin-sidebar__menu__header__content">
+                        <svg class="admin-sidebar__menu__header__icon admin-icon--svg"
+                             xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                             viewBox="0 0 24 24">
+                            <path d="M17 2H7c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-.5 4h-9c-.28 0-.5-.22-.5-.5v-1c0-.28.22-.5.5-.5h9c.28 0 .5.22.5.5v1c0 .28-.22.5-.5.5zM20 22H4c-1.1 0-2-.9-2-2v-1h20v1c0 1.1-.9 2-2 2zm-1.47-11.81A2.008 2.008 0 0 0 16.7 9H7.3c-.79 0-1.51.47-1.83 1.19L2 18h20l-3.47-7.81zM9.5 16h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm3 4h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm3 4h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5z"/>
+                        </svg>
+                        <span class="admin-sidebar__menu__header__text">Продажи</span>
+                    </span>
+                </label>
+                <div class="admin-accordion__body">
+                    <ul class="admin-sidebar__menu__items" style="--admin-accordion-max-height: 8rem;">
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">
+                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                     viewBox="0 0 24 24">
+                                    <path d="M14 9.5h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm0 7h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm5 4.5H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2zM7 11h3c.55 0 1-.45 1-1V7c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7V7zm0 11h3c.55 0 1-.45 1-1v-3c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7v-3z"/>
+                                </svg>
+                                Заказы
+                            </a>
+                        </li>
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">
+                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                     viewBox="0 0 24 24">
+                                    <path d="M14 9.5h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm0 7h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm5 4.5H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2zM7 11h3c.55 0 1-.45 1-1V7c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7V7zm0 11h3c.55 0 1-.45 1-1v-3c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7v-3z"/>
+                                </svg>
+                                Возвраты
+                            </a>
+                        </li>
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">
+                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                     viewBox="0 0 24 24">
+                                    <path d="M14 9.5h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm0 7h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm5 4.5H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2zM7 11h3c.55 0 1-.45 1-1V7c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7V7zm0 11h3c.55 0 1-.45 1-1v-3c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7v-3z"/>
+                                </svg>
+                                Подписки
+                            </a>
+                        </li>
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">
+                                <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                     viewBox="0 0 24 24">
+                                    <path d="M14 9.5h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm0 7h3c.55 0 1-.45 1-1s-.45-1-1-1h-3c-.55 0-1 .45-1 1s.45 1 1 1zm5 4.5H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2zM7 11h3c.55 0 1-.45 1-1V7c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7V7zm0 11h3c.55 0 1-.45 1-1v-3c0-.55-.45-1-1-1H7c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1zm0-4h3v3H7v-3z"/>
+                                </svg>
+                                Сбор данных
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="admin-accordion admin-sidebar__menu">
+                <input id="admin-sidebar__accordion-catalog"
+                       class="admin-accordion__checkbox admin-sidebar__menu__checkbox"
+                       type="checkbox"
+                       name="admin-accordion__checkbox"
+                       hidden>
+                <label class="admin-accordion__header admin-sidebar__menu__header"
+                       for="admin-sidebar__accordion-catalog">
+                    <span class="admin-sidebar__menu__header__content">
+                        <span class="admin-sidebar__menu__header__text">Каталог товаров</span>
+                    </span>
+                </label>
+                <div class="admin-accordion__body" style="--admin-accordion-max-height: 8rem;">
+                    <ul class="admin-sidebar__menu__items">
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">Товары</a>
+                        </li>
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">Категории</a>
+                        </li>
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">Атрибуты</a>
+                        </li>
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">Поставщики</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="admin-accordion admin-sidebar__menu">
+                <input id="admin-sidebar__accordion-users"
+                       class="admin-accordion__checkbox admin-sidebar__menu__checkbox"
+                       type="checkbox"
+                       name="admin-accordion__checkbox"
+                       hidden>
+                <label class="admin-accordion__header admin-sidebar__menu__header"
+                       for="admin-sidebar__accordion-users">
+                    <span class="admin-sidebar__menu__header__content">
+                        <span class="admin-sidebar__menu__header__text">Пользователи</span>
+                    </span>
+                </label>
+                <div class="admin-accordion__body" style="--admin-accordion-max-height: 4rem;">
+                    <ul class="admin-sidebar__menu__items">
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">Пользователи</a>
+                        </li>
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">Роли</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="admin-accordion admin-sidebar__menu">
+                <input id="admin-sidebar__accordion-marketing"
+                       class="admin-accordion__checkbox admin-sidebar__menu__checkbox"
+                       type="checkbox"
+                       name="admin-accordion__checkbox"
+                       hidden>
+                <label class="admin-accordion__header admin-sidebar__menu__header"
+                       for="admin-sidebar__accordion-marketing">
+                    <span class="admin-sidebar__menu__header__content">
+                        <span class="admin-sidebar__menu__header__text">Маркетинг</span>
+                    </span>
+                </label>
+                <div class="admin-accordion__body" style="--admin-accordion-max-height: 6rem;">
+                    <ul class="admin-sidebar__menu__items">
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">Промокоды</a>
+                        </li>
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">Правило</a>
+                        </li>
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">Отзывы</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="admin-sidebar__menu">
+                <a class="admin-sidebar__menu__header" href="#">
+                    <span class="admin-sidebar__menu__header__content">
+                        <span class="admin-sidebar__menu__header__text">Настройки</span>
+                    </span>
+                </a>
+            </div>
+            <div class="admin-accordion admin-sidebar__menu">
+                <input id="admin-sidebar__lang"
+                       class="admin-accordion__checkbox admin-sidebar__menu__checkbox"
+                       type="checkbox"
+                       name="admin-accordion__checkbox"
+                       hidden>
+                <label class="admin-accordion__header admin-sidebar__menu__header"
+                       for="admin-sidebar__lang">
+                    <span class="admin-sidebar__menu__header__content">
+                        <svg class="admin-sidebar__menu__header__icon admin-icon--svg"
+                             xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path
+                                d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2s.07-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
+                        <span class="admin-sidebar__menu__header__text">Русский</span>
+                    </span>
+                </label>
+                <div class="admin-accordion__body" style="--admin-accordion-max-height: 6rem;">
+                    <ul class="admin-sidebar__menu__items">
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">English</a>
+                        </li>
+                        <li class="admin-sidebar__menu__item">
+                            <a class="admin-sidebar__menu__item__link" href="#">Français</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </div>
+    <div class="admin-content">
+
+        <nav aria-label="breadcrumb">
+            <ol class="admin-breadcrumb">
+                <li class="admin-breadcrumb__item"><a href="#" class="admin-breadcrumb__link">Панель</a></li>
+                <li class="admin-breadcrumb__item"><a href="#" class="admin-breadcrumb__link">Пользователи</a></li>
+                <li class="admin-breadcrumb__item admin-breadcrumb__item--active" aria-current="page">Редактирование
+                    пользователя №1
+                </li>
+            </ol>
+        </nav>
+
+        <h1>Компоненты</h1>
+
+        <div class="admin-tabs admin-tabs--menu-mod-xl">
+            <input id="admin-tabs--001" class="admin-tabs__checkbox" type="radio" name="st" hidden checked>
+            <input id="admin-tabs--002" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--003" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--004" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--005" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--006" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--007" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--008" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--009" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--010" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--011" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--012" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--013" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--014" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--015" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--016" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--017" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--018" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--019" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--020" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--021" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--022" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--023" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--024" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--025" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--026" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--027" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--028" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--029" class="admin-tabs__checkbox" type="radio" name="st" hidden>
+            <input id="admin-tabs--menu-checkbox" class="admin-tabs__menu-checkbox" type="checkbox" hidden>
+            <label for="admin-tabs--menu-checkbox" class="admin-tabs__menu-label">
+                <span class="admin-tabs__burger"></span>
+            </label>
+            <nav class="admin-tabs__nav">
+                <label for="admin-tabs--001" class="admin-tabs__link">Типография</label>
+                <label for="admin-tabs--002" class="admin-tabs__link">Accordion</label>
+                <label for="admin-tabs--003" class="admin-tabs__link">Alerts</label>
+                <label for="admin-tabs--004" class="admin-tabs__link">B-Checkbox</label>
+                <label for="admin-tabs--005" class="admin-tabs__link">B-Radio</label>
+                <label for="admin-tabs--006" class="admin-tabs__link">B-Tabs</label>
+                <label for="admin-tabs--007" class="admin-tabs__link">Breadcrumb</label>
+                <label for="admin-tabs--008" class="admin-tabs__link">Btn</label>
+                <label for="admin-tabs--009" class="admin-tabs__link">C-Checkbox</label>
+                <label for="admin-tabs--010" class="admin-tabs__link">C-Radio</label>
+                <label for="admin-tabs--011" class="admin-tabs__link">Checkbox</label>
+                <label for="admin-tabs--012" class="admin-tabs__link">Collapse</label>
+                <label for="admin-tabs--013" class="admin-tabs__link">Color-Checkbox</label>
+                <label for="admin-tabs--014" class="admin-tabs__link">Dark-mode</label>
+                <label for="admin-tabs--015" class="admin-tabs__link">Dropdowns</label>
+                <label for="admin-tabs--016" class="admin-tabs__link">Field</label>
+                <label for="admin-tabs--017" class="admin-tabs__link">Input</label>
+                <label for="admin-tabs--018" class="admin-tabs__link">Layout</label>
+                <label for="admin-tabs--019" class="admin-tabs__link">Menu</label>
+                <label for="admin-tabs--020" class="admin-tabs__link">Modal</label>
+                <label for="admin-tabs--021" class="admin-tabs__link">Number-validate</label>
+                <label for="admin-tabs--022" class="admin-tabs__link">Pagination</label>
+                <label for="admin-tabs--023" class="admin-tabs__link">Radio</label>
+                <label for="admin-tabs--024" class="admin-tabs__link">S-Collapse</label>
+                <label for="admin-tabs--025" class="admin-tabs__link">Search-Group</label>
+                <label for="admin-tabs--026" class="admin-tabs__link">Sidebar</label>
+                <label for="admin-tabs--027" class="admin-tabs__link">Table</label>
+                <label for="admin-tabs--028" class="admin-tabs__link">Tabs</label>
+                <label for="admin-tabs--029" class="admin-tabs__link">Tag</label>
+            </nav>
+            <div class="admin-tabs__content">
+                <div data-for="admin-tabs--001" class="admin-tabs__pane">
+                    <h1>h1. Bootstrap heading</h1>
+                    <h2>h2. Bootstrap heading</h2>
+                    <h3>h3. Bootstrap heading</h3>
+                    <h4>h4. Bootstrap heading</h4>
+                    <h5>h5. Bootstrap heading</h5>
+                    <h6>h6. Bootstrap heading</h6>
+                    <p>You can use the mark tag to
+                        <mark>highlight</mark>
+                        text.
+                    </p>
+                    <p>
+                        <del>This line of text is meant to be treated as deleted text.</del>
+                    </p>
+                    <p><s>This line of text is meant to be treated as no longer accurate.</s></p>
+                    <p>
+                        <ins>This line of text is meant to be treated as an addition to the document.</ins>
+                    </p>
+                    <p><u>This line of text will render as underlined.</u></p>
+                    <p><small>This line of text is meant to be treated as fine print.</small></p>
+                    <p><strong>This line rendered as bold text.</strong></p>
+                    <p><em>This line rendered as italicized text.</em></p>
+                    <p class="admin-text--mini">Mini text</p>
+                    <p class="admin-text--accent">
+                        Accent text
+                    </p>
+                    <p class="admin-text--success">
+                        Success text
+                    </p>
+                    <p class="admin-text--warning">
+                        Warning text
+                    </p>
+                    <p class="admin-text--danger">
+                        Success text
+                    </p>
+                </div>
+                <div data-for="admin-tabs--002" class="admin-tabs__pane">
+                    <div class="admin-accordion">
+                        <input id="admin-accordion-checkbox"
+                               class="admin-accordion__checkbox"
+                               type="checkbox"
+                               name="admin-accordion__checkbox"
+                               hidden>
+                        <label class="admin-accordion__header"
+                               for="admin-accordion-checkbox">
+                            Accordion
+                        </label>
+                        <div class="admin-accordion__body" style="--admin-accordion-max-height: 10rem;">
+                            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus aperiam, dolores
+                            doloribus earum est, explicabo facere illo laborum libero mollitia nam nihil obcaecati
+                            perferendis perspiciatis, quibusdam suscipit totam voluptas voluptates?
+                            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus aperiam, dolores
+                            doloribus earum est, explicabo facere illo laborum libero mollitia nam nihil obcaecati
+                            perferendis perspiciatis, quibusdam suscipit totam voluptas voluptates?
+                            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus aperiam, dolores
+                            doloribus earum est, explicabo facere illo laborum libero mollitia nam nihil obcaecati
+                            perferendis perspiciatis, quibusdam suscipit totam voluptas voluptates?
+                            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus aperiam, dolores
+                            doloribus earum est, explicabo facere illo laborum libero mollitia nam nihil obcaecati
+                            perferendis perspiciatis, quibusdam suscipit totam voluptas voluptates?
+                        </div>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--003" class="admin-tabs__pane">
+
+                    <input id="admin-alert__1" class="admin-alert__checkbox" type="checkbox" name="admin-alert__1"
+                           hidden checked>
+                    <div class="admin-alert admin-accent" role="alert" style="margin-bottom: 1rem;">
+                        A simple accent alert—check it out!
+                        <label for="admin-alert__1" class="admin-alert__close" aria-label="Close">X</label>
+                    </div>
+
+                    <input id="admin-alert__2" class="admin-alert__checkbox" type="checkbox" name="admin-alert__2"
+                           hidden checked>
+                    <div class="admin-alert admin-success" role="alert" style="margin-bottom: 1rem;">
+                        A simple success alert—check it out!
+                        <label for="admin-alert__2" class="admin-alert__close" aria-label="Close">X</label>
+                    </div>
+
+                    <input id="admin-alert__3" class="admin-alert__checkbox" type="checkbox" name="admin-alert__3"
+                           hidden checked>
+                    <div class="admin-alert admin-warning" role="alert" style="margin-bottom: 1rem;">
+                        A simple warning alert—check it out!
+                        <label for="admin-alert__3" class="admin-alert__close" aria-label="Close">X</label>
+                    </div>
+
+                    <input id="admin-alert__4" class="admin-alert__checkbox" type="checkbox" name="admin-alert__4"
+                           hidden checked>
+                    <div class="admin-alert admin-danger" role="alert">
+                        A simple danger alert—check it out!
+                        <label for="admin-alert__4" class="admin-alert__close" aria-label="Close">X</label>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--004" class="admin-tabs__pane">
+                    <div>
+                        <input class="admin-b-checkbox" type="checkbox" id="admin-b-checkbox-id-0" hidden checked>
+                        <label class="admin-b-checkbox__label" for="admin-b-checkbox-id-0" tabindex="0">
+                            Lorem ipsum 1
+                        </label>
+                    </div>
+                    <div>
+                        <input class="admin-b-checkbox" type="checkbox" id="admin-b-checkbox-id-1" hidden disabled>
+                        <label class="admin-b-checkbox__label" for="admin-b-checkbox-id-1" tabindex="0">
+                            Lorem ipsum 1
+                        </label>
+                    </div>
+                    <div class="admin-accent">
+                        <input class="admin-b-checkbox" type="checkbox" id="admin-b-checkbox-id-2" hidden>
+                        <label class="admin-b-checkbox__label" for="admin-b-checkbox-id-2" tabindex="0">
+                            Lorem ipsum 2
+                        </label>
+                    </div>
+                    <div>
+                        <input class="admin-b-checkbox admin-accent" type="checkbox" id="admin-b-checkbox-id-3" hidden>
+                        <label class="admin-b-checkbox__label" for="admin-b-checkbox-id-3" tabindex="0">
+                            Lorem ipsum 3
+                        </label>
+                    </div>
+                    <div class="admin-success">
+                        <input class="admin-b-checkbox" type="checkbox" id="admin-b-checkbox-id-6" hidden>
+                        <label class="admin-b-checkbox__label" for="admin-b-checkbox-id-6" tabindex="0">
+                            Lorem ipsum 2
+                        </label>
+                    </div>
+                    <div>
+                        <input class="admin-b-checkbox admin-success" type="checkbox" id="admin-b-checkbox-id-7" hidden>
+                        <label class="admin-b-checkbox__label" for="admin-b-checkbox-id-7" tabindex="0">
+                            Lorem ipsum 3
+                        </label>
+                    </div>
+                    <div class="admin-danger">
+                        <input class="admin-b-checkbox" type="checkbox" id="admin-b-checkbox-id-4" hidden>
+                        <label class="admin-b-checkbox__label" for="admin-b-checkbox-id-4" tabindex="0">
+                            Lorem ipsum 4
+                        </label>
+                    </div>
+                    <div>
+                        <input class="admin-b-checkbox admin-danger" type="checkbox" id="admin-b-checkbox-id-5" hidden>
+                        <label class="admin-b-checkbox__label" for="admin-b-checkbox-id-5" tabindex="0">
+                            Lorem ipsum 5
+                        </label>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--005" class="admin-tabs__pane">
+                    <div>
+                        <input class="admin-b-radio" type="radio" name="admin-b-radio" id="admin-b-radio-id-0" hidden
+                               checked>
+                        <label class="admin-b-radio__label" for="admin-b-radio-id-0" tabindex="0">
+                            Lorem ipsum 1
+                        </label>
+                    </div>
+                    <div>
+                        <input class="admin-b-radio" type="radio" name="admin-b-radio" id="admin-b-radio-id-1" hidden
+                               disabled>
+                        <label class="admin-b-radio__label" for="admin-b-radio-id-1" tabindex="0">
+                            Lorem ipsum 1
+                        </label>
+                    </div>
+                    <div class="admin-accent">
+                        <input class="admin-b-radio" type="radio" name="admin-b-radio" id="admin-b-radio-id-6" hidden>
+                        <label class="admin-b-radio__label" for="admin-b-radio-id-6" tabindex="0">
+                            Lorem ipsum 2
+                        </label>
+                    </div>
+                    <div>
+                        <input class="admin-b-radio admin-accent" type="radio" name="admin-b-radio"
+                               id="admin-b-radio-id-7"
+                               hidden>
+                        <label class="admin-b-radio__label" for="admin-b-radio-id-7" tabindex="0">
+                            Lorem ipsum 3
+                        </label>
+                    </div>
+                    <div class="admin-success">
+                        <input class="admin-b-radio" type="radio" name="admin-b-radio" id="admin-b-radio-id-2" hidden>
+                        <label class="admin-b-radio__label" for="admin-b-radio-id-2" tabindex="0">
+                            Lorem ipsum 2
+                        </label>
+                    </div>
+                    <div>
+                        <input class="admin-b-radio admin-success" type="radio" name="admin-b-radio"
+                               id="admin-b-radio-id-3"
+                               hidden>
+                        <label class="admin-b-radio__label" for="admin-b-radio-id-3" tabindex="0">
+                            Lorem ipsum 3
+                        </label>
+                    </div>
+                    <div class="admin-danger">
+                        <input class="admin-b-radio" type="radio" name="admin-b-radio" id="admin-b-radio-id-4" hidden>
+                        <label class="admin-b-radio__label" for="admin-b-radio-id-4" tabindex="0">
+                            Lorem ipsum 4
+                        </label>
+                    </div>
+                    <div>
+                        <input class="admin-b-radio admin-danger" type="radio" name="admin-b-radio"
+                               id="admin-b-radio-id-5"
+                               hidden>
+                        <label class="admin-b-radio__label" for="admin-b-radio-id-5" tabindex="0">
+                            Lorem ipsum 5
+                        </label>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--006" class="admin-tabs__pane">
+                    <div class="admin-b-tabs">
+                        <input id="admin-b-tabs__0" class="admin-b-tabs__checkbox" type="radio" name="admin-b-tabs"
+                               hidden
+                               checked>
+                        <input id="admin-b-tabs__1" class="admin-b-tabs__checkbox" type="radio" name="admin-b-tabs"
+                               hidden>
+                        <nav class="admin-b-tabs__nav">
+                            <label for="admin-b-tabs__0" class="admin-b-tabs__link">RU</label>
+                            <label for="admin-b-tabs__1" class="admin-b-tabs__link">EN</label>
+                        </nav>
+                        <div class="admin-b-tabs__content">
+                            <div class="admin-b-tabs__pane">RU</div>
+                            <div class="admin-b-tabs__pane">EN</div>
+                        </div>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--007" class="admin-tabs__pane">
+                    <nav aria-label="breadcrumb">
+                        <ol class="admin-breadcrumb">
+                            <li class="admin-breadcrumb__item"><a href="#" class="admin-breadcrumb__link">Lorem ipsum
+                                dolor sit amet</a></li>
+                            <li class="admin-breadcrumb__item"><a href="#" class="admin-breadcrumb__link">Lorem ipsum
+                                dolor sit amet</a></li>
+                            <li class="admin-breadcrumb__item"><a href="#" class="admin-breadcrumb__link">Lorem ipsum
+                                dolor sit amet</a></li>
+                            <li class="admin-breadcrumb__item"><a href="#" class="admin-breadcrumb__link">Lorem ipsum
+                                dolor sit amet</a></li>
+                            <li class="admin-breadcrumb__item admin-breadcrumb__item--active" aria-current="page">
+                                Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+                            </li>
+                        </ol>
+                    </nav>
+                </div>
+                <div data-for="admin-tabs--008" class="admin-tabs__pane">
+                    <button type="button" class="admin-btn">Primary</button>
+                    <button type="button" class="admin-btn admin-accent">Accent</button>
+                    <button type="button" class="admin-btn admin-success">Success</button>
+                    <button type="button" class="admin-btn admin-danger">Danger</button>
+                </div>
+                <div data-for="admin-tabs--009" class="admin-tabs__pane">
+                    <div style="margin-bottom: 0.25rem;">
+                        <label class="admin-c-checkbox" tabindex="0">
+                            <input class="admin-c-checkbox__input" type="checkbox" hidden>
+                            <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
+                            </svg>
+                            <span class="admin-c-checkbox__text">Lorem ipsum</span>
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 0.25rem;">
+                        <label class="admin-c-checkbox" tabindex="0">
+                            <input class="admin-c-checkbox__input" type="checkbox" hidden disabled>
+                            <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
+                            </svg>
+                            <span class="admin-c-checkbox__text">Lorem ipsum</span>
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 0.25rem;">
+                        <label class="admin-c-checkbox admin-accent" tabindex="0">
+                            <input class="admin-c-checkbox__input" type="checkbox" hidden>
+                            <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
+                            </svg>
+                            <span class="admin-c-checkbox__text">Lorem ipsum</span>
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 0.25rem;">
+                        <label class="admin-c-checkbox admin-success" tabindex="0">
+                            <input class="admin-c-checkbox__input" type="checkbox" hidden>
+                            <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
+                            </svg>
+                            <span class="admin-c-checkbox__text">Lorem ipsum</span>
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 0.25rem;">
+                        <label class="admin-c-checkbox admin-danger" tabindex="0">
+                            <input class="admin-c-checkbox__input" type="checkbox" hidden>
+                            <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
+                            </svg>
+                            <span class="admin-c-checkbox__text">Lorem ipsum</span>
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 0.25rem;">
+                        <label class="admin-c-checkbox admin-c-checkbox--without-text" tabindex="0"
+                               style="margin-right: 0.25rem;">
+                            <input class="admin-c-checkbox__input" type="checkbox" hidden>
+                            <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
+                            </svg>
+                        </label>
+                        <label class="admin-c-checkbox admin-accent admin-c-checkbox--without-text" tabindex="0"
+                               style="margin-right: 0.25rem;">
+                            <input class="admin-c-checkbox__input" type="checkbox" hidden>
+                            <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
+                            </svg>
+                        </label>
+                        <label class="admin-c-checkbox admin-success admin-c-checkbox--without-text" tabindex="0"
+                               style="margin-right: 0.25rem;">
+                            <input class="admin-c-checkbox__input" type="checkbox" hidden>
+                            <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
+                            </svg>
+                        </label>
+                        <label class="admin-c-checkbox admin-danger admin-c-checkbox--without-text" tabindex="0"
+                               style="margin-right: 0.25rem;">
+                            <input class="admin-c-checkbox__input" type="checkbox" hidden>
+                            <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
+                            </svg>
+                        </label>
+                    </div>
+                    <div style="max-width: 200px">
+                        <label class="admin-c-checkbox" tabindex="0">
+                            <input class="admin-c-checkbox__input" type="checkbox" hidden>
+                            <svg class="admin-c-checkbox__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z"/>
+                            </svg>
+                            <span class="admin-c-checkbox__text">
+                                Lorem ipsum dolor sit amet, consectetur adipisicing elit. At cupiditate exercitationem nesciunt officia, reiciendis velit! Distinctio dolore eaque est excepturi iusto maxime, nulla odio omnis porro provident similique, unde velit?
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--010" class="admin-tabs__pane">
+                    <div style="margin-bottom: 0.25rem;">
+                        <label class="admin-c-radio" tabindex="0">
+                            <input class="admin-c-radio__input" type="radio" name="admin-c-radio" hidden checked>
+                            <svg class="admin-c-radio__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="5"/>
+                            </svg>
+                            <span class="admin-c-radio__text">Lorem ipsum</span>
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 0.25rem;">
+                        <label class="admin-c-radio" tabindex="0">
+                            <input class="admin-c-radio__input" type="radio" name="admin-c-radio" hidden disabled>
+                            <svg class="admin-c-radio__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="5"/>
+                            </svg>
+                            <span class="admin-c-radio__text">Lorem ipsum</span>
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 0.25rem;">
+                        <label class="admin-c-radio admin-accent" tabindex="0">
+                            <input class="admin-c-radio__input" type="radio" name="admin-c-radio" hidden>
+                            <svg class="admin-c-radio__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="5"/>
+                            </svg>
+                            <span class="admin-c-radio__text">Lorem ipsum</span>
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 0.25rem;">
+                        <label class="admin-c-radio admin-success" tabindex="0">
+                            <input class="admin-c-radio__input" type="radio" name="admin-c-radio" hidden>
+                            <svg class="admin-c-radio__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="5"/>
+                            </svg>
+                            <span class="admin-c-radio__text">Lorem ipsum</span>
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 0.25rem;">
+                        <label class="admin-c-radio admin-danger" tabindex="0">
+                            <input class="admin-c-radio__input" type="radio" name="admin-c-radio" hidden>
+                            <svg class="admin-c-radio__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="5"/>
+                            </svg>
+                            <span class="admin-c-radio__text">Lorem ipsum</span>
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 0.25rem;">
+                        <label class="admin-c-radio admin-c-radio--without-text" tabindex="0"
+                               style="margin-right: 0.25rem;">
+                            <input class="admin-c-radio__input" type="radio" name="admin-c-radio" hidden>
+                            <svg class="admin-c-radio__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="5"/>
+                            </svg>
+                        </label>
+                        <label class="admin-c-radio admin-accent admin-c-radio--without-text" tabindex="0"
+                               style="margin-right: 0.25rem;">
+                            <input class="admin-c-radio__input" type="radio" name="admin-c-radio" hidden>
+                            <svg class="admin-c-radio__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="5"/>
+                            </svg>
+                        </label>
+                        <label class="admin-c-radio admin-success admin-c-radio--without-text" tabindex="0"
+                               style="margin-right: 0.25rem;">
+                            <input class="admin-c-radio__input" type="radio" name="admin-c-radio" hidden>
+                            <svg class="admin-c-radio__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="5"/>
+                            </svg>
+                        </label>
+                        <label class="admin-c-radio admin-danger admin-c-radio--without-text" tabindex="0"
+                               style="margin-right: 0.25rem;">
+                            <input class="admin-c-radio__input" type="radio" name="admin-c-radio" hidden>
+                            <svg class="admin-c-radio__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="5"/>
+                            </svg>
+                        </label>
+                    </div>
+                    <div style="max-width: 200px">
+                        <label class="admin-c-radio" tabindex="0">
+                            <input class="admin-c-radio__input" type="radio" name="admin-c-radio" hidden checked>
+                            <svg class="admin-c-radio__svg-icon" xmlns="http://www.w3.org/2000/svg" width="24"
+                                 height="24" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="5"/>
+                            </svg>
+                            <span class="admin-c-radio__text">
+                                Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ab accusamus accusantium aliquid amet doloremque dolorum est illo ipsam itaque nostrum obcaecati officia quas reiciendis rem sapiente soluta, tempora ut voluptate.
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--011" class="admin-tabs__pane">
+                    <div>
+                        <label class="admin-checkbox" tabindex="0">
+                            <input class="admin-checkbox__input" type="checkbox" name="admin-checkbox-1" hidden checked>
+                            <span class="admin-checkbox__box"></span>
+                            <span class="admin-checkbox__text">Example 1</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="admin-checkbox" tabindex="0">
+                            <input class="admin-checkbox__input" type="checkbox" name="admin-checkbox-1" hidden
+                                   disabled>
+                            <span class="admin-checkbox__box"></span>
+                            <span class="admin-checkbox__text">Example 1</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="admin-checkbox admin-accent" tabindex="0">
+                            <input class="admin-checkbox__input" type="checkbox" name="admin-checkbox-2" hidden>
+                            <span class="admin-checkbox__box"></span>
+                            <span class="admin-checkbox__text">Example 2</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="admin-checkbox admin-success" tabindex="0">
+                            <input class="admin-checkbox__input" type="checkbox" name="admin-checkbox-2" hidden>
+                            <span class="admin-checkbox__box"></span>
+                            <span class="admin-checkbox__text">Example 2</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="admin-checkbox admin-danger" tabindex="0">
+                            <input class="admin-checkbox__input" type="checkbox" name="admin-checkbox-3" hidden>
+                            <span class="admin-checkbox__box"></span>
+                            <span class="admin-checkbox__text">Example 3</span>
+                        </label>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--012" class="admin-tabs__pane">
+                    <label for="admin-collapse__1" class="admin-btn">Show data</label>
+                    <input id="admin-collapse__1" class="admin-collapse__checkbox" type="checkbox"
+                           name="admin-collapse__1"
+                           hidden>
+                    <div class="admin-collapse">
+                        Some placeholder content for the collapse component. This panel is hidden by default but
+                        revealed when the user activates the relevant trigger.
+                    </div>
+                </div>
+                <div data-for="admin-tabs--013" class="admin-tabs__pane">
+                    <div>
+                        <label style="--checkbox-circle-color: black; --checkbox-chevron-color: white;"
+                               class="admin-color-checkbox" tabindex="0">
+                            <input class="admin-color-checkbox__input" type="checkbox" hidden checked>
+                            <span class="admin-color-checkbox__box"></span>
+                            <span class="admin-color-checkbox__text">Black</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label style="--checkbox-circle-color: red; --checkbox-chevron-color: white;"
+                               class="admin-color-checkbox" tabindex="0">
+                            <input class="admin-color-checkbox__input" type="checkbox" hidden>
+                            <span class="admin-color-checkbox__box"></span>
+                            <span class="admin-color-checkbox__text">Red</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label style="--checkbox-circle-color: green; --checkbox-chevron-color: white;"
+                               class="admin-color-checkbox" tabindex="0">
+                            <input class="admin-color-checkbox__input" type="checkbox" hidden>
+                            <span class="admin-color-checkbox__box"></span>
+                            <span class="admin-color-checkbox__text">Green</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label style="--checkbox-circle-color: black; --checkbox-chevron-color: white;"
+                               class="admin-color-checkbox" tabindex="0">
+                            <input class="admin-color-checkbox__input" type="checkbox" hidden disabled>
+                            <span class="admin-color-checkbox__box"></span>
+                            <span class="admin-color-checkbox__text">Black</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label style="--checkbox-circle-color: black; --checkbox-chevron-color: white;"
+                               class="admin-color-checkbox admin-accent" tabindex="0">
+                            <input class="admin-color-checkbox__input" type="checkbox" hidden>
+                            <span class="admin-color-checkbox__box"></span>
+                            <span class="admin-color-checkbox__text">Black</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label style="--checkbox-circle-color: black; --checkbox-chevron-color: white;"
+                               class="admin-color-checkbox admin-success" tabindex="0">
+                            <input class="admin-color-checkbox__input" type="checkbox" hidden>
+                            <span class="admin-color-checkbox__box"></span>
+                            <span class="admin-color-checkbox__text">Black</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label style="--checkbox-circle-color: black; --checkbox-chevron-color: white;"
+                               class="admin-color-checkbox admin-danger" tabindex="0">
+                            <input class="admin-color-checkbox__input" type="checkbox" hidden>
+                            <span class="admin-color-checkbox__box"></span>
+                            <span class="admin-color-checkbox__text">Black</span>
+                        </label>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--014" class="admin-tabs__pane">
+
+                    <input id="admin-dark-mode__radio--dark-2" class="admin-dark-mode__radio--dark" type="radio"
+                           name="admin-dark-mode__radio-2"
+                           hidden>
+                    <input id="admin-dark-mode__radio--light-2" class="admin-dark-mode__radio--light" type="radio"
+                           name="admin-dark-mode__radio-2" hidden>
+                    <input id="admin-dark-mode__radio--auto-2" class="admin-dark-mode__radio--auto" type="radio"
+                           name="admin-dark-mode__radio-2"
+                           hidden checked>
+
+                    <main class="admin-app">
+                        <div class="admin-dark-mode"
+                             style="position:relative!important; left: auto!important; right: auto!important; top: auto!important; bottom: auto!important;">
+                            <label for="admin-dark-mode__radio--light-2"
+                                   class="admin-dark-mode__label admin-dark-mode__label--dark"
+                                   title="Сейчас используется тёмная тема. Кликните 1 раз если хотите переключиться на светлую тему или 2 раза если вы хотите автоматически использовать светлую/тёмную тему вашего компьютера."></label>
+                            <label for="admin-dark-mode__radio--auto-2"
+                                   class="admin-dark-mode__label admin-dark-mode__label--light"
+                                   title="Сейчас используется светлая тема. Кликните 2 раза если хотите переключиться на тёмную тему или 1 раз если вы хотите автоматически использовать светлую/тёмную тему вашего компьютера."></label>
+                            <label for="admin-dark-mode__radio--dark-2"
+                                   class="admin-dark-mode__label admin-dark-mode__label--auto"
+                                   title="Сейчас используется светлая/тёмная тема вашего компьютера. Кликните 1 раз если хотите переключиться на тёмную тему или 2 раза если вы хотите использовать светлую тему."></label>
+                            <svg class="admin-icon--svg admin-dark-mode__icon admin-dark-mode__icon--dark"
+                                 xmlns="http://www.w3.org/2000/svg"
+                                 width="24" height="24"
+                                 viewBox="0 0 24 24">
+                                <path d="M11.01 3.05C6.51 3.54 3 7.36 3 12a9 9 0 0 0 9 9c4.63 0 8.45-3.5 8.95-8 .09-.79-.78-1.42-1.54-.95A5.403 5.403 0 0 1 11.1 7.5c0-1.06.31-2.06.84-2.89.45-.67-.04-1.63-.93-1.56z"/>
+                            </svg>
+                            <svg class="admin-icon--svg admin-dark-mode__icon admin-dark-mode__icon--light"
+                                 xmlns="http://www.w3.org/2000/svg"
+                                 width="24" height="24"
+                                 viewBox="0 0 24 24">
+                                <path d="m6.05 4.14-.39-.39a.993.993 0 0 0-1.4 0l-.01.01a.984.984 0 0 0 0 1.4l.39.39c.39.39 1.01.39 1.4 0l.01-.01a.984.984 0 0 0 0-1.4zM3.01 10.5H1.99c-.55 0-.99.44-.99.99v.01c0 .55.44.99.99.99H3c.56.01 1-.43 1-.98v-.01c0-.56-.44-1-.99-1zm9-9.95H12c-.56 0-1 .44-1 .99v.96c0 .55.44.99.99.99H12c.56.01 1-.43 1-.98v-.97c0-.55-.44-.99-.99-.99zm7.74 3.21c-.39-.39-1.02-.39-1.41-.01l-.39.39a.984.984 0 0 0 0 1.4l.01.01c.39.39 1.02.39 1.4 0l.39-.39a.984.984 0 0 0 0-1.4zm-1.81 15.1.39.39a.996.996 0 1 0 1.41-1.41l-.39-.39a.993.993 0 0 0-1.4 0c-.4.4-.4 1.02-.01 1.41zM20 11.49v.01c0 .55.44.99.99.99H22c.55 0 .99-.44.99-.99v-.01c0-.55-.44-.99-.99-.99h-1.01c-.55 0-.99.44-.99.99zM12 5.5c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm-.01 16.95H12c.55 0 .99-.44.99-.99v-.96c0-.55-.44-.99-.99-.99h-.01c-.55 0-.99.44-.99.99v.96c0 .55.44.99.99.99zm-7.74-3.21c.39.39 1.02.39 1.41 0l.39-.39a.993.993 0 0 0 0-1.4l-.01-.01a.996.996 0 0 0-1.41 0l-.39.39c-.38.4-.38 1.02.01 1.41z"/>
+                            </svg>
+                            <span class="admin-dark-mode__icon admin-dark-mode__icon--auto"></span>
+                        </div>
+
+                        <div>
+                            <div class="">
+                                Lorem ipsum dolor sit amet, consectetur adipisicing elit. Architecto asperiores
+                                assumenda consequuntur cum debitis distinctio doloribus ducimus ea, fuga iure nemo
+                                provident quasi quis soluta totam? Fuga id nostrum rerum?
+                            </div>
+                            <button type="button" class="admin-btn">Primary</button>
+                            <button type="button" class="admin-btn admin-accent">Accent</button>
+                            <button type="button" class="admin-btn admin-success">Success</button>
+                            <button type="button" class="admin-btn admin-danger">Danger</button>
+                        </div>
+                    </main>
+                </div>
+                <div data-for="admin-tabs--015" class="admin-tabs__pane">
+                    <div class="admin-dropdown" tabindex="-1">
+                        <button class="admin-btn admin-dropdown__btn" type="button">
+                            Dropdown button
+                        </button>
+                        <ul class="admin-dropdown__menu">
+                            <li><a class="admin-dropdown__item" href="#">Action</a></li>
+                            <li><a class="admin-dropdown__item" href="#">Another action</a></li>
+                            <li><a class="admin-dropdown__item" href="#">Something else here</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--016" class="admin-tabs__pane">
+                    <label class="admin-field" style="margin-bottom: 0.5rem;">
+                        <span class="admin-field__text">Text</span>
+                        <input class="admin-field__input" type="text">
+                    </label>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label class="admin-field">
+                            <span class="admin-field__text">Text</span>
+                            <input class="admin-field__input" type="text" disabled value="test">
+                        </label>
+                        <div class="admin-text--mini">
+                            Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+                        </div>
+                    </div>
+                    <label class="admin-field" style="margin-bottom: 0.5rem;">
+                        <span class="admin-field__text">Select</span>
+                        <select class="admin-field__input" disabled>
+                            <option>Lorem 1</option>
+                            <option>Lorem 2</option>
+                            <option>Lorem 3</option>
+                        </select>
+                    </label>
+                    <div class="admin-row" style="margin-bottom: 0.5rem;">
+                        <div class="admin-col-auto">
+                            <label for="admin-field__input-90" class="admin-field" style="padding-top: 0.3rem;">
+                                <span class="admin-field__text">Text</span>
+                            </label>
+                        </div>
+                        <div class="admin-col-auto">
+                            <label class="admin-field">
+                                <input id="admin-field__input-90" class="admin-field__input" type="text">
+                            </label>
+                        </div>
+                        <div class="admin-col-auto">
+                            <div class="admin-text--mini" style="padding-top: 0.35rem;">
+                                Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+                            </div>
+                        </div>
+                    </div>
+                    <label class="admin-field" style="margin-bottom: 0.5rem;">
+                        <span class="admin-field__text">Text</span>
+                        <input class="admin-field__input" type="text" readonly value="test">
+                    </label>
+                    <label class="admin-field" style="margin-bottom: 0.5rem;">
+                        <span class="admin-field__text">Range</span>
+                        <input class="admin-field__input" type="range">
+                    </label>
+                    <label class="admin-field" style="margin-bottom: 0.5rem;">
+                        <span class="admin-field__text">Disabled Range</span>
+                        <input class="admin-field__input" type="range" disabled>
+                    </label>
+                    <label class="admin-field" style="margin-bottom: 0.5rem;">
+                        <span class="admin-field__text">File</span>
+                        <br>
+                        <span class="admin-btn" tabindex="0">Выберите файл</span>
+                        <input class="admin-field__input" type="file">
+                    </label>
+                    <label class="admin-field" style="margin-bottom: 0.5rem;">
+                        <span class="admin-field__text">Files</span>
+                        <br>
+                        <span class="admin-btn" tabindex="0">Выберите файлы</span>
+                        <input class="admin-field__input" type="file" multiple>
+                    </label>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label class="admin-field admin-success">
+                            <span class="admin-field__text">Number</span>
+                            <input class="admin-field__input" type="number">
+                        </label>
+                        <div class="admin-text--mini admin-text--success">
+                            Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+                        </div>
+                        <div class="admin-text--mini">
+                            Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+                        </div>
+                    </div>
+                    <label class="admin-field admin-success" style="margin-bottom: 0.5rem;">
+                        <span class="admin-field__text">Range</span>
+                        <input class="admin-field__input" type="range">
+                    </label>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label class="admin-field admin-danger">
+                            <span class="admin-field__text">Textarea</span>
+                            <textarea class="admin-field__input"></textarea>
+                        </label>
+                        <div class="admin-text--mini admin-text--danger">
+                            Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+                        </div>
+                        <div class="admin-text--mini">
+                            Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+                        </div>
+                    </div>
+                    <label class="admin-field admin-danger" style="margin-bottom: 0.5rem;">
+                        <span class="admin-field__text">Range</span>
+                        <input class="admin-field__input" type="range">
+                    </label>
+                    <label class="admin-field admin-danger" style="margin-bottom: 0.5rem;">
+                        <span class="admin-field__text">Select</span>
+                        <select class="admin-field__input">
+                            <option>Lorem 1</option>
+                            <option>Lorem 2</option>
+                            <option>Lorem 3</option>
+                        </select>
+                    </label>
+                </div>
+                <div data-for="admin-tabs--017" class="admin-tabs__pane">
+                    <div style="margin-bottom: 0.5rem;">
+                        <label for="admin-input-id-1" class="admin-input__label">Text</label>
+                        <input id="admin-input-id-1" class="admin-input" type="text">
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label for="admin-input-id-2" class="admin-input__label">Text</label>
+                        <input id="admin-input-id-2" class="admin-input" type="text" disabled>
+                    </div>
+                    <div class="admin-success" style="margin-bottom: 0.5rem;">
+                        <label for="admin-input-id-3" class="admin-input__label">Text</label>
+                        <input id="admin-input-id-3" class="admin-input" type="text">
+                    </div>
+                    <div class="admin-danger" style="margin-bottom: 0.5rem;">
+                        <label for="admin-input-id-4" class="admin-input__label">Text</label>
+                        <input id="admin-input-id-4" class="admin-input" type="text">
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label for="admin-input-id-5" class="admin-input__label">Number</label>
+                        <input id="admin-input-id-5" class="admin-input" type="number">
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label for="admin-input-id-6" class="admin-input__label">Range</label>
+                        <input id="admin-input-id-6" class="admin-input" type="range">
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label for="admin-input-id-7" class="admin-input__label">Disabled Range</label>
+                        <input id="admin-input-id-7" class="admin-input" type="range" disabled>
+                    </div>
+                    <div class="admin-success" style="margin-bottom: 0.5rem;">
+                        <label for="admin-input-id-8" class="admin-input__label">Range</label>
+                        <input id="admin-input-id-8" class="admin-input" type="range">
+                    </div>
+                    <div class="admin-danger" style="margin-bottom: 0.5rem;">
+                        <label for="admin-input-id-9" class="admin-input__label">Range</label>
+                        <input id="admin-input-id-9" class="admin-input" type="range">
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <div class="admin-input__label">File</div>
+                        <label for="admin-input-id-90" class="admin-btn" tabindex="0">Выберите файл</label>
+                        <input id="admin-input-id-90" class="admin-input" type="file">
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <div class="admin-input__label">Files</div>
+                        <label for="admin-input-id-91" class="admin-btn" tabindex="0">Выберите файлы</label>
+                        <input id="admin-input-id-91" class="admin-input" type="file" multiple>
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label for="admin-input-id-10" class="admin-input__label">Textarea</label>
+                        <textarea id="admin-input-id-10" class="admin-input"></textarea>
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label for="admin-input-id-11" class="admin-input__label">Select</label>
+                        <select id="admin-input-id-11" class="admin-input">
+                            <option>Lorem 1</option>
+                            <option>Lorem 2</option>
+                            <option>Lorem 3</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label for="admin-input-id-12" class="admin-input__label">Select</label>
+                        <select id="admin-input-id-12" class="admin-input" disabled>
+                            <option>Lorem 1</option>
+                            <option>Lorem 2</option>
+                            <option>Lorem 3</option>
+                        </select>
+                    </div>
+                    <div class="admin-success" style="margin-bottom: 0.5rem;">
+                        <label for="admin-input-id-13" class="admin-input__label">Select</label>
+                        <select id="admin-input-id-13" class="admin-input">
+                            <option>Lorem 1</option>
+                            <option>Lorem 2</option>
+                            <option>Lorem 3</option>
+                        </select>
+                    </div>
+                    <div class="admin-danger" style="margin-bottom: 0.5rem;">
+                        <label for="admin-input-id-14" class="admin-input__label">Select</label>
+                        <select id="admin-input-id-14" class="admin-input">
+                            <option>Lorem 1</option>
+                            <option>Lorem 2</option>
+                            <option>Lorem 3</option>
+                        </select>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--018" class="admin-tabs__pane">
+                    <pre>
+&lt;!doctype html&gt;
+&lt;html lang="en" class="admin-html"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"&gt;
+    &lt;meta http-equiv="X-UA-Compatible" content="ie=edge"&gt;
+&lt;/head&gt;
+&lt;body class="admin-body"&gt;
+&lt;main class="admin-app"&gt;
+    &lt;div class="admin-content"&gt;
+    &lt;/div&gt;
+&lt;/main&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+                    </pre>
+                </div>
+                <div data-for="admin-tabs--019" class="admin-tabs__pane">
+                    <div class="admin-menu">
+                        <ul class="admin-menu__list">
+                            <li class="admin-menu__list__item">
+                                <a href="#" class="admin-menu__list__link">
+                                    Поиск и выбор товаров
+                                </a>
+                            </li>
+                            <li class="admin-menu__list__item">
+                                <a href="#" class="admin-menu__list__link">
+                                    Как выбрать из нескольких моделей
+                                </a>
+                            </li>
+                            <li class="admin-menu__list__item">
+                                <input id="admin-menu__list__checkbox--1" class="admin-menu__list__checkbox"
+                                       type="checkbox" hidden checked>
+                                <label for="admin-menu__list__checkbox--1" class="admin-menu__list__label"></label>
+                                <a href="#" class="admin-menu__list__link">
+                                    Поиск и выбор товаров
+                                </a>
+                                <ul class="admin-menu__list" style="--admin-items-count: 3">
+                                    <li class="admin-menu__list__item admin-active">
+                                        <a href="#" class="admin-menu__list__link">
+                                            Поиск и выбор товаров
+                                        </a>
+                                    </li>
+                                    <li class="admin-menu__list__item">
+                                        <a href="#" class="admin-menu__list__link">
+                                            Как выбрать из нескольких моделей
+                                        </a>
+                                    </li>
+                                    <li class="admin-menu__list__item">
+                                        <a href="#" class="admin-menu__list__link">
+                                            Как выбрать товар в конкретном магазине
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="admin-menu__list__item">
+                                <a href="#" class="admin-menu__list__link">
+                                    Поиск и выбор товаров
+                                </a>
+                            </li>
+                            <li class="admin-menu__list__item">
+                                <a href="#" class="admin-menu__list__link">
+                                    Как выбрать из нескольких моделей
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--020" class="admin-tabs__pane">
+                    <label for="admin-modal__1" class="admin-btn admin-btn">
+                        Open Modal
+                    </label>
+                    <input id="admin-modal__1" class="admin-modal__checkbox" type="checkbox" name="admin-modal__1"
+                           hidden>
+                    <div class="admin-modal" tabindex="-1">
+                        <label for="admin-modal__1" class="admin-modal__backdrop"></label>
+                        <div class="admin-modal__dialog">
+                            <div class="admin-modal__content">
+                                <div class="admin-modal__header">
+                                    <h5 class="admin-modal__title">Modal title</h5>
+                                    <label for="admin-modal__1" class="admin-modal__close-btn"
+                                           aria-label="Close"></label>
+                                </div>
+                                <div class="admin-modal__body">
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+                                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda
+                                    dicta dignissimos dolore ex minima natus vitae. Consequuntur, dolorem iste?
+                                    Exercitationem hic itaque natus quisquam quo recusandae saepe totam!
+
+                                </div>
+                                <div class="admin-modal__footer" style="display: flex; flex-wrap: wrap;">
+                                    <button type="button" class="admin-btn admin-success"
+                                            style="margin-right: 1rem;">
+                                        Save changes
+                                    </button>
+                                    <label for="admin-modal__1" class="admin-btn admin-danger"
+                                           style="margin-left: auto;">Close</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--021" class="admin-tabs__pane">
+                    <div>
+                        <label for="number-validate-id">Number validate min=45 max=1000</label>
+                        <input id="number-validate-id" class="admin-input js-number-validate" type="text" value="45"
+                               min="45" max="1000">
+                    </div>
+                </div>
+                <div data-for="admin-tabs--022" class="admin-tabs__pane">
+                    <nav aria-label="Page navigation example" style="margin-bottom: 1rem;">
+                        <ul class="admin-pagination">
+                            <li class="admin-pagination__item"><a class="admin-pagination__link admin-active" href="#">1</a></li>
+                            <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">2</a></li>
+                            <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">3</a></li>
+                            <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">4</a></li>
+                            <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">5</a></li>
+                            <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
+                            <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">20</a></li>
+                        </ul>
+                    </nav>
+                    <nav aria-label="Page navigation example" style="margin-bottom: 1rem;">
+                        <ul class="admin-pagination">
+                            <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">1</a></li>
+                            <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
+                            <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">7</a></li>
+                            <li class="admin-pagination__item"><a class="admin-pagination__link admin-active" href="#">8</a></li>
+                            <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">9</a></li>
+                            <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
+                            <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">20</a></li>
+                        </ul>
+                    </nav>
+                    <nav aria-label="Page navigation example" style="margin-bottom: 1rem;">
+                        <ul class="admin-pagination">
+                            <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">1</a></li>
+                            <li class="admin-pagination__item"><span class="admin-pagination__link">...</span></li>
+                            <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">16</a></li>
+                            <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">17</a></li>
+                            <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">18</a></li>
+                            <li class="admin-pagination__item"><a class="admin-pagination__link" href="#">19</a></li>
+                            <li class="admin-pagination__item"><a class="admin-pagination__link admin-active" href="#">20</a></li>
+                        </ul>
+                    </nav>
+                    <h3>Pagination examples generated by script "generate-pagination-example.js"</h3>
+                    <div class="js-generate-pagination-example"></div>
+                </div>
+                <div data-for="admin-tabs--023" class="admin-tabs__pane">
+                    <div>
+                        <label class="admin-radio" tabindex="0">
+                            <input class="admin-radio__input" type="radio" name="admin-radio" hidden checked>
+                            <span class="admin-radio__box"></span>
+                            <span class="admin-radio__text">Radio 1</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="admin-radio" tabindex="0">
+                            <input class="admin-radio__input" type="radio" name="admin-radio" hidden disabled>
+                            <span class="admin-radio__box"></span>
+                            <span class="admin-radio__text">Radio 2</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="admin-radio admin-accent" tabindex="0">
+                            <input class="admin-radio__input" type="radio" name="admin-radio" hidden>
+                            <span class="admin-radio__box"></span>
+                            <span class="admin-radio__text">Radio 3</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="admin-radio admin-success" tabindex="0">
+                            <input class="admin-radio__input" type="radio" name="admin-radio" hidden>
+                            <span class="admin-radio__box"></span>
+                            <span class="admin-radio__text">Radio 3</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="admin-radio admin-danger" tabindex="0">
+                            <input class="admin-radio__input" type="radio" name="admin-radio" hidden>
+                            <span class="admin-radio__box"></span>
+                            <span class="admin-radio__text">Radio 4</span>
+                        </label>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--024" class="admin-tabs__pane">
+                    <div>
+                        <input id="admin-s-collapse" class="admin-s-collapse__checkbox" type="checkbox" hidden>
+                        Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+                        <div class="admin-s-collapse">
+                            Animi architecto consequatur delectus dolor doloremque ducimus ea explicabo facere fugiat
+                            iusto minus molestias odio quam, quasi quod saepe, tempore velit voluptas?
+                        </div>
+                        <label for="admin-s-collapse" class="admin-s-collapse__label">
+                            Show collapse
+                        </label>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--025" class="admin-tabs__pane">
+                    <form action="#" class="admin-search-group">
+                        <label class="admin-search-group__input-wrapper">
+                            <input class="admin-search-group__input admin-field__input" type="search"
+                                   placeholder="Поиск...">
+                            <button class="admin-search-group__reset" type="reset" aria-label="Сбросить">
+                                <svg class="admin-search-group__reset-icon-svg admin-icon--svg"
+                                     xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                                    <path d="M18.3 5.71a.996.996 0 0 0-1.41 0L12 10.59 7.11 5.7A.996.996 0 1 0 5.7 7.11L10.59 12 5.7 16.89a.996.996 0 1 0 1.41 1.41L12 13.41l4.89 4.89a.996.996 0 1 0 1.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z"/>
+                                </svg>
+                            </button>
+                        </label>
+                        <button class="admin-search-group__submit admin-btn" type="button">
+                            <svg class="admin-icon--svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                 viewBox="0 0 24 24">
+                                <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+                <div data-for="admin-tabs--026" class="admin-tabs__pane">
+                    Пример по ссылке <a href="./components/sidebar/sidebar.html">./components/sidebar/sidebar.html</a>
+                </div>
+                <div data-for="admin-tabs--027" class="admin-tabs__pane">
+                    <div class="admin-table__responsive">
+                        <table class="admin-table admin-table--hover">
+                            <thead class="admin-table__thead">
+                            <tr class="admin-table__tr">
+                                <th class="admin-table__th" scope="col">#</th>
+                                <th class="admin-table__th" scope="col">First</th>
+                                <th class="admin-table__th" scope="col">Last</th>
+                                <th class="admin-table__th" scope="col">Handle</th>
+                            </tr>
+                            </thead>
+                            <tbody class="admin-table__tbody">
+                            <tr class="admin-table__tr">
+                                <th class="admin-table__th" scope="row">1</th>
+                                <td class="admin-table__td">Mark</td>
+                                <td class="admin-table__td">Otto</td>
+                                <td class="admin-table__td">@mdo</td>
+                            </tr>
+                            <tr class="admin-table__tr admin-table--active">
+                                <th class="admin-table__th" scope="row">2</th>
+                                <td class="admin-table__td">Mark</td>
+                                <td class="admin-table__td">Otto</td>
+                                <td class="admin-table__td">@mdo</td>
+                            </tr>
+                            <tr class="admin-table__tr">
+                                <th class="admin-table__th" scope="row">3</th>
+                                <td class="admin-table__td" colspan="2">Larry the Bird</td>
+                                <td class="admin-table__td admin-table--active">@mdo</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--028" class="admin-tabs__pane">
+                    <div class="admin-tabs">
+                        <input id="admin-tabs__0" class="admin-tabs__checkbox" type="radio" name="admin-tabs__1" hidden
+                               checked>
+                        <input id="admin-tabs__1" class="admin-tabs__checkbox" type="radio" name="admin-tabs__1" hidden>
+                        <nav class="admin-tabs__nav">
+                            <label for="admin-tabs__0" class="admin-tabs__link">Lorem 1</label>
+                            <label for="admin-tabs__1" class="admin-tabs__link">Lorem 2</label>
+                        </nav>
+                        <div class="admin-tabs__content">
+                            <div class="admin-tabs__pane">
+                                Content 1
+                            </div>
+                            <div class="admin-tabs__pane">
+                                Content 2
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div data-for="admin-tabs--029" class="admin-tabs__pane">
+                    <div class="admin-tags">
+                        <div class="admin-tag">
+                            <div class="admin-tag__name">Цвет:</div>
+                            <div class="admin-tag__value">
+                                Черный
+                                <a href="#" class="admin-tag__close"></a>
+                            </div>
+                            <div class="admin-tag__value">
+                                Белый
+                                <a href="#" class="admin-tag__close"></a>
+                            </div>
+                        </div>
+                        <div class="admin-tag">
+                            <div class="admin-tag__name">Размер:</div>
+                            <div class="admin-tag__value">
+                                38
+                                <a href="#" class="admin-tag__close"></a>
+                            </div>
+                            <div class="admin-tag__value">
+                                40
+                                <a href="#" class="admin-tag__close"></a>
+                            </div>
+                            <div class="admin-tag__value">
+                                42
+                                <a href="#" class="admin-tag__close"></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <br>
+        <br>
+        <br>
+
+
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit. A accusantium assumenda dicta dignissimos dolore ex
+        minima natus vitae. Consequuntur, dolorem iste? Exercitationem hic itaque natus quisquam quo recusandae saepe
+        totam!
+    </div>
+</main>
+</body>
+</html>

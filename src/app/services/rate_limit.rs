@@ -1,4 +1,4 @@
-use crate::{AlertVariant, KeyValueService, TranslatorService};
+use crate::{AlertVariant, KeyValueService, RedisRepository, TranslatorService};
 use actix_web::web::Data;
 use actix_web::{error, Error, HttpRequest};
 use std::collections::HashMap;
@@ -159,7 +159,7 @@ impl RateLimitService {
             .map_err(|e| {
                 log::error!("RateLimitService::incr - {e}");
                 RateLimitServiceError::Fail
-            })? as u64)
+            })?)
     }
 
     fn remaining(&self, key: &str, max_attempts: u64) -> Result<u64, RateLimitServiceError> {

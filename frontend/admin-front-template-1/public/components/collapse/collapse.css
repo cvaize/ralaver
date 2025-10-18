@@ -1,0 +1,7 @@
+.admin-collapse {
+    display: none;
+}
+
+.admin-collapse__checkbox:checked + .admin-collapse {
+    display: block;
+}

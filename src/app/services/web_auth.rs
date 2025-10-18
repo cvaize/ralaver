@@ -1,7 +1,4 @@
-use crate::{
-    Config, CryptService, HashService, KeyValueService, RandomService, User, UserService,
-    WebHttpResponse,
-};
+use crate::{Config, CryptService, HashService, KeyValueService, RandomService, RedisRepository, User, UserService, WebHttpResponse};
 use actix_http::header::{HeaderValue, LOCATION};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;

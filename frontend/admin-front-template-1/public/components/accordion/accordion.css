@@ -1,0 +1,36 @@
+.admin-accordion {
+}
+
+.admin-accordion__header {
+    display: block;
+}
+
+.admin-accordion__header:after {
+    content: "";
+    display: inline-block;
+    width: 0.6em;
+    height: 0.6em;
+    margin: 0;
+    border-right: 0.2em solid rgb(var(--admin-app-color));
+    border-bottom: 0.2em solid rgb(var(--admin-app-color));
+    transform: rotateZ(45deg) translate(0.1em, -0.4em);
+}
+
+.admin-accordion__checkbox {
+    display: none;
+}
+
+.admin-accordion__body {
+    margin-bottom: .4rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .25s;
+}
+
+.admin-accordion__checkbox:checked ~ .admin-accordion__body {
+    max-height: var(--admin-accordion-max-height, 50rem);
+}
+
+.admin-accordion__checkbox:checked ~ .admin-accordion__header::after {
+    transform: rotateZ(-135deg) translate(-0.4em, 0.2em);
+}
