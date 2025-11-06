@@ -155,6 +155,8 @@
         "permissions": "Permissions",
         "roles_ids": "Roles",
         "avatar_id": "Avatar ID",
-        "avatar": "Avatar"
+        "avatar": "Avatar",
+        "description": "Description",
+        "code": "Code"
     }
 }
