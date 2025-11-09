@@ -254,28 +254,21 @@ impl TranslatorService {
 }
 
 fn choices_rule_ru(value: i64, choices: usize) -> usize {
-    let singular = value % 10 == 1 && value % 100 != 11;
-    if choices == 2 {
-        return if singular { 0 } else { 1 };
+    if value%10 == 1 && value%100 != 11 {
+        return 0
     }
-    let few = value % 10 >= 2 && value % 10 <= 4 && (value % 100 < 10 || value % 100 >= 20);
-    if singular {
-        0
-    } else {
-        if few {
-            1
-        } else {
-            2
-        }
+
+    if choices == 2 || (value%10 >= 2 && value%10 <= 4 && (value%100 < 10 || value%100 >= 20)) {
+        return 1
     }
+    2
 }
 
 fn choices_rule_en(value: i64, _: usize) -> usize {
-    if value > 1 {
-        1
-    } else {
-        0
+    if value == 1 {
+        return 0
     }
+    1
 }
 
 pub trait TranslatableError {
